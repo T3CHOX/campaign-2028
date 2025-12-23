@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2024 Election Simulator</title>
+    <title>Campaign 2028</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
 </head>
@@ -11,9 +11,9 @@
 
     <section id="intro-screen" class="screen active">
         <div class="intro-content">
-            <h1 class="main-title">CAMPAIGN <span class="highlight">2024</span></h1>
-            <p class="subtitle">Win the White House.</p>
-            <button class="start-btn" onclick="app.goToScreen('candidate-screen')">BEGIN SIMULATION</button>
+            <h1 class="main-title">CAMPAIGN <span class="highlight">2028</span></h1>
+            <p class="subtitle" id="scenario-text">Loading Scenario...</p>
+            <button class="start-btn" onclick="app.goToScreen('candidate-screen')">ENTER THE RACE</button>
         </div>
     </section>
 
@@ -22,20 +22,13 @@
             <h2>Select Your Candidate</h2>
             <div class="cards-row" id="candidate-cards">
                 </div>
-
+            
             <div id="stance-editor" class="hidden">
-                <h3>Campaign Platform</h3>
-                <div class="sliders-grid" id="stance-sliders"></div>
-                <button class="next-btn" onclick="app.goToScreen('vp-screen')">CONFIRM NOMINATION</button>
-            </div>
-        </div>
-    </section>
-
-    <section id="vp-screen" class="screen">
-        <div class="panel-container">
-            <h2>Select Running Mate</h2>
-            <div class="cards-row" id="vp-cards">
+                <div class="action-row">
+                    <p class="instruction">Fine-tune your platform before the primaries.</p>
+                    <button class="next-btn" onclick="app.startGame()">LAUNCH CAMPAIGN</button>
                 </div>
+            </div>
         </div>
     </section>
 
@@ -51,19 +44,17 @@
             </div>
             <div class="stat">
                 <label>WEEKS LEFT</label>
-                <span id="hud-weeks">11</span>
+                <span id="hud-weeks">12</span>
             </div>
             <div class="stat">
                 <label>FUNDS</label>
-                <span id="hud-funds" class="money">$0M</span>
+                <span id="hud-funds" class="money">$5.0M</span>
             </div>
         </header>
 
         <div class="game-area">
-            <div id="map-wrapper">
-                <svg id="us-map" viewBox="0 0 950 600"></svg>
-                <div id="tooltip"></div>
-            </div>
+            <div id="map-container">
+                </div>
 
             <aside id="sidebar">
                 <div id="state-panel" class="hidden">
@@ -79,8 +70,8 @@
                     <div class="action-box">
                         <h4>Campaign Strategy</h4>
                         <select id="issue-select"></select>
-                        <div id="issue-impact">Impact: --</div>
-                        <button onclick="app.campaign()">CAMPAIGN ($100k)</button>
+                        <div id="issue-impact" style="margin-top:5px; font-size:0.8rem; color:#aaa;">Select an issue</div>
+                        <button onclick="app.campaign()">BUY ADS ($100k)</button>
                     </div>
 
                     <div class="issues-box">
@@ -88,7 +79,7 @@
                         <div id="sp-issues-list"></div>
                     </div>
                 </div>
-                <div id="empty-msg">Select a state to view data.</div>
+                <div id="empty-msg">Select a state to view polling data.</div>
             </aside>
         </div>
     </section>
