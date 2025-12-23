@@ -179,7 +179,7 @@ const app = {
     },
 
     /* --- MAIN GAME START --- */
-    startGame: function() {
+startGame: function() {
         this.data.funds = this.data.candidate.funds;
         this.goToScreen('game-screen');
         
@@ -190,29 +190,26 @@ const app = {
             img.style.display = "block";
         }
         
-        // Party-based Styling
+        // Dynamic Styling based on Party
         const pKey = this.data.selectedParty;
         const pName = PARTIES[pKey].name;
         
-        // Set Border Color
-        img.className = `hud-border-${pKey}`; 
+        // Reset and apply new border class
+        img.className = ""; 
+        img.classList.add(`hud-border-${pKey}`);
         
         // Set Text
         document.getElementById('hud-cand-name').innerText = this.data.candidate.name.toUpperCase();
         document.getElementById('hud-party-name').innerText = pName.toUpperCase() + " NOMINEE";
         
         this.updateHUD();
-        
-        // Init Map Interactions
         this.initMap();
-        
         this.log(`Campaign started as ${pName} Party.`);
     },
 
     /* --- MAP LOGIC --- */
     initMap: function() {
-        const svg = document.getElementById('us-map-svg');
-        
+        // No fetch needed, SVG is embedded
         for(let code in this.data.states) {
             let path = document.getElementById(code);
             if(path) {
@@ -223,9 +220,9 @@ const app = {
                 path.onmousemove = (e) => this.showTooltip(e, code);
                 path.onmouseleave = () => this.hideTooltip();
                 
-                // Reset Visuals
-                path.style.fill = "#333"; // Default before coloring
-                path.style.stroke = "#fff";
+                // Base Visuals
+                path.style.cursor = "pointer";
+                path.style.transition = "fill 0.2s, opacity 0.2s";
             }
         }
         this.colorMap();
@@ -406,6 +403,33 @@ const app = {
         t.innerText = msg;
         t.style.opacity = 1;
         setTimeout(() => t.style.opacity = 0, 2000);
+    },
+        
+    /* --- TOOLTIP HELPERS --- */
+    showTooltip: function(e, code) {
+        const tt = document.getElementById('map-tooltip');
+        const s = this.data.states[code];
+        
+        // Calculate Percentages
+        const dPct = s.poll.toFixed(1);
+        const rPct = (100 - s.poll).toFixed(1);
+        
+        // Set Content
+        tt.innerHTML = `
+            <h4>${s.name}</h4>
+            <div class="tip-row"><span style="color:#4fa1ff">DEM</span> <span>${dPct}%</span></div>
+            <div class="tip-row"><span style="color:#ff6b6b">REP</span> <span>${rPct}%</span></div>
+            <div class="tip-row" style="color:#aaa; font-size:0.75rem; margin-top:5px; border-top:1px solid #444; padding-top:4px;">${s.ev} Electoral Votes</div>
+        `;
+        
+        // Position
+        tt.style.display = 'block';
+        tt.style.left = (e.clientX + 15) + 'px';
+        tt.style.top = (e.clientY + 15) + 'px';
+    },
+
+    hideTooltip: function() {
+        document.getElementById('map-tooltip').style.display = 'none';
     }
 };
 
