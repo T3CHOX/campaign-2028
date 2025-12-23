@@ -1,8 +1,8 @@
 /* --- CONFIGURATION --- */
 const PARTIES = {
-    D: { name: "Democratic", color: "#0056b3", desc: "Liberal platform focused on social equity and climate." },
-    R: { name: "Republican", color: "#d32f2f", desc: "Conservative platform focused on deregulation and security." },
-    I: { name: "Independent", color: "#d4a017", desc: "Centrist platform focused on electoral reform." }
+    D: { name: "Democratic", color: "#0056b3", desc: "Liberal platform focused on social equity." },
+    R: { name: "Republican", color: "#d32f2f", desc: "Conservative platform focused on deregulation." },
+    I: { name: "Independent", color: "#d4a017", desc: "Centrist platform focused on reform." }
 };
 
 const CANDIDATES = [
@@ -61,6 +61,7 @@ const app = {
     },
 
     init: function() {
+        console.log("App Initializing...");
         this.data.states = JSON.parse(JSON.stringify(INIT_STATES));
         for(let s in this.data.states) {
             this.data.states[s].moe = (Math.random() * 2 + 2).toFixed(1);
@@ -80,13 +81,15 @@ const app = {
     /* --- PARTY SELECTION --- */
     renderParties: function() {
         const container = document.getElementById('party-cards');
+        if(!container) return;
         container.innerHTML = "";
+        
         for(let key in PARTIES) {
             const p = PARTIES[key];
             const el = document.createElement('div');
             el.className = "card";
             el.innerHTML = `
-                <div class="card-info" style="border-top: 5px solid ${p.color}">
+                <div class="card-info" style="border-top: 5px solid ${p.color}; padding-top:20px;">
                     <h3>${p.name} Party</h3>
                     <p>${p.desc}</p>
                 </div>
@@ -108,9 +111,15 @@ const app = {
         // Filter by party
         const filtered = CANDIDATES.filter(c => c.party === partyKey);
         
+        if(filtered.length === 0) {
+            container.innerHTML = "<p>No candidates available for this party in the demo.</p>";
+            return;
+        }
+
         filtered.forEach(c => {
             const el = document.createElement('div');
             el.className = 'card';
+            // Image handling with fallback
             const imgHTML = c.img ? `<img src="${c.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : "";
             el.innerHTML = `
                 <div class="portrait">
@@ -214,7 +223,7 @@ const app = {
             else if(s.poll > 45) fill = "#ff6b6b"; // Lean Rep
             else fill = "#d32f2f";                 // Safe Rep
             
-            // Tossup Gray
+            // Tossup Gray (48-52)
             if(s.poll >= 48 && s.poll <= 52) fill = "#64748b"; 
 
             p.style.fill = fill;
@@ -257,12 +266,21 @@ const app = {
         this.data.actionsLeft--;
         
         const s = this.data.states[this.data.selectedState];
-        // If playing D, +boost. If playing R, -boost (technically user is currently locked to D candidates in data structure for simplicity, but logic stands)
+        // If selected party is Dem, add to poll. If Rep, subtract.
         const boost = (Math.random() * 1.5) + 0.5;
+        
         if(this.data.selectedParty === 'D') s.poll += boost;
-        else s.poll -= boost;
+        else if(this.data.selectedParty === 'R') s.poll -= boost;
+        else {
+            // Independent logic: Pull towards 50?
+            if(s.poll > 50) s.poll -= boost; else s.poll += boost;
+        }
 
-        this.log(`State Ad in ${s.name}: +${boost.toFixed(1)}%`);
+        // Clamp
+        if(s.poll > 100) s.poll = 100;
+        if(s.poll < 0) s.poll = 0;
+
+        this.log(`State Ad in ${s.name}: Poll Shifted`);
         this.updateHUD();
         this.colorMap();
         this.clickState(this.data.selectedState);
@@ -278,7 +296,7 @@ const app = {
         for(let code in this.data.states) {
             const boost = (Math.random() * 0.5); 
             if(this.data.selectedParty === 'D') this.data.states[code].poll += boost;
-            else this.data.states[code].poll -= boost;
+            else if(this.data.selectedParty === 'R') this.data.states[code].poll -= boost;
         }
 
         this.log("National Ad Buy Complete.");
@@ -291,11 +309,24 @@ const app = {
         this.data.weeks--;
         this.data.actionsLeft = 3;
         
-        // Simple Opponent AI
+        // Opponent Logic (Undo player progress)
         for(let code in this.data.states) {
-            // Random fluctuations
-            let drift = (Math.random() * 2) - 1; 
-            this.data.states[code].poll += drift;
+            // Random fluctuations + "Opponent Attack"
+            let attack = 0;
+            // 30% chance opponent targets a state you are winning
+            if(this.data.selectedParty === 'D' && this.data.states[code].poll > 50 && Math.random() > 0.7) {
+                attack = (Math.random() * 1.5);
+                this.data.states[code].poll -= attack;
+            } else if (this.data.selectedParty === 'R' && this.data.states[code].poll < 50 && Math.random() > 0.7) {
+                 attack = (Math.random() * 1.5);
+                 this.data.states[code].poll += attack;
+            }
+        }
+        
+        // Events
+        if(Math.random() > 0.8) {
+             document.getElementById('modal-overlay').classList.remove('hidden');
+             document.getElementById('event-text').innerText = "Breaking News: Opponent scandal shakes up the polls in swing states!";
         }
 
         this.updateHUD();
