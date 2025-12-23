@@ -5,100 +5,135 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2024 Election Simulator</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <section id="selection-screen" class="screen active">
-        <div class="selection-container">
-            <h1>Select Your Candidate</h1>
-            
-            <div class="candidates-row" id="candidate-cards">
+    <section id="intro-screen" class="screen active">
+        <div class="overlay"></div>
+        <div class="intro-content">
+            <h1 class="game-title">CAMPAIGN <span class="accent-text">2024</span></h1>
+            <p class="game-subtitle">The Road to the White House Begins Here.</p>
+            <div class="intro-stats">
+                <span>Manage Funds</span> &bull; <span>Shift Polls</span> &bull; <span>Win 270</span>
+            </div>
+            <button class="primary-btn pulse" onclick="goToScreen('candidate-screen')">ENTER WAR ROOM</button>
+        </div>
+    </section>
+
+    <section id="candidate-screen" class="screen">
+        <div class="container">
+            <header class="screen-header">
+                <h2>Select Your Candidate</h2>
+                <p>Choose the leader of your ticket. This determines your starting funds and base appeal.</p>
+            </header>
+
+            <div class="card-grid" id="candidate-cards">
                 </div>
 
-            <div id="policy-editor" class="hidden">
-                <h3>Adjust Platform Stances</h3>
-                <p class="subtext">Fine-tune your campaign positions.</p>
-                <div class="sliders-grid" id="stance-sliders"></div>
-                
-                <button class="action-btn" onclick="goToVP()">Next: Select VP</button>
+            <div id="platform-editor" class="panel hidden">
+                <div class="panel-header">
+                    <h3>Adjust Campaign Platform</h3>
+                    <p>Fine-tune your stances. Moving left or right changes your appeal in swing states.</p>
+                </div>
+                <div class="sliders-grid" id="stance-sliders">
+                    </div>
+                <div class="panel-footer">
+                    <button class="primary-btn" onclick="goToScreen('vp-screen')">CONFIRM TICKET &rarr;</button>
+                </div>
             </div>
         </div>
     </section>
 
     <section id="vp-screen" class="screen">
-        <div class="selection-container">
-            <h1>Select Running Mate</h1>
-            <div class="candidates-row" id="vp-cards">
+        <div class="container">
+            <header class="screen-header">
+                <h2>Select Running Mate</h2>
+                <p>A VP pick can deliver a key swing state or boost specific voter demographics.</p>
+            </header>
+            
+            <div class="card-grid" id="vp-cards">
                 </div>
-            <button class="action-btn secondary" onclick="backToCandidate()">Back</button>
+            
+            <div class="navigation-controls">
+                <button class="secondary-btn" onclick="goToScreen('candidate-screen')">&larr; Back</button>
+            </div>
         </div>
     </section>
 
     <section id="game-screen" class="screen">
-        <header>
-            <div class="stat-box">
-                <div class="stat-label">Candidate</div>
-                <div class="stat-value" id="header-candidate">---</div>
+        <nav class="hud">
+            <div class="hud-group">
+                <div class="hud-label">CANDIDATE</div>
+                <div class="hud-value" id="hud-candidate">---</div>
             </div>
-            <div class="stat-box">
-                <div class="stat-label">Electoral Votes</div>
-                <div class="stat-value votes" id="ev-display">0 / 270</div>
+            <div class="hud-group center">
+                <div class="hud-label">ELECTORAL VOTES</div>
+                <div class="hud-value ev-text" id="hud-ev">0 / 270</div>
             </div>
-            <div class="stat-box">
-                <div class="stat-label">Weeks Left</div>
-                <div class="stat-value weeks" id="weeks-display">11</div>
+            <div class="hud-group right">
+                <div class="hud-item">
+                    <span class="hud-label">WEEKS</span>
+                    <span class="hud-value" id="hud-weeks">12</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">FUNDS</span>
+                    <span class="hud-value cash-text" id="hud-funds">$0M</span>
+                </div>
             </div>
-            <div class="stat-box">
-                <div class="stat-label">Funds</div>
-                <div class="stat-value funds" id="funds-display">$0.0M</div>
-            </div>
-        </header>
+        </nav>
 
-        <main>
-            <div id="map-container">
-                <svg id="us-map" viewBox="0 0 950 600"></svg>
-                <div id="tooltip"></div>
+        <div class="game-layout">
+            <div class="map-viewport">
+                <svg id="us-map" viewBox="0 0 950 600" preserveAspectRatio="xMidYMid meet"></svg>
+                <div id="map-tooltip" class="tooltip"></div>
             </div>
 
-            <aside>
-                <div id="state-panel" style="display:none;">
-                    <h2 id="state-name">State Name</h2>
+            <aside class="dashboard">
+                <div id="state-panel" class="hidden">
+                    <div class="state-header">
+                        <h2 id="sp-name">Select State</h2>
+                        <span class="badge" id="sp-ev">0 EV</span>
+                    </div>
                     
-                    <div class="lean-header">
-                        <span id="state-ev">0 EV</span>
-                        <span id="state-status">Tossup</span>
+                    <div class="lean-vis">
+                        <div class="lean-bar">
+                            <div class="lean-gradient"></div>
+                            <div class="lean-pip" id="sp-pip"></div>
+                        </div>
+                        <div class="lean-legend">
+                            <span>Rep</span>
+                            <span>Tossup</span>
+                            <span>Dem</span>
+                        </div>
                     </div>
 
-                    <div class="lean-bar-container">
-                        <div class="lean-bg"></div>
-                        <div class="lean-indicator" id="lean-marker"></div>
-                    </div>
-                    <div class="lean-labels">
-                        <span>Rep</span>
-                        <span>50/50</span>
-                        <span>Dem</span>
-                    </div>
-
-                    <div class="panel-section">
-                        <h3>Campaign Strategy</h3>
-                        <select id="issue-select"></select>
-                        <div id="issue-feedback"></div>
-                        <button class="campaign-btn" onclick="runCampaign()">CAMPAIGN ($100k)</button>
+                    <div class="panel-box">
+                        <h4>Campaign Strategy</h4>
+                        <label>Target Issue</label>
+                        <select id="sp-issue-select"></select>
+                        <p id="sp-feedback" class="feedback-text">Select an issue...</p>
+                        <button class="action-btn" onclick="runCampaign()">
+                            LAUNCH AD ($100k)
+                        </button>
                     </div>
 
-                    <div class="panel-section">
-                        <h3>State Priorities</h3>
-                        <div id="state-issues-list"></div>
+                    <div class="panel-box">
+                        <h4>Voter Priorities</h4>
+                        <div id="sp-issue-list"></div>
                     </div>
                 </div>
+
                 <div id="empty-state-msg">
-                    Click a state to view polling and campaign.
+                    <div class="icon">📍</div>
+                    <p>Select a state on the map to view polling data and launch ads.</p>
                 </div>
             </aside>
-        </main>
+        </div>
     </section>
 
-    <div id="notification-area"></div>
+    <div id="notification-toast"></div>
+
     <script src="script.js"></script>
 </body>
 </html>
