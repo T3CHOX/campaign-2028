@@ -57,6 +57,34 @@
         </div>
     </section>
 
+    <section id="opponent-screen" class="screen">
+        <header class="news-header">
+            <div class="logo">DECISION <span class="red-text">2028</span></div>
+        </header>
+        <div class="panel-container">
+            <h2 class="section-title">SELECT YOUR OPPONENT</h2>
+            <p class="instruction-text">Choose the primary challenger. Third parties can be toggled.</p>
+            
+            <div class="toggle-wrapper">
+                <span class="toggle-label">INCLUDE THIRD PARTIES?</span>
+                <label class="switch">
+                    <input type="checkbox" id="third-party-toggle" checked onchange="app.toggleThirdParties()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="opponent-section">
+                <h3>Major Party Challenger</h3>
+                <div class="cards-row" id="opponent-cards-major"></div>
+            </div>
+
+            <div class="opponent-section" id="third-party-section">
+                <h3>Third Party Challengers</h3>
+                <div class="cards-row" id="opponent-cards-minor"></div>
+            </div>
+        </div>
+    </section>
+
     <section id="game-screen" class="screen">
         <header class="hud-header">
             <div class="hud-left">
@@ -208,4 +236,5 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
