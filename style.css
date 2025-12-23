@@ -1,0 +1,115 @@
+:root { 
+    --bg: #1a1a1d; 
+    --card-bg: #2c2c2e; 
+    --text: #eee; 
+    --blue: #4facfe; 
+    --red: #ff5e62; 
+    --gold: #ffd700;
+}
+
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background: var(--bg); 
+    color: var(--text); 
+    margin: 0; 
+    padding-bottom: 50px;
+}
+
+/* Screen Management */
+.screen { display: none; padding: 20px; max-width: 1000px; margin: 0 auto; }
+.screen.active { display: block; animation: fadeIn 0.5s; }
+
+/* Intro Screen */
+.main-title { text-align: center; font-size: 3rem; letter-spacing: 2px; margin-bottom: 10px; }
+.subtitle { text-align: center; color: #888; margin-bottom: 40px; }
+.columns { display: flex; gap: 40px; }
+.party-col { flex: 1; }
+
+/* Cards */
+.card { 
+    background: var(--card-bg); 
+    padding: 20px; 
+    margin: 15px 0; 
+    cursor: pointer; 
+    border: 1px solid #444; 
+    border-radius: 8px; 
+    transition: all 0.2s; 
+    width: 100%;
+    text-align: left;
+    color: white;
+}
+.card:hover { transform: translateY(-3px); border-color: #888; background: #3a3a3d; }
+.card h3 { margin: 0 0 5px 0; }
+.card p { margin: 0; color: #bbb; font-size: 0.9rem; }
+
+/* VP Grid */
+.grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+
+/* Dashboard */
+.game-header { 
+    background: #000; 
+    padding: 15px 20px; 
+    border-bottom: 1px solid #444; 
+    position: sticky; 
+    top: 0; 
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.stats-row { display: flex; gap: 20px; }
+.stat-box { font-family: monospace; font-size: 1.1rem; }
+
+.fundraise-btn { 
+    background: var(--gold); 
+    color: black; 
+    border: none; 
+    padding: 10px 20px; 
+    font-weight: bold; 
+    border-radius: 4px; 
+    cursor: pointer;
+}
+.fundraise-btn:hover { background: #ffed4a; }
+
+/* States Grid */
+.states-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 20px; }
+
+.state-card { 
+    background: #333; 
+    padding: 12px; 
+    border-radius: 6px; 
+    border-top: 4px solid #555; 
+}
+.state-card.win { border-top-color: var(--blue); }
+.state-card.lose { border-top-color: var(--red); }
+
+.state-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px; }
+.state-stats { font-size: 0.85rem; color: #ccc; margin-top: 5px; display: flex; justify-content: space-between; }
+
+.campaign-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 6px;
+    background: #555;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.campaign-btn:hover { background: #777; }
+
+.progress-bar { background: #222; height: 8px; width: 100%; border-radius: 4px; overflow: hidden; }
+.fill { height: 100%; transition: width 0.3s; }
+.win .fill { background: var(--blue); }
+.lose .fill { background: var(--red); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+    .columns { flex-direction: column; gap: 20px; }
+    .game-header { flex-direction: column; align-items: flex-start; }
+}

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Trail 2028</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="screen-intro" class="screen active">
+        <h1 class="main-title">CAMPAIGN 2028</h1>
+        <p class="subtitle">Select your party nominee to begin.</p>
+        
+        <div class="columns">
+            <div class="party-col">
+                <h2 style="color: #4facfe; border-bottom: 2px solid #4facfe;">DEMOCRATS</h2>
+                <div id="dem-candidates">
+                    <button class="card candidate-card" onclick="game.selectCandidate('newsom', 'democrats')">
+                        <h3>Gavin Newsom</h3>
+                        <p>Buff: Media Savvy (Cash x1.2)</p>
+                    </button>
+                    <button class="card candidate-card" onclick="game.selectCandidate('whitmer', 'democrats')">
+                        <h3>Gretchen Whitmer</h3>
+                        <p>Buff: Big Gretch (Midwest Bonus)</p>
+                    </button>
+                    <button class="card candidate-card" onclick="game.selectCandidate('harris', 'democrats')">
+                        <h3>Kamala Harris</h3>
+                        <p>Buff: Base Mobilizer (High Floor)</p>
+                    </button>
+                </div>
+            </div>
+            <div class="party-col">
+                <h2 style="color: #ff5e62; border-bottom: 2px solid #ff5e62;">REPUBLICANS</h2>
+                <div id="gop-candidates">
+                    <button class="card candidate-card" onclick="game.selectCandidate('vance', 'republicans')">
+                        <h3>JD Vance</h3>
+                        <p>Buff: Heir Apparent (Poll Boost)</p>
+                    </button>
+                    <button class="card candidate-card" onclick="game.selectCandidate('desantis', 'republicans')">
+                        <h3>Ron DeSantis</h3>
+                        <p>Buff: Culture Warrior (Florida Lock)</p>
+                    </button>
+                    <button class="card candidate-card" onclick="game.selectCandidate('ramaswamy', 'republicans')">
+                        <h3>Vivek Ramaswamy</h3>
+                        <p>Buff: CEO (Cash x1.5)</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-vp" class="screen">
+        <h1>Select Running Mate</h1>
+        <p>Your VP provides critical state bonuses.</p>
+        <div id="vp-options" class="grid-container">
+            </div>
+    </div>
+
+    <div id="screen-dashboard" class="screen">
+        <header class="game-header">
+            <div class="candidate-info">
+                <div id="display-name" style="font-weight:bold;">Candidate</div>
+            </div>
+            <div class="stats-row">
+                <div class="stat-box">💰 <span id="display-funds">0</span></div>
+                <div class="stat-box">🗳️ <span id="display-ev">0</span> / 270</div>
+                <div class="stat-box">📅 Week <span id="display-turn">1</span></div>
+            </div>
+            <button class="fundraise-btn" onclick="game.fundraise()">FUNDRAISE ($$$)</button>
+        </header>
+
+        <div class="game-area">
+            <h3>Battleground States</h3>
+            <main id="states-grid" class="states-grid">
+                </main>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
