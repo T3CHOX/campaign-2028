@@ -5,132 +5,212 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Campaign Trail 2028</title>
     <style>
-        /* --- CSS STYLES --- */
-        :root { --bg: #121214; --panel: #1e1e24; --text: #fff; --blue: #00AEF3; --red: #E81B23; --gold: #F2C75C; --green: #4caf50; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; text-align: center; }
-        
-        /* LAYOUT */
-        .screen { display: none; max-width: 1000px; margin: 0 auto; animation: fadeIn 0.5s; }
-        .screen.active { display: block; }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-
-        /* HEADER & HUD */
-        .dashboard-hud { display: flex; justify-content: space-between; background: #000; padding: 15px; border-bottom: 1px solid #333; margin-bottom: 20px; border-radius: 8px; }
-        .hud-item span { display: block; }
-        .hud-label { font-size: 0.7rem; color: #888; }
-        .hud-value { font-size: 1.2rem; font-weight: bold; }
-
-        /* MAP AREA */
-        .map-wrapper { 
-            position: relative; 
-            background: #2b303b; 
-            border: 2px solid #444; 
-            border-radius: 8px; 
-            height: 600px; 
-            overflow: hidden; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* --- PROFESSIONAL DASHBOARD STYLES --- */
+        :root {
+            --bg-dark: #121214;
+            --bg-panel: #1e1e24;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --accent: #ffd700;
+            --blue: #2d9cdb;
+            --red: #eb5757;
+            --border: #333;
         }
-        svg { width: 100%; height: 100%; display: block; }
-        /* Map Interaction Styles */
-        path { fill: #ccc; stroke: #fff; stroke-width: 0.5px; transition: 0.2s; cursor: pointer; }
-        path:hover { opacity: 0.8; stroke-width: 2px; stroke: #fff; }
 
-        /* CONTROLS */
-        .controls-area { background: var(--panel); padding: 15px; border-radius: 8px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .legend { display: flex; gap: 10px; font-size: 0.9rem; }
-        .dot { width: 12px; height: 12px; display: inline-block; border-radius: 50%; }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden; /* Prevents scrolling on dashboard */
+        }
+
+        /* SCREEN MANAGER */
+        .screen { display: none; height: 100vh; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .screen.active { display: block; animation: fadeEffect 0.4s; }
+        @keyframes fadeEffect { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: translateY(0);} }
+
+        /* INTRO SCREEN */
+        .intro-wrapper {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
+            text-align: center; max-width: 800px; margin: 0 auto;
+        }
+        .intro-title { font-size: 4rem; font-weight: 800; letter-spacing: 2px; margin-bottom: 20px; border-bottom: 4px solid var(--accent); }
+        .btn-large {
+            padding: 15px 50px; font-size: 1.5rem; font-weight: bold; 
+            background: var(--text-main); color: var(--bg-dark); border: none; cursor: pointer;
+            transition: transform 0.2s; border-radius: 4px;
+        }
+        .btn-large:hover { transform: scale(1.05); background: #fff; }
+
+        /* CARD GRIDS (Party/Candidate Select) */
+        .grid-container {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;
+            max-width: 1200px; margin: 40px auto;
+        }
+        .card {
+            background: var(--bg-panel); border: 1px solid var(--border); padding: 20px;
+            border-radius: 8px; cursor: pointer; transition: all 0.2s;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        .card:hover { border-color: var(--accent); transform: translateY(-5px); background: #25252b; }
+        .card img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; background: #000; }
+        .card h3 { margin: 0; font-size: 1.2rem; }
+        .card p { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
+
+        /* MAIN GAME DASHBOARD */
+        .dashboard-layout {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            height: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            gap: 10px;
+        }
+
+        /* 1. HUD (Top Bar) */
+        .hud {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--bg-panel); padding: 15px 30px; border-radius: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+        .hud-stat { text-align: center; }
+        .hud-stat label { display: block; font-size: 0.75rem; color: var(--text-muted); letter-spacing: 1px; }
+        .hud-stat div { font-size: 1.4rem; font-weight: bold; }
+
+        /* 2. MAP CONTAINER */
+        .map-container {
+            background: #4a5a6b; /* Ocean Color */
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        /* Strict SVG Styling */
+        svg { width: 100%; height: 100%; max-height: 70vh; display: block; }
+        path {
+            stroke: #ffffff; stroke-width: 0.5px;
+            transition: fill 0.2s ease; cursor: pointer;
+        }
+        path:hover { stroke-width: 2px; filter: brightness(1.2); }
+
+        /* 3. CONTROL PANEL (Bottom) */
+        .controls {
+            background: var(--bg-panel); padding: 15px; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .legend { display: flex; gap: 15px; font-size: 0.85rem; }
+        .dot { width: 12px; height: 12px; display: inline-block; border-radius: 50%; margin-right: 5px; }
         
-        /* COLORS */
-        .safe-d { background: #003f5c; } .lean-d { background: #58508d; }
-        .tossup { background: #ccc; }
-        .lean-r { background: #ff6361; } .safe-r { background: #bc5090; }
+        .action-box { display: flex; align-items: center; gap: 20px; }
+        .btn-campaign {
+            background: var(--green); color: white; border: none;
+            padding: 12px 30px; font-weight: bold; font-size: 1rem;
+            border-radius: 4px; cursor: pointer;
+        }
+        .btn-campaign:disabled { background: #444; cursor: not-allowed; opacity: 0.7; }
 
-        /* CARDS & BUTTONS */
-        .primary-btn { background: #fff; border: none; padding: 15px 30px; font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top: 20px; }
-        .action-btn { background: var(--green); color: white; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 4px; }
-        .action-btn:disabled { background: #555; cursor: not-allowed; }
-        
-        .grid-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; }
-        .card { background: var(--panel); padding: 15px; border: 1px solid #333; border-radius: 6px; cursor: pointer; text-align: left; display: flex; gap: 10px; align-items: center; }
-        .card:hover { border-color: #fff; background: #2a2a2a; }
-        .card img { width: 60px; height: 60px; object-fit: cover; background: #000; }
-
-        /* TOOLTIP */
-        .tooltip { position: absolute; background: rgba(0,0,0,0.9); padding: 8px; border-radius: 4px; pointer-events: none; display: none; z-index: 100; border: 1px solid #555; }
+        /* Tooltip */
+        #tooltip {
+            position: absolute; background: rgba(0,0,0,0.9); color: white;
+            padding: 10px; border-radius: 4px; pointer-events: none;
+            display: none; z-index: 1000; border: 1px solid #555;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
 
     <div id="screen-intro" class="screen active">
-        <h1>THE CAMPAIGN TRAIL 2028</h1>
-        <p>The nation is divided. Can you win 270 Electoral Votes?</p>
-        <button class="primary-btn" onclick="game.setScreen('screen-party')">START CAMPAIGN</button>
+        <div class="intro-wrapper">
+            <h1 class="intro-title">CAMPAIGN 2028</h1>
+            <p style="font-size: 1.2rem; max-width: 600px; margin-bottom: 40px;">
+                The polls are open. The map is shifting. Select your candidate and navigate the electoral college to secure 270 votes.
+            </p>
+            <button class="btn-large" onclick="game.setScreen('screen-party')">ENTER SIMULATION</button>
+        </div>
     </div>
 
     <div id="screen-party" class="screen">
-        <h2>SELECT PARTY</h2>
-        <div class="grid-list" style="justify-content: center;">
-            <div class="card" onclick="game.selectParty('D')" style="border-left: 5px solid var(--blue)"><h3>DEMOCRATS</h3></div>
-            <div class="card" onclick="game.selectParty('R')" style="border-left: 5px solid var(--red)"><h3>REPUBLICANS</h3></div>
-            <div class="card" onclick="game.selectParty('I')" style="border-left: 5px solid var(--gold)"><h3>INDEPENDENT</h3></div>
+        <h2 style="text-align:center; font-size: 2rem;">SELECT YOUR PARTY</h2>
+        <div class="grid-container">
+            <div class="card" onclick="game.selectParty('D')" style="border-top: 5px solid var(--blue)">
+                <h1>DEMOCRATS</h1>
+                <p>Focus: Healthcare, Climate, Equality</p>
+            </div>
+            <div class="card" onclick="game.selectParty('R')" style="border-top: 5px solid var(--red)">
+                <h1>REPUBLICANS</h1>
+                <p>Focus: Economy, Borders, Tradition</p>
+            </div>
+            <div class="card" onclick="game.selectParty('I')" style="border-top: 5px solid var(--accent)">
+                <h1>INDEPENDENT</h1>
+                <p>Focus: Reform, Unity, Innovation</p>
+            </div>
         </div>
     </div>
 
     <div id="screen-candidate" class="screen">
-        <h2 id="party-title">Select Candidate</h2>
-        <div id="candidate-list" class="grid-list"></div>
+        <h2 style="text-align:center;" id="party-name-display">Select Candidate</h2>
+        <div id="candidate-list" class="grid-container"></div>
     </div>
 
     <div id="screen-vp" class="screen">
-        <h2>Select Running Mate</h2>
-        <div id="vp-list" class="grid-list"></div>
+        <h2 style="text-align:center;">Select Running Mate (VP)</h2>
+        <p style="text-align:center; color: var(--text-muted)">Your VP adds polling bonuses to their home state.</p>
+        <div id="vp-list" class="grid-container"></div>
     </div>
 
     <div id="screen-map" class="screen">
-        <header class="dashboard-hud">
-            <div class="hud-item"><span class="hud-label">CANDIDATE</span><span id="hud-candidate" class="hud-value">...</span></div>
-            <div class="hud-item"><span class="hud-label">ELECTORAL VOTES</span><span id="hud-ev" class="hud-value">0 / 270</span></div>
-            <div class="hud-item"><span class="hud-label">WEEKS LEFT</span><span id="hud-turn" class="hud-value">12</span></div>
-            <div class="hud-item"><span class="hud-label">FUNDS</span><span id="hud-funds" class="hud-value">$0</span></div>
-        </header>
+        <div class="dashboard-layout">
+            
+            <header class="hud">
+                <div class="hud-stat"><label>CANDIDATE</label><div id="hud-name">...</div></div>
+                <div class="hud-stat"><label>ELECTORAL VOTES</label><div id="hud-ev">0 / 270</div></div>
+                <div class="hud-stat"><label>WEEKS LEFT</label><div id="hud-turn">12</div></div>
+                <div class="hud-stat"><label>FUNDS</label><div id="hud-funds">$0</div></div>
+            </header>
 
-        <div class="map-wrapper">
-            <div id="map-container" style="width:100%; height:100%;">Loading map.svg...</div>
-            <div id="tooltip" class="tooltip"></div>
-        </div>
+            <div class="map-container">
+                <div id="map-target" style="width:100%; height:100%;">loading map...</div>
+                <div id="tooltip"></div>
+            </div>
 
-        <div class="controls-area">
-            <div class="legend">
-                <div><span class="dot safe-d"></span> Safe D</div>
-                <div><span class="dot lean-d"></span> Lean D</div>
-                <div><span class="dot tossup"></span> Tossup</div>
-                <div><span class="dot lean-r"></span> Lean R</div>
-                <div><span class="dot safe-r"></span> Safe R</div>
-            </div>
-            <div>
-                <h3 id="state-name" style="margin:0">Select State</h3>
-                <div id="state-poll" style="font-size:0.9rem; margin-bottom:5px;">--</div>
-                <button id="btn-campaign" class="action-btn" disabled onclick="game.campaign()">CAMPAIGN ($100k)</button>
-            </div>
+            <footer class="controls">
+                <div class="legend">
+                    <div style="color:#2d9cdb">■ Safe Dem</div>
+                    <div style="color:#58508d">■ Lean Dem</div>
+                    <div style="color:#ccc">■ Tossup</div>
+                    <div style="color:#eb5757">■ Safe Rep</div>
+                </div>
+                <div class="action-box">
+                    <div style="text-align:right;">
+                        <div id="sel-state-name" style="font-weight:bold; font-size:1.1rem;">Select a State</div>
+                        <div id="sel-state-poll" style="font-size:0.9rem; color:#aaa;">--</div>
+                    </div>
+                    <button id="btn-campaign" class="btn-campaign" onclick="game.campaign()" disabled>CAMPAIGN ($100k)</button>
+                </div>
+            </footer>
+
         </div>
     </div>
 
     <script>
-        // --- DATA ---
+        // --- GAME DATA ---
         const DATA = {
-            D: { name: "Democrats", color: "#00AEF3", list: [
+            D: { name: "Democratic Party", list: [
                 {id:"newsom", name:"Gavin Newsom", home:"CA", img:"images/newsom.jpg"},
                 {id:"harris", name:"Kamala Harris", home:"CA", img:"images/harris.jpg"},
                 {id:"whitmer", name:"Gretchen Whitmer", home:"MI", img:"images/whitmer.jpg"}
             ]},
-            R: { name: "Republicans", color: "#E81B23", list: [
+            R: { name: "Republican Party", list: [
                 {id:"vance", name:"JD Vance", home:"OH", img:"images/vance.jpg"},
                 {id:"desantis", name:"Ron DeSantis", home:"FL", img:"images/desantis.jpg"},
                 {id:"haley", name:"Nikki Haley", home:"SC", img:"images/haley.jpg"}
             ]},
-            I: { name: "Independents", color: "#F2C75C", list: [
+            I: { name: "Independents", list: [
                 {id:"yang", name:"Andrew Yang", home:"NY", img:"images/yang.jpg"}
             ]}
         };
@@ -149,7 +229,7 @@
             "WY":{ev:3, p:25}
         };
 
-        // --- GAME ENGINE ---
+        // --- ENGINE ---
         const game = {
             party: null, player: null, vp: null, funds: 2000000, week: 1, maxWeeks: 12,
             states: JSON.parse(JSON.stringify(STATES)),
@@ -163,29 +243,44 @@
             selectParty(p) {
                 this.party = p;
                 const d = DATA[p];
-                document.getElementById('party-title').innerText = d.name;
-                document.getElementById('party-title').style.color = d.color;
-                
+                document.getElementById('party-name-display').innerText = d.name;
                 const list = document.getElementById('candidate-list');
                 list.innerHTML = '';
                 d.list.forEach(c => {
                     list.innerHTML += `<div class="card" onclick="game.selectCandidate('${c.id}')">
-                        <img src="${c.img}" onerror="this.src='https://via.placeholder.com/60'">
-                        <div><h3>${c.name}</h3><small>${c.home}</small></div>
+                        <img src="${c.img}" onerror="this.src='https://via.placeholder.com/100'">
+                        <h3>${c.name}</h3><p>${c.home}</p>
                     </div>`;
                 });
+                // Custom
+                list.innerHTML += `<div class="card" onclick="game.createCustom()">
+                    <div style="width:100px;height:100px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:15px;">+</div>
+                    <h3>Custom</h3><p>Create New</p>
+                </div>`;
                 this.setScreen('screen-candidate');
+            },
+
+            createCustom() {
+                const name = prompt("Candidate Name:");
+                const home = prompt("Home State Code (e.g. TX):").toUpperCase();
+                if(name && home && STATES[home]) {
+                    this.player = {id:"custom", name:name, home:home, img:""};
+                    this.goToVP();
+                } else alert("Invalid State!");
             },
 
             selectCandidate(id) {
                 this.player = DATA[this.party].list.find(x => x.id === id);
-                // VP Logic
+                this.goToVP();
+            },
+
+            goToVP() {
                 const list = document.getElementById('vp-list');
                 list.innerHTML = '';
-                DATA[this.party].list.filter(x => x.id !== id).forEach(c => {
+                DATA[this.party].list.filter(x => x.id !== this.player.id).forEach(c => {
                     list.innerHTML += `<div class="card" onclick="game.startGame('${c.id}')">
-                        <img src="${c.img}" onerror="this.src='https://via.placeholder.com/60'">
-                        <div><h3>${c.name}</h3><small>Boosts ${c.home}</small></div>
+                        <img src="${c.img}" onerror="this.src='https://via.placeholder.com/100'">
+                        <h3>${c.name}</h3><p>Boosts ${c.home}</p>
                     </div>`;
                 });
                 this.setScreen('screen-vp');
@@ -193,7 +288,6 @@
 
             async startGame(vpId) {
                 this.vp = DATA[this.party].list.find(x => x.id === vpId);
-                
                 // Apply Bonuses
                 if(this.party === 'D') {
                     if(this.states[this.player.home]) this.states[this.player.home].p += 10;
@@ -202,72 +296,86 @@
                     if(this.states[this.player.home]) this.states[this.player.home].p -= 10;
                     if(this.states[this.vp.home]) this.states[this.vp.home].p -= 5;
                 }
-
+                
                 this.setScreen('screen-map');
                 this.updateHUD();
                 await this.loadMap();
             },
 
             async loadMap() {
-                const con = document.getElementById('map-container');
+                const container = document.getElementById('map-target');
                 try {
                     const res = await fetch('map.svg');
                     if(!res.ok) throw new Error("map.svg not found");
-                    con.innerHTML = await res.text();
+                    container.innerHTML = await res.text();
                     
-                    // FIX: The SVG uses classes (.tx) but we need to link them to our data (TX)
                     setTimeout(() => {
-                        const svg = con.querySelector('svg');
-                        Object.keys(this.states).forEach(code => {
-                            // Find path by class (lowercase)
-                            const path = svg.querySelector(`.${code.toLowerCase()}`);
-                            if(path) {
-                                path.id = code; // Assign ID for easier access
-                                path.onclick = () => this.clickState(code);
-                                path.onmouseenter = (e) => this.showTip(e, code);
-                                path.onmouseleave = () => document.getElementById('tooltip').style.display = 'none';
-                            }
-                        });
+                        this.initMap(); 
                         this.colorMap();
-                    }, 100);
+                    }, 50);
                 } catch(e) {
-                    con.innerHTML = `<h3 style="color:red; margin-top:50px">Error: map.svg not found.<br>Upload map.svg to your repo!</h3>`;
+                    container.innerHTML = `<div style="color:red;padding:20px;">Error: map.svg not found. Ensure it is uploaded to GitHub.</div>`;
                 }
+            },
+
+            initMap() {
+                const svg = document.querySelector('svg');
+                // Link SVG paths to Data
+                Object.keys(this.states).forEach(code => {
+                    const lowCode = code.toLowerCase();
+                    // Try to find the path by class (.tx)
+                    const path = svg.querySelector(`.${lowCode}`);
+                    if(path) {
+                        path.id = code; // Standardize ID
+                        path.onclick = () => this.clickState(code);
+                        path.onmouseenter = (e) => this.showTooltip(e, code);
+                        path.onmouseleave = () => document.getElementById('tooltip').style.display = 'none';
+                        
+                        // Force override styling
+                        path.style.cursor = 'pointer';
+                        path.style.transition = 'fill 0.2s';
+                    }
+                });
             },
 
             colorMap() {
                 Object.keys(this.states).forEach(code => {
                     const el = document.getElementById(code);
                     if(!el) return;
+                    
                     const p = this.states[code].p;
-                    let c = "#ccc";
-                    if(p >= 60) c = "#003f5c";
-                    else if(p >= 54) c = "#00AEF3";
-                    else if(p >= 51) c = "#58508d";
-                    else if(p <= 40) c = "#bc5090";
-                    else if(p <= 46) c = "#E81B23";
-                    else if(p <= 49) c = "#ff6361";
-                    el.style.fill = c;
+                    let color = "#ccc";
+                    
+                    if(p >= 60) color = "#003f5c";
+                    else if(p >= 54) color = "#2d9cdb";
+                    else if(p >= 51) color = "#58508d";
+                    else if(p <= 40) color = "#bc5090";
+                    else if(p <= 46) color = "#eb5757";
+                    else if(p <= 49) color = "#ff6361";
+
+                    // FORCE THE COLOR (Important!)
+                    el.style.setProperty('fill', color, 'important');
+                    el.setAttribute('fill', color);
                 });
             },
 
             clickState(code) {
                 this.selState = code;
                 const s = this.states[code];
-                document.getElementById('state-name').innerText = `${code} (${s.ev} EV)`;
-                document.getElementById('state-poll').innerText = `Poll: ${s.p.toFixed(1)}% Dem`;
+                document.getElementById('sel-state-name').innerText = `${code} (${s.ev} Votes)`;
+                document.getElementById('sel-state-poll').innerText = `Polling: ${s.p.toFixed(1)}% Dem`;
                 
                 const btn = document.getElementById('btn-campaign');
                 btn.disabled = false;
-                btn.innerText = `CAMPAIGN IN ${code}`;
+                btn.innerText = `CAMPAIGN IN ${code} ($100k)`;
             },
 
             campaign() {
-                if(this.funds < 100000) return alert("No money!");
+                if(this.funds < 100000) return alert("Insufficient Funds!");
                 this.funds -= 100000;
                 
                 const s = this.states[this.selState];
-                const boost = Math.random() * 2 + 0.5;
+                const boost = (Math.random() * 2) + 0.5;
                 if(this.party === 'D') s.p += boost; else s.p -= boost;
                 
                 this.week++;
@@ -279,7 +387,7 @@
             },
 
             updateHUD() {
-                document.getElementById('hud-candidate').innerText = this.player.name;
+                document.getElementById('hud-name').innerText = this.player.name;
                 document.getElementById('hud-funds').innerText = `$${(this.funds/1000000).toFixed(1)}M`;
                 document.getElementById('hud-turn').innerText = 12 - this.week;
                 
@@ -290,17 +398,20 @@
                 document.getElementById('hud-ev').innerText = `${this.party==='D'?dev:rev} / 270`;
             },
 
-            showTip(e, code) {
-                const t = document.getElementById('tooltip');
+            showTooltip(e, code) {
+                const tip = document.getElementById('tooltip');
                 const s = this.states[code];
-                t.style.display = 'block';
-                t.style.left = e.pageX + 15 + 'px';
-                t.style.top = e.pageY + 15 + 'px';
-                t.innerHTML = `<strong>${code}</strong><br>${s.p.toFixed(1)}% Dem`;
+                tip.style.display = 'block';
+                tip.style.left = (e.pageX + 15) + 'px';
+                tip.style.top = (e.pageY + 15) + 'px';
+                tip.innerHTML = `<strong>${code}</strong><br>${s.p.toFixed(1)}% Dem`;
             },
 
             endGame() {
-                alert("Election Over! Check EV count.");
+                let dev = 0;
+                Object.values(this.states).forEach(s => { if(s.p >= 50) dev += s.ev; });
+                const won = (this.party === 'D' && dev >= 270) || (this.party !== 'D' && dev < 270);
+                alert(won ? "VICTORY! You won the presidency." : "DEFEAT. Better luck next time.");
                 location.reload();
             }
         };
