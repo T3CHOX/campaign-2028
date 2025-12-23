@@ -106,15 +106,24 @@
 
             <div class="hud-right">
                 <div class="stat-group">
+                    <label>ENERGY</label>
+                    <div class="energy-container" id="hud-energy">
+                        </div>
+                </div>
+                <div class="stat-group">
                     <label>WAR CHEST</label>
                     <span class="money" id="hud-funds">$0.0M</span>
                 </div>
                 <div class="stat-group">
-                    <label>DATE</label>
-                    <span class="date-display" id="hud-date">AUG 4</span>
+                    <label>WEEK OF</label>
+                    <span class="date-display" id="hud-date">JUL 4</span>
                 </div>
-                <div class="stat-group">
+                <div class="stat-group" style="display:flex; flex-direction:column; align-items:flex-end;">
                     <button class="next-turn-btn" onclick="app.nextWeek()">NEXT WEEK &rarr;</button>
+                    <div class="turn-controls">
+                        <button class="mini-btn" onclick="app.undoLastAction()">UNDO</button>
+                        <button class="mini-btn" onclick="app.resetTurn()">RESET</button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -235,3 +244,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
