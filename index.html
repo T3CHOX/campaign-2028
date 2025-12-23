@@ -3,52 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Campaign 2028</title>
+    <title>Decision 2028 | Election Simulator</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&family=Merriweather:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <section id="intro-screen" class="screen active">
+        <div class="intro-overlay"></div>
         <div class="intro-content">
-            <h1 class="main-title">CAMPAIGN <span class="highlight">2028</span></h1>
+            <div class="breaking-banner">BREAKING NEWS</div>
+            <h1 class="main-title">DECISION <span class="highlight">2028</span></h1>
             <p class="subtitle" id="scenario-text">Loading Scenario...</p>
-            <button class="start-btn" onclick="app.goToScreen('candidate-screen')">ENTER THE RACE</button>
+            <button class="start-btn" onclick="app.goToScreen('candidate-screen')">START CAMPAIGN</button>
         </div>
     </section>
 
     <section id="candidate-screen" class="screen">
+        <header class="news-header">
+            <div class="logo">DECISION <span class="red-text">2028</span></div>
+            <div class="ticker-wrap">
+                <div class="ticker-move">
+                    Breaking: Primaries heat up as candidates announce bids... Analysts predict tightest race in decades... Rust belt remains key battleground...
+                </div>
+            </div>
+        </header>
+        
         <div class="panel-container">
-            <h2>Select Your Candidate</h2>
+            <h2 class="section-title">CHOOSE YOUR NOMINEE</h2>
             <div class="cards-row" id="candidate-cards">
                 </div>
             
             <div id="stance-editor" class="hidden">
-                <div class="action-row">
-                    <p class="instruction">Fine-tune your platform before the primaries.</p>
-                    <button class="next-btn" onclick="app.startGame()">LAUNCH CAMPAIGN</button>
+                <div class="stance-box">
+                    <h3>Platform Strategy</h3>
+                    <p>Adjust your starting positions. (Impacts base turnout)</p>
+                    <div class="sliders-grid" id="stance-sliders"></div>
+                    <button class="next-btn" onclick="app.startGame()">ACCEPT NOMINATION</button>
                 </div>
             </div>
         </div>
     </section>
 
     <section id="game-screen" class="screen">
-        <header>
-            <div class="stat">
-                <label>CANDIDATE</label>
-                <span id="hud-cand">---</span>
+        <header class="hud-header">
+            <div class="hud-left">
+                <div class="candidate-badge" id="hud-cand-badge">
+                    <img id="hud-img" src="" alt="">
+                    <div>
+                        <span class="cand-name" id="hud-cand-name">HARRIS</span>
+                        <span class="cand-party">DEMOCRATIC NOMINEE</span>
+                    </div>
+                </div>
             </div>
-            <div class="stat">
-                <label>ELECTORAL VOTES</label>
-                <span id="hud-ev" class="ev-score">0 / 270</span>
+            
+            <div class="hud-center">
+                <div class="ev-display">
+                    <span class="dem-score" id="score-dem">0</span>
+                    <span class="divider">270 TO WIN</span>
+                    <span class="rep-score" id="score-rep">0</span>
+                </div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" id="ev-bar"></div></div>
             </div>
-            <div class="stat">
-                <label>WEEKS LEFT</label>
-                <span id="hud-weeks">12</span>
-            </div>
-            <div class="stat">
-                <label>FUNDS</label>
-                <span id="hud-funds" class="money">$5.0M</span>
+
+            <div class="hud-right">
+                <div class="stat-group">
+                    <label>WAR CHEST</label>
+                    <span class="money" id="hud-funds">$0.0M</span>
+                </div>
+                <div class="stat-group">
+                    <label>DATE</label>
+                    <span class="date-display" id="hud-date">AUG 4</span>
+                </div>
+                <div class="stat-group">
+                    <button class="next-turn-btn" onclick="app.nextWeek()">NEXT WEEK &rarr;</button>
+                </div>
             </div>
         </header>
 
@@ -58,31 +87,72 @@
 
             <aside id="sidebar">
                 <div id="state-panel" class="hidden">
-                    <h2 id="sp-name">State</h2>
-                    <div class="lean-bar-wrap">
-                        <div class="lean-bar-fill" id="sp-lean-bar"></div>
-                        <div class="lean-center-line"></div>
-                    </div>
-                    <div class="lean-labels">
-                        <span>REP</span><span>TOSSUP</span><span>DEM</span>
+                    <div class="state-header-box">
+                        <h2 id="sp-name">STATE</h2>
+                        <span class="ev-badge" id="sp-ev">0 EV</span>
                     </div>
 
-                    <div class="action-box">
-                        <h4>Campaign Strategy</h4>
-                        <select id="issue-select"></select>
-                        <div id="issue-impact" style="margin-top:5px; font-size:0.8rem; color:#aaa;">Select an issue</div>
-                        <button onclick="app.campaign()">BUY ADS ($100k)</button>
+                    <div class="poll-vis">
+                        <div class="poll-bar-wrap">
+                            <div class="poll-dem" id="poll-dem-bar" style="width:50%"></div>
+                            <div class="poll-rep" id="poll-rep-bar" style="width:50%"></div>
+                        </div>
+                        <div class="poll-numbers">
+                            <span class="blue" id="poll-dem-val">50%</span>
+                            <span class="gray">vs</span>
+                            <span class="red" id="poll-rep-val">50%</span>
+                        </div>
+                        <div class="poll-moe" id="sp-moe">MOE: ±3.4%</div>
                     </div>
 
-                    <div class="issues-box">
-                        <h4>Voter Priorities</h4>
+                    <div class="action-menu">
+                        <h4>CAMPAIGN ACTIONS <span id="action-points">3/3 LEFT</span></h4>
+                        
+                        <div class="action-row">
+                            <select id="issue-select"></select>
+                            <button class="btn-action" onclick="app.runStateAd()">
+                                STATE AD BLITZ <span class="cost">$500k</span>
+                            </button>
+                        </div>
+                        
+                        <div class="action-row">
+                            <button class="btn-action purple" onclick="app.runNationalAd()">
+                                NATIONAL AD BUY <span class="cost">$2.5M</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="issues-list">
+                        <h4>TOP ISSUES</h4>
                         <div id="sp-issues-list"></div>
                     </div>
                 </div>
-                <div id="empty-msg">Select a state to view polling data.</div>
+
+                <div id="empty-msg">
+                    <div class="empty-icon">Select a State</div>
+                    <p>View polling data, issue priorities, and launch targeted ad campaigns.</p>
+                </div>
+                
+                <div id="log-feed">
+                    <h4>CAMPAIGN LOG</h4>
+                    <div id="log-content"></div>
+                </div>
             </aside>
         </div>
     </section>
+
+    <div id="modal-overlay" class="hidden">
+        <div class="modal-box" id="debate-modal">
+            <div class="breaking-banner">SPECIAL REPORT</div>
+            <h2>PRESIDENTIAL DEBATE</h2>
+            <p id="debate-text">The candidates take the stage tonight in Philadelphia...</p>
+            <div class="debate-choices">
+                <button onclick="app.resolveDebate('attack')">ATTACK RECORD (High Risk/Reward)</button>
+                <button onclick="app.resolveDebate('policy')">FOCUS ON POLICY (Safe)</button>
+                <button onclick="app.resolveDebate('gaffe')">STAY SILENT (Avoid Gaffes)</button>
+            </div>
+        </div>
+    </div>
 
     <div id="toast"></div>
     <script src="script.js"></script>
