@@ -3,77 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Campaign Trail 2028</title>
+    <title>2028 Election Sim</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="screen-intro" class="screen active">
-        <h1 class="main-title">CAMPAIGN 2028</h1>
-        <p class="subtitle">Select your party nominee to begin.</p>
-        
-        <div class="columns">
-            <div class="party-col">
-                <h2 style="color: #4facfe; border-bottom: 2px solid #4facfe;">DEMOCRATS</h2>
-                <div id="dem-candidates">
-                    <button class="card candidate-card" onclick="game.selectCandidate('newsom', 'democrats')">
-                        <h3>Gavin Newsom</h3>
-                        <p>Buff: Media Savvy (Cash x1.2)</p>
-                    </button>
-                    <button class="card candidate-card" onclick="game.selectCandidate('whitmer', 'democrats')">
-                        <h3>Gretchen Whitmer</h3>
-                        <p>Buff: Big Gretch (Midwest Bonus)</p>
-                    </button>
-                    <button class="card candidate-card" onclick="game.selectCandidate('harris', 'democrats')">
-                        <h3>Kamala Harris</h3>
-                        <p>Buff: Base Mobilizer (High Floor)</p>
-                    </button>
-                </div>
+        <div class="intro-box">
+            <h1>THE CAMPAIGN TRAIL 2028</h1>
+            <div class="img-row">
+                <img src="https://via.placeholder.com/100x100?text=Dem" alt="Dem">
+                <img src="https://via.placeholder.com/100x100?text=GOP" alt="GOP">
             </div>
-            <div class="party-col">
-                <h2 style="color: #ff5e62; border-bottom: 2px solid #ff5e62;">REPUBLICANS</h2>
-                <div id="gop-candidates">
-                    <button class="card candidate-card" onclick="game.selectCandidate('vance', 'republicans')">
-                        <h3>JD Vance</h3>
-                        <p>Buff: Heir Apparent (Poll Boost)</p>
-                    </button>
-                    <button class="card candidate-card" onclick="game.selectCandidate('desantis', 'republicans')">
-                        <h3>Ron DeSantis</h3>
-                        <p>Buff: Culture Warrior (Florida Lock)</p>
-                    </button>
-                    <button class="card candidate-card" onclick="game.selectCandidate('ramaswamy', 'republicans')">
-                        <h3>Vivek Ramaswamy</h3>
-                        <p>Buff: CEO (Cash x1.5)</p>
-                    </button>
-                </div>
+            <p id="scenario-text" class="scenario-text"></p>
+            <button class="big-btn" onclick="game.startGame()">PLAY</button>
+        </div>
+    </div>
+
+    <div id="screen-party" class="screen">
+        <h2>SELECT YOUR PARTY</h2>
+        <div class="party-grid">
+            <div class="party-option" style="border-color: #00AEF3" onclick="game.selectParty('D')">
+                <img src="https://via.placeholder.com/80?text=Donkey" alt="Dem">
+                <h3>DEMOCRATIC</h3>
+            </div>
+            <div class="party-option" style="border-color: #E81B23" onclick="game.selectParty('R')">
+                <img src="https://via.placeholder.com/80?text=Elephant" alt="GOP">
+                <h3>REPUBLICAN</h3>
+            </div>
+            <div class="party-option" style="border-color: #F2C75C" onclick="game.selectParty('I')">
+                <img src="https://via.placeholder.com/80?text=Indie" alt="Ind">
+                <h3>INDEPENDENT</h3>
             </div>
         </div>
     </div>
 
-    <div id="screen-vp" class="screen">
-        <h1>Select Running Mate</h1>
-        <p>Your VP provides critical state bonuses.</p>
-        <div id="vp-options" class="grid-container">
+    <div id="screen-candidate" class="screen">
+        <div id="party-header" class="party-header">
+            <div>
+                <h2 id="party-name">Party Name</h2>
+                <p id="party-desc">Description</p>
             </div>
+            <div class="chair-info">
+                <img id="chair-img" src="" alt="Chair">
+                <span id="chair-name"></span>
+            </div>
+        </div>
+        <h3>Select Presidential Nominee</h3>
+        <div id="candidate-list" class="scroll-list"></div>
     </div>
 
-    <div id="screen-dashboard" class="screen">
-        <header class="game-header">
-            <div class="candidate-info">
-                <div id="display-name" style="font-weight:bold;">Candidate</div>
-            </div>
-            <div class="stats-row">
-                <div class="stat-box">💰 <span id="display-funds">0</span></div>
-                <div class="stat-box">🗳️ <span id="display-ev">0</span> / 270</div>
-                <div class="stat-box">📅 Week <span id="display-turn">1</span></div>
-            </div>
-            <button class="fundraise-btn" onclick="game.fundraise()">FUNDRAISE ($$$)</button>
-        </header>
+    <div id="screen-vp" class="screen">
+        <h2>Select Running Mate (VP)</h2>
+        <p>Choose carefully. This choice affects state polling.</p>
+        <div id="vp-list" class="scroll-list"></div>
+    </div>
 
-        <div class="game-area">
-            <h3>Battleground States</h3>
-            <main id="states-grid" class="states-grid">
-                </main>
+    <div id="screen-map" class="screen">
+        <header class="game-hud">
+            <div>CAMPAIGN 2028</div>
+            <div>Nov 7, 2028</div>
+        </header>
+        <div class="map-wrapper">
+            <div id="us-map" class="map-grid"></div>
+        </div>
+        <div class="legend">
+            <span style="color:#00AEF3">■ Democrat</span>
+            <span style="color:#E81B23">■ Republican</span>
+            <span style="color:#F2C75C">■ Independent</span>
         </div>
     </div>
 
