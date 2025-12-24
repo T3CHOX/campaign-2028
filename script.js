@@ -78,6 +78,7 @@ const app = {
     },
 
     init: function() {
+        console.log("App Initializing...");
         this.data.states = JSON.parse(JSON.stringify(INIT_STATES));
         
         for(let s in this.data.states) {
@@ -187,7 +188,6 @@ const app = {
         const vps = VPS.filter(x => x.party === this.data.opponent.party);
         
         if(vps.length === 0) {
-            // Auto skip if no VPs defined for opponent party
             this.startGame();
             return;
         }
@@ -379,27 +379,20 @@ const app = {
         this.colorMap();
     },
     
-    // NEW: Gradient Color Logic based on exact margin
+    // Gradient Logic: White -> Color
     getMarginColor: function(poll) {
-        // poll is Dem %
-        let margin = poll - 50; // Positive = Dem, Negative = Rep
+        let margin = poll - 50; 
+        if(Math.abs(margin) < 0.5) return "#FFFFFF"; // Tie = White
         
-        if(Math.abs(margin) < 0.5) return "#808080"; // Dead heat grey
+        let intensity = Math.min(Math.abs(margin) / 15, 1); // 15% margin = full color
         
-        let intensity = Math.min(Math.abs(margin) / 25, 1); // Cap at 25 point margin
-        
-        if(margin > 0) {
-            // Lerp Grey(128,128,128) -> Deep Blue(0,21,188)
-            let r = Math.round(128 - (128 * intensity));
-            let g = Math.round(128 - (107 * intensity)); // 128->21
-            let b = Math.round(128 + (60 * intensity)); // 128->188
-            return `rgb(${r}, ${g}, ${b})`;
-        } else {
-            // Lerp Grey(128,128,128) -> Deep Red(220,0,0)
-            let r = Math.round(128 + (92 * intensity)); // 128->220
-            let g = Math.round(128 - (128 * intensity));
-            let b = Math.round(128 - (128 * intensity));
-            return `rgb(${r}, ${g}, ${b})`;
+        if(margin > 0) { // Dem (Blue)
+            let r = Math.round(255 - (255 * intensity));
+            let g = Math.round(255 - (81 * intensity)); // 255 -> 174
+            let b = Math.round(255 - (12 * intensity)); // 255 -> 243
+            return `rgb(${0 + (1-intensity)*255}, ${174 + (1-intensity)*81}, ${243 + (1-intensity)*12})`; // Interpolate White to Blue #00AEF3
+        } else { // Rep (Red)
+            return `rgb(${232 + (1-intensity)*23}, ${27 + (1-intensity)*228}, ${35 + (1-intensity)*220})`; // Interpolate White to Red #E81B23
         }
     },
 
@@ -422,12 +415,13 @@ const app = {
         document.getElementById('state-panel').classList.remove('hidden');
         document.getElementById('empty-msg').classList.add('hidden');
         
-        // Add Margin Text to Header
+        // Margin Text
         let margin = s.poll - 50;
-        let marginText = Math.abs(margin) < 0.1 ? "EVEN" : (margin > 0 ? `D+${margin.toFixed(1)}` : `R+${Math.abs(margin).toFixed(1)}`);
-        let marginColor = Math.abs(margin) < 0.1 ? "gray" : (margin > 0 ? "var(--dem-blue)" : "var(--rep-red)");
-        
-        document.getElementById('sp-name').innerHTML = `${s.name} <span style="font-size:0.7em; color:${marginColor}; margin-left:10px;">${marginText}</span>`;
+        let mText = Math.abs(margin) < 0.1 ? "EVEN" : (margin > 0 ? `D+${margin.toFixed(1)}` : `R+${Math.abs(margin).toFixed(1)}`);
+        let mColor = margin > 0 ? "#00AEF3" : "#E81B23";
+        if(Math.abs(margin) < 0.1) mColor = "gray";
+
+        document.getElementById('sp-name').innerHTML = `${s.name} <span style="font-size:0.8em; color:${mColor}; margin-left:8px;">${mText}</span>`;
         document.getElementById('sp-ev').innerText = s.ev + " EV";
         
         document.getElementById('poll-dem-bar').style.width = s.poll + "%";
@@ -461,30 +455,29 @@ const app = {
         document.getElementById('score-dem').innerText = d;
         document.getElementById('score-rep').innerText = r;
         const dp = (d/538)*100; const rp = (r/538)*100;
-        document.getElementById('ev-bar').style.background = `linear-gradient(90deg, #0056b3 ${dp}%, #333 ${dp}%, #333 ${100-rp}%, #d32f2f ${100-rp}%)`;
+        document.getElementById('ev-bar').style.background = `linear-gradient(90deg, #00AEF3 ${dp}%, #333 ${dp}%, #333 ${100-rp}%, #E81B23 ${100-rp}%)`;
     },
 
     showTooltip: function(e, code) {
         const tt = document.getElementById('map-tooltip');
         const s = this.data.states[code];
         
-        let lead = s.poll > 50 ? "DEM" : "REP";
-        let margin = Math.abs(s.poll - (100-s.poll)).toFixed(1);
-        let name = "Opponent";
-        
-        // Determine Leader Name
-        let myName = this.data.candidate.name.split(" ").pop();
-        let oppName = this.data.opponent ? this.data.opponent.name.split(" ").pop() : "Opponent";
-        
-        if(lead === "DEM" && this.data.selectedParty === 'D') name = myName;
-        else if(lead === "REP" && this.data.selectedParty === 'R') name = myName;
-        else name = oppName;
-        
-        let color = lead === "DEM" ? "#4fa1ff" : "#ff6b6b";
-        
+        let margin = s.poll - 50;
+        let leadName = "Tie";
+        let color = "#fff";
+        let marginVal = Math.abs(margin).toFixed(1);
+
+        if(margin > 0) {
+            color = "#00AEF3";
+            leadName = (this.data.selectedParty === 'D') ? this.data.candidate.name.split(" ").pop() : this.data.opponent.name.split(" ").pop();
+        } else if (margin < 0) {
+            color = "#E81B23";
+            leadName = (this.data.selectedParty === 'R') ? this.data.candidate.name.split(" ").pop() : this.data.opponent.name.split(" ").pop();
+        }
+
         tt.innerHTML = `
-            <div style="font-size:0.8rem; color:#fff; text-transform:uppercase; letter-spacing:1px; margin-bottom:2px;">${s.name}</div>
-            <span class="tooltip-leader" style="color:${color}; font-size:1.4rem;">${name}+${margin}</span>
+            <div style="font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:2px; color:#ccc;">${s.name}</div>
+            <span class="tooltip-leader" style="color:${color}; font-size:1.4rem;">${leadName} +${marginVal}</span>
         `;
         tt.style.display='block'; tt.style.left=(e.clientX+15)+'px'; tt.style.top=(e.clientY+15)+'px';
     },
