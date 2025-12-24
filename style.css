@@ -228,7 +228,7 @@ input:checked + .slider:before { transform: translateX(26px); }
     width: 400px; 
     border: 1px solid #555; 
 }
-
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--dem-blue) 50%, var(--rep-red) 50%); }
 .tooltip-leader { 
     font-family: 'Merriweather', serif; 
     font-weight: 700; 
@@ -236,3 +236,4 @@ input:checked + .slider:before { transform: translateX(26px); }
     display: block; 
     line-height: 1.1;
 }
+
