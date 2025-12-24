@@ -47,50 +47,72 @@ body {
 .ticker-move { display: inline-block; padding-left: 100%; animation: ticker 20s linear infinite; }
 @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
 
-/* CARDS & PANELS */
-.panel-container { max-width: 1200px; margin: 0 auto; padding: 20px; text-align: center; overflow-y: auto; height: 100%; }
-.section-title { border-bottom: 2px solid #333; display: inline-block; padding-bottom: 10px; margin-bottom: 30px; }
-.cards-row { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
-.card {
-    background: #2a2a2a; border: 1px solid #444; width: 220px; cursor: pointer;
-    transition: 0.2s; text-align: left; position: relative; border-radius: 8px; overflow: hidden;
-    min-height: 150px;
-}
-.card:hover { border-color: var(--dem-blue); transform: translateY(-5px); }
-.card.selected { border-color: var(--gold); box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); }
-
-.portrait { height: 160px; background: #000; position: relative; }
-.portrait img { width: 100%; height: 100%; object-fit: cover; }
-.portrait-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: #333; }
-.card-info { padding: 15px; }
-.card h3 { margin: 0 0 5px 0; }
-.buff-text { color: #4ade80; font-size: 0.8rem; margin-top: 5px; }
-.instruction-text { color: #aaa; margin-bottom: 20px; }
-
 /* Back Button */
 .back-btn { background: #444; border: 1px solid #666; padding: 10px 20px; color: white; cursor: pointer; }
 
-/* HUD */
-.hud-header {
-    height: 80px; background: #1a1a1a; display: flex; align-items: center; justify-content: space-between;
-    padding: 0 20px; border-bottom: 1px solid #333;
+/* --- HUD UPDATES --- */
+.hud-text-col { display: flex; flex-direction: column; }
+
+/* Dynamic Party Text Colors */
+.text-D { color: #00AEF3; }
+.text-R { color: #E81B23; }
+.text-I { color: #F2C75C; }
+.text-G { color: #198754; }
+.text-L { color: #fd7e14; }
+
+/* Sharp Corners for EV Bar */
+.progress-bar-bg {
+    height: 14px;
+    background: #333;
+    border-radius: 0; /* Sharp corners */
+    overflow: hidden;
+    width: 100%;
+    border: 1px solid #555;
 }
-.candidate-badge { display: flex; align-items: center; gap: 10px; }
-#hud-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid white; }
-.cand-name { font-weight: 900; font-size: 1.2rem; display: block; }
-.cand-party { font-size: 0.7rem; color: #aaa; letter-spacing: 1px; }
-.hud-text-col { display:flex; flex-direction:column; }
 
-.ev-display { display: flex; justify-content: space-between; font-weight: 900; font-size: 1.5rem; margin-bottom: 5px; }
-.dem-score { color: var(--dem-blue); } .rep-score { color: var(--rep-red); }
-.progress-bar-bg { height: 10px; background: #333; border-radius: 5px; overflow: hidden; width: 400px; }
-.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--dem-blue) 50%, var(--rep-red) 50%); }
+/* --- PARTY CARD HOVER EFFECT --- */
+.card-party {
+    height: 250px; /* Taller for images */
+    position: relative;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+}
 
-.hud-right { display: flex; gap: 20px; align-items: center; }
-.stat-group { text-align: right; }
-.stat-group label { font-size: 0.6rem; color: #888; display: block; }
-.money { color: #4ade80; font-weight: bold; font-size: 1.1rem; }
-.next-turn-btn { padding: 10px 20px; background: white; color: black; border: none; font-weight: bold; cursor: pointer; }
+.party-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    transition: 0.3s;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.card-party:hover .party-overlay {
+    background: rgba(0,0,0,0.85);
+    height: 100%;
+    justify-content: center;
+}
+
+.party-desc {
+    display: none;
+    font-size: 0.9rem;
+    color: #ddd;
+    margin-top: 10px;
+    animation: fadeIn 0.3s;
+}
+
+.card-party:hover .party-desc {
+    display: block;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* MAP */
 .game-area { display: flex; height: calc(100vh - 80px); }
@@ -333,4 +355,5 @@ input:checked + .slider:before { transform: translateX(26px); }
 .turn-controls { display: flex; gap: 5px; margin-top: 5px; }
 .mini-btn { padding: 5px 10px; background: #444; border: none; color: white; font-size: 0.7rem; cursor: pointer; }
 .mini-btn:hover { background: #666; }
+
 
