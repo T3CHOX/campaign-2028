@@ -1,7 +1,7 @@
 /* --- CONFIGURATION --- */
 const PARTIES = {
-    D: { name: "Democratic", color: "#0056b3", img: "images/harrison.jpg", desc: "Liberal platform focused on social equality and economic reform." },
-    R: { name: "Republican", color: "#d32f2f", img: "images/whatley.jpg", desc: "Conservative platform focused on deregulation and traditional values." },
+    D: { name: "Democratic", color: "#00AEF3", img: "images/harrison.jpg", desc: "Liberal platform focused on social equality and economic reform." },
+    R: { name: "Republican", color: "#E81B23", img: "images/whatley.jpg", desc: "Conservative platform focused on deregulation and traditional values." },
     I: { name: "Independent", color: "#F2C75C", img: "images/scenario.jpg", desc: "Centrist coalition seeking electoral reform." },
     G: { name: "Green", color: "#198754", img: "images/scenario.jpg", desc: "Environmental justice and social democracy." },
     L: { name: "Libertarian", color: "#fd7e14", img: "images/scenario.jpg", desc: "Individual liberty and free markets." }
@@ -26,6 +26,7 @@ const CANDIDATES = [
     { id: "harris", name: "Kamala Harris", party: "D", funds: 60, img: "images/harris.jpg", buff: "Incumbent Advantage", desc: "Current Vice President.", stamina: 8 },
     { id: "newsom", name: "Gavin Newsom", party: "D", funds: 75, img: "images/newsom.jpg", buff: "Fundraising Machine", desc: "Governor of California.", stamina: 9 },
     { id: "whitmer", name: "Gretchen Whitmer", party: "D", funds: 55, img: "images/whitmer.jpg", buff: "Rust Belt Appeal", desc: "Governor of Michigan.", stamina: 8 },
+    { id: "shapiro", name: "Josh Shapiro", party: "D", funds: 50, img: "images/shapiro.jpg", buff: "Swing State King", desc: "Governor of Pennsylvania.", stamina: 8 },
     // Republicans
     { id: "desantis", name: "Ron DeSantis", party: "R", funds: 65, img: "images/desantis.jpg", buff: "Culture Warrior", desc: "Governor of Florida.", stamina: 9 },
     { id: "vance", name: "JD Vance", party: "R", funds: 50, img: "images/vance.jpg", buff: "Populist Appeal", desc: "Senator from Ohio.", stamina: 8 },
@@ -43,7 +44,6 @@ const VPS = [
     { id: "stefanik", name: "Elise Stefanik", party: "R", state: "NY", desc: "Strong aggressive campaigner.", img: "images/scenario.jpg" }
 ];
 
-// DATA INITIALIZATION
 const INIT_STATES = {
     "AL": { name: "Alabama", ev: 9, poll: 35 }, "AK": { name: "Alaska", ev: 3, poll: 42 }, "AZ": { name: "Arizona", ev: 11, poll: 49.5 },
     "AR": { name: "Arkansas", ev: 6, poll: 35 }, "CA": { name: "California", ev: 54, poll: 65 }, "CO": { name: "Colorado", ev: 10, poll: 56 },
@@ -64,7 +64,7 @@ const INIT_STATES = {
     "WV": { name: "West Virginia", ev: 4, poll: 28 }, "WI": { name: "Wisconsin", ev: 10, poll: 50.8 }, "WY": { name: "Wyoming", ev: 3, poll: 25 }
 };
 
-/* --- APP LOGIC --- */
+/* --- APP ENGINE --- */
 const app = {
     data: {
         currentDate: new Date("2028-07-04"),
@@ -111,7 +111,6 @@ const app = {
         if(!c) return; c.innerHTML = "";
         ['D','R','I'].forEach(k => {
             const p = PARTIES[k];
-            // Fixed quote syntax here
             c.innerHTML += `<div class="card card-party" onclick="app.selParty('${k}')" style="background-image:url('${p.img}'); border-top:5px solid ${p.color}"><div class="party-overlay"><h3>${p.name} Party</h3><div class="party-desc">${p.desc}</div></div></div>`;
         });
     },
@@ -120,7 +119,14 @@ const app = {
     renderCands: function(pk) {
         const c = document.getElementById('candidate-cards');
         c.innerHTML = "";
-        CANDIDATES.filter(x => x.party === pk).forEach(cand => {
+        const cands = CANDIDATES.filter(x => x.party === pk);
+        
+        if(cands.length === 0) {
+            c.innerHTML = "<p>No candidates defined for this party.</p>";
+            return;
+        }
+
+        cands.forEach(cand => {
             const img = cand.img ? `<img src="${cand.img}">` : "";
             c.innerHTML += `<div class="card" onclick="app.selCand('${cand.id}')"><div class="portrait">${img}</div><div class="card-info"><h3>${cand.name}</h3><p>${cand.desc}</p><p class="buff-text">Stamina: ${cand.stamina}</p></div></div>`;
         });
@@ -138,9 +144,9 @@ const app = {
         c.innerHTML = "";
         const vps = VPS.filter(x => x.party === pk);
         
-        // Fixed syntax error here (replaced inner quotes)
+        // --- FIXED SYNTAX ERROR HERE ---
         if(vps.length === 0) {
-            c.innerHTML = "<div class='card' onclick='app.renderOpp()'><div class='card-info'><h3>CONTINUE (NO VP)</h3></div></div>";
+            c.innerHTML = `<div class="card" onclick="app.renderOpp()"><div class="card-info"><h3>CONTINUE (NO VP)</h3></div></div>`;
             return;
         }
 
@@ -157,10 +163,9 @@ const app = {
     renderOpp: function() {
         const maj = document.getElementById('opponent-cards-major');
         const min = document.getElementById('opponent-cards-minor');
-        if(!maj || !min) return; // Safety check
+        if(!maj || !min) return; 
         maj.innerHTML = ""; min.innerHTML = "";
         
-        // Determine Rival Party (D vs R, I vs D)
         let rivalP = (this.data.selectedParty === 'D') ? 'R' : 'D';
         if(this.data.selectedParty === 'I') rivalP = 'D';
 
@@ -283,7 +288,8 @@ const app = {
         
         let demoHTML = `<div class="ig-grid">`;
         for(let k in s.demographics) {
-            let n = INTEREST_GROUPS.find(x=>x.id===k).name;
+            let ig = INTEREST_GROUPS.find(x=>x.id===k);
+            let n = ig ? ig.name : k;
             demoHTML += `<div class="ig-tag"><span>${n}</span><span class="ig-val">${s.demographics[k]}%</span></div>`;
         }
         demoHTML += `</div>`;
