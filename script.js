@@ -7,34 +7,40 @@ const PARTIES = {
     L: { name: "Libertarian", color: "#fd7e14", img: "images/scenario.jpg", desc: "Individual liberty and free markets." }
 };
 
+const ISSUES = [
+    { id: 'econ', name: 'Economy: Inflation' }, { id: 'jobs', name: 'Economy: Jobs' },
+    { id: 'tax', name: 'Tax Policy' }, { id: 'health', name: 'Healthcare' },
+    { id: 'immig', name: 'Immigration' }, { id: 'clim', name: 'Climate Change' },
+    { id: 'gun', name: 'Gun Control' }, { id: 'abort', name: 'Abortion Rights' },
+    { id: 'foreign', name: 'Foreign Policy' }, { id: 'crime', name: 'Crime & Safety' }
+];
+
+const INTEREST_GROUPS = [
+    { id: 'aa', name: 'African American' }, { id: 'his', name: 'Hispanic/Latino' },
+    { id: 'union', name: 'Union Workers' }, { id: 'evang', name: 'Evangelicals' },
+    { id: 'youth', name: 'Youth (<30)' }, { id: 'senior', name: 'Seniors (65+)' }
+];
+
 const CANDIDATES = [
     // Democrats
-    { id: "harris", name: "Kamala Harris", party: "D", desc: "Incumbent VP.", funds: 60, img: "images/harris.jpg", buff: "Incumbent Advantage" },
-    { id: "newsom", name: "Gavin Newsom", party: "D", desc: "CA Governor.", funds: 75, img: "images/newsom.jpg", buff: "Fundraising Machine" },
-    { id: "whitmer", name: "Gretchen Whitmer", party: "D", desc: "MI Governor.", funds: 55, img: "images/whitmer.jpg", buff: "Rust Belt Appeal" },
-    { id: "shapiro", name: "Josh Shapiro", party: "D", desc: "PA Governor.", funds: 50, img: "images/shapiro.jpg", buff: "Swing State King" },
-    { id: "buttigieg", name: "Pete Buttigieg", party: "D", desc: "Transp. Sec.", funds: 55, img: "images/buttigieg.jpg", buff: "Media Savvy" },
-    { id: "aoc", name: "AOC", party: "D", desc: "Congresswoman.", funds: 40, img: "images/aoc.jpg", buff: "Grassroots Army" },
-
+    { id: "harris", name: "Kamala Harris", party: "D", funds: 60, img: "images/harris.jpg", buff: "Incumbent Advantage", stamina: 8 },
+    { id: "newsom", name: "Gavin Newsom", party: "D", funds: 75, img: "images/newsom.jpg", buff: "Fundraising Machine", stamina: 9 },
+    { id: "whitmer", name: "Gretchen Whitmer", party: "D", funds: 55, img: "images/whitmer.jpg", buff: "Rust Belt Appeal", stamina: 8 },
     // Republicans
-    { id: "desantis", name: "Ron DeSantis", party: "R", desc: "FL Governor.", funds: 65, img: "images/desantis.jpg", buff: "Culture Warrior" },
-    { id: "vance", name: "JD Vance", party: "R", desc: "OH Senator.", funds: 50, img: "images/vance.jpg", buff: "Populist Appeal" },
-    { id: "haley", name: "Nikki Haley", party: "R", desc: "Former Amb.", funds: 55, img: "images/haley.jpg", buff: "Suburban Appeal" },
-    { id: "ramaswamy", name: "Vivek Ramaswamy", party: "R", desc: "Entrepreneur.", funds: 70, img: "images/ramaswamy.jpg", buff: "Outsider Energy" },
-
-    // Third Parties
-    { id: "yang", name: "Andrew Yang", party: "I", desc: "Forward Party.", funds: 40, img: "images/yang.jpg", buff: "UBI Appeal" },
-    { id: "stein", name: "Jill Stein", party: "G", desc: "Green Party.", funds: 10, img: "images/scenario.jpg", buff: "Eco-Activist" },
-    { id: "oliver", name: "Chase Oliver", party: "L", desc: "Libertarian.", funds: 10, img: "images/scenario.jpg", buff: "Liberty First" }
+    { id: "desantis", name: "Ron DeSantis", party: "R", funds: 65, img: "images/desantis.jpg", buff: "Culture Warrior", stamina: 9 },
+    { id: "vance", name: "JD Vance", party: "R", funds: 50, img: "images/vance.jpg", buff: "Populist Appeal", stamina: 8 },
+    { id: "ramaswamy", name: "Vivek Ramaswamy", party: "R", funds: 70, img: "images/ramaswamy.jpg", buff: "Outsider Energy", stamina: 10 },
+    // Third Party
+    { id: "yang", name: "Andrew Yang", party: "I", funds: 40, img: "images/yang.jpg", buff: "Tech Innovator", stamina: 8 },
+    { id: "stein", name: "Jill Stein", party: "G", funds: 10, img: "images/scenario.jpg", buff: "Eco-Activist", stamina: 6 },
+    { id: "oliver", name: "Chase Oliver", party: "L", funds: 12, img: "images/scenario.jpg", buff: "Liberty First", stamina: 7 }
 ];
 
 const VPS = [
-    { id: "shapiro", name: "Josh Shapiro", party: "D", state: "PA", desc: "Popular swing state governor.", img: "images/shapiro.jpg" },
-    { id: "kelly", name: "Mark Kelly", party: "D", state: "AZ", desc: "Astronaut & Senator.", img: "images/scenario.jpg" },
-    { id: "cooper", name: "Roy Cooper", party: "D", state: "NC", desc: "Moderate southern appeal.", img: "images/scenario.jpg" },
-    { id: "rubio", name: "Marco Rubio", party: "R", state: "FL", desc: "Establishment bridge.", img: "images/scenario.jpg" },
-    { id: "stefanik", name: "Elise Stefanik", party: "R", state: "NY", desc: "Strong aggressive campaigner.", img: "images/scenario.jpg" },
-    { id: "tulsi", name: "Tulsi Gabbard", party: "I", state: "HI", desc: "Anti-war populist.", img: "images/scenario.jpg" }
+    { id: "shapiro", name: "Josh Shapiro", party: "D", state: "PA", desc: "Popular swing state governor." },
+    { id: "kelly", name: "Mark Kelly", party: "D", state: "AZ", desc: "Astronaut & Senator." },
+    { id: "rubio", name: "Marco Rubio", party: "R", state: "FL", desc: "Establishment bridge." },
+    { id: "stefanik", name: "Elise Stefanik", party: "R", state: "NY", desc: "Strong aggressive campaigner." }
 ];
 
 const INIT_STATES = {
@@ -57,32 +63,34 @@ const INIT_STATES = {
     "WV": { name: "West Virginia", ev: 4, poll: 28 }, "WI": { name: "Wisconsin", ev: 10, poll: 50.8 }, "WY": { name: "Wyoming", ev: 3, poll: 25 }
 };
 
-const ISSUES = [
-    { id: 'econ', name: 'Economy' }, { id: 'immig', name: 'Border Security' },
-    { id: 'abort', name: 'Reproductive Rights' }, { id: 'clim', name: 'Climate Change' }
-];
-
-/* --- APP ENGINE --- */
+/* --- APP LOGIC --- */
 const app = {
     data: {
+        currentDate: new Date("2028-07-04"),
+        electionDay: new Date("2028-11-07"),
         selectedParty: null, candidate: null, vp: null, opponent: null,
-        thirdPartiesEnabled: true, funds: 0, weeks: 14, actionsLeft: 3,
-        states: {}, selectedState: null, turnLog: []
+        funds: 0, energy: 8, maxEnergy: 8,
+        thirdPartiesEnabled: true,
+        states: {}, selectedState: null,
+        turnSnapshot: null // For Undo
     },
 
     init: function() {
-        console.log("App Initializing...");
         this.data.states = JSON.parse(JSON.stringify(INIT_STATES));
         
-        // Initialize State Extras
+        // Initialize Advanced State Data
         for(let s in this.data.states) {
             this.data.states[s].moe = (Math.random() * 2 + 1.5).toFixed(1);
+            this.data.states[s].donorFatigue = 0; // Starts at 0
+            
             this.data.states[s].priorities = {};
             ISSUES.forEach(i => this.data.states[s].priorities[i.id] = Math.floor(Math.random()*10)+1);
             
-            // Third Party Baselines
-            this.data.states[s].greenShare = ['CA','OR','WA','VT'].includes(s) ? 4.0 : 1.0;
-            this.data.states[s].libShare = ['NH','MT','AK','NV'].includes(s) ? 4.5 : 1.5;
+            this.data.states[s].demographics = {};
+            INTEREST_GROUPS.forEach(ig => this.data.states[s].demographics[ig.id] = Math.floor(Math.random()*30)+5);
+            
+            this.data.states[s].greenShare = ['CA','OR','VT'].includes(s) ? 3.5 : 1.0;
+            this.data.states[s].libShare = ['NH','MT','NV'].includes(s) ? 4.0 : 1.5;
         }
         
         this.renderParties();
@@ -98,222 +106,273 @@ const app = {
     renderParties: function() {
         const c = document.getElementById('party-cards');
         if(!c) return; c.innerHTML = "";
-        
-        ['D', 'R', 'I'].forEach(key => {
-            const p = PARTIES[key];
-            const el = document.createElement('div');
-            el.className = "card card-party";
-            el.style.backgroundImage = `url('${p.img}')`;
-            el.style.borderTop = `5px solid ${p.color}`;
-            el.innerHTML = `
-                <div class="party-overlay">
-                    <h3>${p.name} Party</h3>
-                    <div class="party-desc">${p.desc}</div>
-                </div>`;
-            el.onclick = () => {
-                this.data.selectedParty = key;
-                this.renderCandidates(key);
-                this.goToScreen('candidate-screen');
-            };
-            c.appendChild(el);
+        ['D','R','I'].forEach(k => {
+            const p = PARTIES[k];
+            c.innerHTML += `<div class="card card-party" onclick="app.selParty('${k}')" style="background-image:url('${p.img}'); border-top:5px solid ${p.color}"><div class="party-overlay"><h3>${p.name}</h3><div class="party-desc">${p.desc}</div></div></div>`;
         });
     },
+    selParty: function(k) { this.data.selectedParty = k; this.renderCands(k); this.goToScreen('candidate-screen'); },
 
-    renderCandidates: function(pk) {
+    renderCands: function(pk) {
         const c = document.getElementById('candidate-cards');
         c.innerHTML = "";
         CANDIDATES.filter(x => x.party === pk).forEach(cand => {
             const img = cand.img ? `<img src="${cand.img}">` : "";
-            const el = document.createElement('div');
-            el.className = "card";
-            el.innerHTML = `
-                <div class="portrait">${img}</div>
-                <div class="card-info">
-                    <h3>${cand.name}</h3>
-                    <p>${cand.desc}</p>
-                    <p class="buff-text">${cand.buff}</p>
-                    <p style="color:#4ade80">Funds: $${cand.funds}M</p>
-                </div>`;
-            el.onclick = () => {
-                this.data.candidate = cand;
-                this.renderVPs(pk);
-                this.goToScreen('vp-screen');
-            };
-            c.appendChild(el);
+            c.innerHTML += `<div class="card" onclick="app.selCand('${cand.id}')"><div class="portrait">${img}</div><div class="card-info"><h3>${cand.name}</h3><p>${cand.desc}</p><p class="buff-text">Stamina: ${cand.stamina}</p></div></div>`;
         });
+    },
+    selCand: function(id) {
+        this.data.candidate = CANDIDATES.find(x => x.id === id);
+        this.data.maxEnergy = this.data.candidate.stamina;
+        this.data.energy = this.data.maxEnergy;
+        this.renderVPs(this.data.candidate.party);
+        this.goToScreen('vp-screen');
     },
 
     renderVPs: function(pk) {
         const c = document.getElementById('vp-cards');
         c.innerHTML = "";
         const vps = VPS.filter(x => x.party === pk);
-        
-        if(vps.length === 0) {
-            c.innerHTML = "<div class='card' onclick='app.renderOpponentSelection(); app.goToScreen(\"opponent-screen\")'><div class='card-info'><h3>CONTINUE WITHOUT VP</h3></div></div>";
-            return;
-        }
-
+        if(vps.length === 0) c.innerHTML = "<div class='card' onclick='app.renderOpp()'><div class="card-info"><h3>SKIP VP</h3></div></div>";
         vps.forEach(v => {
             const img = v.img ? `<img src="${v.img}">` : "";
-            const el = document.createElement('div');
-            el.className = "card";
-            el.innerHTML = `
-                <div class="portrait">${img}</div>
-                <div class="card-info"><h3>${v.name}</h3><p>Home: ${v.state}</p><p>${v.desc}</p></div>`;
-            el.onclick = () => {
-                this.data.vp = v;
-                // VP Bonus
-                if(this.data.states[v.state]) {
-                    this.data.states[v.state].poll += (pk === 'D' ? 5 : -5);
-                }
-                this.renderOpponentSelection();
-                this.goToScreen('opponent-screen');
-            };
-            c.appendChild(el);
+            c.innerHTML += `<div class="card" onclick="app.selVP('${v.id}')"><div class="portrait">${img}</div><div class="card-info"><h3>${v.name}</h3><p>${v.state}</p></div></div>`;
         });
     },
+    selVP: function(id) { 
+        this.data.vp = VPS.find(x => x.id === id); 
+        this.renderOpp();
+    },
 
-    renderOpponentSelection: function() {
-        const majC = document.getElementById('opponent-cards-major');
-        const minC = document.getElementById('opponent-cards-minor');
-        majC.innerHTML = ""; minC.innerHTML = "";
-
-        // Determine Rival
+    renderOpp: function() {
+        const maj = document.getElementById('opponent-cards-major');
+        const min = document.getElementById('opponent-cards-minor');
+        maj.innerHTML = ""; min.innerHTML = "";
+        
         let rivalP = (this.data.selectedParty === 'D') ? 'R' : 'D';
         if(this.data.selectedParty === 'I') rivalP = 'D';
 
-        // Major Opponents
         CANDIDATES.filter(x => x.party === rivalP).forEach(opp => {
             const img = opp.img ? `<img src="${opp.img}">` : "";
-            const el = document.createElement('div');
-            el.className = "card";
-            el.innerHTML = `<div class="portrait">${img}</div><div class="card-info"><h3>${opp.name}</h3><p>${opp.desc}</p></div>`;
-            el.onclick = () => { this.data.opponent = opp; this.startGame(); };
-            majC.appendChild(el);
+            maj.innerHTML += `<div class="card" onclick="app.selOpp('${opp.id}')"><div class="portrait">${img}</div><div class="card-info"><h3>${opp.name}</h3><p>${opp.desc}</p></div></div>`;
         });
 
-        // Minor Opponents (Visual)
         CANDIDATES.filter(x => ['G','L'].includes(x.party)).forEach(opp => {
-            const el = document.createElement('div');
-            el.className = "card";
-            el.style.transform = "scale(0.9)";
-            el.innerHTML = `<div class="card-info" style="border-top:3px solid ${PARTIES[opp.party].color}"><h3>${opp.name}</h3><p>${PARTIES[opp.party].name}</p></div>`;
-            minC.appendChild(el);
+            min.innerHTML += `<div class="card" style="transform:scale(0.9); border-top:3px solid ${PARTIES[opp.party].color}"><div class="card-info"><h3>${opp.name}</h3><p>${PARTIES[opp.party].name}</p></div></div>`;
         });
-    },
-
-    /* --- GAME START & AI --- */
-    startGame: function() {
-        this.data.funds = this.data.candidate.funds;
-        this.goToScreen('game-screen');
         
-        // HUD
-        const img = document.getElementById('hud-img');
-        if(this.data.candidate.img) { img.src = this.data.candidate.img; img.style.display = "block"; }
-        const pKey = this.data.selectedParty;
-        img.className = `hud-border-${pKey}`;
-        document.getElementById('hud-cand-name').innerText = this.data.candidate.name.toUpperCase();
-        document.getElementById('hud-party-name').innerText = PARTIES[pKey].name.toUpperCase() + " NOMINEE";
-        document.getElementById('hud-party-name').className = `cand-party text-${pKey}`;
-
-        // Third Party Spoilers
-        if(this.data.thirdPartiesEnabled) {
-            for(let s in this.data.states) {
-                // Remove vote share from major parties
-                let totalSpoiler = (this.data.states[s].greenShare || 0) + (this.data.states[s].libShare || 0);
-                // Simple logic: Shift towards 50% (chaos) or subtract from leader
-                if(this.data.states[s].poll > 50) this.data.states[s].poll -= (totalSpoiler/2);
-                else this.data.states[s].poll += (totalSpoiler/2);
-            }
-            this.log("Third parties entered. Polls tightened.");
-        }
-
-        this.initMap();
-        this.updateHUD();
-        this.log("Campaign Started.");
+        this.goToScreen('opponent-screen');
     },
-
-    nextWeek: function() {
-        this.data.weeks--;
-        this.data.actionsLeft = 3;
-        
-        // --- IMPROVED AI ---
-        const playerIsDem = this.data.selectedParty === 'D';
-        
-        for(let code in this.data.states) {
-            let s = this.data.states[code];
-            // 1. Natural Drift
-            s.poll += (Math.random() * 0.6) - 0.3;
-
-            // 2. Opponent AI Strategy
-            let isSwing = (s.poll >= 45 && s.poll <= 55);
-            let aiWinning = playerIsDem ? (s.poll < 48) : (s.poll > 52);
-            
-            // AI targets Swing States or Defends vulnerable base
-            let attackChance = 0.1;
-            if(isSwing) attackChance = 0.5; // Fight hard for swings
-            if(aiWinning && Math.random() > 0.8) attackChance = 0.3; // Shore up base sometimes
-            
-            if(Math.random() < attackChance) {
-                let shift = (Math.random() * 1.2) + 0.2;
-                if(playerIsDem) s.poll -= shift; // AI is Rep, lower Dem number
-                else s.poll += shift; // AI is Dem, raise Dem number
-            }
-            
-            // Clamp
-            if(s.poll > 100) s.poll = 100; if(s.poll < 0) s.poll = 0;
-        }
-
-        this.updateHUD();
-        this.colorMap();
-        if(this.data.selectedState) this.clickState(this.data.selectedState);
-        this.showToast("Week Advanced. Polls Updated.");
-    },
-
-    /* --- HELPERS --- */
-    initIssues: function() {
-        const sel = document.getElementById('issue-select');
-        if(sel) ISSUES.forEach(i => sel.innerHTML += `<option value="${i.id}">${i.name}</option>`);
+    selOpp: function(id) {
+        this.data.opponent = CANDIDATES.find(x => x.id === id);
+        this.startGame();
     },
     toggleThirdParties: function() {
         this.data.thirdPartiesEnabled = document.getElementById('third-party-toggle').checked;
         document.getElementById('third-party-section').style.opacity = this.data.thirdPartiesEnabled ? "1" : "0.3";
     },
-    updateHUD: function() {
-        document.getElementById('hud-funds').innerText = `$${this.data.funds.toFixed(1)}M`;
-        document.getElementById('action-points').innerText = `${this.data.actionsLeft}/3 LEFT`;
-    },
-    updateScore: function() {
-        let d=0, r=0;
-        for(let k in this.data.states) {
-            if(this.data.states[k].poll >= 50) d+=this.data.states[k].ev; else r+=this.data.states[k].ev;
+
+    /* --- GAME START --- */
+    startGame: function() {
+        this.data.funds = this.data.candidate.funds;
+        this.saveSnapshot(); // Undo point
+        this.goToScreen('game-screen');
+        
+        // Setup HUD
+        const pKey = this.data.selectedParty;
+        document.getElementById('hud-img').src = this.data.candidate.img || "";
+        document.getElementById('hud-img').style.display = "block";
+        document.getElementById('hud-img').className = `hud-border-${pKey}`;
+        document.getElementById('hud-cand-name').innerText = this.data.candidate.name.toUpperCase();
+        document.getElementById('hud-party-name').innerText = PARTIES[pKey].name.toUpperCase();
+        
+        // VP Buff
+        if(this.data.vp && this.data.states[this.data.vp.state]) {
+            if(pKey === 'D') this.data.states[this.data.vp.state].poll += 5;
+            else this.data.states[this.data.vp.state].poll -= 5;
         }
-        document.getElementById('score-dem').innerText = d;
-        document.getElementById('score-rep').innerText = r;
-        const dp = (d/538)*100; const rp = (r/538)*100;
-        document.getElementById('ev-bar').style.background = `linear-gradient(90deg, #0056b3 ${dp}%, #333 ${dp}%, #333 ${100-rp}%, #d32f2f ${100-rp}%)`;
+
+        // Spoiler Logic
+        if(this.data.thirdPartiesEnabled) {
+            for(let s in this.data.states) {
+                let spoil = this.data.states[s].greenShare + this.data.states[s].libShare;
+                // Simplified: hurts leader
+                if(this.data.states[s].poll > 50) this.data.states[s].poll -= (spoil * 0.6);
+                else this.data.states[s].poll += (spoil * 0.6);
+            }
+        }
+
+        this.initMap();
+        this.updateHUD();
     },
+
+    /* --- GAMEPLAY ACTIONS --- */
+    initIssues: function() {
+        const s = document.getElementById('issue-select');
+        const r = document.getElementById('rally-issue-select');
+        ISSUES.forEach(i => {
+            const opt = `<option value="${i.id}">${i.name}</option>`;
+            if(s) s.innerHTML += opt;
+            if(r) r.innerHTML += opt;
+        });
+    },
+
+    fundraise: function() {
+        if(this.data.energy < 1) return this.showToast("Need 1 Energy!");
+        this.data.energy--;
+        
+        const s = this.data.states[this.data.selectedState];
+        // Formula: Base * EV * Support * Fatigue
+        let base = 0.5; 
+        let support = (this.data.selectedParty==='D' ? s.poll : (100-s.poll)) / 50;
+        let fatigue = Math.pow(0.5, s.donorFatigue);
+        
+        let amt = base * (s.ev/5) * support * fatigue;
+        if(amt < 0.1) amt = 0.1;
+        
+        this.data.funds += amt;
+        s.donorFatigue++;
+        
+        this.updateHUD();
+        this.showToast(`Raised $${amt.toFixed(1)}M in ${s.name}`);
+    },
+
+    setupRally: function() { document.getElementById('rally-options').classList.remove('hidden'); },
+    
+    executeRally: function() {
+        if(this.data.energy < 2) return this.showToast("Need 2 Energy!");
+        if(this.data.funds < 0.1) return this.showToast("Need $100k!");
+        
+        this.data.energy -= 2;
+        this.data.funds -= 0.1;
+        
+        const s = this.data.states[this.data.selectedState];
+        const iID = document.getElementById('rally-issue-select').value;
+        const imp = s.priorities[iID] || 5;
+        
+        let boost = (imp/3) * (Math.random()*0.5 + 0.8);
+        if(this.data.selectedParty==='D') s.poll += boost; else s.poll -= boost;
+        if(s.poll>100) s.poll=100; if(s.poll<0) s.poll=0;
+        
+        document.getElementById('rally-options').classList.add('hidden');
+        this.updateHUD();
+        this.colorMap();
+        this.clickState(this.data.selectedState);
+        this.showToast("Rally Complete!");
+    },
+
+    runStateAd: function() {
+        if(this.data.funds < 0.5) return this.showToast("Need $500k!");
+        this.data.funds -= 0.5;
+        const s = this.data.states[this.data.selectedState];
+        const boost = 1.5;
+        if(this.data.selectedParty==='D') s.poll += boost; else s.poll -= boost;
+        this.updateHUD(); this.colorMap(); this.clickState(this.data.selectedState);
+    },
+
+    openStateBio: function() {
+        const s = this.data.states[this.data.selectedState];
+        const modal = document.getElementById('bio-modal');
+        const content = document.getElementById('bio-content');
+        
+        // Build Demographics
+        let demoHTML = `<div class="ig-grid">`;
+        for(let k in s.demographics) {
+            let n = INTEREST_GROUPS.find(x=>x.id===k).name;
+            demoHTML += `<div class="ig-tag"><span>${n}</span><span class="ig-val">${s.demographics[k]}%</span></div>`;
+        }
+        demoHTML += `</div>`;
+        
+        content.innerHTML = `
+            <div class="bio-header" style="background:#333;">
+                <div class="bio-title"><h2>${s.name}</h2></div>
+            </div>
+            <div class="bio-lore">"Battleground with ${s.ev} Electoral Votes."</div>
+            <h3>DEMOGRAPHICS</h3>${demoHTML}
+            <h3 style="margin-top:20px;">POLLING</h3>
+            <p><span class="blue">${s.poll.toFixed(1)}% D</span> vs <span class="red">${(100-s.poll).toFixed(1)}% R</span></p>
+        `;
+        modal.classList.remove('hidden');
+    },
+
+    /* --- TURN SYSTEM --- */
+    nextWeek: function() {
+        if(this.data.currentDate >= this.data.electionDay) return alert("Election Day!");
+        
+        this.data.currentDate.setDate(this.data.currentDate.getDate()+7);
+        
+        // Restore Energy (Stacking)
+        let roll = this.data.energy;
+        this.data.energy = Math.min(this.data.maxEnergy + roll, Math.floor(this.data.maxEnergy*1.5));
+        
+        // Reset Fatigue
+        for(let s in this.data.states) { if(this.data.states[s].donorFatigue > 0) this.data.states[s].donorFatigue--; }
+        
+        this.opponentTurn();
+        this.saveSnapshot();
+        
+        this.updateHUD();
+        this.colorMap();
+        if(this.data.selectedState) this.clickState(this.data.selectedState);
+        this.showToast("Week Advanced.");
+    },
+
+    opponentTurn: function() {
+        const playerIsDem = this.data.selectedParty === 'D';
+        for(let code in this.data.states) {
+            let s = this.data.states[code];
+            // Drift
+            s.poll += (Math.random()*0.6 - 0.3);
+            
+            // AI Logic
+            let isSwing = (s.poll >= 45 && s.poll <= 55);
+            let aiWinning = playerIsDem ? (s.poll < 48) : (s.poll > 52);
+            
+            let chance = isSwing ? 0.5 : 0.1;
+            if(aiWinning && Math.random()>0.8) chance = 0.3;
+            
+            if(Math.random() < chance) {
+                let shift = Math.random()*1.2 + 0.2;
+                if(playerIsDem) s.poll -= shift; else s.poll += shift;
+            }
+            if(s.poll>100)s.poll=100; if(s.poll<0)s.poll=0;
+        }
+    },
+
+    /* --- UNDO --- */
+    saveSnapshot: function() { this.data.turnSnapshot = JSON.stringify(this.data); },
+    undoLastAction: function() {
+        if(!this.data.turnSnapshot) return;
+        if(confirm("Reset Turn?")) {
+            const snap = JSON.parse(this.data.turnSnapshot);
+            this.data.funds = snap.funds;
+            this.data.energy = snap.energy;
+            this.data.states = snap.states;
+            this.updateHUD(); this.colorMap();
+            if(this.data.selectedState) this.clickState(this.data.selectedState);
+        }
+    },
+
+    /* --- MAP UTILS --- */
     initMap: function() {
         for(let code in this.data.states) {
-            let path = document.getElementById(code);
-            if(path) {
-                path.onclick = () => this.clickState(code);
-                path.onmousemove = (e) => this.showTooltip(e, code);
-                path.onmouseleave = () => document.getElementById('map-tooltip').style.display='none';
+            let p = document.getElementById(code);
+            if(p) {
+                p.onclick = () => this.clickState(code);
+                p.onmousemove = (e) => this.showTooltip(e, code);
+                p.onmouseleave = () => document.getElementById('map-tooltip').style.display='none';
             }
         }
         this.colorMap();
     },
     colorMap: function() {
         for(let code in this.data.states) {
-            const s = this.data.states[code];
-            const p = document.getElementById(code);
+            let s = this.data.states[code];
+            let p = document.getElementById(code);
             if(p) {
-                let fill = "#64748b"; // Tossup
-                if(s.poll > 53) fill = "#0056b3";
-                else if(s.poll > 50) fill = "#4fa1ff";
-                else if(s.poll < 47) fill = "#d32f2f";
-                else if(s.poll <= 50) fill = "#ff6b6b";
+                let fill = "#64748b";
+                if(s.poll > 53) fill="#0056b3"; else if(s.poll > 50) fill="#4fa1ff";
+                else if(s.poll < 47) fill="#d32f2f"; else if(s.poll <= 50) fill="#ff6b6b";
                 p.style.fill = fill;
             }
         }
@@ -328,50 +387,43 @@ const app = {
         document.getElementById('sp-name').innerText = s.name;
         document.getElementById('sp-ev').innerText = s.ev + " EV";
         
-        // Bars
         document.getElementById('poll-dem-bar').style.width = s.poll + "%";
         document.getElementById('poll-rep-bar').style.width = (100-s.poll) + "%";
         document.getElementById('poll-dem-val').innerText = s.poll.toFixed(1) + "%";
         document.getElementById('poll-rep-val').innerText = (100-s.poll).toFixed(1) + "%";
         
-        // Issues
-        const list = document.getElementById('sp-issues-list');
-        list.innerHTML = "";
-        ISSUES.sort((a,b) => s.priorities[b.id] - s.priorities[a.id]).slice(0,3).forEach(x => {
-            list.innerHTML += `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:2px;"><span>${x.name}</span><span style="color:gold">${s.priorities[x.id]}/10</span></div>`;
+        const l = document.getElementById('sp-issues-list');
+        l.innerHTML="";
+        ISSUES.sort((a,b)=>s.priorities[b.id]-s.priorities[a.id]).slice(0,3).forEach(x=>{
+            l.innerHTML+=`<div style="display:flex; justify-content:space-between; padding:2px; border-bottom:1px solid #333"><span>${x.name}</span><span style="color:gold">${s.priorities[x.id]}</span></div>`;
         });
     },
-    runStateAd: function() {
-        if(this.data.actionsLeft <= 0) return this.showToast("No actions left!");
-        if(this.data.funds < 0.5) return this.showToast("Need $500k!");
-        this.data.funds -= 0.5; this.data.actionsLeft--;
-        const s = this.data.states[this.data.selectedState];
-        const boost = (Math.random() * 1.5) + 0.5;
-        if(this.data.selectedParty === 'D') s.poll += boost; else s.poll -= boost;
-        if(s.poll > 100) s.poll = 100; if(s.poll < 0) s.poll = 0;
-        this.log(`Ad Blitz in ${s.name}.`);
-        this.updateHUD(); this.colorMap(); this.clickState(this.data.selectedState);
-    },
-    runNationalAd: function() {
-        if(this.data.actionsLeft <= 0) return this.showToast("No actions left!");
-        if(this.data.funds < 2.5) return this.showToast("Need $2.5M!");
-        this.data.funds -= 2.5; this.data.actionsLeft--;
-        for(let code in this.data.states) {
-            const boost = (Math.random() * 0.5); 
-            if(this.data.selectedParty === 'D') this.data.states[code].poll += boost; else this.data.states[code].poll -= boost;
+    updateHUD: function() {
+        const opt = { month: 'short', day: 'numeric' };
+        document.getElementById('hud-date').innerText = this.data.currentDate.toLocaleDateString('en-US', opt);
+        document.getElementById('hud-funds').innerText = `$${this.data.funds.toFixed(1)}M`;
+        
+        const ec = document.getElementById('hud-energy');
+        ec.innerHTML="";
+        for(let i=0; i<this.data.maxEnergy; i++) {
+            ec.innerHTML += `<div class="energy-pip ${i<this.data.energy?'active':''}"></div>`;
         }
-        this.log("National Ad Buy.");
-        this.updateHUD(); this.colorMap(); if(this.data.selectedState) this.clickState(this.data.selectedState);
+    },
+    updateScore: function() {
+        let d=0, r=0;
+        for(let k in this.data.states) {
+            if(this.data.states[k].poll >= 50) d+=this.data.states[k].ev; else r+=this.data.states[k].ev;
+        }
+        document.getElementById('score-dem').innerText = d;
+        document.getElementById('score-rep').innerText = r;
+        const dp = (d/538)*100; const rp = (r/538)*100;
+        document.getElementById('ev-bar').style.background = `linear-gradient(90deg, #0056b3 ${dp}%, #333 ${dp}%, #333 ${100-rp}%, #d32f2f ${100-rp}%)`;
     },
     showTooltip: function(e, code) {
         const tt = document.getElementById('map-tooltip');
         const s = this.data.states[code];
         tt.innerHTML = `<h4>${s.name}</h4><div>D: ${s.poll.toFixed(1)}%</div><div>R: ${(100-s.poll).toFixed(1)}%</div>`;
         tt.style.display='block'; tt.style.left=(e.clientX+15)+'px'; tt.style.top=(e.clientY+15)+'px';
-    },
-    log: function(msg) {
-        const feed = document.getElementById('log-content');
-        if(feed) { const div = document.createElement('div'); div.className = "log-entry"; div.innerText = `> ${msg}`; feed.prepend(div); }
     },
     showToast: function(msg) {
         const t = document.getElementById('toast');
