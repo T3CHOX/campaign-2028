@@ -69,7 +69,8 @@ const app = {
     data: {
         currentDate: new Date("2028-07-04"),
         electionDay: new Date("2028-11-07"),
-        selectedParty: null, candidate: null, vp: null, opponent: null,
+        selectedParty: null, candidate: null, vp: null, 
+        opponent: null, opponentVP: null,
         funds: 0, energy: 8, maxEnergy: 8,
         thirdPartiesEnabled: true,
         states: {}, selectedState: null,
@@ -77,10 +78,8 @@ const app = {
     },
 
     init: function() {
-        console.log("App Initializing...");
         this.data.states = JSON.parse(JSON.stringify(INIT_STATES));
         
-        // Initialize Advanced State Data
         for(let s in this.data.states) {
             this.data.states[s].moe = (Math.random() * 2 + 1.5).toFixed(1);
             this.data.states[s].donorFatigue = 0; 
@@ -91,7 +90,6 @@ const app = {
             this.data.states[s].demographics = {};
             INTEREST_GROUPS.forEach(ig => this.data.states[s].demographics[ig.id] = Math.floor(Math.random()*30)+5);
             
-            // 3rd Party Regional Strength
             this.data.states[s].greenShare = ['CA','OR','VT'].includes(s) ? 3.5 : 1.0;
             this.data.states[s].libShare = ['NH','MT','NV'].includes(s) ? 4.0 : 1.5;
         }
@@ -105,7 +103,7 @@ const app = {
         document.getElementById(id).classList.add('active');
     },
 
-    /* --- SETUP SCREENS --- */
+    /* --- SETUP --- */
     renderParties: function() {
         const c = document.getElementById('party-cards');
         if(!c) return; c.innerHTML = "";
@@ -119,14 +117,7 @@ const app = {
     renderCands: function(pk) {
         const c = document.getElementById('candidate-cards');
         c.innerHTML = "";
-        const cands = CANDIDATES.filter(x => x.party === pk);
-        
-        if(cands.length === 0) {
-            c.innerHTML = "<p>No candidates defined for this party.</p>";
-            return;
-        }
-
-        cands.forEach(cand => {
+        CANDIDATES.filter(x => x.party === pk).forEach(cand => {
             const img = cand.img ? `<img src="${cand.img}">` : "";
             c.innerHTML += `<div class="card" onclick="app.selCand('${cand.id}')"><div class="portrait">${img}</div><div class="card-info"><h3>${cand.name}</h3><p>${cand.desc}</p><p class="buff-text">Stamina: ${cand.stamina}</p></div></div>`;
         });
@@ -144,7 +135,6 @@ const app = {
         c.innerHTML = "";
         const vps = VPS.filter(x => x.party === pk);
         
-        // --- FIXED SYNTAX ERROR HERE ---
         if(vps.length === 0) {
             c.innerHTML = `<div class="card" onclick="app.renderOpp()"><div class="card-info"><h3>CONTINUE (NO VP)</h3></div></div>`;
             return;
@@ -160,12 +150,15 @@ const app = {
         this.renderOpp();
     },
 
+    // Step 1: Select Opponent Candidate
     renderOpp: function() {
         const maj = document.getElementById('opponent-cards-major');
         const min = document.getElementById('opponent-cards-minor');
         if(!maj || !min) return; 
         maj.innerHTML = ""; min.innerHTML = "";
         
+        document.getElementById('opp-section-title').innerText = "SELECT OPPONENT CANDIDATE";
+
         let rivalP = (this.data.selectedParty === 'D') ? 'R' : 'D';
         if(this.data.selectedParty === 'I') rivalP = 'D';
 
@@ -182,8 +175,33 @@ const app = {
     },
     selOpp: function(id) {
         this.data.opponent = CANDIDATES.find(x => x.id === id);
+        this.renderOppVPs();
+    },
+
+    // Step 2: Select Opponent VP
+    renderOppVPs: function() {
+        const maj = document.getElementById('opponent-cards-major');
+        maj.innerHTML = "";
+        document.getElementById('opp-section-title').innerText = "SELECT OPPONENT'S RUNNING MATE";
+
+        const vps = VPS.filter(x => x.party === this.data.opponent.party);
+        
+        if(vps.length === 0) {
+            // Auto skip if no VPs defined for opponent party
+            this.startGame();
+            return;
+        }
+
+        vps.forEach(v => {
+            const img = v.img ? `<img src="${v.img}">` : "";
+            maj.innerHTML += `<div class="card" onclick="app.selOppVP('${v.id}')"><div class="portrait">${img}</div><div class="card-info"><h3>${v.name}</h3><p>${v.state}</p></div></div>`;
+        });
+    },
+    selOppVP: function(id) {
+        this.data.opponentVP = VPS.find(x => x.id === id);
         this.startGame();
     },
+
     toggleThirdParties: function() {
         this.data.thirdPartiesEnabled = document.getElementById('third-party-toggle').checked;
         document.getElementById('third-party-section').style.opacity = this.data.thirdPartiesEnabled ? "1" : "0.3";
@@ -203,30 +221,24 @@ const app = {
         document.getElementById('hud-party-name').innerText = PARTIES[pKey].name.toUpperCase() + " NOMINEE";
         document.getElementById('hud-party-name').className = `cand-party text-${pKey}`;
 
-        // 3rd Party Effect
         if(this.data.thirdPartiesEnabled) {
             for(let s in this.data.states) {
                 let spoil = this.data.states[s].greenShare + this.data.states[s].libShare;
                 if(this.data.states[s].poll > 50) this.data.states[s].poll -= (spoil * 0.6);
                 else this.data.states[s].poll += (spoil * 0.6);
             }
-            this.log("Third parties active. Polls adjusted.");
         }
 
         this.initMap();
         this.updateHUD();
-        this.log(`Campaign vs ${this.data.opponent ? this.data.opponent.name : 'Opponent'} started.`);
     },
 
     /* --- GAMEPLAY --- */
     initIssues: function() {
         const s = document.getElementById('issue-select');
         const r = document.getElementById('rally-issue-select');
-        ISSUES.forEach(i => {
-            const opt = `<option value="${i.id}">${i.name}</option>`;
-            if(s) s.innerHTML += opt;
-            if(r) r.innerHTML += opt;
-        });
+        if(s) ISSUES.forEach(i => s.innerHTML += `<option value="${i.id}">${i.name}</option>`);
+        if(r) ISSUES.forEach(i => r.innerHTML += `<option value="${i.id}">${i.name}</option>`);
     },
 
     fundraise: function() {
@@ -288,8 +300,7 @@ const app = {
         
         let demoHTML = `<div class="ig-grid">`;
         for(let k in s.demographics) {
-            let ig = INTEREST_GROUPS.find(x=>x.id===k);
-            let n = ig ? ig.name : k;
+            let n = INTEREST_GROUPS.find(x=>x.id===k).name;
             demoHTML += `<div class="ig-tag"><span>${n}</span><span class="ig-val">${s.demographics[k]}%</span></div>`;
         }
         demoHTML += `</div>`;
@@ -330,10 +341,7 @@ const app = {
         const playerIsDem = this.data.selectedParty === 'D';
         for(let code in this.data.states) {
             let s = this.data.states[code];
-            // Drift
             s.poll += (Math.random()*0.6 - 0.3);
-            
-            // AI
             let isSwing = (s.poll >= 45 && s.poll <= 55);
             let attackChance = isSwing ? 0.5 : 0.1;
             
@@ -370,26 +378,56 @@ const app = {
         }
         this.colorMap();
     },
+    
+    // NEW: Gradient Color Logic based on exact margin
+    getMarginColor: function(poll) {
+        // poll is Dem %
+        let margin = poll - 50; // Positive = Dem, Negative = Rep
+        
+        if(Math.abs(margin) < 0.5) return "#808080"; // Dead heat grey
+        
+        let intensity = Math.min(Math.abs(margin) / 25, 1); // Cap at 25 point margin
+        
+        if(margin > 0) {
+            // Lerp Grey(128,128,128) -> Deep Blue(0,21,188)
+            let r = Math.round(128 - (128 * intensity));
+            let g = Math.round(128 - (107 * intensity)); // 128->21
+            let b = Math.round(128 + (60 * intensity)); // 128->188
+            return `rgb(${r}, ${g}, ${b})`;
+        } else {
+            // Lerp Grey(128,128,128) -> Deep Red(220,0,0)
+            let r = Math.round(128 + (92 * intensity)); // 128->220
+            let g = Math.round(128 - (128 * intensity));
+            let b = Math.round(128 - (128 * intensity));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+    },
+
     colorMap: function() {
         for(let code in this.data.states) {
             let s = this.data.states[code];
             let p = document.getElementById(code);
             if(p) {
-                let fill = "#64748b";
-                if(s.poll > 53) fill="#0056b3"; else if(s.poll > 50) fill="#4fa1ff";
-                else if(s.poll < 47) fill="#d32f2f"; else if(s.poll <= 50) fill="#ff6b6b";
-                p.style.fill = fill;
+                p.style.fill = this.getMarginColor(s.poll);
+                p.style.stroke = "white"; 
+                p.style.strokeWidth = "0.5";
             }
         }
         this.updateScore();
     },
+
     clickState: function(code) {
         this.data.selectedState = code;
         const s = this.data.states[code];
         document.getElementById('state-panel').classList.remove('hidden');
         document.getElementById('empty-msg').classList.add('hidden');
         
-        document.getElementById('sp-name').innerText = s.name;
+        // Add Margin Text to Header
+        let margin = s.poll - 50;
+        let marginText = Math.abs(margin) < 0.1 ? "EVEN" : (margin > 0 ? `D+${margin.toFixed(1)}` : `R+${Math.abs(margin).toFixed(1)}`);
+        let marginColor = Math.abs(margin) < 0.1 ? "gray" : (margin > 0 ? "var(--dem-blue)" : "var(--rep-red)");
+        
+        document.getElementById('sp-name').innerHTML = `${s.name} <span style="font-size:0.7em; color:${marginColor}; margin-left:10px;">${marginText}</span>`;
         document.getElementById('sp-ev').innerText = s.ev + " EV";
         
         document.getElementById('poll-dem-bar').style.width = s.poll + "%";
@@ -403,17 +441,18 @@ const app = {
             l.innerHTML+=`<div style="display:flex; justify-content:space-between; padding:2px; border-bottom:1px solid #333"><span>${x.name}</span><span style="color:gold">${s.priorities[x.id]}</span></div>`;
         });
     },
+
     updateHUD: function() {
         const opt = { month: 'short', day: 'numeric' };
         document.getElementById('hud-date').innerText = this.data.currentDate.toLocaleDateString('en-US', opt);
         document.getElementById('hud-funds').innerText = `$${this.data.funds.toFixed(1)}M`;
-        
         const ec = document.getElementById('hud-energy');
         ec.innerHTML="";
         for(let i=0; i<this.data.maxEnergy; i++) {
             ec.innerHTML += `<div class="energy-pip ${i<this.data.energy?'active':''}"></div>`;
         }
     },
+
     updateScore: function() {
         let d=0, r=0;
         for(let k in this.data.states) {
@@ -424,6 +463,7 @@ const app = {
         const dp = (d/538)*100; const rp = (r/538)*100;
         document.getElementById('ev-bar').style.background = `linear-gradient(90deg, #0056b3 ${dp}%, #333 ${dp}%, #333 ${100-rp}%, #d32f2f ${100-rp}%)`;
     },
+
     showTooltip: function(e, code) {
         const tt = document.getElementById('map-tooltip');
         const s = this.data.states[code];
@@ -432,20 +472,23 @@ const app = {
         let margin = Math.abs(s.poll - (100-s.poll)).toFixed(1);
         let name = "Opponent";
         
-        if(lead === "DEM" && this.data.selectedParty === 'D') name = this.data.candidate.name.split(" ").pop();
-        else if(lead === "REP" && this.data.selectedParty === 'R') name = this.data.candidate.name.split(" ").pop();
-        else if(this.data.opponent) name = this.data.opponent.name.split(" ").pop();
+        // Determine Leader Name
+        let myName = this.data.candidate.name.split(" ").pop();
+        let oppName = this.data.opponent ? this.data.opponent.name.split(" ").pop() : "Opponent";
+        
+        if(lead === "DEM" && this.data.selectedParty === 'D') name = myName;
+        else if(lead === "REP" && this.data.selectedParty === 'R') name = myName;
+        else name = oppName;
         
         let color = lead === "DEM" ? "#4fa1ff" : "#ff6b6b";
         
         tt.innerHTML = `
-            <span class="tooltip-leader" style="color:${color}">${name} +${margin}</span>
-            <div class="tip-row"><span class="blue">DEM</span> <span>${s.poll.toFixed(1)}%</span></div>
-            <div class="tip-row"><span class="red">REP</span> <span>${(100-s.poll).toFixed(1)}%</span></div>
-            <div style="font-size:0.7rem; color:#aaa; margin-top:4px;">${s.ev} Electoral Votes</div>
+            <div style="font-size:0.8rem; color:#fff; text-transform:uppercase; letter-spacing:1px; margin-bottom:2px;">${s.name}</div>
+            <span class="tooltip-leader" style="color:${color}; font-size:1.4rem;">${name}+${margin}</span>
         `;
         tt.style.display='block'; tt.style.left=(e.clientX+15)+'px'; tt.style.top=(e.clientY+15)+'px';
     },
+
     log: function(msg) {
         const feed = document.getElementById('log-content');
         if(feed) { const div = document.createElement('div'); div.className = "log-entry"; div.innerText = `> ${msg}`; feed.prepend(div); }
