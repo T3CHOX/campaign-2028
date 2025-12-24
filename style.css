@@ -99,7 +99,7 @@ body {
 
 .ev-display { display: flex; justify-content: space-between; font-weight: 900; font-size: 1.5rem; margin-bottom: 5px; }
 .dem-score { color: var(--dem-blue); } .rep-score { color: var(--rep-red); }
-.progress-bar-bg { height: 14px; background: #333; overflow: hidden; width: 400px; border: 1px solid #555; }
+.progress-bar-bg { height: 14px; background: #333; overflow: hidden; width: 400px; border: 1px solid #555; border-radius: 0; }
 .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--dem-blue) 50%, var(--rep-red) 50%); }
 
 .hud-right { display: flex; gap: 20px; align-items: center; }
@@ -145,8 +145,12 @@ select { width: 100%; padding: 10px; background: #333; border: 1px solid #555; c
 }
 #map-tooltip h4 { margin: 0 0 8px 0; font-family: 'Merriweather', serif; color: #ffd700; border-bottom: 1px solid #444; padding-bottom: 4px; }
 .tip-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 3px; }
+.tooltip-leader { font-family: 'Merriweather', serif; font-weight: 700; font-size: 1.1rem; border-bottom: 1px solid #555; padding-bottom: 3px; margin-bottom: 5px; display: block; }
 
 /* OPPONENT SCREEN & TOGGLES */
+.party-G { background: #198754; } 
+.party-L { background: #fd7e14; }
+
 .toggle-wrapper {
     display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px;
     background: #2a2a2a; padding: 10px; border-radius: 8px; border: 1px solid #444;
@@ -168,35 +172,52 @@ input:checked + .slider:before { transform: translateX(26px); }
 .opponent-section { margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px; }
 .opponent-section h3 { color: #aaa; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; }
 
-/* Add these to your style.css */
+/* --- NEW EXPANSION STYLES --- */
 
-/* Energy Bar */
-.energy-container { display: flex; gap: 4px; }
-.energy-pip { width: 10px; height: 18px; background: #333; border: 1px solid #555; transform: skewX(-10deg); }
+/* Energy Bar in HUD */
+.energy-container { display: flex; align-items: center; gap: 5px; margin-right: 15px; }
+.energy-pip {
+    width: 12px; height: 20px; background: #333; border: 1px solid #555;
+    transform: skewX(-10deg); transition: 0.2s;
+}
 .energy-pip.active { background: #ffd700; box-shadow: 0 0 5px #ffd700; border-color: #fff; }
 
-/* Action Grid */
-.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+/* Action Buttons (Campaign/Fundraise) */
+.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
 .act-btn {
-    padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 6px; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 4px; transition: 0.2s;
+    padding: 15px; border: 1px solid #444; background: #222; color: white;
+    cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;
+    transition: 0.2s; border-radius: 6px;
 }
 .act-btn:hover { background: #333; border-color: #666; }
-.act-icon { font-size: 1.4rem; }
+.act-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.act-icon { font-size: 1.5rem; }
 .act-cost { font-size: 0.7rem; color: #aaa; text-transform: uppercase; }
 
 /* State Bio Modal */
-.bio-header { height: 100px; position: relative; margin: -30px -30px 20px -30px; border-bottom: 4px solid #ffd700; }
-.bio-title { padding: 60px 0 0 30px; color: white; text-shadow: 0 2px 4px black; }
-.bio-title h2 { margin: 0; font-family: 'Merriweather', serif; font-size: 2rem; }
-.bio-lore { font-style: italic; color: #ccc; border-left: 3px solid #ffd700; padding-left: 10px; margin-bottom: 20px; }
+.bio-header {
+    height: 120px; background-size: cover; background-position: center; position: relative;
+    border-bottom: 4px solid var(--gold); margin: -30px -30px 20px -30px; /* Bleed to edge */
+}
+.bio-flag {
+    width: 80px; height: 80px; border-radius: 50%; border: 3px solid white;
+    position: absolute; bottom: -40px; left: 20px; background: #000;
+    overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+.bio-flag img { width: 100%; height: 100%; object-fit: cover; }
+.bio-title { margin-left: 110px; padding-top: 80px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+.bio-title h2 { margin: 0; font-size: 2.5rem; font-family: 'Merriweather', serif; }
+.bio-lore { font-style: italic; color: #ccc; margin-bottom: 20px; border-left: 3px solid var(--gold); padding-left: 10px; }
 
-/* Demographics */
-.ig-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
-.ig-tag { background: #1a1a1a; padding: 8px; border: 1px solid #333; border-radius: 4px; text-align: center; }
-.ig-val { display: block; font-weight: bold; color: #ffd700; font-size: 1.1rem; }
+/* Demographics / Interest Groups */
+.ig-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 15px; }
+.ig-tag {
+    background: #1a1a1a; padding: 8px; border-radius: 4px; border: 1px solid #333;
+    font-size: 0.8rem; text-align: center;
+}
+.ig-val { display: block; font-weight: bold; color: var(--gold); font-size: 1.1rem; }
 
-/* Undo/Reset */
-.turn-controls { margin-top: 5px; }
-.mini-btn { background: #444; border: none; color: white; padding: 4px 8px; font-size: 0.7rem; cursor: pointer; border-radius: 3px; }
+/* Undo/Reset Controls */
+.turn-controls { display: flex; gap: 5px; margin-top: 5px; }
+.mini-btn { padding: 5px 10px; background: #444; border: none; color: white; font-size: 0.7rem; cursor: pointer; }
 .mini-btn:hover { background: #666; }
