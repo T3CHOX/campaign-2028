@@ -15,23 +15,25 @@ const ISSUES = [
     { id: 'foreign', name: 'Foreign Pol.' }, { id: 'crime', name: 'Crime' }
 ];
 
+// ADDED: ai_skill (1-10) determines how aggressive/smart the opponent is
 const CANDIDATES = [
-    { id: "harris", name: "Kamala Harris", party: "D", funds: 60, img: "images/harris.jpg", buff: "Incumbent Advantage", desc: "Current VP.", stamina: 8 },
-    { id: "newsom", name: "Gavin Newsom", party: "D", funds: 75, img: "images/newsom.jpg", buff: "Fundraising Machine", desc: "CA Governor.", stamina: 9 },
-    { id: "whitmer", name: "Gretchen Whitmer", party: "D", funds: 55, img: "images/whitmer.jpg", buff: "Rust Belt Appeal", desc: "MI Governor.", stamina: 8 },
-    { id: "desantis", name: "Ron DeSantis", party: "R", funds: 65, img: "images/desantis.jpg", buff: "Culture Warrior", desc: "FL Governor.", stamina: 9 },
-    { id: "vance", name: "JD Vance", party: "R", funds: 50, img: "images/vance.jpg", buff: "Populist Appeal", desc: "OH Senator.", stamina: 8 },
-    { id: "ramaswamy", name: "Vivek Ramaswamy", party: "R", funds: 70, img: "images/ramaswamy.jpg", buff: "Outsider Energy", desc: "Tech Entrepreneur.", stamina: 10 },
-    { id: "yang", name: "Andrew Yang", party: "I", funds: 40, img: "images/yang.jpg", buff: "Tech Innovator", desc: "Forward Party.", stamina: 8 },
-    { id: "stein", name: "Jill Stein", party: "G", funds: 10, img: "images/scenario.jpg", buff: "Eco-Activist", desc: "Green Party.", stamina: 6 },
-    { id: "oliver", name: "Chase Oliver", party: "L", funds: 12, img: "images/scenario.jpg", buff: "Liberty First", desc: "Libertarian.", stamina: 7 }
+    { id: "harris", name: "Kamala Harris", party: "D", funds: 60, img: "images/harris.jpg", desc: "Current VP.", stamina: 8, ai_skill: 8 },
+    { id: "newsom", name: "Gavin Newsom", party: "D", funds: 75, img: "images/newsom.jpg", desc: "CA Governor.", stamina: 9, ai_skill: 9 },
+    { id: "whitmer", name: "Gretchen Whitmer", party: "D", funds: 55, img: "images/whitmer.jpg", desc: "MI Governor.", stamina: 8, ai_skill: 9 },
+    { id: "desantis", name: "Ron DeSantis", party: "R", funds: 65, img: "images/desantis.jpg", desc: "FL Governor.", stamina: 9, ai_skill: 9 },
+    { id: "vance", name: "JD Vance", party: "R", funds: 50, img: "images/vance.jpg", desc: "OH Senator.", stamina: 8, ai_skill: 7 },
+    { id: "ramaswamy", name: "Vivek Ramaswamy", party: "R", funds: 70, img: "images/ramaswamy.jpg", desc: "Tech Entrepreneur.", stamina: 10, ai_skill: 6 },
+    { id: "yang", name: "Andrew Yang", party: "I", funds: 40, img: "images/yang.jpg", desc: "Forward Party.", stamina: 8, ai_skill: 5 },
+    { id: "stein", name: "Jill Stein", party: "G", funds: 10, img: "images/scenario.jpg", desc: "Green Party.", stamina: 6, ai_skill: 3 },
+    { id: "oliver", name: "Chase Oliver", party: "L", funds: 12, img: "images/scenario.jpg", desc: "Libertarian.", stamina: 7, ai_skill: 3 }
 ];
 
+// ADDED: ai_skill (1-5) adds to the ticket's total formidable score
 const VPS = [
-    { id: "shapiro", name: "Josh Shapiro", party: "D", state: "PA", desc: "Popular swing state governor.", img: "images/shapiro.jpg" },
-    { id: "kelly", name: "Mark Kelly", party: "D", state: "AZ", desc: "Astronaut & Senator.", img: "images/scenario.jpg" },
-    { id: "rubio", name: "Marco Rubio", party: "R", state: "FL", desc: "Establishment bridge.", img: "images/scenario.jpg" },
-    { id: "stefanik", name: "Elise Stefanik", party: "R", state: "NY", desc: "Strong aggressive campaigner.", img: "images/scenario.jpg" }
+    { id: "shapiro", name: "Josh Shapiro", party: "D", state: "PA", desc: "Popular swing state governor.", img: "images/shapiro.jpg", ai_skill: 5 },
+    { id: "kelly", name: "Mark Kelly", party: "D", state: "AZ", desc: "Astronaut & Senator.", img: "images/scenario.jpg", ai_skill: 4 },
+    { id: "rubio", name: "Marco Rubio", party: "R", state: "FL", desc: "Establishment bridge.", img: "images/scenario.jpg", ai_skill: 4 },
+    { id: "stefanik", name: "Elise Stefanik", party: "R", state: "NY", desc: "Strong aggressive campaigner.", img: "images/scenario.jpg", ai_skill: 3 }
 ];
 
 const INIT_STATES = {
@@ -61,7 +63,6 @@ class County {
         this.name = name || id;
 
         if (realData) {
-            // LOAD REAL DATA
             this.type = realData.t || "Rural";
             this.population = realData.p || 10000;
             this.pcts = {
@@ -71,7 +72,6 @@ class County {
                 L: baseL * 0.5
             };
         } else {
-            // PROCEDURAL FALLBACK
             const rand = Math.random();
             if (stateType === 'Urban') this.type = rand > 0.4 ? 'Urban' : 'Suburb';
             else if (stateType === 'Rural') this.type = rand > 0.9 ? 'Urban' : 'Rural';
@@ -111,13 +111,14 @@ const app = {
         funds: 0, energy: 8, maxEnergy: 8, thirdPartiesEnabled: true,
         states: {}, selectedState: null, activeCountyState: null,
         mapMode: 'political', masterMapCache: null, realCountyData: null,
-        selectedCounty: null
+        selectedCounty: null,
+        // AI DATA
+        aiDifficulty: 0, aiFunds: 100
     },
 
     init: async function() {
         console.log("App Initializing...");
         
-        // Try loading real county data
         try {
             const res = await fetch('counties/county_data.json');
             if (res.ok) {
@@ -130,10 +131,6 @@ const app = {
         
         for(let sCode in this.data.states) {
             let s = this.data.states[sCode];
-            s.moe = (Math.random()*2 + 1.5).toFixed(1);
-            s.priorities = {}; 
-            ISSUES.forEach(i => s.priorities[i.id] = Math.floor(Math.random()*10)+1);
-            
             let safeName = s.name.replace(/ /g, "_");
             s.flagUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/Flag_of_${safeName}.svg`;
 
@@ -146,7 +143,6 @@ const app = {
         
         this.renderParties();
         
-        // Hide county menu on map click
         document.getElementById('county-map-container').addEventListener('click', (e) => {
              if(e.target.tagName !== 'path' && e.target.tagName !== 'rect') {
                  document.getElementById('county-menu').classList.add('hidden');
@@ -211,7 +207,7 @@ const app = {
     renderCands: function(pk) {
         const c = document.getElementById('candidate-cards'); c.innerHTML = "";
         CANDIDATES.filter(x => x.party === pk).forEach(cand => {
-            c.innerHTML += `<div class="card" onclick="app.selCand('${cand.id}')"><div class="portrait"><img src="${cand.img}"></div><div class="card-info"><h3>${cand.name}</h3><p>${cand.desc}</p><p class="buff-text">Stamina: ${cand.stamina}</p></div></div>`;
+            c.innerHTML += `<div class="card" onclick="app.selCand('${cand.id}')"><div class="portrait"><img src="${cand.img}"></div><div class="card-info"><h3>${cand.name}</h3><p>${cand.desc}</p><p class="buff-text">Stamina: ${cand.stamina} | AI: ${cand.ai_skill}</p></div></div>`;
         });
     },
     selCand: function(id) {
@@ -258,6 +254,12 @@ const app = {
     /* --- GAME START & LOOP --- */
     startGame: function() {
         this.data.funds = this.data.candidate.funds;
+        
+        // CALC AI DIFFICULTY
+        let oppSkill = this.data.opponent.ai_skill || 5;
+        let vpSkill = this.data.opponentVP ? (this.data.opponentVP.ai_skill || 3) : 0;
+        this.data.aiDifficulty = oppSkill + vpSkill; // Total formidable score (e.g. 9 + 5 = 14)
+        
         this.goToScreen('game-screen');
         const img = document.getElementById('hud-img');
         if(this.data.candidate.img) { img.src = this.data.candidate.img; img.style.display = "block"; }
@@ -276,26 +278,55 @@ const app = {
         this.data.currentDate.setDate(this.data.currentDate.getDate()+7);
         if(this.data.currentDate >= this.data.electionDay) { this.endGame(); return; }
         
-        // AI Turn
+        // AI TURN
         this.aiTurn();
         
+        // PLAYER TURN RESET
         this.data.energy = this.data.maxEnergy;
-        this.data.funds += 2; // Fundraising
+        this.data.funds += 2; // Fundraising baseline
         this.updateHUD();
         this.colorMap();
         if(this.data.selectedState) this.clickState(this.data.selectedState);
         this.showToast("New Week Started");
     },
     
+    // --- OVERHAULED AI LOGIC ---
     aiTurn: function() {
-        // AI Strategy: Target close states
-        let targets = Object.values(this.data.states).filter(s => Math.abs(s.pcts.D - s.pcts.R) < 10);
-        for(let i=0; i<3 && i<targets.length; i++) {
-             targets[i].counties.forEach(c => {
-                 if(this.data.selectedParty === 'D') c.pcts.R += 0.4; else c.pcts.D += 0.4;
+        const difficulty = this.data.aiDifficulty; // e.g., 12
+        const actionsPerTurn = Math.floor(difficulty / 3) + 1; // 12 -> 5 actions
+        const strength = (difficulty / 10) * 2.0; // 12 -> 2.4% swing per action
+        
+        // 1. Identify Targets: Sort states by "Payoff" (EV / Margin)
+        // This targets high EV states that are very close.
+        let targets = Object.values(this.data.states).map(s => {
+            let margin = Math.abs(s.pcts.D - s.pcts.R);
+            // Score = EV / (Margin + 0.5) -- Low margin, High EV = Huge Score
+            let score = s.ev / (margin + 0.5);
+            return { state: s, score: score };
+        });
+        
+        targets.sort((a,b) => b.score - a.score); // Highest score first
+        
+        // 2. Execute Actions
+        let opponentParty = this.data.selectedParty === 'D' ? 'R' : 'D';
+        
+        for(let i=0; i<actionsPerTurn; i++) {
+            let s = targets[i].state;
+            
+            // AI applies "Neighbor Effect" too to be formidable
+            s.counties.forEach(c => {
+                 if(opponentParty === 'R') c.pcts.R += (strength * 0.15); // Small bump to all counties
+                 else c.pcts.D += (strength * 0.15);
                  c.normalizePcts();
-             });
-             this.recalcStatePoll(targets[i]);
+            });
+            
+            // Major boost to a random county in that state (Simulate Rally)
+            let randomCounty = s.counties[Math.floor(Math.random() * s.counties.length)];
+            if(opponentParty === 'R') randomCounty.pcts.R += strength;
+            else randomCounty.pcts.D += strength;
+            randomCounty.normalizePcts();
+            
+            this.recalcStatePoll(s);
         }
     },
     
