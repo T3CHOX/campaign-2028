@@ -22,9 +22,6 @@
     <section id="party-screen" class="screen">
         <header class="news-header">
             <div class="logo">DECISION <span class="red-text">2028</span></div>
-            <div class="ticker-wrap">
-                <div class="ticker-move">ELECTION ALERT: Primary season kicks off... Parties scramble to define platforms...</div>
-            </div>
         </header>
         <div class="panel-container">
             <h2 class="section-title">SELECT YOUR PARTY</h2>
@@ -59,12 +56,10 @@
         </header>
         <div class="panel-container">
             <h2 class="section-title" id="opp-section-title">SELECT YOUR OPPONENT</h2>
-            
             <div class="opponent-section">
                 <h3>Major Party Challenger</h3>
                 <div class="cards-row" id="opponent-cards-major"></div>
             </div>
-
             <div class="toggle-wrapper" style="margin-top:30px;">
                 <span class="toggle-label">INCLUDE THIRD PARTIES?</span>
                 <label class="switch">
@@ -72,7 +67,6 @@
                     <span class="slider"></span>
                 </label>
             </div>
-
             <div class="opponent-section" id="third-party-section">
                 <h3>Third Party Challengers</h3>
                 <div class="cards-row" id="opponent-cards-minor"></div>
@@ -91,7 +85,6 @@
                     </div>
                 </div>
             </div>
-            
             <div class="hud-center">
                 <div class="ev-display">
                     <span class="dem-score" id="score-dem">0</span>
@@ -100,7 +93,6 @@
                 </div>
                 <div class="progress-bar-bg"><div class="progress-bar-fill" id="ev-bar"></div></div>
             </div>
-
             <div class="hud-right">
                 <div class="stat-group">
                     <label>ENERGY</label>
@@ -116,9 +108,6 @@
                 </div>
                 <div class="stat-group" style="display:flex; flex-direction:column; align-items:flex-end;">
                     <button class="next-turn-btn" onclick="app.nextWeek()">NEXT WEEK &rarr;</button>
-                    <div class="turn-controls">
-                        <button class="mini-btn" onclick="app.undoLastAction()">UNDO</button>
-                    </div>
                 </div>
             </div>
         </header>
@@ -254,6 +243,15 @@
         </div>
     </section>
 
+    <div id="county-menu" class="hidden">
+        <div class="cm-header">
+            <span id="cm-name">County Name</span>
+            <span class="cm-close" onclick="document.getElementById('county-menu').classList.add('hidden')">&times;</span>
+        </div>
+        <div class="cm-body" id="cm-actions">
+            </div>
+    </div>
+
     <div id="county-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background: #121212; z-index:4000; display:flex; flex-direction:column;">
         <div id="county-view-header" style="padding:10px 20px; background:#1a1a1a; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
             <div style="display:flex; align-items:center; gap:15px;">
@@ -264,8 +262,6 @@
             </div>
             <button onclick="app.closeCountyView()" class="start-btn" style="margin:0; padding:10px 20px; font-size:0.9rem;">RETURN TO NATIONAL MAP</button>
         </div>
-
-        <div id="county-tooltip" class="hidden" style="position:fixed; background:rgba(0,0,0,0.9); color:white; padding:10px; border:1px solid #777; border-radius:4px; pointer-events:none; z-index:5000;"></div>
 
         <div id="county-map-container" style="flex:1; display:flex; justify-content:center; align-items:center; background:#222; overflow:hidden; position:relative;">
             <p style="color:#666;">Loading Satellite Data...</p>
@@ -292,15 +288,8 @@
         </div>
     </div>
 
-    <div id="modal-overlay" class="hidden">
-        <div class="modal-box">
-            <h2>BREAKING NEWS</h2>
-            <p id="event-text">Event description...</p>
-            <button onclick="document.getElementById('modal-overlay').classList.add('hidden')">CONTINUE</button>
-        </div>
-    </div>
-
     <div id="map-tooltip"></div>
+    <div id="county-tooltip"></div>
     <div id="toast"></div>
     <script src="script.js"></script>
 </body>
