@@ -70,18 +70,16 @@ class County {
         this.name = name || id;
 
         if (realData) {
-            // LOAD REAL DATA
             this.type = realData.t || "Rural";
             this.population = realData.p || 10000;
             this.demographics = realData.d || this.generateDemographics(this.type);
             this.pcts = {
                 D: realData.v.D,
                 R: realData.v.R,
-                G: baseG * 0.5, // Minor adjustments
+                G: baseG * 0.5,
                 L: baseL * 0.5
             };
         } else {
-            // PROCEDURAL FALLBACK
             const rand = Math.random();
             if (stateType === 'Urban') this.type = rand > 0.4 ? 'Urban' : 'Suburb';
             else if (stateType === 'Rural') this.type = rand > 0.9 ? 'Urban' : 'Rural';
@@ -140,13 +138,13 @@ const app = {
         selectedParty: null, candidate: null, vp: null, opponent: null, opponentVP: null,
         funds: 0, energy: 8, maxEnergy: 8, thirdPartiesEnabled: true,
         states: {}, selectedState: null, activeCountyState: null,
-        mapMode: 'political', masterMapCache: null, realCountyData: null
+        mapMode: 'political', masterMapCache: null, realCountyData: null,
+        selectedCounty: null
     },
 
     init: async function() {
         console.log("App Initializing...");
         
-        // Try loading real county data
         try {
             const res = await fetch('counties/county_data.json');
             if (res.ok) {
@@ -176,25 +174,26 @@ const app = {
         
         this.renderParties();
         this.initIssues();
+        
+        // Hide county menu on map click
+        document.getElementById('county-map-container').addEventListener('click', (e) => {
+             if(e.target.tagName !== 'path' && e.target.tagName !== 'rect') {
+                 document.getElementById('county-menu').classList.add('hidden');
+             }
+        });
     },
 
     generateCountiesForState: function(state, baseG, baseL) {
         let counties = [];
-        
         if (this.data.realCountyData) {
-            // Generate from REAL DATA
             for (let fips in this.data.realCountyData) {
-                // Check if FIPS starts with state FIPS
                 if (fips.startsWith(state.fips)) {
                     let cData = this.data.realCountyData[fips];
-                    // SVG IDs are "c" + FIPS (e.g., c01001)
                     let id = "c" + fips; 
                     counties.push(new County(id, cData.n, "Real", cData, baseG, baseL));
                 }
             }
         }
-
-        // Fallback if no real data found for state
         if (counties.length === 0) {
             let numCounties = Math.max(5, Math.floor(state.ev * 1.8)); 
             let safeName = state.name.replace(/ /g, "");
@@ -202,7 +201,6 @@ const app = {
             for(let i=0; i<Math.floor(numCounties * 0.3); i++) counties.push(new County(`c_${safeName}_S${i}`, `Suburb ${i+1}`, "Suburb", null, baseG, baseL));
             for(let i=0; i<numCounties * 0.7; i++) counties.push(new County(`c_${safeName}_R${i}`, `Rural Dist ${i+1}`, "Rural", null, baseG, baseL));
         }
-        
         return counties;
     },
 
@@ -214,7 +212,6 @@ const app = {
             totals.D += v.D; totals.R += v.R; totals.G += v.G; totals.L += v.L;
             totalPop += (v.D+v.R+v.G+v.L);
         });
-        
         if(totalPop > 0) {
             state.pcts = {
                 D: (totals.D / totalPop) * 100, R: (totals.R / totalPop) * 100,
@@ -287,7 +284,6 @@ const app = {
     selOppVP: function(id) { this.data.opponentVP = VPS.find(x => x.id === id); this.startGame(); },
     toggleThirdParties: function() { this.data.thirdPartiesEnabled = document.getElementById('third-party-toggle').checked; },
 
-    /* --- START GAME --- */
     startGame: function() {
         this.data.funds = this.data.candidate.funds;
         this.goToScreen('game-screen');
@@ -301,7 +297,6 @@ const app = {
             for(let s in this.data.states) { this.data.states[s].pcts.G=0; this.data.states[s].pcts.L=0; }
         }
         if(this.data.vp && this.data.states[this.data.vp.state]) {
-            // Apply VP Bonus to all counties in home state
             let home = this.data.states[this.data.vp.state];
             home.counties.forEach(c => {
                  if(this.data.selectedParty === 'D') c.pcts.D += 5; else c.pcts.R += 5;
@@ -312,7 +307,7 @@ const app = {
         this.initMap(); this.updateHUD();
     },
 
-    /* --- MAP SYSTEM (MASTER MAP) --- */
+    /* --- MAP SYSTEM --- */
     enterStateView: function() {
         const s = this.data.states[this.data.selectedState];
         if(!s) return;
@@ -321,8 +316,9 @@ const app = {
         document.getElementById('cv-flag').src = s.flagUrl;
         
         const container = document.getElementById('county-map-container');
-        container.innerHTML = `<p style="color:#aaa;">Loading State Map...</p>`;
+        container.innerHTML = `<p style="color:#aaa;">Loading Map Data...</p>`;
         document.getElementById('county-modal').classList.remove('hidden');
+        document.getElementById('county-menu').classList.add('hidden'); // Hide menu on load
         
         if(this.data.masterMapCache) {
             this.extractStateFromMaster(this.data.masterMapCache, s, container);
@@ -334,7 +330,7 @@ const app = {
                     this.extractStateFromMaster(data, s, container);
                 })
                 .catch(err => {
-                    console.warn("Master map load failed. Using procedural grid.", err);
+                    console.warn("Map load failed", err);
                     this.generateFallbackMap(container, s);
                 });
         }
@@ -344,14 +340,12 @@ const app = {
         let parser = new DOMParser();
         let doc = parser.parseFromString(svgData, "image/svg+xml");
         
-        // Try finding group by name first (Your SVG structure uses <g id="StateName">)
         let group = doc.getElementById(stateObj.name);
         let validPaths = [];
         
         if(group) {
             validPaths = Array.from(group.querySelectorAll('path, polygon'));
         } else {
-            // Fallback to FIPS
             let fips = stateObj.fips; 
             let allPaths = doc.querySelectorAll('path, polygon');
             allPaths.forEach(p => {
@@ -364,18 +358,15 @@ const app = {
             return;
         }
 
-        // Create State View SVG
         let newSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        newSvg.setAttribute("viewBox", "0 0 990 627"); // Matches master map size
+        newSvg.setAttribute("viewBox", "0 0 990 627"); 
         newSvg.style.width = "100%"; newSvg.style.height = "100%";
         
         validPaths.forEach(p => {
             let clone = p.cloneNode(true);
             let c = stateObj.counties.find(ct => ct.id === p.id);
-            
-            // Interaction
             if(c) {
-                clone.onclick = (e) => { e.stopPropagation(); this.clickCounty(stateObj.counties.indexOf(c)); };
+                clone.onclick = (e) => { e.stopPropagation(); this.clickCounty(e, stateObj.counties.indexOf(c)); };
                 clone.onmousemove = (e) => this.showCountyTooltip(e, c);
                 clone.onmouseleave = () => document.getElementById('county-tooltip').classList.add('hidden');
                 this.colorCountyPath(clone, c);
@@ -386,7 +377,6 @@ const app = {
         container.innerHTML = "";
         container.appendChild(newSvg);
         
-        // Auto-Zoom (Simple BBox approximation)
         setTimeout(() => {
             try {
                 let bbox = newSvg.getBBox();
@@ -400,21 +390,17 @@ const app = {
         let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.setAttribute("viewBox", "0 0 500 400");
         svg.style.width="90%"; svg.style.height="90%";
-        
         let cols = Math.ceil(Math.sqrt(stateObj.counties.length * 1.5));
         let size = 40; let gap = 5;
-        
         stateObj.counties.forEach((c, i) => {
             let x = (i % cols) * (size + gap) + 20;
             let y = Math.floor(i / cols) * (size + gap) + 20;
             let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             rect.setAttribute("x", x); rect.setAttribute("y", y);
             rect.setAttribute("width", size); rect.setAttribute("height", size);
-            
-            rect.onclick = () => this.clickCounty(i); // Index click
+            rect.onclick = (e) => this.clickCounty(e, i); 
             rect.onmousemove = (e) => this.showCountyTooltip(e, c);
             rect.onmouseleave = () => document.getElementById('county-tooltip').classList.add('hidden');
-            
             this.colorCountyPath(rect, c);
             svg.appendChild(rect);
         });
@@ -434,29 +420,72 @@ const app = {
             let val = c.demographics[key] || 0;
             fill = `rgba(255, 215, 0, ${val/50})`;
         }
-        path.style.fill = fill; path.style.stroke = "#111"; path.style.strokeWidth = "0.5";
+        path.style.fill = fill; 
+        path.style.stroke = "#333"; 
+        path.style.strokeWidth = "0.15px"; // THINNER BORDERS
     },
 
-    clickCounty: function(idx) {
+    clickCounty: function(e, idx) {
         let c = this.data.activeCountyState.counties[idx];
-        if(confirm(`Hold Rally in ${c.name}? (1 Energy)`)) {
+        this.data.selectedCounty = c;
+        
+        const menu = document.getElementById('county-menu');
+        document.getElementById('cm-name').innerText = c.name.toUpperCase();
+        
+        // Build Action Menu HTML
+        const actions = document.getElementById('cm-actions');
+        actions.innerHTML = `
+            <button class="cm-btn" onclick="app.doCountyAction('rally')">
+                <span>🎤 Hold Rally</span>
+                <span class="cost">1 ENG</span>
+            </button>
+            <button class="cm-btn" onclick="app.doCountyAction('ad')">
+                <span>📺 Local Ad</span>
+                <span class="cost">$100K</span>
+            </button>
+            <button class="cm-btn" onclick="app.doCountyAction('poll')">
+                <span>📊 Internal Poll</span>
+                <span class="cost">$25K</span>
+            </button>
+        `;
+
+        // Position Menu near cursor
+        // Ensure it doesn't go off screen
+        let x = e.clientX + 10;
+        let y = e.clientY + 10;
+        if(x + 250 > window.innerWidth) x -= 260;
+        if(y + 200 > window.innerHeight) y -= 210;
+
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        menu.classList.remove('hidden');
+    },
+
+    doCountyAction: function(action) {
+        const c = this.data.selectedCounty;
+        const s = this.data.activeCountyState;
+        
+        if (action === 'rally') {
             if(this.data.energy > 0) {
                 this.data.energy--;
                 if(this.data.selectedParty==='D') c.enthusiasm.D += 0.2; else c.enthusiasm.R += 0.2;
-                this.recalcStatePoll(this.data.activeCountyState);
-                this.updateHUD();
-                
-                let container = document.getElementById('county-map-container');
-                let path = container.querySelector(`[id='${c.id}']`);
-                if(path) this.colorCountyPath(path, c);
-                else if(container.querySelector('rect')) this.generateFallbackMap(container, this.data.activeCountyState);
-                
-                this.clickState(this.data.selectedState); 
                 this.showToast(`Rally held in ${c.name}!`);
-            } else {
-                this.showToast("No Energy!");
-            }
+            } else this.showToast("Not enough Energy!");
+        } else if (action === 'ad') {
+            if(this.data.funds >= 0.1) {
+                this.data.funds -= 0.1;
+                if(this.data.selectedParty==='D') c.pcts.D += 0.5; else c.pcts.R += 0.5;
+                c.normalizePcts();
+                this.showToast("Local Ad Run!");
+            } else this.showToast("Not enough Funds!");
         }
+
+        // Refresh Logic
+        this.recalcStatePoll(s);
+        this.updateHUD();
+        this.setCountyMapMode(this.data.mapMode); // Redraw county colors
+        this.clickState(this.data.selectedState); // Update sidebar
+        document.getElementById('county-menu').classList.add('hidden');
     },
 
     showCountyTooltip: function(e, c) {
@@ -464,8 +493,13 @@ const app = {
         let m = c.pcts.D - c.pcts.R;
         let lead = m > 0 ? "D" : "R";
         let col = m > 0 ? "#00AEF3" : "#E81B23";
-        tt.innerHTML = `<b>${c.name}</b><br><span style="color:${col}">${lead}+${Math.abs(m).toFixed(1)}</span><br>Pop: ${(c.population/1000).toFixed(0)}k`;
-        tt.style.left = (e.clientX+10)+"px"; tt.style.top = (e.clientY+10)+"px";
+        // Improved Tooltip to match state style
+        tt.innerHTML = `
+            <span class="tooltip-leader" style="color:${col}">${c.name} ${lead}+${Math.abs(m).toFixed(1)}</span>
+            <div class="tip-row"><span class="blue">DEM ${c.pcts.D.toFixed(1)}%</span> <span class="red">REP ${c.pcts.R.toFixed(1)}%</span></div>
+            <div style="font-size:0.75rem; color:#888; margin-top:4px;">Pop: ${(c.population/1000).toFixed(1)}k</div>
+        `;
+        tt.style.left = (e.clientX+15)+"px"; tt.style.top = (e.clientY+15)+"px";
         tt.classList.remove('hidden');
     },
 
@@ -473,22 +507,12 @@ const app = {
         this.data.mapMode = mode;
         if(this.data.activeCountyState) {
             let container = document.getElementById('county-map-container');
-            let s = this.data.activeCountyState;
             let paths = container.querySelectorAll('path, polygon, rect');
-            
-            if(paths.length > 0) {
-                 paths.forEach(p => {
-                    // Match either by direct ID (SVG) or index (Fallback Rects)
-                    let c = s.counties.find(ct => ct.id === p.id);
-                    if(!c && p.tagName === 'rect') {
-                         // Fallback logic for rects if ID missing
-                         // But generateFallbackMap assigns IDs? No, it assigns events.
-                         // Rect mode usually regenerates.
-                    }
-                    if(c) this.colorCountyPath(p, c);
-                 });
-                 if(container.querySelector('rect') && !container.querySelector('path')) this.generateFallbackMap(container, s);
-            }
+            let s = this.data.activeCountyState;
+            paths.forEach(p => {
+                let c = s.counties.find(county => county.id === p.id) || s.counties[p.getAttribute('data-idx')];
+                if(c) this.colorCountyPath(p, c);
+            });
         }
     },
     
@@ -499,11 +523,11 @@ const app = {
 
     closeCountyView: function() {
         document.getElementById('county-modal').classList.add('hidden');
+        document.getElementById('county-menu').classList.add('hidden');
         this.data.activeCountyState = null;
         this.colorMap();
     },
 
-    /* --- MAP UTILS --- */
     getMarginColor: function(info) {
         let m = Math.abs(info.margin);
         if (isNaN(m) || m < 0.5) return "#FFFFFF";
@@ -517,6 +541,11 @@ const app = {
             let p = document.getElementById(code);
             if(p) {
                 p.onclick = () => this.clickState(code);
+                // Double Click to enter state view immediately
+                p.ondblclick = () => {
+                    this.clickState(code);
+                    this.enterStateView();
+                };
                 p.onmousemove = (e) => this.showTooltip(e, code);
                 p.onmouseleave = () => document.getElementById('map-tooltip').style.display='none';
             }
