@@ -69,20 +69,20 @@ class County {
         this.id = id;
         this.name = name || id;
         
-        // Procedural Type
+        // Procedural Type Determination
         const rand = Math.random();
         if (stateType === 'Urban') this.type = rand > 0.4 ? 'Urban' : 'Suburb';
         else if (stateType === 'Rural') this.type = rand > 0.9 ? 'Urban' : 'Rural';
         else this.type = rand > 0.8 ? 'Urban' : (rand > 0.4 ? 'Suburb' : 'Rural');
 
-        // Population
+        // Population (Civs)
         let base = this.type === 'Urban' ? 500000 : (this.type === 'Suburb' ? 100000 : 20000);
         this.population = Math.floor(base * (0.8 + Math.random() * 0.4));
 
         // Demographics
         this.demographics = this.generateDemographics(this.type);
         
-        // Voting
+        // Vote Calculation
         let lean = this.calculateLean(); 
         this.pcts = { 
             D: lean, 
@@ -96,7 +96,7 @@ class County {
 
     generateDemographics(type) {
         let demos = {};
-        // Initialize all to small random to prevent undefined errors
+        // Init safe values
         INTEREST_GROUPS.forEach(ig => demos[ig.id] = Math.floor(Math.random()*5));
 
         if (type === 'Urban') { 
@@ -111,15 +111,20 @@ class County {
 
     calculateLean() {
         let dScore = 0, rScore = 0;
+        // Base Leans
         if(this.type === 'Urban') dScore += 25;
         if(this.type === 'Rural') rScore += 25;
+        
+        // Group Influence
         if(this.demographics.aa > 20) dScore += 30;
         if(this.demographics.evang > 20) rScore += 30;
         if(this.demographics.youth > 20) dScore += 20;
+        if(this.demographics.rural > 20) rScore += 20;
         
         let total = dScore + rScore;
         let dPct = (dScore / total) * 100;
-        return Math.max(15, Math.min(85, dPct + (Math.random()*10 - 5)));
+        // Clamp result
+        return Math.max(10, Math.min(90, dPct + (Math.random()*10 - 5)));
     }
 
     normalizePcts() {
@@ -148,24 +153,25 @@ const app = {
     },
 
     init: function() {
-        console.log("App Init...");
+        console.log("Initializing Decision 2028...");
         this.data.states = JSON.parse(JSON.stringify(INIT_STATES));
         
         for(let sCode in this.data.states) {
             let s = this.data.states[sCode];
             s.moe = (Math.random()*2 + 1.5).toFixed(1);
             s.donorFatigue = 0;
-            s.priorities = {}; ISSUES.forEach(i => s.priorities[i.id] = Math.floor(Math.random()*10)+1);
+            s.priorities = {}; 
+            ISSUES.forEach(i => s.priorities[i.id] = Math.floor(Math.random()*10)+1);
             
             // Format Names for Wikipedia URL
             let safeName = s.name.replace(/ /g, "_");
-            // Use Special:FilePath for robust redirection
             s.flagUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/Flag_of_${safeName}.svg`;
 
-            // Procedural County Generation (Fallback)
+            // Procedural Baseline for 3rd Parties
             let baseG = ['CA','OR','VT','WA'].includes(sCode) ? 4.0 : 1.0;
             let baseL = ['NH','MT','NV','AK'].includes(sCode) ? 4.5 : 1.5;
             
+            // Generate Initial Procedural Data (Fallback)
             s.counties = this.generateCountiesForState(s, baseG, baseL);
             this.recalcStatePoll(s);
         }
@@ -178,11 +184,15 @@ const app = {
         let counties = [];
         let numCounties = Math.max(5, Math.floor(state.ev * 1.8)); 
         
-        counties.push(new County(`c_urban_${state.name}`, "Metro City", "Urban", baseG, baseL));
+        // Generate valid IDs without spaces for the fallback
+        let safeName = state.name.replace(/ /g, "");
+        counties.push(new County(`c_${safeName}_Urban`, "Metro City", "Urban", baseG, baseL));
+        
         let numSubs = Math.floor(numCounties * 0.3);
-        for(let i=0; i<numSubs; i++) counties.push(new County(`c_sub_${i}_${state.name}`, `Suburb ${i+1}`, "Suburb", baseG, baseL));
+        for(let i=0; i<numSubs; i++) counties.push(new County(`c_${safeName}_Sub_${i}`, `Suburb ${i+1}`, "Suburb", baseG, baseL));
+        
         let numRural = numCounties - 1 - numSubs;
-        for(let i=0; i<numRural; i++) counties.push(new County(`c_rur_${i}_${state.name}`, `Rural Dist ${i+1}`, "Rural", baseG, baseL));
+        for(let i=0; i<numRural; i++) counties.push(new County(`c_${safeName}_Rur_${i}`, `Rural Dist ${i+1}`, "Rural", baseG, baseL));
         
         return counties;
     },
@@ -210,15 +220,18 @@ const app = {
         document.getElementById(id).classList.add('active');
     },
 
-    // --- SETUP SCREENS ---
+    // --- SETUP FLOW ---
     renderParties: function() {
-        const c = document.getElementById('party-cards'); c.innerHTML = "";
+        const c = document.getElementById('party-cards'); 
+        if(!c) return;
+        c.innerHTML = "";
         ['D','R','I'].forEach(k => {
             const p = PARTIES[k];
             c.innerHTML += `<div class="card card-party" onclick="app.selParty('${k}')" style="background-image:url('${p.img}'); border-top:5px solid ${p.color}"><div class="party-overlay"><h3>${p.name} Party</h3><div class="party-desc">${p.desc}</div></div></div>`;
         });
     },
     selParty: function(k) { this.data.selectedParty = k; this.renderCands(k); this.goToScreen('candidate-screen'); },
+    
     renderCands: function(pk) {
         const c = document.getElementById('candidate-cards'); c.innerHTML = "";
         CANDIDATES.filter(x => x.party === pk).forEach(cand => {
@@ -230,6 +243,7 @@ const app = {
         this.data.maxEnergy = this.data.candidate.stamina; this.data.energy = this.data.maxEnergy;
         this.renderVPs(this.data.candidate.party); this.goToScreen('vp-screen');
     },
+    
     renderVPs: function(pk) {
         const c = document.getElementById('vp-cards'); c.innerHTML = "";
         const vps = VPS.filter(x => x.party === pk);
@@ -239,12 +253,14 @@ const app = {
         });
     },
     selVP: function(id) { this.data.vp = VPS.find(x => x.id === id); this.renderOpp(); },
+    
     renderOpp: function() {
         const maj = document.getElementById('opponent-cards-major');
         const min = document.getElementById('opponent-cards-minor');
         maj.innerHTML = ""; min.innerHTML = "";
         let rival = this.data.selectedParty === 'D' ? 'R' : 'D';
         if(this.data.selectedParty === 'I') rival = 'D';
+        
         CANDIDATES.filter(x => x.party === rival).forEach(o => {
             maj.innerHTML += `<div class="card" onclick="app.selOpp('${o.id}')"><div class="portrait"><img src="${o.img}"></div><div class="card-info"><h3>${o.name}</h3></div></div>`;
         });
@@ -254,6 +270,7 @@ const app = {
         this.goToScreen('opponent-screen');
     },
     selOpp: function(id) { this.data.opponent = CANDIDATES.find(x => x.id === id); this.renderOppVP(); },
+    
     renderOppVP: function() {
         const maj = document.getElementById('opponent-cards-major'); maj.innerHTML = "";
         document.getElementById('opp-section-title').innerText = "SELECT OPPONENT'S VP";
@@ -264,8 +281,10 @@ const app = {
         });
     },
     selOppVP: function(id) { this.data.opponentVP = VPS.find(x => x.id === id); this.startGame(); },
+    
     toggleThirdParties: function() { this.data.thirdPartiesEnabled = document.getElementById('third-party-toggle').checked; },
 
+    /* --- START GAME --- */
     startGame: function() {
         this.data.funds = this.data.candidate.funds;
         this.goToScreen('game-screen');
@@ -286,7 +305,7 @@ const app = {
         this.initMap(); this.updateHUD();
     },
 
-    /* --- MAP SYSTEM (WIKIPEDIA + FALLBACK) --- */
+    /* --- MAP SYSTEM (Wikipedia SVG Loader) --- */
     enterStateView: function() {
         const s = this.data.states[this.data.selectedState];
         if(!s) return;
@@ -295,16 +314,15 @@ const app = {
         document.getElementById('cv-flag').src = s.flagUrl;
         
         const container = document.getElementById('county-map-container');
-        container.innerHTML = `<p style="color:#aaa;">Downloading Map Data...</p>`;
+        container.innerHTML = `<p style="color:#aaa;">Establishing Satellite Link...</p>`;
         document.getElementById('county-modal').classList.remove('hidden');
         
-        // Exact URL format requested
+        // Exact URL Logic
         let safeName = s.name.replace(/ /g, "_");
-        let url = `https://upload.wikimedia.org/wikipedia/commons/0/01/${safeName}_Presidential_Election_Results_2024.svg`;
+        let url = `https://commons.wikimedia.org/wiki/Special:FilePath/${safeName}_Presidential_Election_Results_2024.svg`;
         
-        // Try fetch, fallback to procedural
         fetch(url)
-            .then(res => { if(!res.ok) throw new Error("Load Fail"); return res.text(); })
+            .then(res => { if(!res.ok) throw new Error("Fetch Fail"); return res.text(); })
             .then(data => {
                 if(data.includes("<svg")) {
                     container.innerHTML = data;
@@ -312,7 +330,8 @@ const app = {
                 } else throw new Error("Invalid SVG");
             })
             .catch(err => {
-                // FALLBACK TO PROCEDURAL GRID
+                // FALLBACK: Generate procedural map grid if fetch fails (CORS/404)
+                console.warn("Map load failed, using synthetic grid.");
                 this.generateFallbackMap(container, s);
             });
     },
@@ -324,15 +343,15 @@ const app = {
         let newCounties = [];
         
         paths.forEach((p, idx) => {
-            let id = p.id || `svg_c_${idx}`;
-            if(id.length < 2) return; 
+            // Find a valid ID
+            let id = p.id;
+            if(!id || id.length < 2) return; 
 
-            // Check if county data exists
             let existing = stateObj.counties.find(c => c.id === id);
             if(!existing) {
-                // Create new county data based on the SVG path
-                let baseG = ['CA','OR'].includes(stateObj.name) ? 4.0 : 1.0;
-                let baseL = ['NH'].includes(stateObj.name) ? 4.5 : 1.5;
+                // Create county data if new
+                let baseG = ['California','Oregon','Vermont'].includes(stateObj.name) ? 4.0 : 1.0;
+                let baseL = ['New_Hampshire','Montana'].includes(stateObj.name.replace(/ /g,"_")) ? 4.5 : 1.5;
                 let cObj = new County(id, id, "Rural", baseG, baseL); 
                 newCounties.push(cObj);
                 existing = cObj;
@@ -345,7 +364,6 @@ const app = {
             this.colorCountyPath(p, existing);
         });
         
-        // If we extracted paths, update state data to match map
         if(newCounties.length > 0) {
             stateObj.counties = newCounties;
             this.recalcStatePoll(stateObj);
@@ -369,7 +387,7 @@ const app = {
             rect.setAttribute("x", x); rect.setAttribute("y", y);
             rect.setAttribute("width", size); rect.setAttribute("height", size);
             
-            // Interaction using Index to find object in array
+            // Pass index to clickCounty
             rect.onclick = () => this.clickCounty(i);
             rect.onmousemove = (e) => this.showCountyTooltip(e, c);
             rect.onmouseleave = () => document.getElementById('county-tooltip').classList.add('hidden');
@@ -390,33 +408,31 @@ const app = {
             fill = `rgba(74, 222, 128, ${intensity})`;
         } else {
             // Demographics map mode
-            let demoKey = this.data.mapMode; // e.g. 'aa', 'his'
-            let val = c.demographics[demoKey] || 0;
+            let key = this.data.mapMode;
+            let val = c.demographics[key] || 0;
             fill = `rgba(255, 215, 0, ${val/50})`;
         }
         path.style.fill = fill; path.style.stroke = "#111";
     },
 
     clickCounty: function(idx) {
-        // idx might be index or object depending on source
-        let c = typeof idx === 'object' ? idx : this.data.activeCountyState.counties[idx];
-        
+        let c = this.data.activeCountyState.counties[idx];
         if(confirm(`Hold Rally in ${c.name}? (1 Energy)`)) {
             if(this.data.energy > 0) {
                 this.data.energy--;
                 if(this.data.selectedParty==='D') c.enthusiasm.D += 0.2; else c.enthusiasm.R += 0.2;
-                
                 this.recalcStatePoll(this.data.activeCountyState);
                 this.updateHUD();
                 
-                // Refresh Map
+                // Refresh visuals
                 let container = document.getElementById('county-map-container');
                 if(container.querySelector('rect')) this.generateFallbackMap(container, this.data.activeCountyState);
                 else {
-                    // Try to update SVG path directly if possible, or simple re-parse
-                    // For simplicity, just update sidebar numbers
+                    let p = document.getElementById(c.id);
+                    if(p) this.colorCountyPath(p, c);
                 }
                 this.clickState(this.data.selectedState); 
+                this.showToast(`Rally held in ${c.name}!`);
             } else {
                 this.showToast("No Energy!");
             }
@@ -433,25 +449,19 @@ const app = {
         tt.classList.remove('hidden');
     },
 
-    setCountyMapMode: function(mode) {
+    setMapMode: function(mode, isCounty=false) {
         this.data.mapMode = mode;
-        // Refresh county map view
-        if(this.data.activeCountyState) {
-            let container = document.getElementById('county-map-container');
-            if(container.querySelector('rect')) this.generateFallbackMap(container, this.data.activeCountyState);
-            else {
-                // If real SVG, we need to iterate paths and recolor
-                let paths = container.querySelectorAll('path, rect, polygon');
-                paths.forEach((p, i) => {
-                    // This relies on order being preserved or ID matching. 
-                    // Fallback to re-generating fallback map if complex sync needed
-                    // For now, simpler to just redraw fallback if mode changes to avoid complexity
-                    this.generateFallbackMap(container, this.data.activeCountyState);
-                });
-            }
+        if(isCounty) {
+            this.generateFallbackMap(document.getElementById('county-map-container'), this.data.activeCountyState);
+        } else {
+            this.colorMap();
         }
     },
     
+    setCountyMapMode: function(mode) {
+        this.setMapMode(mode, true);
+    },
+
     closeCountyView: function() {
         document.getElementById('county-modal').classList.add('hidden');
         this.data.activeCountyState = null;
@@ -504,6 +514,7 @@ const app = {
         document.getElementById('sp-name').innerHTML = `${s.name} <span class="${col}" style="font-size:0.8em; margin-left:10px;">${lead}</span>`;
         document.getElementById('sp-ev').innerText = s.ev + " EV";
         
+        // 4-Way Bar
         let wrap = document.querySelector('.poll-bar-wrap');
         wrap.innerHTML = `
             <div style="width:${s.pcts.D}%; background:#00AEF3;"></div>
@@ -520,11 +531,12 @@ const app = {
         });
     },
     
+    // UI Helpers
     initIssues: function(){ const s=document.getElementById('issue-select'); if(s) ISSUES.forEach(i=>s.innerHTML+=`<option value="${i.id}">${i.name}</option>`); },
-    fundraise: function(){ if(this.data.energy<1)return; this.data.energy--; this.data.funds+=0.5; this.updateHUD(); },
-    runStateAd: function(){ this.data.funds-=0.5; this.updateHUD(); },
+    fundraise: function(){ if(this.data.energy<1)return; this.data.energy--; this.data.funds+=0.5; this.updateHUD(); this.showToast("Funds Raised!"); },
+    runStateAd: function(){ this.data.funds-=0.5; this.updateHUD(); this.showToast("Ad Campaign Live"); },
     openStateBio: function(){ document.getElementById('bio-modal').classList.remove('hidden'); },
-    nextWeek: function(){ this.data.currentDate.setDate(this.data.currentDate.getDate()+7); this.updateHUD(); },
+    nextWeek: function(){ this.data.currentDate.setDate(this.data.currentDate.getDate()+7); this.updateHUD(); this.showToast("Week Advanced"); },
     undoLastAction: function(){},
     updateHUD: function() {
         document.getElementById('hud-funds').innerText = `$${this.data.funds.toFixed(1)}M`;
@@ -547,10 +559,6 @@ const app = {
         tt.innerHTML = `<span class="tooltip-leader" style="color:${col}">${name} +${Math.abs(m).toFixed(1)}</span>
                         <div class="tip-row"><span class="blue">DEM ${s.pcts.D.toFixed(1)}%</span> <span class="red">REP ${s.pcts.R.toFixed(1)}%</span></div>`;
         tt.style.display='block'; tt.style.left=(e.clientX+15)+'px'; tt.style.top=(e.clientY+15)+'px';
-    },
-    setMapMode: function(mode) {
-        this.data.mapMode = mode;
-        this.colorMap();
     },
     showToast: function(msg) {
         const t = document.getElementById('toast');
