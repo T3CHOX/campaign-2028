@@ -23,7 +23,7 @@
         <header class="news-header">
             <div class="logo">DECISION <span class="red-text">2028</span></div>
             <div class="ticker-wrap">
-                <div class="ticker-move">ELECTION ALERT: Primary season kicks off... Parties scramble to define platforms...</div>
+                <div class="ticker-move">ELECTION ALERT: Primary season kicks off... Parties scramble to define platforms... Voter turnout expected to reach record highs...</div>
             </div>
         </header>
         <div class="panel-container">
@@ -49,7 +49,6 @@
         </header>
         <div class="panel-container">
             <h2 class="section-title">SELECT RUNNING MATE</h2>
-            <p class="instruction-text">Your VP choice can deliver a key swing state or boost your funds.</p>
             <div class="cards-row" id="vp-cards"></div>
         </div>
     </section>
@@ -60,7 +59,6 @@
         </header>
         <div class="panel-container">
             <h2 class="section-title" id="opp-section-title">SELECT YOUR OPPONENT</h2>
-            <p class="instruction-text">Choose your main rival. Toggle third parties for added chaos.</p>
             
             <div class="opponent-section">
                 <h3>Major Party Challenger</h3>
@@ -124,6 +122,18 @@
                 </div>
             </div>
         </header>
+
+        <div class="map-controls">
+            <select id="map-mode-select" onchange="app.setMapMode(this.value)">
+                <option value="political">POLITICAL MAP</option>
+                <option value="fundraising">FUNDRAISING HEATMAP</option>
+                <option disabled>--- DEMOGRAPHICS ---</option>
+                <option value="aa">AFRICAN AMERICAN</option>
+                <option value="his">HISPANIC / LATINO</option>
+                <option value="union">UNION WORKERS</option>
+                <option value="rural">RURAL VOTERS</option>
+            </select>
+        </div>
 
         <div class="game-area">
             <div id="map-container">
@@ -205,10 +215,10 @@
                     <div class="action-menu">
                         <h4>CAMPAIGN STRATEGY</h4>
                         <div class="action-grid">
-                            <button class="act-btn" onclick="app.setupRally()">
-                                <span class="act-icon">🎤</span>
-                                <span>RALLY</span>
-                                <span class="act-cost">2 ENG / $100K</span>
+                            <button class="act-btn" onclick="app.enterStateView()">
+                                <span class="act-icon">🗺️</span>
+                                <span>COUNTY MAP</span>
+                                <span class="act-cost">VIEW & TARGET</span>
                             </button>
                             <button class="act-btn" onclick="app.fundraise()">
                                 <span class="act-icon">💰</span>
@@ -225,12 +235,6 @@
                                 <span>INTEL</span>
                                 <span class="act-cost">FREE</span>
                             </button>
-                        </div>
-
-                        <div style="margin-top:15px;" id="rally-options" class="hidden">
-                            <label style="font-size:0.8rem; color:#aaa;">SELECT RALLY FOCUS:</label>
-                            <select id="rally-issue-select"></select>
-                            <button class="btn-action" onclick="app.executeRally()">CONFIRM RALLY</button>
                         </div>
                     </div>
 
@@ -253,6 +257,38 @@
         </div>
     </section>
 
+    <div id="county-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background: #121212; z-index:4000; display:flex; flex-direction:column;">
+        <div id="county-view-header" style="padding:10px 20px; background:#1a1a1a; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <img id="cv-flag" src="" style="height:50px; width:auto; border:1px solid #555;">
+                <div>
+                    <h2 id="cv-title" style="margin:0; font-family:'Merriweather', serif; font-size:2rem;">STATE NAME</h2>
+                    <p id="cv-desc" style="margin:0; color:#aaa; font-style:italic;">State description goes here.</p>
+                </div>
+            </div>
+            <button onclick="app.closeCountyView()" class="start-btn" style="margin:0; padding:10px 20px; font-size:0.9rem;">RETURN TO NATIONAL MAP</button>
+        </div>
+
+        <div id="county-tooltip" class="hidden" style="position:fixed; background:rgba(0,0,0,0.9); color:white; padding:10px; border:1px solid #777; border-radius:4px; pointer-events:none; z-index:5000;"></div>
+
+        <div id="county-map-container" style="flex:1; display:flex; justify-content:center; align-items:center; background:#222; overflow:hidden; position:relative;">
+            <p style="color:#666;">Loading County Data...</p>
+        </div>
+        
+        <div style="height:60px; background:#1a1a1a; border-top:1px solid #333; display:flex; align-items:center; justify-content:center; gap:20px;">
+            <span style="color:#888; font-size:0.8rem;">MAP MODE:</span>
+            <select id="county-map-mode" onchange="app.setMapMode(this.value, true)" style="background:#333; color:white; padding:5px;">
+                <option value="political">POLITICAL MARGIN</option>
+                <option value="fundraising">FUNDRAISING POTENTIAL</option>
+                <option disabled>--- DEMOGRAPHICS ---</option>
+                <option value="aa">AFRICAN AMERICAN</option>
+                <option value="his">HISPANIC / LATINO</option>
+                <option value="union">UNION WORKERS</option>
+                <option value="rural">RURAL VOTERS</option>
+            </select>
+        </div>
+    </div>
+
     <div id="bio-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:5000; display:flex; justify-content:center; align-items:center;">
         <div class="modal-box" style="width: 700px; max-height:90vh; overflow-y:auto; text-align:left; padding:30px;">
             <div id="bio-content"></div>
@@ -269,7 +305,6 @@
     </div>
 
     <div id="map-tooltip"></div>
-
     <div id="toast"></div>
     <script src="script.js"></script>
 </body>
