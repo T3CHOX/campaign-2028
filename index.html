@@ -171,9 +171,8 @@
                 </svg>
                 
                 <div id="county-view-wrapper" class="hidden">
-                    <div id="county-view-header" style="height: 40px; background: #222; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-bottom: 1px solid #444;">
+                    <div id="county-view-header" style="height: 40px; background: #222; display: flex; align-items: center; justify-content: center; padding: 0 10px; border-bottom: 1px solid #444;">
                         <span id="cv-title" style="font-weight:bold; font-family:'Merriweather', serif;">STATE</span>
-                        <button onclick="app.closeCountyView()" style="background:#444; color:white; border:none; padding:5px 10px; cursor:pointer;">&larr; BACK</button>
                     </div>
                     <div id="county-map-container" style="flex:1; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center;"></div>
                 </div>
@@ -199,11 +198,17 @@
                     <div class="action-menu">
                         <h4 id="action-menu-title">CAMPAIGN STRATEGY</h4>
                         <div class="action-grid">
-                            <button class="act-btn" id="btn-countymap" onclick="app.enterStateView()">
+                            <button class="act-btn" id="btn-entercountymap" onclick="app.enterStateView()">
                                 <span class="act-icon">🗺️</span>
                                 <span>COUNTY MAP</span>
                                 <span class="act-cost">VIEW & TARGET</span>
                             </button>
+                            <button class="act-btn hidden" id="btn-returnmap" onclick="app.closeCountyView()">
+                                <span class="act-icon">🌎</span>
+                                <span>RETURN TO MAP</span>
+                                <span class="act-cost">EXIT VIEW</span>
+                            </button>
+
                             <button class="act-btn" onclick="app.handleAction('fundraise')">
                                 <span class="act-icon">💰</span>
                                 <span>FUNDRAISE</span>
