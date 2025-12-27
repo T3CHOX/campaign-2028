@@ -34,7 +34,7 @@ body { margin: 0; font-family: 'Roboto', sans-serif; background: var(--bg-dark);
 .energy-pip { width: 8px; height: 16px; background: #333; border: 1px solid #555; transform: skewX(-15deg); }
 .energy-pip.active { background: var(--gold); box-shadow: 0 0 8px var(--gold); border-color: #fff; }
 
-/* MAP (WHITE BORDERS) */
+/* MAP (STRICT WHITE BORDERS) */
 .game-area { display: flex; height: calc(100vh - 80px); position: relative; overflow: hidden; }
 #map-container { flex: 1; background: var(--bg-dark); display: flex; align-items: center; justify-content: center; position: relative; padding: 20px; }
 svg { width: 100%; height: 100%; max-height: 85vh; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
@@ -54,7 +54,7 @@ path, rect { transition: fill 0.2s; cursor: pointer; stroke: #fff !important; st
 .poll-bar-wrap { display: flex; height: 20px; background: #333; margin-bottom: 8px; border: 1px solid #555; overflow: hidden; }
 .poll-bar-wrap div { height: 100%; transition: width 0.4s ease-out; }
 
-/* ACTIONS & BUTTONS */
+/* ACTION BUTTONS */
 .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
 .act-btn { padding: 15px; border: 1px solid #444; background: #2a2a2a; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: 0.2s; border-radius: 4px; }
 .act-btn:hover { background: #333; border-color: #666; }
