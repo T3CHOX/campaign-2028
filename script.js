@@ -4,7 +4,7 @@ const PARTIES = {
     R: { name: "Republican", color: "#E81B23", img: "images/whatley.jpg" },
     G: { name: "Green", color: "#198754" },
     L: { name: "Libertarian", color: "#fd7e14" },
-    O: { name: "Independent", color: "#F2C75C" } // Other/Independent
+    O: { name: "Independent", color: "#F2C75C" }
 };
 
 const ISSUES = [ { id: 'econ', name: 'Economy' }, { id: 'jobs', name: 'Jobs' }, { id: 'tax', name: 'Tax Policy' }, { id: 'health', name: 'Healthcare' }, { id: 'immig', name: 'Immigration' }, { id: 'clim', name: 'Climate' }, { id: 'gun', name: 'Gun Control' }, { id: 'abort', name: 'Abortion' }, { id: 'foreign', name: 'Foreign Pol.' }, { id: 'crime', name: 'Crime' } ];
@@ -73,8 +73,7 @@ class County {
     }
 
     getVotes() {
-        // Vote count relies on "Base" percentages stored in this.pcts, not displayPcts
-        // This ensures the math works correctly regardless of view mode
+        // Vote count relies on "Base" percentages stored in this.pcts
         let d = this.population * (this.pcts.D/100) * this.enthusiasm.D;
         let r = this.population * (this.pcts.R/100) * this.enthusiasm.R;
         let g = this.population * (this.pcts.G/100);
@@ -82,7 +81,7 @@ class County {
         let o = this.population * (this.pcts.O/100);
         
         if (!app.data.thirdPartiesEnabled) {
-            g = 0; l = 0; o = 0; // Effectively zero them out if disabled in logic
+            g = 0; l = 0; o = 0; // Effectively zero them out if disabled
         }
         
         return { D:d, R:r, G:g, L:l, O:o };
@@ -147,8 +146,6 @@ const app = {
         });
         
         if(pop > 0) {
-            // STATE LEVEL PERCENTAGES (Used for map coloring)
-            // If third parties disabled, pop only includes D+R
             let divisor = this.data.thirdPartiesEnabled ? pop : (t.D + t.R);
             if(divisor===0) divisor=1;
             
@@ -198,7 +195,7 @@ const app = {
         this.showToast("Undo Successful");
     },
 
-    /* --- ACTIONS --- */
+    /* --- ACTIONS (NERFED) --- */
     handleAction: function(type) {
         this.saveState();
         let target = this.data.viewMode==='state' && this.data.selectedCounty ? this.data.selectedCounty : this.data.states[this.data.selectedState];
@@ -211,13 +208,15 @@ const app = {
             costE = isCounty ? 1 : 2;
             if(this.data.energy < costE) return this.showToast("No Energy");
             this.data.energy -= costE;
-            boost = isCounty ? 2.5 : 1.0;
+            // NERFED: 2.5 -> 1.5, 1.0 -> 0.5
+            boost = isCounty ? 1.5 : 0.5;
             ripple = isCounty ? 0.2 : 0;
         } else if (type === 'ad') {
             costF = isCounty ? 0.5 : 2.0;
             if(this.data.funds < costF) return this.showToast("No Funds");
             this.data.funds -= costF;
-            boost = isCounty ? 4.0 : 1.5;
+            // NERFED: 4.0 -> 2.5, 1.5 -> 1.0
+            boost = isCounty ? 2.5 : 1.0;
             ripple = isCounty ? 0.5 : 0;
         } else if (type === 'fundraise') {
             if(this.data.energy < 1) return this.showToast("No Energy");
@@ -262,8 +261,6 @@ const app = {
     },
 
     /* --- MAP & NAV --- */
-    // (Previous Nav functions: goToScreen, renderParties, selParty, selCand, etc.)
-    // ... Assume Standard Nav ...
     goToScreen: function(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); },
     renderParties: function() { 
         const c=document.getElementById('party-cards'); if(c) { c.innerHTML=""; ['D','R','I'].forEach(k=>{ c.innerHTML+=`<div class="card card-party" onclick="app.selParty('${k}')" style="background-image:url('${PARTIES[k].img}'); border-top:5px solid ${PARTIES[k].color}"><div class="party-overlay"><h3>${PARTIES[k].name}</h3></div></div>`; }); }
@@ -277,16 +274,14 @@ const app = {
     selOpp: function(id){ this.data.opponent=CANDIDATES.find(x=>x.id===id); this.startGame(); },
     toggleThirdParties: function() { 
         this.data.thirdPartiesEnabled = document.getElementById('third-party-toggle').checked;
-        // Logic handled in County.getVotes / recalcStatePoll
     },
 
     startGame: function() {
         this.data.funds = this.data.candidate.funds;
-        let diff = (this.data.opponent.ai_skill || 5) + 3; // Basic AI Calc
+        let diff = (this.data.opponent.ai_skill || 5) + 3; 
         this.data.aiDifficulty = diff;
         this.goToScreen('game-screen');
         
-        // Re-calc poll based on toggle
         for(let s in this.data.states) {
             let state = this.data.states[s];
             state.counties.forEach(c => c.normalizePcts());
@@ -337,8 +332,13 @@ const app = {
         
         document.getElementById('us-map-svg').classList.add('hidden');
         document.getElementById('county-view-wrapper').classList.remove('hidden');
-        document.getElementById('cv-title').innerText = s.name.toUpperCase();
-        document.getElementById('btn-countymap').style.display = 'none';
+        document.getElementById('btn-entercountymap').classList.add('hidden');
+        document.getElementById('btn-returnmap').classList.remove('hidden');
+        
+        // MARGIN IN HEADER
+        let m = s.pcts.D - s.pcts.R;
+        let leadStr = Math.abs(m) < 0.1 ? "EVEN" : `${m>0?"D":"R"}+${Math.abs(m).toFixed(1)}`;
+        document.getElementById('cv-title').innerText = `${s.name.toUpperCase()} (${leadStr})`;
         
         const container = document.getElementById('county-map-container');
         container.innerHTML = "Loading...";
@@ -354,7 +354,9 @@ const app = {
         this.data.selectedCounty = null;
         document.getElementById('county-view-wrapper').classList.add('hidden');
         document.getElementById('us-map-svg').classList.remove('hidden');
-        document.getElementById('btn-countymap').style.display = 'flex';
+        document.getElementById('btn-entercountymap').classList.remove('hidden');
+        document.getElementById('btn-returnmap').classList.add('hidden');
+        
         this.clickState(this.data.selectedState);
         this.colorMap();
     },
@@ -385,7 +387,13 @@ const app = {
             newSvg.appendChild(clone);
         });
         container.innerHTML = ""; container.appendChild(newSvg);
-        // Auto-zoom logic placeholder
+        // Zoom
+        setTimeout(() => {
+            try {
+                let bbox = newSvg.getBBox();
+                if(bbox.width > 0) newSvg.setAttribute("viewBox", `${bbox.x-10} ${bbox.y-10} ${bbox.width+20} ${bbox.height+20}`);
+            } catch(e) {}
+        }, 50);
     },
 
     /* --- HELPERS --- */
@@ -456,7 +464,6 @@ const app = {
         this.showToast("New Week Started");
     },
     aiTurn: function() {
-        // AI Logic: Target close states
         let targets = Object.values(this.data.states).filter(s => Math.abs(s.pcts.D - s.pcts.R) < 10);
         for(let i=0; i<3 && i<targets.length; i++) {
              targets[i].counties.forEach(c => {
