@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Decision 2028 | Election Simulator</title>
+    <title>Decision 2028 | Campaign Simulator</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&family=Merriweather:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <section id="intro-screen" class="screen active">
-        <div class="intro-overlay"></div>
         <div class="intro-content">
-            <div class="breaking-banner">BREAKING NEWS</div>
+            <div class="breaking-banner">ELECTION ALERT</div>
             <h1 class="main-title">DECISION <span class="highlight">2028</span></h1>
             <p class="subtitle">The race for the White House begins now.</p>
             <button class="start-btn" onclick="app.goToScreen('party-screen')">BEGIN CAMPAIGN</button>
@@ -60,13 +59,15 @@
                 <h3>Major Party Challenger</h3>
                 <div class="cards-row" id="opponent-cards-major"></div>
             </div>
-            <div class="toggle-wrapper" style="margin-top:30px;">
-                <span class="toggle-label">INCLUDE THIRD PARTIES?</span>
+            
+            <div class="toggle-wrapper" style="margin-top:30px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                <span class="toggle-label">INCLUDE 3RD PARTIES?</span>
                 <label class="switch">
                     <input type="checkbox" id="third-party-toggle" checked onchange="app.toggleThirdParties()">
                     <span class="slider"></span>
                 </label>
             </div>
+
             <div class="opponent-section" id="third-party-section">
                 <h3>Third Party Challengers</h3>
                 <div class="cards-row" id="opponent-cards-minor"></div>
@@ -94,21 +95,22 @@
                 <div class="progress-bar-bg"><div class="progress-bar-fill" id="ev-bar"></div></div>
             </div>
             <div class="hud-right">
+                <button class="undo-btn" onclick="app.undoLastAction()">⟲ UNDO</button>
+                
                 <div class="stat-group">
                     <label>ENERGY</label>
                     <div class="energy-container" id="hud-energy"></div>
                 </div>
                 <div class="stat-group">
-                    <label>WAR CHEST</label>
+                    <label>FUNDS</label>
                     <span class="money" id="hud-funds">$0.0M</span>
                 </div>
                 <div class="stat-group">
-                    <label>WEEK OF</label>
+                    <label>DATE</label>
                     <span class="date-display" id="hud-date">JUL 4</span>
                 </div>
-                <div class="stat-group" style="display:flex; flex-direction:column; align-items:flex-end;">
-                    <button class="next-turn-btn" onclick="app.nextWeek()">NEXT WEEK &rarr;</button>
-                </div>
+                
+                <button class="next-turn-btn" onclick="app.nextWeek()">NEXT WEEK &rarr;</button>
             </div>
         </header>
 
@@ -173,7 +175,7 @@
                         <span id="cv-title" style="font-weight:bold; font-family:'Merriweather', serif;">STATE</span>
                         <button onclick="app.closeCountyView()" style="background:#444; color:white; border:none; padding:5px 10px; cursor:pointer;">&larr; BACK</button>
                     </div>
-                    <div id="county-map-container" style="flex:1; position: relative;"></div>
+                    <div id="county-map-container" style="flex:1; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center;"></div>
                 </div>
             </div>
 
