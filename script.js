@@ -7,7 +7,13 @@ const PARTIES = {
     O: { name: "Independent", color: "#F2C75C" }
 };
 
-const ISSUES = [ { id: 'econ', name: 'Economy' }, { id: 'jobs', name: 'Jobs' }, { id: 'tax', name: 'Tax Policy' }, { id: 'health', name: 'Healthcare' }, { id: 'immig', name: 'Immigration' }, { id: 'clim', name: 'Climate' }, { id: 'gun', name: 'Gun Control' }, { id: 'abort', name: 'Abortion' }, { id: 'foreign', name: 'Foreign Pol.' }, { id: 'crime', name: 'Crime' } ];
+const ISSUES = [ 
+    { id: 'econ', name: 'Economy' }, { id: 'jobs', name: 'Jobs' }, 
+    { id: 'tax', name: 'Tax Policy' }, { id: 'health', name: 'Healthcare' }, 
+    { id: 'immig', name: 'Immigration' }, { id: 'clim', name: 'Climate' }, 
+    { id: 'gun', name: 'Gun Control' }, { id: 'abort', name: 'Abortion' }, 
+    { id: 'foreign', name: 'Foreign Pol.' }, { id: 'crime', name: 'Crime' } 
+];
 
 const CANDIDATES = [
     { id: "harris", name: "Kamala Harris", party: "D", funds: 60, img: "images/harris.jpg", stamina: 8, ai_skill: 8, lastName: "Harris" },
@@ -28,10 +34,28 @@ const VPS = [
     { id: "stefanik", name: "Elise Stefanik", party: "R", state: "NY", img: "images/scenario.jpg", ai_skill: 3 }
 ];
 
-const INIT_STATES = { 
-    "AL":{name:"Alabama",ev:9,fips:"01"}, "AK":{name:"Alaska",ev:3,fips:"02"}, "AZ":{name:"Arizona",ev:11,fips:"04"}, "AR":{name:"Arkansas",ev:6,fips:"05"}, "CA":{name:"California",ev:54,fips:"06"}, "CO":{name:"Colorado",ev:10,fips:"08"}, "CT":{name:"Connecticut",ev:7,fips:"09"}, "DE":{name:"Delaware",ev:3,fips:"10"}, "DC":{name:"District of Columbia",ev:3,fips:"11"}, "FL":{name:"Florida",ev:30,fips:"12"}, "GA":{name:"Georgia",ev:16,fips:"13"}, "HI":{name:"Hawaii",ev:4,fips:"15"}, "ID":{name:"Idaho",ev:4,fips:"16"}, "IL":{name:"Illinois",ev:19,fips:"17"}, "IN":{name:"Indiana",ev:11,fips:"18"}, "IA":{name:"Iowa",ev:6,fips:"19"}, "KS":{name:"Kansas",ev:6,fips:"20"}, "KY":{name:"Kentucky",ev:8,fips:"21"}, "LA":{name:"Louisiana",ev:8,fips:"22"}, "ME":{name:"Maine",ev:4,fips:"23"}, "MD":{name:"Maryland",ev:10,fips:"24"}, "MA":{name:"Massachusetts",ev:11,fips:"25"}, "MI":{name:"Michigan",ev:15,fips:"26"}, "MN":{name:"Minnesota",ev:10,fips:"27"}, "MS":{name:"Mississippi",ev:6,fips:"28"}, "MO":{name:"Missouri",ev:10,fips:"29"}, "MT":{name:"Montana",ev:4,fips:"30"}, "NE":{name:"Nebraska",ev:5,fips:"31"}, "NV":{name:"Nevada",ev:6,fips:"32"}, "NH":{name:"New Hampshire",ev:4,fips:"33"}, "NJ":{name:"New Jersey",ev:14,fips:"34"}, "NM":{name:"New Mexico",ev:5,fips:"35"}, "NY":{name:"New York",ev:28,fips:"36"}, "NC":{name:"North Carolina",ev:16,fips:"37"}, "ND":{name:"North Dakota",ev:3,fips:"38"}, "OH":{name:"Ohio",ev:17,fips:"39"}, "OK":{name:"Oklahoma",ev:7,fips:"40"}, "OR":{name:"Oregon",ev:8,fips:"41"}, "PA":{name:"Pennsylvania",ev:19,fips:"42"}, "RI":{name:"Rhode Island",ev:4,fips:"44"}, "SC":{name:"South Carolina",ev:9,fips:"45"}, "SD":{name:"South Dakota",ev:3,fips:"46"}, "TN":{name:"Tennessee",ev:11,fips:"47"}, "TX":{name:"Texas",ev:40,fips:"48"}, "UT":{name:"Utah",ev:6,fips:"49"}, "VT":{name:"Vermont",ev:3,fips:"50"}, "VA":{name:"Virginia",ev:13,fips:"51"}, "WA":{name:"Washington",ev:12,fips:"53"}, "WV":{name:"West Virginia",ev:4,fips:"54"}, "WI":{name:"Wisconsin",ev:10,fips:"55"}, "WY":{name:"Wyoming",ev:3,fips:"56"} 
+// FULL STATE LIST (Checked for syntax errors)
+const INIT_STATES = {
+    "AL": {name:"Alabama",ev:9,fips:"01"}, "AK":{name:"Alaska",ev:3,fips:"02"}, "AZ":{name:"Arizona",ev:11,fips:"04"},
+    "AR": {name:"Arkansas",ev:6,fips:"05"}, "CA":{name:"California",ev:54,fips:"06"}, "CO":{name:"Colorado",ev:10,fips:"08"},
+    "CT": {name:"Connecticut",ev:7,fips:"09"}, "DE":{name:"Delaware",ev:3,fips:"10"}, "DC":{name:"District of Columbia",ev:3,fips:"11"},
+    "FL": {name:"Florida",ev:30,fips:"12"}, "GA":{name:"Georgia",ev:16,fips:"13"}, "HI":{name:"Hawaii",ev:4,fips:"15"},
+    "ID": {name:"Idaho",ev:4,fips:"16"}, "IL":{name:"Illinois",ev:19,fips:"17"}, "IN":{name:"Indiana",ev:11,fips:"18"},
+    "IA": {name:"Iowa",ev:6,fips:"19"}, "KS":{name:"Kansas",ev:6,fips:"20"}, "KY":{name:"Kentucky",ev:8,fips:"21"},
+    "LA": {name:"Louisiana",ev:8,fips:"22"}, "ME":{name:"Maine",ev:4,fips:"23"}, "MD":{name:"Maryland",ev:10,fips:"24"},
+    "MA": {name:"Massachusetts",ev:11,fips:"25"}, "MI":{name:"Michigan",ev:15,fips:"26"}, "MN":{name:"Minnesota",ev:10,fips:"27"},
+    "MS": {name:"Mississippi",ev:6,fips:"28"}, "MO":{name:"Missouri",ev:10,fips:"29"}, "MT":{name:"Montana",ev:4,fips:"30"},
+    "NE": {name:"Nebraska",ev:5,fips:"31"}, "NV":{name:"Nevada",ev:6,fips:"32"}, "NH":{name:"New Hampshire",ev:4,fips:"33"},
+    "NJ": {name:"New Jersey",ev:14,fips:"34"}, "NM":{name:"New Mexico",ev:5,fips:"35"}, "NY":{name:"New York",ev:28,fips:"36"},
+    "NC": {name:"North Carolina",ev:16,fips:"37"}, "ND":{name:"North Dakota",ev:3,fips:"38"}, "OH":{name:"Ohio",ev:17,fips:"39"},
+    "OK": {name:"Oklahoma",ev:7,fips:"40"}, "OR":{name:"Oregon",ev:8,fips:"41"}, "PA":{name:"Pennsylvania",ev:19,fips:"42"},
+    "RI": {name:"Rhode Island",ev:4,fips:"44"}, "SC":{name:"South Carolina",ev:9,fips:"45"}, "SD":{name:"South Dakota",ev:3,fips:"46"},
+    "TN": {name:"Tennessee",ev:11,fips:"47"}, "TX":{name:"Texas",ev:40,fips:"48"}, "UT":{name:"Utah",ev:6,fips:"49"},
+    "VT": {name:"Vermont",ev:3,fips:"50"}, "VA":{name:"Virginia",ev:13,fips:"51"}, "WA":{name:"Washington",ev:12,fips:"53"},
+    "WV": {name:"West Virginia",ev:4,fips:"54"}, "WI":{name:"Wisconsin",ev:10,fips:"55"}, "WY":{name:"Wyoming",ev:3,fips:"56"}
 };
 
+/* --- COUNTY CLASS --- */
 class County {
     constructor(id, name, stateType, realData=null, baseG=1, baseL=1) {
         this.id = id;
@@ -40,16 +64,19 @@ class County {
         if (realData) {
             this.type = realData.t || "Rural";
             this.population = realData.p || 10000;
-            // READ 3RD PARTY DATA (G, L, O)
+            
+            // SAFETY CHECK: Ensure .v exists
+            let v = realData.v || { D:45, R:45 };
+            
             this.pcts = {
-                D: realData.v.D,
-                R: realData.v.R,
-                G: realData.v.G || 0,
-                L: realData.v.L || 0,
-                O: realData.v.O || 0
+                D: v.D || 45,
+                R: v.R || 45,
+                G: v.G || 0,
+                L: v.L || 0,
+                O: v.O || 0
             };
         } else {
-            // Procedural Fallback
+            // PROCEDURAL FALLBACK
             this.type = stateType === 'Urban' ? 'Urban' : 'Rural';
             this.population = 10000;
             this.pcts = { D: 45, R: 45, G: 1, L: 1, O: 8 };
@@ -60,36 +87,33 @@ class County {
     }
 
     normalizePcts() {
-        // If 3rd Parties Disabled, scale D+R to 100%
+        // Safe Normalization
         if (!app.data.thirdPartiesEnabled) {
             let total = this.pcts.D + this.pcts.R;
-            if(total===0) total=1;
+            if(total <= 0) total = 1; // Prevent NaN
             this.displayPcts = {
                 D: (this.pcts.D / total) * 100,
                 R: (this.pcts.R / total) * 100,
                 G: 0, L: 0, O: 0
             };
         } else {
-            this.displayPcts = { ...this.pcts }; // Show full spread
+            this.displayPcts = { ...this.pcts };
         }
     }
 
     getVotes() {
-        // Vote count relies on "Base" percentages stored in this.pcts
         let d = this.population * (this.pcts.D/100) * this.enthusiasm.D;
         let r = this.population * (this.pcts.R/100) * this.enthusiasm.R;
         let g = this.population * (this.pcts.G/100);
         let l = this.population * (this.pcts.L/100);
         let o = this.population * (this.pcts.O/100);
         
-        if (!app.data.thirdPartiesEnabled) {
-            g = 0; l = 0; o = 0; // Effectively zero them out if disabled
-        }
-        
+        if (!app.data.thirdPartiesEnabled) { g=0; l=0; o=0; }
         return { D:d, R:r, G:g, L:l, O:o };
     }
 }
 
+/* --- APP CORE --- */
 const app = {
     data: {
         currentDate: new Date("2028-07-04"), electionDay: new Date("2028-11-07"),
@@ -102,35 +126,39 @@ const app = {
     },
 
     init: async function() {
-        console.log("App Init");
+        console.log("App Initializing...");
         try {
             const res = await fetch('counties/county_data.json');
             if (res.ok) this.data.realCountyData = await res.json();
-        } catch(e) { console.log("Using procedural"); }
+        } catch(e) { console.warn("County data missing or malformed, using procedural generation."); }
 
         this.data.states = JSON.parse(JSON.stringify(INIT_STATES));
+        
         for(let sCode in this.data.states) {
             let s = this.data.states[sCode];
             s.moe = (Math.random()*2 + 1.5).toFixed(1);
             let safeName = s.name.replace(/ /g, "_");
             s.flagUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/Flag_of_${safeName}.svg`;
-            s.counties = this.generateCountiesForState(s, 1, 1);
+            s.counties = this.generateCountiesForState(s);
             this.recalcStatePoll(s);
         }
+        
+        // Ensure render happens after data load
         this.renderParties();
+        console.log("App Ready");
     },
 
-    generateCountiesForState: function(state, baseG, baseL) {
+    generateCountiesForState: function(state) {
         let counties = [];
         if (this.data.realCountyData) {
             for (let fips in this.data.realCountyData) {
-                // STRICT FIPS CHECK to prevent NC/NY bug
                 if (fips.startsWith(state.fips)) {
                     let cData = this.data.realCountyData[fips];
-                    counties.push(new County("c"+fips, cData.n, "Real", cData, baseG, baseL));
+                    counties.push(new County("c"+fips, cData.n, "Real", cData));
                 }
             }
         }
+        // Fallback if no data found for state
         if (counties.length === 0) {
             let num = Math.max(5, state.ev * 1.5);
             for(let i=0; i<num; i++) counties.push(new County(`c_${state.fips}_${i}`, `County ${i+1}`, "Rural"));
@@ -149,15 +177,15 @@ const app = {
         
         if(pop > 0) {
             let divisor = this.data.thirdPartiesEnabled ? pop : (t.D + t.R);
-            if(divisor===0) divisor=1;
+            if(divisor<=0) divisor=1;
             
             state.pcts = {
-                D: (t.D / divisor) * 100,
-                R: (t.R / divisor) * 100,
-                G: (t.G / divisor) * 100,
-                L: (t.L / divisor) * 100,
-                O: (t.O / divisor) * 100
+                D: (t.D / divisor) * 100, R: (t.R / divisor) * 100,
+                G: (t.G / divisor) * 100, L: (t.L / divisor) * 100, O: (t.O / divisor) * 100
             };
+        } else {
+            // Safety default
+            state.pcts = { D:50, R:50, G:0, L:0, O:0 };
         }
     },
 
@@ -187,7 +215,7 @@ const app = {
             sCurr.counties.forEach((c, i) => {
                 c.pcts = sPrev.counties[i].pcts;
                 c.enthusiasm = sPrev.counties[i].enthusiasm;
-                c.normalizePcts(); // Refresh display
+                c.normalizePcts();
             });
         }
         
@@ -197,7 +225,7 @@ const app = {
         this.showToast("Undo Successful");
     },
 
-    /* --- ACTIONS (NERFED) --- */
+    /* --- ACTIONS --- */
     handleAction: function(type) {
         this.saveState();
         let target = this.data.viewMode==='state' && this.data.selectedCounty ? this.data.selectedCounty : this.data.states[this.data.selectedState];
@@ -210,15 +238,13 @@ const app = {
             costE = isCounty ? 1 : 2;
             if(this.data.energy < costE) return this.showToast("No Energy");
             this.data.energy -= costE;
-            // NERFED: 1.5% local, 0.2% ripple
-            boost = isCounty ? 1.5 : 0.5;
+            boost = isCounty ? 1.5 : 0.5; // NERFED
             ripple = isCounty ? 0.2 : 0;
         } else if (type === 'ad') {
             costF = isCounty ? 0.5 : 2.0;
             if(this.data.funds < costF) return this.showToast("No Funds");
             this.data.funds -= costF;
-            // NERFED: 2.5% local, 0.5% ripple
-            boost = isCounty ? 2.5 : 1.0;
+            boost = isCounty ? 2.5 : 1.0; // NERFED
             ripple = isCounty ? 0.5 : 0;
         } else if (type === 'fundraise') {
             if(this.data.energy < 1) return this.showToast("No Energy");
@@ -229,7 +255,6 @@ const app = {
             return;
         }
 
-        // Apply Boosts
         if(this.data.selectedParty === 'D') {
             target.pcts.D += boost; target.enthusiasm.D += 0.1;
             if(ripple > 0) stateObj.counties.forEach(n => { if(n !== target) n.pcts.D += ripple; });
@@ -238,11 +263,9 @@ const app = {
             if(ripple > 0) stateObj.counties.forEach(n => { if(n !== target) n.pcts.R += ripple; });
         }
 
-        // Refresh Data & UI
         if (isCounty) {
             stateObj.counties.forEach(c => c.normalizePcts());
             this.recalcStatePoll(stateObj);
-            // Redraw county map
             let container = document.getElementById('county-map-container');
             let paths = container.querySelectorAll('path, rect');
             paths.forEach(p => {
@@ -275,17 +298,13 @@ const app = {
     selVP: function(id){ this.data.vp=VPS.find(x=>x.id===id); this.renderOpp(); },
     renderOpp: function(){ const c=document.getElementById('opponent-cards-major'); c.innerHTML=""; let rival=this.data.selectedParty==='D'?'R':'D'; CANDIDATES.filter(x=>x.party===rival).forEach(x=>{ c.innerHTML+=`<div class="card" onclick="app.selOpp('${x.id}')"><div class="portrait"><img src="${x.img}"></div><div class="card-info"><h3>${x.id.toUpperCase()}</h3></div></div>`;}); this.goToScreen('opponent-screen'); },
     selOpp: function(id){ this.data.opponent=CANDIDATES.find(x=>x.id===id); this.startGame(); },
-    toggleThirdParties: function() { 
-        this.data.thirdPartiesEnabled = document.getElementById('third-party-toggle').checked;
-    },
+    toggleThirdParties: function() { this.data.thirdPartiesEnabled = document.getElementById('third-party-toggle').checked; },
 
     startGame: function() {
         this.data.funds = this.data.candidate.funds;
-        let diff = (this.data.opponent.ai_skill || 5) + 3; 
-        this.data.aiDifficulty = diff;
+        this.data.aiDifficulty = (this.data.opponent.ai_skill || 5) + 3;
         this.goToScreen('game-screen');
         
-        // Initial Calculation
         for(let s in this.data.states) {
             let state = this.data.states[s];
             state.counties.forEach(c => c.normalizePcts());
@@ -298,7 +317,6 @@ const app = {
         this.initMap(); this.updateHUD();
     },
 
-    /* --- MAP LOGIC --- */
     initMap: function() {
         for(let code in this.data.states) {
             let p = document.getElementById(code);
@@ -327,7 +345,6 @@ const app = {
         this.updateScore();
     },
     
-    // --- COUNTY VIEW ---
     enterStateView: function() {
         const s = this.data.states[this.data.selectedState];
         if(!s) return;
@@ -339,7 +356,6 @@ const app = {
         document.getElementById('btn-entercountymap').classList.add('hidden');
         document.getElementById('btn-returnmap').classList.remove('hidden');
         
-        // Margin in Header
         let m = s.pcts.D - s.pcts.R;
         let leadStr = Math.abs(m) < 0.1 ? "EVEN" : `${m>0?"D":"R"}+${Math.abs(m).toFixed(1)}`;
         document.getElementById('cv-title').innerText = `${s.name.toUpperCase()} (${leadStr})`;
@@ -360,7 +376,6 @@ const app = {
         document.getElementById('us-map-svg').classList.remove('hidden');
         document.getElementById('btn-entercountymap').classList.remove('hidden');
         document.getElementById('btn-returnmap').classList.add('hidden');
-        
         this.clickState(this.data.selectedState);
         this.colorMap();
     },
@@ -391,16 +406,8 @@ const app = {
             newSvg.appendChild(clone);
         });
         container.innerHTML = ""; container.appendChild(newSvg);
-        // Zoom
-        setTimeout(() => {
-            try {
-                let bbox = newSvg.getBBox();
-                if(bbox.width > 0) newSvg.setAttribute("viewBox", `${bbox.x-10} ${bbox.y-10} ${bbox.width+20} ${bbox.height+20}`);
-            } catch(e) {}
-        }, 50);
     },
 
-    /* --- HELPERS --- */
     updateSidebar: function(obj, type) {
         document.getElementById('state-panel').classList.remove('hidden');
         document.getElementById('empty-msg').classList.add('hidden');
@@ -416,7 +423,10 @@ const app = {
     
     getMarginColor: function(margin) {
         let abs = Math.abs(margin);
-        if (abs < 0.5) return "#d1d1d1";
+        if (abs < 0.5) return "#d1d1d1"; // Tossup Gray
+        // FIX: Ensure no black states by returning specific colors
+        if (isNaN(abs)) return "#d1d1d1";
+        
         if (margin > 0) { // DEM
             if(abs>25) return "#004080"; if(abs>15) return "#005a9c"; if(abs>5) return "#4da6ff"; return "#99ccff";
         } else { // GOP
@@ -431,17 +441,9 @@ const app = {
         let leader = m > 0 ? (this.data.selectedParty==='D'?this.data.candidate.lastName:this.data.opponent.lastName) : (this.data.selectedParty==='R'?this.data.candidate.lastName:this.data.opponent.lastName);
         if(!leader) leader = m > 0 ? "Democrat" : "Republican";
         
-        let thirdPartyInfo = "";
-        if(this.data.thirdPartiesEnabled && (obj.pcts.G > 1 || obj.pcts.L > 1)) {
-            thirdPartyInfo = `<div style="font-size:0.7em; color:#aaa; margin-top:5px; border-top:1px solid #444; padding-top:2px;">G: ${obj.pcts.G.toFixed(1)}% | L: ${obj.pcts.L.toFixed(1)}%</div>`;
-        }
+        let tp = (this.data.thirdPartiesEnabled && (obj.pcts.G > 1 || obj.pcts.L > 1)) ? `<div style="font-size:0.7em; color:#aaa; margin-top:5px; border-top:1px solid #444; padding-top:2px;">G: ${obj.pcts.G.toFixed(1)}% | L: ${obj.pcts.L.toFixed(1)}%</div>` : "";
 
-        tt.innerHTML = `
-            <span class="tooltip-title">${obj.name}</span>
-            <div class="tooltip-divider"></div>
-            <span class="tooltip-leader" style="color:${col}">${leader} +${Math.abs(m).toFixed(1)}</span>
-            ${thirdPartyInfo}
-        `;
+        tt.innerHTML = `<span class="tooltip-title">${obj.name}</span><div class="tooltip-divider"></div><span class="tooltip-leader" style="color:${col}">${leader} +${Math.abs(m).toFixed(1)}</span>${tp}`;
         tt.style.display='block'; tt.style.left=(e.clientX+15)+'px'; tt.style.top=(e.clientY+15)+'px';
     },
     
@@ -460,7 +462,7 @@ const app = {
     
     nextWeek: function() {
         this.data.currentDate.setDate(this.data.currentDate.getDate()+7);
-        if(this.data.currentDate >= this.data.electionDay) { this.endGame(); return; }
+        if(this.data.currentDate >= this.data.electionDay) { alert("Election Over!"); location.reload(); return; }
         this.aiTurn();
         this.data.energy = this.data.maxEnergy; this.data.funds += 2;
         this.updateHUD(); this.colorMap();
@@ -468,7 +470,6 @@ const app = {
         this.showToast("New Week Started");
     },
     aiTurn: function() {
-        // AI Logic: Target close states
         let targets = Object.values(this.data.states).filter(s => Math.abs(s.pcts.D - s.pcts.R) < 10);
         for(let i=0; i<3 && i<targets.length; i++) {
              targets[i].counties.forEach(c => {
@@ -478,7 +479,16 @@ const app = {
              this.recalcStatePoll(targets[i]);
         }
     },
-    endGame: function() { alert("Election Over!"); location.reload(); }
+    colorCountyPath: function(path, c) {
+        let fill = "#333";
+        if(this.data.mapMode === 'political') {
+            let m = c.pcts.D - c.pcts.R;
+            fill = this.getMarginColor(m);
+        }
+        path.style.fill = fill; 
+        path.style.stroke = "#111"; 
+        path.style.strokeWidth = "0.15px";
+    }
 };
 
 document.addEventListener('DOMContentLoaded', () => app.init());
