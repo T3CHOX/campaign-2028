@@ -11,7 +11,7 @@
 
     <section id="intro-screen" class="screen active">
         <div class="intro-content">
-            <div class="breaking-banner">BREAKING NEWS</div>
+            <div class="breaking-banner">ELECTION ALERT</div>
             <h1 class="main-title">DECISION <span class="highlight">2028</span></h1>
             <p class="subtitle">The race for the White House begins now.</p>
             <button class="start-btn" onclick="app.goToScreen('party-screen')">BEGIN CAMPAIGN</button>
@@ -19,59 +19,30 @@
     </section>
 
     <section id="party-screen" class="screen">
-        <header class="news-header">
-            <div class="logo">DECISION <span class="red-text">2028</span></div>
-        </header>
-        <div class="panel-container">
-            <h2 class="section-title">SELECT YOUR PARTY</h2>
-            <div class="cards-row" id="party-cards"></div>
-        </div>
+        <header class="news-header"><div class="logo">DECISION <span class="red-text">2028</span></div></header>
+        <div class="panel-container"><h2 class="section-title">SELECT YOUR PARTY</h2><div class="cards-row" id="party-cards"></div></div>
     </section>
 
     <section id="candidate-screen" class="screen">
-        <header class="news-header">
-            <div class="logo">DECISION <span class="red-text">2028</span></div>
-        </header>
-        <div class="panel-container">
-            <h2 class="section-title">SELECT PRESIDENTIAL NOMINEE</h2>
-            <div class="cards-row" id="candidate-cards"></div>
-            <button class="back-btn" onclick="app.goToScreen('party-screen')">&larr; BACK TO PARTIES</button>
-        </div>
+        <header class="news-header"><div class="logo">DECISION <span class="red-text">2028</span></div></header>
+        <div class="panel-container"><h2 class="section-title">SELECT PRESIDENTIAL NOMINEE</h2><div class="cards-row" id="candidate-cards"></div><button class="back-btn" onclick="app.goToScreen('party-screen')">&larr; BACK</button></div>
     </section>
 
     <section id="vp-screen" class="screen">
-        <header class="news-header">
-            <div class="logo">DECISION <span class="red-text">2028</span></div>
-        </header>
-        <div class="panel-container">
-            <h2 class="section-title">SELECT RUNNING MATE</h2>
-            <div class="cards-row" id="vp-cards"></div>
-        </div>
+        <header class="news-header"><div class="logo">DECISION <span class="red-text">2028</span></div></header>
+        <div class="panel-container"><h2 class="section-title">SELECT RUNNING MATE</h2><div class="cards-row" id="vp-cards"></div></div>
     </section>
 
     <section id="opponent-screen" class="screen">
-        <header class="news-header">
-            <div class="logo">DECISION <span class="red-text">2028</span></div>
-        </header>
+        <header class="news-header"><div class="logo">DECISION <span class="red-text">2028</span></div></header>
         <div class="panel-container">
             <h2 class="section-title" id="opp-section-title">SELECT YOUR OPPONENT</h2>
-            <div class="opponent-section">
-                <h3>Major Party Challenger</h3>
-                <div class="cards-row" id="opponent-cards-major"></div>
-            </div>
-            
-            <div class="toggle-wrapper" style="margin-top:30px; max-width: 400px; margin-left: auto; margin-right: auto;">
+            <div class="opponent-section"><h3>Major Party Challenger</h3><div class="cards-row" id="opponent-cards-major"></div></div>
+            <div class="toggle-wrapper" style="margin:30px auto; max-width:400px;">
                 <span class="toggle-label">INCLUDE 3RD PARTIES?</span>
-                <label class="switch">
-                    <input type="checkbox" id="third-party-toggle" checked onchange="app.toggleThirdParties()">
-                    <span class="slider"></span>
-                </label>
+                <label class="switch"><input type="checkbox" id="third-party-toggle" checked onchange="app.toggleThirdParties()"><span class="slider"></span></label>
             </div>
-
-            <div class="opponent-section" id="third-party-section">
-                <h3>Third Party Challengers</h3>
-                <div class="cards-row" id="opponent-cards-minor"></div>
-            </div>
+            <div class="opponent-section"><h3>Third Party Challengers</h3><div class="cards-row" id="opponent-cards-minor"></div></div>
         </div>
     </section>
 
@@ -79,37 +50,19 @@
         <header class="hud-header">
             <div class="hud-left">
                 <div class="candidate-badge">
-                    <img id="hud-img" src="" alt="" style="display:none">
-                    <div class="hud-text-col">
-                        <span class="cand-name" id="hud-cand-name">CANDIDATE</span>
-                        <span class="cand-party" id="hud-party-name">NOMINEE</span>
-                    </div>
+                    <img id="hud-img" src="" style="display:none">
+                    <div class="hud-text-col"><span class="cand-name" id="hud-cand-name">CANDIDATE</span><span class="cand-party" id="hud-party-name">NOMINEE</span></div>
                 </div>
             </div>
             <div class="hud-center">
-                <div class="ev-display">
-                    <span class="dem-score" id="score-dem">0</span>
-                    <span class="divider">270 TO WIN</span>
-                    <span class="rep-score" id="score-rep">0</span>
-                </div>
+                <div class="ev-display"><span class="dem-score" id="score-dem">0</span><span class="divider">270 TO WIN</span><span class="rep-score" id="score-rep">0</span></div>
                 <div class="progress-bar-bg"><div class="progress-bar-fill" id="ev-bar"></div></div>
             </div>
             <div class="hud-right">
                 <button class="undo-btn" onclick="app.undoLastAction()">⟲ UNDO</button>
-                
-                <div class="stat-group">
-                    <label>ENERGY</label>
-                    <div class="energy-container" id="hud-energy"></div>
-                </div>
-                <div class="stat-group">
-                    <label>FUNDS</label>
-                    <span class="money" id="hud-funds">$0.0M</span>
-                </div>
-                <div class="stat-group">
-                    <label>DATE</label>
-                    <span class="date-display" id="hud-date">JUL 4</span>
-                </div>
-                
+                <div class="stat-group"><label>ENERGY</label><div class="energy-container" id="hud-energy"></div></div>
+                <div class="stat-group"><label>FUNDS</label><span class="money" id="hud-funds">$0.0M</span></div>
+                <div class="stat-group"><label>DATE</label><span class="date-display" id="hud-date">JUL 4</span></div>
                 <button class="next-turn-btn" onclick="app.nextWeek()">NEXT WEEK &rarr;</button>
             </div>
         </header>
@@ -209,4 +162,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
