@@ -1,11 +1,11 @@
-<! DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Decision 2028 | Campaign Simulator</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style. css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto: wght@300;400;700;900&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -26,16 +26,16 @@
             <h2 class="section-title">SELECT YOUR PARTY</h2>
             <div class="party-grid">
                 <div class="major-parties">
-                    <div class="card card-party card-major" onclick="app.selParty('D')" style="border-top: 5px solid #00AEF3; background-image: url('images/harrison. jpg');">
+                    <div class="card card-party card-major" onclick="app.selParty('D')" style="border-top:  5px solid #00AEF3;">
                         <div class="party-overlay">
                             <h3>Democratic Party</h3>
                             <p class="party-desc">The center-left party focused on social equality and progressive policies.</p>
                         </div>
                     </div>
-                    <div class="card card-party card-major" onclick="app. selParty('R')" style="border-top: 5px solid #E81B23; background-image:  url('images/whatley.jpg');">
+                    <div class="card card-party card-major" onclick="app. selParty('R')" style="border-top: 5px solid #E81B23;">
                         <div class="party-overlay">
                             <h3>Republican Party</h3>
-                            <p class="party-desc">The center-right party focused on traditional values and limited government. </p>
+                            <p class="party-desc">The center-right party focused on traditional values and limited government.</p>
                         </div>
                     </div>
                 </div>
@@ -44,21 +44,21 @@
                         <div class="party-overlay">
                             <h3>Forward Party</h3>
                             <p class="party-desc party-desc-minor">A centrist third party focused on electoral reform. </p>
-                            <span class="debuff-tag">⚠️ HARD MODE</span>
+                            <span class="debuff-tag">HARD MODE</span>
                         </div>
                     </div>
                     <div class="card card-party card-minor" onclick="app.selParty('G')" style="border-top: 4px solid #198754;">
                         <div class="party-overlay">
                             <h3>Green Party</h3>
                             <p class="party-desc party-desc-minor">Environmental and social justice focused. </p>
-                            <span class="debuff-tag">⚠️ HARD MODE</span>
+                            <span class="debuff-tag">HARD MODE</span>
                         </div>
                     </div>
                     <div class="card card-party card-minor" onclick="app.selParty('L')" style="border-top: 4px solid #fd7e14;">
                         <div class="party-overlay">
                             <h3>Libertarian Party</h3>
                             <p class="party-desc party-desc-minor">Minimal government, maximum freedom.</p>
-                            <span class="debuff-tag">⚠️ HARD MODE</span>
+                            <span class="debuff-tag">HARD MODE</span>
                         </div>
                     </div>
                 </div>
@@ -93,26 +93,11 @@
             <div class="logo">DECISION <span class="red-text">2028</span></div>
         </header>
         <div class="panel-container">
-            <h2 class="section-title" id="opp-section-title">SELECT YOUR OPPONENT</h2>
-            <div class="opponent-section">
-                <h3>Major Party Challenger</h3>
-                <div class="cards-row" id="opponent-cards-major"></div>
-            </div>
-            
-            <div class="toggle-wrapper" style="margin-top: 30px; max-width: 400px; margin-left: auto; margin-right: auto;">
-                <span class="toggle-label">INCLUDE 3RD PARTIES? </span>
-                <label class="switch">
-                    <input type="checkbox" id="third-party-toggle" checked onchange="app.toggleThirdParties()">
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <div class="opponent-section" id="third-party-section">
-                <h3>Third Party Challengers</h3>
-                <div class="cards-row" id="opponent-cards-minor"></div>
-            </div>
-            
-            <button class="start-btn" style="margin-top:  30px;" onclick="app.startGame()">START CAMPAIGN &rarr;</button>
+            <h2 class="section-title">SELECT YOUR OPPONENTS</h2>
+            <p class="opponent-instructions" id="opponent-instructions">Select the opposing ticket by clicking on candidates.  Selected candidates will have a colored border.</p>
+            <div id="opponent-selection-container"></div>
+            <button class="start-btn" id="start-campaign-btn" style="margin-top: 30px; opacity: 0.5;" disabled onclick="app.startGame()">START CAMPAIGN &rarr;</button>
+            <button class="back-btn" onclick="app.goToScreen('vp-screen')">&larr; BACK TO VP SELECTION</button>
         </div>
     </section>
 
@@ -156,7 +141,6 @@
         <div class="game-area">
             <div id="map-container">
                 <div id="us-map-wrapper"></div>
-                
                 <div id="county-view-wrapper" class="hidden">
                     <div id="county-view-header">
                         <button class="county-back-btn" onclick="app.closeCountyView()">← BACK TO US MAP</button>
@@ -174,7 +158,7 @@
                         <span class="ev-badge" id="sp-ev">0 EV</span>
                     </div>
                     <div class="poll-vis">
-                        <div class="poll-bar-wrap"></div>
+                        <div class="poll-bar-wrap" id="poll-bar-wrap"></div>
                         <div class="poll-numbers">
                             <span class="blue" id="poll-dem-val">50%</span>
                             <span class="gray">vs</span>
@@ -182,9 +166,8 @@
                         </div>
                     </div>
                     <div class="action-menu">
-                        <h4 id="action-menu-title">CAMPAIGN STRATEGY</h4>
+                        <h4>CAMPAIGN STRATEGY</h4>
                         <div class="action-grid">
-                            <button class="act-btn" id="btn-entercountymap" onclick="app. enterStateView()"><span>🗺️</span><span>COUNTY MAP</span></button>
                             <button class="act-btn" onclick="app.handleAction('fundraise')"><span>💰</span><span>FUNDRAISE</span></button>
                             <button class="act-btn" onclick="app. handleAction('ad')"><span>📺</span><span>AD BLITZ</span></button>
                             <button class="act-btn" onclick="app.handleAction('rally')"><span>🎤</span><span>RALLY</span></button>
@@ -196,14 +179,13 @@
                 <div id="empty-msg">
                     <div class="empty-icon">🗳️</div>
                     <p>Select a State</p>
-                    <p style="font-size: 0.8rem; color: #666;">Click to view details<br>Double-click for county map</p>
+                    <p style="font-size:  0.8rem; color: #666;">Click any state to view details</p>
                 </div>
                 <div id="log-feed"><h4>CAMPAIGN LOG</h4><div id="log-content"></div></div>
             </aside>
         </div>
     </section>
 
-    <!-- ELECTION NIGHT SCREEN -->
     <section id="election-screen" class="screen">
         <header class="election-header">
             <div class="election-header-left">
@@ -267,7 +249,6 @@
             <div class="election-content">
                 <div id="election-map-container">
                     <div id="election-map-wrapper"></div>
-                    <div id="election-county-wrapper" class="hidden"></div>
                 </div>
 
                 <aside id="election-sidebar">
@@ -294,16 +275,10 @@
                                 <span class="elec-votes" id="elec-state-rep-votes">0</span>
                                 <span class="elec-pct red" id="elec-state-rep-pct">0%</span>
                             </div>
-                            <div class="elec-vote-row third-party-row" id="elec-third-row">
-                                <span class="elec-cand-name gray">Others</span>
-                                <span class="elec-votes" id="elec-state-other-votes">0</span>
-                                <span class="elec-pct gray" id="elec-state-other-pct">0%</span>
-                            </div>
                         </div>
                         <div class="elec-projection" id="elec-projection">
                             <span class="proj-status">TOO EARLY TO CALL</span>
                         </div>
-                        <button class="elec-county-btn" onclick="app.election.enterCountyView()">VIEW COUNTY RESULTS →</button>
                     </div>
                     
                     <div id="election-feed">
@@ -343,7 +318,6 @@
     </div>
 
     <div id="map-tooltip"></div>
-    <div id="county-tooltip"></div>
     <div id="toast"></div>
     
     <script src="script.js"></script>
