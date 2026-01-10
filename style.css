@@ -1,4 +1,4 @@
-/* DECISION 2028 - CAMPAIGN SIMULATOR */
+/* DECISION 2028 - CAMPAIGN SIMULATOR - FIXED */
 
 : root {
     --bg-dark: #121212;
@@ -8,7 +8,7 @@
     --forward-gold: #F2C75C;
     --green-party: #198754;
     --libertarian-orange: #fd7e14;
-    --gold:  #ffd700;
+    --gold: #ffd700;
     --text-white: #ffffff;
     --green-success: #198754;
 }
@@ -21,19 +21,30 @@
 
 body {
     font-family: 'Roboto', sans-serif;
-    background:  var(--bg-dark);
-    color: var(--text-white);
+    background:  #121212;
+    color: #ffffff;
     overflow:  hidden;
     height: 100vh;
     user-select: none;
 }
 
-.hidden { display: none ! important; }
-.blue { color: var(--dem-blue); }
-.red { color: var(--rep-red); }
-.gray { color: #888; }
+.hidden {
+    display:  none ! important;
+}
 
-.screen {
+.blue {
+    color: #00AEF3;
+}
+
+. red {
+    color: #E81B23;
+}
+
+.gray {
+    color:  #888888;
+}
+
+. screen {
     display: none;
     height: 100vh;
     width: 100vw;
@@ -41,7 +52,7 @@ body {
 }
 
 .screen.active {
-    display: flex;
+    display:  flex;
     animation: fadeIn 0.5s ease forwards;
 }
 
@@ -63,9 +74,9 @@ body {
 }
 
 .breaking-banner {
-    background: var(--rep-red);
+    background:  #E81B23;
     color: white;
-    padding:  8px 20px;
+    padding: 8px 20px;
     font-weight: 900;
     letter-spacing: 3px;
     display: inline-block;
@@ -83,27 +94,29 @@ body {
 .main-title {
     font-family: 'Merriweather', serif;
     font-size: 5rem;
-    margin:  0 0 20px 0;
-    text-shadow:  0 4px 10px rgba(0,0,0,0.8);
+    margin: 0 0 20px 0;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.8);
     line-height: 1.1;
 }
 
-.subtitle {
+. subtitle {
     font-size: 1.4rem;
-    color: #aaa;
+    color: #aaaaaa;
     margin-bottom: 40px;
 }
 
-.highlight { color: var(--dem-blue); }
+.highlight {
+    color: #00AEF3;
+}
 
 .start-btn {
     padding: 18px 60px;
     font-size: 1.4rem;
-    background: var(--dem-blue);
-    color: white;
+    background: #00AEF3;
+    color:  white;
     border: 2px solid white;
     font-weight: 700;
-    cursor:  pointer;
+    cursor: pointer;
     text-transform: uppercase;
     transition: all 0.3s ease;
     letter-spacing: 2px;
@@ -111,20 +124,21 @@ body {
 
 .start-btn:hover {
     background: white;
-    color:  var(--dem-blue);
+    color:  #00AEF3;
     transform: scale(1.05);
     box-shadow: 0 0 30px rgba(255,255,255,0.3);
 }
 
 .start-btn:disabled {
     cursor: not-allowed;
+    opacity: 0.5;
 }
 
 .news-header {
-    background: linear-gradient(180deg, #1a1a1a 0%, #111 100%);
+    background:  linear-gradient(180deg, #1a1a1a 0%, #111111 100%);
     color: white;
-    padding: 15px 30px;
-    border-bottom: 2px solid #333;
+    padding:  15px 30px;
+    border-bottom: 2px solid #333333;
     display: flex;
     align-items: center;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
@@ -135,12 +149,14 @@ body {
     font-family: 'Merriweather', serif;
     font-weight: 900;
     font-size: 1.8rem;
-    letter-spacing: -1px;
+    letter-spacing:  -1px;
 }
 
-.red-text { color: var(--rep-red); }
+.red-text {
+    color:  #E81B23;
+}
 
-.panel-container {
+. panel-container {
     max-width: 1400px;
     margin: 0 auto;
     padding:  40px 20px;
@@ -150,13 +166,13 @@ body {
 }
 
 .section-title {
-    border-bottom: 2px solid #444;
+    border-bottom: 2px solid #444444;
     display: inline-block;
     padding-bottom: 10px;
     margin-bottom: 40px;
     font-family: 'Merriweather', serif;
     font-size: 2rem;
-    color:  #ccc;
+    color:  #cccccc;
 }
 
 .party-grid {
@@ -167,19 +183,19 @@ body {
 }
 
 .major-parties {
-    display: flex;
+    display:  flex;
     gap: 40px;
     justify-content: center;
     flex-wrap: wrap;
 }
 
-.minor-parties {
+. minor-parties {
     display: flex;
     gap: 20px;
     justify-content: center;
     flex-wrap: wrap;
     padding-top: 20px;
-    border-top: 1px solid #333;
+    border-top: 1px solid #333333;
     width: 100%;
     max-width: 900px;
 }
@@ -209,7 +225,7 @@ body {
     padding: 4px 10px;
     border-radius: 12px;
     font-size: 0.7rem;
-    font-weight: bold;
+    font-weight:  bold;
     margin-top: 10px;
 }
 
@@ -223,7 +239,7 @@ body {
 
 .card {
     background: #2a2a2a;
-    border: 3px solid transparent;
+    border:  3px solid transparent;
     width: 220px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -237,7 +253,7 @@ body {
 }
 
 .card:hover {
-    transform:  translateY(-8px);
+    transform: translateY(-8px);
     box-shadow: 0 12px 24px rgba(0,0,0,0.5);
 }
 
@@ -249,7 +265,7 @@ body {
     height: 280px;
     background-size: cover;
     background-position: center;
-    background-color: #333;
+    background-color: #333333;
 }
 
 .party-overlay {
@@ -266,25 +282,25 @@ body {
     padding: 20px;
 }
 
-.card-party: hover .party-overlay {
+.card-party:hover . party-overlay {
     background: rgba(0,0,0,0.85);
 }
 
 .party-overlay h3 {
     font-family: 'Merriweather', serif;
     font-size: 1.3rem;
-    margin:  0 0 10px 0;
+    margin: 0 0 10px 0;
 }
 
 .party-desc {
     font-size: 0.85rem;
-    color: #bbb;
+    color: #bbbbbb;
     margin: 0;
 }
 
 .portrait {
     height: 180px;
-    background: #000;
+    background: #000000;
     width: 100%;
     overflow: hidden;
 }
@@ -296,9 +312,9 @@ body {
     object-position: top;
 }
 
-. card-info {
-    padding:  15px;
-    flex: 1;
+.card-info {
+    padding: 15px;
+    flex:  1;
     background: #2a2a2a;
 }
 
@@ -306,18 +322,18 @@ body {
     margin: 0 0 5px 0;
     font-size: 1.1rem;
     font-weight: 700;
-    color: #fff;
+    color: #ffffff;
 }
 
-. card-info p {
+.card-info p {
     margin: 0;
     font-size: 0.8rem;
-    color: #aaa;
+    color: #aaaaaa;
     line-height: 1.4;
 }
 
 .buff-text {
-    color: #4ade80 !important;
+    color:  #4ade80 !important;
     font-size: 0.75rem ! important;
     margin-top: 8px ! important;
     font-weight: bold;
@@ -331,7 +347,7 @@ body {
 }
 
 .opponent-instructions {
-    color: #888;
+    color: #888888;
     margin-bottom: 30px;
     font-size: 1rem;
 }
@@ -339,13 +355,13 @@ body {
 .opponent-section {
     margin-bottom: 40px;
     padding: 20px;
-    background:  rgba(255,255,255,0.03);
+    background: rgba(255,255,255,0.03);
     border-radius: 12px;
-    border:  1px solid #333;
+    border:  1px solid #333333;
 }
 
 .opponent-section h3 {
-    color: #ccc;
+    color: #cccccc;
     font-size: 1.2rem;
     margin-bottom: 20px;
     font-family: 'Merriweather', serif;
@@ -365,22 +381,22 @@ body {
 }
 
 .ticket-column h4 {
-    color: #888;
+    color: #888888;
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 2px;
     margin-bottom: 15px;
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid #444444;
     padding-bottom: 10px;
 }
 
-. opponent-card {
+.opponent-card {
     border: 3px solid transparent ! important;
     transition: all 0.2s ease ! important;
 }
 
 .opponent-card:hover {
-    border-color: #666 !important;
+    border-color: #666666 !important;
 }
 
 .opponent-card.selected {
@@ -389,11 +405,11 @@ body {
 
 .back-btn {
     background:  transparent;
-    border:  1px solid #666;
+    border:  1px solid #666666;
     padding: 12px 30px;
-    color: #aaa;
+    color: #aaaaaa;
     cursor: pointer;
-    font-weight: bold;
+    font-weight:  bold;
     text-transform: uppercase;
     transition: 0.2s;
     margin-top: 20px;
@@ -402,23 +418,25 @@ body {
 
 .back-btn:hover {
     border-color: white;
-    color: white;
+    color:  white;
     background: rgba(255,255,255,0.1);
 }
 
 .hud-header {
     height: 90px;
-    background: linear-gradient(180deg, #1a1a1a 0%, #111 100%);
+    background: linear-gradient(180deg, #1a1a1a 0%, #111111 100%);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 25px;
-    border-bottom: 2px solid #333;
+    border-bottom: 2px solid #333333;
     z-index: 100;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
 
-.hud-left { flex: 1; }
+.hud-left {
+    flex: 1;
+}
 
 .candidate-badge {
     display: inline-flex;
@@ -427,14 +445,14 @@ body {
     background: rgba(255,255,255,0.05);
     padding: 8px 20px 8px 8px;
     border-radius: 50px;
-    border: 1px solid #444;
+    border: 1px solid #444444;
 }
 
 #hud-img {
     width:  55px;
     height: 55px;
     border-radius: 50%;
-    object-fit: cover;
+    object-fit:  cover;
     border: 2px solid white;
     box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
@@ -449,14 +467,14 @@ body {
     font-weight: 900;
     font-size: 1rem;
     text-transform: uppercase;
-    color: #fff;
+    color: #ffffff;
     letter-spacing:  0.5px;
     line-height: 1.2;
 }
 
 .cand-party {
     font-size: 0.7rem;
-    color: #888;
+    color: #888888;
     letter-spacing: 1px;
     text-transform: uppercase;
 }
@@ -477,23 +495,23 @@ body {
 }
 
 .dem-score {
-    color: var(--dem-blue);
+    color: #00AEF3;
     text-shadow: 0 0 15px rgba(0, 174, 243, 0.5);
     min-width: 60px;
     text-align: right;
 }
 
 . rep-score {
-    color: var(--rep-red);
-    text-shadow: 0 0 15px rgba(232, 27, 35, 0.5);
+    color: #E81B23;
+    text-shadow:  0 0 15px rgba(232, 27, 35, 0.5);
     min-width: 60px;
     text-align: left;
 }
 
 . divider {
     font-size: 0.75rem;
-    color: #111;
-    background: var(--gold);
+    color: #111111;
+    background: #ffd700;
     padding: 4px 14px;
     border-radius: 12px;
     font-weight: 700;
@@ -503,10 +521,10 @@ body {
 
 .progress-bar-bg {
     height:  10px;
-    background: #222;
+    background: #222222;
     width: 400px;
     margin: 0 auto;
-    border:  1px solid #444;
+    border:  1px solid #444444;
     border-radius: 5px;
     overflow: hidden;
 }
@@ -530,7 +548,7 @@ body {
 
 .stat-group label {
     font-size: 0.6rem;
-    color: #666;
+    color: #666666;
     display: block;
     letter-spacing: 1px;
     margin-bottom: 3px;
@@ -545,11 +563,11 @@ body {
 .date-display {
     font-weight: bold;
     font-size: 1rem;
-    color:  #ddd;
+    color:  #dddddd;
 }
 
 .energy-container {
-    display:  flex;
+    display: flex;
     gap: 3px;
     justify-content: center;
 }
@@ -557,21 +575,21 @@ body {
 .energy-pip {
     width:  8px;
     height: 18px;
-    background: #333;
-    border:  1px solid #555;
+    background: #333333;
+    border:  1px solid #555555;
     transform: skewX(-15deg);
     transition: 0.3s;
 }
 
 .energy-pip. active {
-    background: var(--gold);
-    box-shadow: 0 0 8px var(--gold);
-    border-color: #fff;
+    background:  #ffd700;
+    box-shadow: 0 0 8px #ffd700;
+    border-color: #ffffff;
 }
 
 . next-turn-btn {
     padding: 12px 28px;
-    background: var(--green-success);
+    background: #198754;
     color: white;
     border: none;
     font-weight: 800;
@@ -585,15 +603,15 @@ body {
 
 .next-turn-btn:hover {
     background: #157347;
-    transform: translateY(-2px);
+    transform:  translateY(-2px);
     box-shadow: 0 6px 15px rgba(0,0,0,0.4);
 }
 
 . undo-btn {
     padding: 8px 16px;
-    background: #333;
-    color:  #aaa;
-    border: 1px solid #555;
+    background: #333333;
+    color: #aaaaaa;
+    border: 1px solid #555555;
     font-size: 0.85rem;
     font-weight: bold;
     cursor:  pointer;
@@ -602,12 +620,12 @@ body {
 }
 
 .undo-btn:hover {
-    background: #444;
+    background: #444444;
     color: white;
-    border-color: #777;
+    border-color: #777777;
 }
 
-. game-area {
+.game-area {
     display: flex;
     flex:  1;
     overflow: hidden;
@@ -616,7 +634,7 @@ body {
 
 #map-container {
     flex: 1;
-    background: var(--bg-dark);
+    background: #121212;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -646,28 +664,29 @@ body {
 }
 
 #us-map-svg path:hover {
-    stroke: var(--gold) !important;
+    stroke: #ffd700 !important;
     stroke-width: 2px ! important;
     filter: brightness(1.2);
 }
 
 #us-map-svg path.selected {
-    stroke: var(--gold) !important;
-    stroke-width:  2.5px !important;
+    stroke:  #ffd700 !important;
+    stroke-width: 2.5px !important;
 }
 
-. loading-map, .error-map {
-    color: #666;
+. loading-map,
+.error-map {
+    color: #666666;
     font-size: 1.2rem;
 }
 
 #county-view-wrapper {
     position: absolute;
-    top: 0;
+    top:  0;
     left: 0;
     width: 100%;
     height: 100%;
-    background:  var(--bg-dark);
+    background: #121212;
     display: flex;
     flex-direction: column;
     z-index: 10;
@@ -680,13 +699,13 @@ body {
     align-items: center;
     justify-content: space-between;
     padding:  0 20px;
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid #444444;
 }
 
 . county-back-btn {
-    background: #333;
-    border: 1px solid #555;
-    color: #ccc;
+    background: #333333;
+    border: 1px solid #555555;
+    color: #cccccc;
     padding: 8px 16px;
     cursor: pointer;
     font-weight: bold;
@@ -695,8 +714,8 @@ body {
 }
 
 .county-back-btn:hover {
-    background: #444;
-    color:  white;
+    background: #444444;
+    color: white;
 }
 
 #cv-title {
@@ -706,7 +725,7 @@ body {
 }
 
 #cv-stats {
-    color: #888;
+    color: #888888;
     font-size: 0.9rem;
 }
 
@@ -721,16 +740,17 @@ body {
 
 #sidebar {
     width:  380px;
-    background: var(--panel-bg);
-    border-left: 1px solid #333;
+    background: #1e1e1e;
+    border-left: 1px solid #333333;
     display: flex;
     flex-direction: column;
     box-shadow: -5px 0 20px rgba(0,0,0,0.5);
     z-index: 200;
 }
 
-#state-panel, #empty-msg {
-    padding:  25px;
+#state-panel,
+#empty-msg {
+    padding: 25px;
     flex: 1;
     overflow-y: auto;
 }
@@ -740,7 +760,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #555;
+    color: #555555;
     text-align: center;
 }
 
@@ -754,7 +774,7 @@ body {
     display:  flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid #333;
+    border-bottom: 2px solid #333333;
     padding-bottom: 15px;
     margin-bottom: 20px;
 }
@@ -766,10 +786,10 @@ body {
 }
 
 .ev-badge {
-    background: #333;
+    background: #333333;
     padding: 6px 12px;
     font-weight: bold;
-    border:  1px solid #555;
+    border:  1px solid #555555;
     font-size: 0.85rem;
     border-radius: 4px;
 }
@@ -778,22 +798,22 @@ body {
     background: #252525;
     padding: 15px;
     border-radius: 6px;
-    border: 1px solid #333;
+    border: 1px solid #333333;
     margin-bottom: 25px;
 }
 
 .poll-bar-wrap {
     display:  flex;
     height: 28px;
-    background: #333;
+    background: #333333;
     margin-bottom: 10px;
-    border:  1px solid #555;
+    border:  1px solid #555555;
     overflow: hidden;
     border-radius: 4px;
 }
 
 .poll-bar-wrap div {
-    height:  100%;
+    height: 100%;
     transition: width 0.4s ease-out;
 }
 
@@ -804,11 +824,13 @@ body {
     font-size: 1. 1rem;
 }
 
-.action-menu h4, .issues-list h4, #log-feed h4 {
-    border-bottom: 1px solid #333;
+.action-menu h4,
+.issues-list h4,
+#log-feed h4 {
+    border-bottom: 1px solid #333333;
     padding-bottom: 8px;
     margin-bottom: 15px;
-    color: #888;
+    color: #888888;
     font-size: 0.8rem;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -823,9 +845,9 @@ body {
 
 .act-btn {
     padding: 18px 10px;
-    border: 1px solid #444;
-    background:  #2a2a2a;
-    color: white;
+    border: 1px solid #444444;
+    background: #2a2a2a;
+    color:  white;
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -838,13 +860,13 @@ body {
 }
 
 . act-btn:hover {
-    background:  #333;
-    border-color: var(--dem-blue);
+    background:  #333333;
+    border-color: #00AEF3;
     transform: translateY(-2px);
 }
 
 .act-btn span: first-child {
-    font-size:  1.5rem;
+    font-size: 1.5rem;
 }
 
 .issues-list {
@@ -853,17 +875,17 @@ body {
 
 .issue-tag {
     display:  inline-block;
-    background: #333;
+    background: #333333;
     padding: 5px 12px;
     margin:  3px;
     border-radius: 15px;
     font-size: 0.8rem;
-    color: #aaa;
+    color: #aaaaaa;
 }
 
 #log-feed {
     height: 140px;
-    border-top: 1px solid #333;
+    border-top: 1px solid #333333;
     background: #151515;
     padding: 15px;
     overflow-y: auto;
@@ -871,13 +893,13 @@ body {
 
 #log-content {
     font-size: 0.8rem;
-    color: #888;
+    color: #888888;
 }
 
 #log-content p {
     margin:  4px 0;
     padding:  4px 0;
-    border-bottom: 1px solid #222;
+    border-bottom: 1px solid #222222;
 }
 
 #map-tooltip {
@@ -885,13 +907,13 @@ body {
     background:  rgba(0,0,0,0.95);
     color: white;
     padding: 15px 20px;
-    border:  1px solid #555;
+    border:  1px solid #555555;
     border-radius: 6px;
     pointer-events: none;
     display: none;
     z-index: 9999;
     font-size: 0.9rem;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.7);
+    box-shadow:  0 5px 25px rgba(0,0,0,0.7);
     min-width: 180px;
     text-align: center;
 }
@@ -905,8 +927,8 @@ body {
 }
 
 .tooltip-divider {
-    border-bottom: 1px solid #444;
-    margin:  8px 0;
+    border-bottom: 1px solid #444444;
+    margin: 8px 0;
 }
 
 .tooltip-leader {
@@ -917,24 +939,24 @@ body {
 
 .tooltip-stats {
     font-size: 0.8rem;
-    color: #aaa;
+    color: #aaaaaa;
     margin-top: 5px;
 }
 
 #toast {
     position: fixed;
-    bottom:  40px;
+    bottom: 40px;
     left: 50%;
     transform: translateX(-50%);
-    background: #333;
-    color:  white;
+    background: #333333;
+    color: white;
     padding: 15px 40px;
     border-radius: 50px;
     opacity: 0;
     transition: opacity 0.4s;
     font-weight: bold;
     z-index: 9000;
-    border: 1px solid #555;
+    border: 1px solid #555555;
     box-shadow: 0 5px 25px rgba(0,0,0,0.5);
 }
 
@@ -947,13 +969,13 @@ body {
     background: rgba(0,0,0,0.9);
     z-index: 5000;
     display: flex;
-    justify-content: center;
+    justify-content:  center;
     align-items: center;
 }
 
-.modal-box {
-    background:  #222;
-    border:  1px solid #555;
+. modal-box {
+    background:  #222222;
+    border: 1px solid #555555;
     padding: 30px;
     max-width: 500px;
     width: 90%;
@@ -964,20 +986,20 @@ body {
 .modal-box h2 {
     margin:  0 0 20px 0;
     font-family: 'Merriweather', serif;
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid #444444;
     padding-bottom: 15px;
 }
 
 .bio-stat {
     padding: 10px 0;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #333333;
     font-size: 1rem;
 }
 
 .modal-box button {
     margin-top: 20px;
     padding: 12px 30px;
-    background: #444;
+    background: #444444;
     border: none;
     color: white;
     cursor: pointer;
@@ -987,11 +1009,11 @@ body {
 }
 
 .modal-box button:hover {
-    background: #555;
+    background: #555555;
 }
 
 #election-screen {
-    background: #0a0a0a;
+    background:  #0a0a0a;
 }
 
 . election-header {
@@ -1001,7 +1023,7 @@ body {
     align-items:  center;
     justify-content: space-between;
     padding: 0 30px;
-    border-bottom: 3px solid var(--rep-red);
+    border-bottom: 3px solid #E81B23;
 }
 
 .election-header-left {
@@ -1024,13 +1046,13 @@ body {
 
 .bug-year {
     font-family: 'Merriweather', serif;
-    font-size: 1. 4rem;
+    font-size: 1.4rem;
     font-weight: 900;
-    color: var(--rep-red);
+    color:  #E81B23;
 }
 
 .election-banner {
-    background:  var(--rep-red);
+    background:  #E81B23;
     color: white;
     padding: 8px 20px;
     font-weight: 900;
@@ -1049,12 +1071,12 @@ body {
 }
 
 #election-time {
-    color: #fff;
+    color: #ffffff;
 }
 
 #election-timezone {
-    color:  #888;
-    font-size: 1rem;
+    color:  #888888;
+    font-size:  1rem;
     margin-left: 5px;
 }
 
@@ -1066,9 +1088,9 @@ body {
 }
 
 .time-btn {
-    background: #333;
-    border: 1px solid #555;
-    color: #aaa;
+    background: #333333;
+    border: 1px solid #555555;
+    color: #aaaaaa;
     padding: 4px 12px;
     cursor: pointer;
     font-size: 0.8rem;
@@ -1078,25 +1100,25 @@ body {
 }
 
 .time-btn:hover {
-    background: #444;
-    color:  white;
-}
-
-. time-btn.active {
-    background:  var(--dem-blue);
-    border-color: var(--dem-blue);
+    background: #444444;
     color: white;
 }
 
-.election-header-right {
+.time-btn.active {
+    background: #00AEF3;
+    border-color: #00AEF3;
+    color: white;
+}
+
+. election-header-right {
     display: flex;
-    align-items:  center;
+    align-items: center;
 }
 
 .map-mode-toggle {
     display: flex;
     gap: 2px;
-    background: #222;
+    background: #222222;
     padding: 4px;
     border-radius: 4px;
 }
@@ -1104,8 +1126,8 @@ body {
 .mode-btn {
     background: transparent;
     border:  none;
-    color:  #888;
-    padding:  8px 16px;
+    color:  #888888;
+    padding: 8px 16px;
     cursor: pointer;
     font-size: 0.75rem;
     font-weight: bold;
@@ -1114,13 +1136,13 @@ body {
     text-transform: uppercase;
 }
 
-.mode-btn:hover {
-    color: #ccc;
+. mode-btn:hover {
+    color: #cccccc;
 }
 
-.mode-btn. active {
-    background: #444;
-    color:  white;
+.mode-btn.active {
+    background: #444444;
+    color: white;
 }
 
 .election-main {
@@ -1137,13 +1159,13 @@ body {
     align-items: center;
     justify-content: center;
     padding: 0 40px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #333333;
 }
 
 . ev-candidate {
-    display:  flex;
+    display: flex;
     align-items: center;
-    gap: 15px;
+    gap:  15px;
     min-width: 250px;
 }
 
@@ -1151,26 +1173,39 @@ body {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    object-fit:  cover;
+    object-fit: cover;
     border: 3px solid;
 }
 
-.ev-dem img { border-color: var(--dem-blue); }
-.ev-rep img { border-color: var(--rep-red); }
-.ev-dem { justify-content: flex-end; }
-. ev-rep { justify-content: flex-start; }
+.ev-dem img {
+    border-color: #00AEF3;
+}
+
+.ev-rep img {
+    border-color: #E81B23;
+}
+
+.ev-dem {
+    justify-content: flex-end;
+}
+
+.ev-rep {
+    justify-content: flex-start;
+}
 
 . ev-info {
     display: flex;
     flex-direction: column;
 }
 
-.ev-dem . ev-info { text-align: right; }
+.ev-dem . ev-info {
+    text-align: right;
+}
 
-.ev-name {
+. ev-name {
     font-size: 0.9rem;
     font-weight:  bold;
-    color:  #ccc;
+    color:  #cccccc;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -1181,8 +1216,13 @@ body {
     line-height: 1;
 }
 
-.ev-dem .ev-count { color: var(--dem-blue); }
-.ev-rep .ev-count { color: var(--rep-red); }
+. ev-dem .ev-count {
+    color: #00AEF3;
+}
+
+.ev-rep .ev-count {
+    color: #E81B23;
+}
 
 .ev-progress-wrapper {
     flex: 1;
@@ -1192,52 +1232,52 @@ body {
 
 .ev-progress-bar {
     height: 30px;
-    background: #333;
-    border-radius:  4px;
+    background: #333333;
+    border-radius: 4px;
     display: flex;
     position: relative;
     overflow: hidden;
-    border: 1px solid #555;
+    border: 1px solid #555555;
 }
 
-. ev-fill {
+.ev-fill {
     height:  100%;
     transition: width 0.5s ease-out;
 }
 
 . ev-fill-dem {
-    background:  linear-gradient(90deg, var(--dem-blue), #0088cc);
+    background:  linear-gradient(90deg, #00AEF3, #0088cc);
 }
 
 .ev-fill-rep {
-    background: linear-gradient(90deg, #cc0000, var(--rep-red));
+    background: linear-gradient(90deg, #cc0000, #E81B23);
     margin-left: auto;
 }
 
 . ev-marker {
     position:  absolute;
     left: 50%;
-    top: 50%;
+    top:  50%;
     transform: translate(-50%, -50%);
-    background: var(--gold);
-    color: #000;
-    padding: 2px 8px;
+    background: #ffd700;
+    color: #000000;
+    padding:  2px 8px;
     font-weight: 900;
-    font-size:  0.75rem;
+    font-size: 0.75rem;
     border-radius: 3px;
     z-index: 10;
 }
 
-.ev-labels {
+. ev-labels {
     display:  flex;
     justify-content: space-between;
     font-size: 0.75rem;
-    color: #666;
+    color: #666666;
     margin-top: 5px;
 }
 
 .election-content {
-    flex: 1;
+    flex:  1;
     display: flex;
     overflow:  hidden;
 }
@@ -1247,7 +1287,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding:  20px;
 }
 
 #election-map-wrapper {
@@ -1255,7 +1295,7 @@ body {
     height: 100%;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content:  center;
 }
 
 #election-map-wrapper svg {
@@ -1265,16 +1305,16 @@ body {
 
 #election-sidebar {
     width:  380px;
-    background: var(--panel-bg);
-    border-left: 1px solid #333;
-    display:  flex;
+    background: #1e1e1e;
+    border-left: 1px solid #333333;
+    display: flex;
     flex-direction: column;
     overflow:  hidden;
 }
 
 #election-state-info {
     padding:  20px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #333333;
 }
 
 . elec-state-header {
@@ -1291,7 +1331,7 @@ body {
 }
 
 .elec-ev-badge {
-    background:  #333;
+    background:  #333333;
     padding: 5px 12px;
     font-weight: bold;
     font-size: 0.85rem;
@@ -1300,27 +1340,28 @@ body {
 
 .elec-reporting {
     text-align: center;
-    color: #888;
-    font-size:  0.9rem;
+    color: #888888;
+    font-size: 0.9rem;
     margin-bottom: 15px;
 }
 
 #elec-pct-reporting {
-    color: var(--gold);
+    color: #ffd700;
     font-weight: bold;
     font-size: 1.1rem;
 }
 
-.elec-results-bar {
+. elec-results-bar {
     height:  35px;
-    background: #333;
-    border-radius:  4px;
+    background: #333333;
+    border-radius: 4px;
     display: flex;
     overflow: hidden;
     margin-bottom: 15px;
 }
 
-.elec-bar-dem, .elec-bar-rep {
+.elec-bar-dem,
+.elec-bar-rep {
     height: 100%;
     transition: width 0.3s;
     display: flex;
@@ -1330,8 +1371,13 @@ body {
     font-size: 0.9rem;
 }
 
-.elec-bar-dem { background: var(--dem-blue); }
-.elec-bar-rep { background: var(--rep-red); }
+.elec-bar-dem {
+    background: #00AEF3;
+}
+
+.elec-bar-rep {
+    background: #E81B23;
+}
 
 .elec-vote-counts {
     margin-bottom: 15px;
@@ -1342,7 +1388,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom:  1px solid #333;
+    border-bottom:  1px solid #333333;
 }
 
 .elec-cand-name {
@@ -1352,7 +1398,7 @@ body {
 
 .elec-votes {
     margin-right: 15px;
-    color: #aaa;
+    color: #aaaaaa;
 }
 
 .elec-pct {
@@ -1361,7 +1407,7 @@ body {
     text-align: right;
 }
 
-.elec-projection {
+. elec-projection {
     text-align: center;
     padding: 15px;
     background: #252525;
@@ -1374,19 +1420,24 @@ body {
     letter-spacing: 1px;
 }
 
-.proj-status.called-dem { color: var(--dem-blue); }
-.proj-status.called-rep { color: var(--rep-red); }
+.proj-status.called-dem {
+    color:  #00AEF3;
+}
+
+.proj-status. called-rep {
+    color: #E81B23;
+}
 
 #election-feed {
     flex: 1;
     padding: 15px;
     overflow-y: auto;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #333333;
 }
 
 #election-feed h4 {
-    margin: 0 0 15px 0;
-    color: var(--rep-red);
+    margin:  0 0 15px 0;
+    color: #E81B23;
     font-size: 0.85rem;
     letter-spacing: 1px;
 }
@@ -1400,18 +1451,18 @@ body {
     background: #252525;
     border-radius: 4px;
     margin-bottom: 8px;
-    border-left: 3px solid #555;
+    border-left: 3px solid #555555;
 }
 
-. feed-time {
+.feed-time {
     font-size: 0.75rem;
-    color: #888;
+    color: #888888;
     display: block;
     margin-bottom: 4px;
 }
 
 .feed-text {
-    color: #ddd;
+    color: #dddddd;
 }
 
 #race-calls {
@@ -1421,8 +1472,8 @@ body {
 }
 
 #race-calls h4 {
-    margin: 0 0 10px 0;
-    color: #888;
+    margin:  0 0 10px 0;
+    color: #888888;
     font-size: 0.8rem;
     letter-spacing: 1px;
 }
@@ -1433,15 +1484,22 @@ body {
     gap: 6px;
 }
 
-. race-call-chip {
+.race-call-chip {
     padding: 4px 10px;
     border-radius: 3px;
     font-size: 0.75rem;
     font-weight: bold;
 }
 
-.race-call-chip.dem { background: var(--dem-blue); color: white; }
-.race-call-chip. rep { background: var(--rep-red); color: white; }
+.race-call-chip.dem {
+    background:  #00AEF3;
+    color: white;
+}
+
+.race-call-chip.rep {
+    background:  #E81B23;
+    color:  white;
+}
 
 #winner-overlay {
     position:  fixed;
@@ -1456,20 +1514,26 @@ body {
     justify-content: center;
 }
 
-.winner-content {
-    text-align: center;
+. winner-content {
+    text-align:  center;
     animation: winnerZoom 0.5s ease-out;
 }
 
 @keyframes winnerZoom {
-    from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 . winner-banner {
-    background: var(--gold);
-    color: #000;
-    padding: 10px 40px;
+    background:  #ffd700;
+    color: #000000;
+    padding:  10px 40px;
     font-weight: 900;
     letter-spacing: 3px;
     display: inline-block;
@@ -1482,7 +1546,7 @@ body {
     height: 200px;
     border-radius: 50%;
     object-fit:  cover;
-    border: 5px solid var(--gold);
+    border: 5px solid #ffd700;
     box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
     margin-bottom: 30px;
 }
@@ -1495,7 +1559,7 @@ body {
 
 #winner-party {
     font-size: 1.2rem;
-    color: #888;
+    color: #888888;
     margin:  0 0 30px 0;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -1511,20 +1575,20 @@ body {
 #winner-ev-count {
     font-size: 5rem;
     font-weight: 900;
-    color: var(--gold);
+    color: #ffd700;
     line-height: 1;
 }
 
 . winner-ev span: last-child {
     font-size: 1rem;
-    color: #888;
+    color: #888888;
     letter-spacing: 2px;
 }
 
 .winner-close-btn {
     background: transparent;
-    border:  2px solid #555;
-    color:  #aaa;
+    border:  2px solid #555555;
+    color: #aaaaaa;
     padding: 15px 40px;
     cursor: pointer;
     font-weight: bold;
