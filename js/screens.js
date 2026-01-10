@@ -1,46 +1,56 @@
 /* ============================================
    DECISION 2028 - SCREEN MANAGEMENT
-   Navigation and UI rendering for selection screens
    ============================================ */
 
-const Screens = {
-    // Navigate to a screen
+var Screens = {
     goTo: function(screenId) {
-        document.querySelectorAll('.screen').forEach(s => s.classList. remove('active'));
+        var screens = document.querySelectorAll('.screen');
+        for (var i = 0; i < screens. length; i++) {
+            screens[i].classList.remove('active');
+        }
         document.getElementById(screenId).classList.add('active');
     },
 
-    // Party selection
     selectParty: function(partyCode) {
         gameData.selectedParty = partyCode;
         this.renderCandidates(partyCode);
         this.goTo('candidate-screen');
     },
 
-    // Render candidate cards
-    renderCandidates: function(partyCode) {
-        const container = document.getElementById('candidate-cards');
-        container. innerHTML = "";
+    renderCandidates:  function(partyCode) {
+        var container = document.getElementById('candidate-cards');
+        container.innerHTML = "";
         
-        CANDIDATES.filter(c => c.party === partyCode).forEach(c => {
-            let card = document.createElement('div');
-            card.className = 'card';
-            card. onclick = () => Screens.selectCandidate(c. id);
-            card.innerHTML = 
-                '<div class="portrait"><img src="' + c.img + '" onerror="this. src=\'images/scenario.jpg\'"></div>' +
-                '<div class="card-info">' +
-                    '<h3>' + c.name + '</h3>' +
-                    '<p>' + (c.desc || '') + '</p>' +
-                    '<p class="buff-text">✦ ' + c. buff + '</p>' +
-                    (c.debuff ? '<p class="debuff-text">⚠ ' + c.debuff + '</p>' : '') +
-                '</div>';
-            container.appendChild(card);
-        });
+        for (var i = 0; i < CANDIDATES.length; i++) {
+            var c = CANDIDATES[i];
+            if (c.party === partyCode) {
+                var card = document.createElement('div');
+                card. className = 'card';
+                card. setAttribute('data-id', c.id);
+                card.onclick = (function(id) {
+                    return function() { Screens.selectCandidate(id); };
+                })(c.id);
+                
+                card.innerHTML = 
+                    '<div class="portrait"><img src="' + c.img + '" onerror="this. src=\'images/scenario. jpg\'"></div>' +
+                    '<div class="card-info">' +
+                        '<h3>' + c. name + '</h3>' +
+                        '<p>' + (c.desc || '') + '</p>' +
+                        '<p class="buff-text">✦ ' + c. buff + '</p>' +
+                        (c.debuff ? '<p class="debuff-text">⚠ ' + c.debuff + '</p>' : '') +
+                    '</div>';
+                container.appendChild(card);
+            }
+        }
     },
 
-    // Select presidential candidate
     selectCandidate: function(id) {
-        gameData.candidate = CANDIDATES.find(c => c.id === id);
+        for (var i = 0; i < CANDIDATES.length; i++) {
+            if (CANDIDATES[i].id === id) {
+                gameData.candidate = CANDIDATES[i];
+                break;
+            }
+        }
         gameData.maxEnergy = gameData.candidate.stamina;
         gameData.energy = gameData.maxEnergy;
         gameData.funds = gameData.candidate.funds;
@@ -48,32 +58,42 @@ const Screens = {
         this.goTo('vp-screen');
     },
 
-    // Render VP cards
     renderVPs: function(partyCode) {
-        const container = document.getElementById('vp-cards');
+        var container = document. getElementById('vp-cards');
         container.innerHTML = "";
         
-        VPS.filter(v => v. party === partyCode).forEach(v => {
-            let card = document.createElement('div');
-            card.className = 'card';
-            card.onclick = () => Screens.selectVP(v.id);
-            card.innerHTML = 
-                '<div class="portrait"><img src="' + v.img + '" onerror="this.src=\'images/scenario. jpg\'"></div>' +
-                '<div class="card-info">' +
-                    '<h3>' + v.name + '</h3>' +
-                    '<p>' + (v. desc || '') + '</p>' +
-                    '<p style="color: #888; font-size: 0.8rem;">Home State: ' + v. state + '</p>' +
-                '</div>';
-            container.appendChild(card);
-        });
+        for (var i = 0; i < VPS.length; i++) {
+            var v = VPS[i];
+            if (v.party === partyCode) {
+                var card = document.createElement('div');
+                card.className = 'card';
+                card.setAttribute('data-id', v.id);
+                card.onclick = (function(id) {
+                    return function() { Screens.selectVP(id); };
+                })(v.id);
+                
+                card.innerHTML = 
+                    '<div class="portrait"><img src="' + v.img + '" onerror="this.src=\'images/scenario.jpg\'"></div>' +
+                    '<div class="card-info">' +
+                        '<h3>' + v.name + '</h3>' +
+                        '<p>' + (v.desc || '') + '</p>' +
+                        '<p style="color: #888888; font-size: 0.8rem;">Home State: ' + v. state + '</p>' +
+                    '</div>';
+                container.appendChild(card);
+            }
+        }
     },
 
-    // Select VP
     selectVP: function(id) {
-        gameData.vp = VPS.find(v => v.id === id);
+        for (var i = 0; i < VPS.length; i++) {
+            if (VPS[i]. id === id) {
+                gameData. vp = VPS[i];
+                break;
+            }
+        }
         
         if (gameData.selectedParty === 'D') {
-            gameData. demTicket = { pres: gameData.candidate, vp: gameData.vp };
+            gameData.demTicket = { pres: gameData.candidate, vp: gameData.vp };
         } else if (gameData.selectedParty === 'R') {
             gameData.repTicket = { pres: gameData.candidate, vp: gameData.vp };
         }
@@ -82,27 +102,26 @@ const Screens = {
         this.goTo('opponent-screen');
     },
 
-    // Render opponent selection screen
     renderOpponentScreen: function() {
-        const container = document.getElementById('opponent-selection-container');
-        container. innerHTML = '';
+        var container = document.getElementById('opponent-selection-container');
+        container.innerHTML = '';
         
-        const isThirdParty = Utils.isThirdParty(gameData. selectedParty);
-        const instructions = document.getElementById('opponent-instructions');
+        var isThirdParty = Utils.isThirdParty(gameData. selectedParty);
+        var instructions = document.getElementById('opponent-instructions');
         
         if (isThirdParty) {
-            instructions. innerText = 'As a third party candidate, you must select both the Democratic AND Republican tickets to compete against. ';
+            instructions. innerText = 'As a third party candidate, you must select both the Democratic AND Republican tickets.';
             
             container.innerHTML = 
                 '<div class="opponent-section">' +
-                    '<h3>Select Democratic Ticket</h3>' +
+                    '<h3 style="color: #00AEF3;">Select Democratic Ticket</h3>' +
                     '<div class="ticket-selection">' +
                         '<div class="ticket-column"><h4>Presidential Nominee</h4><div class="cards-row" id="dem-pres-cards"></div></div>' +
                         '<div class="ticket-column"><h4>Running Mate</h4><div class="cards-row" id="dem-vp-cards"></div></div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="opponent-section">' +
-                    '<h3>Select Republican Ticket</h3>' +
+                    '<h3 style="color: #E81B23;">Select Republican Ticket</h3>' +
                     '<div class="ticket-selection">' +
                         '<div class="ticket-column"><h4>Presidential Nominee</h4><div class="cards-row" id="rep-pres-cards"></div></div>' +
                         '<div class="ticket-column"><h4>Running Mate</h4><div class="cards-row" id="rep-vp-cards"></div></div>' +
@@ -112,14 +131,15 @@ const Screens = {
             this.renderTicketCards('D', 'dem');
             this.renderTicketCards('R', 'rep');
         } else {
-            const rivalParty = gameData.selectedParty === 'D' ?  'R' :  'D';
-            const rivalName = rivalParty === 'D' ? 'Democratic' : 'Republican';
+            var rivalParty = gameData. selectedParty === 'D' ?  'R' :  'D';
+            var rivalName = rivalParty === 'D' ? 'Democratic' : 'Republican';
+            var rivalColor = rivalParty === 'D' ?  '#00AEF3' : '#E81B23';
             
-            instructions.innerText = 'Select the ' + rivalName + ' ticket you will face in the general election.';
+            instructions. innerText = 'Select the ' + rivalName + ' ticket you will face in the general election.';
             
             container.innerHTML = 
                 '<div class="opponent-section">' +
-                    '<h3>Select ' + rivalName + ' Ticket</h3>' +
+                    '<h3 style="color:  ' + rivalColor + ';">Select ' + rivalName + ' Ticket</h3>' +
                     '<div class="ticket-selection">' +
                         '<div class="ticket-column"><h4>Presidential Nominee</h4><div class="cards-row" id="' + rivalParty. toLowerCase() + '-pres-cards"></div></div>' +
                         '<div class="ticket-column"><h4>Running Mate</h4><div class="cards-row" id="' + rivalParty. toLowerCase() + '-vp-cards"></div></div>' +
@@ -132,96 +152,130 @@ const Screens = {
         this.updateStartButton();
     },
 
-    // Render ticket selection cards
     renderTicketCards: function(party, prefix) {
-        const presContainer = document.getElementById(prefix + '-pres-cards');
-        const vpContainer = document.getElementById(prefix + '-vp-cards');
+        var presContainer = document.getElementById(prefix + '-pres-cards');
+        var vpContainer = document.getElementById(prefix + '-vp-cards');
         
         if (! presContainer || !vpContainer) return;
         
         presContainer.innerHTML = '';
         vpContainer. innerHTML = '';
         
-        CANDIDATES.filter(c => c.party === party).forEach(c => {
-            let card = document.createElement('div');
-            card.className = 'card opponent-card';
-            card.dataset.id = c.id;
-            card.dataset.type = 'pres';
-            card. dataset.party = party;
-            card.style.borderColor = 'transparent';
-            card.onclick = function() { Screens.selectOpponentCard(this, party, 'pres'); };
-            card.innerHTML = 
-                '<div class="portrait"><img src="' + c.img + '" onerror="this.src=\'images/scenario.jpg\'"></div>' +
-                '<div class="card-info"><h3>' + c.name + '</h3><p>' + (c.desc || '') + '</p></div>';
-            presContainer.appendChild(card);
-        });
+        var partyColor = PARTIES[party].color;
         
-        VPS.filter(v => v.party === party).forEach(v => {
-            let card = document.createElement('div');
-            card.className = 'card opponent-card';
-            card. dataset.id = v.id;
-            card.dataset.type = 'vp';
-            card. dataset.party = party;
-            card. style.borderColor = 'transparent';
-            card.onclick = function() { Screens.selectOpponentCard(this, party, 'vp'); };
-            card. innerHTML = 
-                '<div class="portrait"><img src="' + v.img + '" onerror="this.src=\'images/scenario. jpg\'"></div>' +
-                '<div class="card-info"><h3>' + v.name + '</h3><p>' + (v.desc || '') + '</p><p style="color:  #888; font-size: 0.8rem;">Home State: ' + v. state + '</p></div>';
-            vpContainer.appendChild(card);
-        });
+        for (var i = 0; i < CANDIDATES.length; i++) {
+            var c = CANDIDATES[i];
+            if (c. party === party) {
+                var card = document.createElement('div');
+                card. className = 'card opponent-card';
+                card.setAttribute('data-id', c. id);
+                card.setAttribute('data-type', 'pres');
+                card.setAttribute('data-party', party);
+                card.style.borderColor = 'transparent';
+                card.onclick = (function(cardEl, p) {
+                    return function() { Screens.selectOpponentCard(cardEl, p, 'pres'); };
+                })(card, party);
+                
+                card.innerHTML = 
+                    '<div class="portrait"><img src="' + c.img + '" onerror="this.src=\'images/scenario. jpg\'"></div>' +
+                    '<div class="card-info"><h3>' + c.name + '</h3><p>' + (c.desc || '') + '</p></div>';
+                presContainer.appendChild(card);
+            }
+        }
+        
+        for (var j = 0; j < VPS.length; j++) {
+            var v = VPS[j];
+            if (v.party === party) {
+                var vpCard = document.createElement('div');
+                vpCard.className = 'card opponent-card';
+                vpCard.setAttribute('data-id', v. id);
+                vpCard.setAttribute('data-type', 'vp');
+                vpCard.setAttribute('data-party', party);
+                vpCard.style.borderColor = 'transparent';
+                vpCard. onclick = (function(cardEl, p) {
+                    return function() { Screens.selectOpponentCard(cardEl, p, 'vp'); };
+                })(vpCard, party);
+                
+                vpCard.innerHTML = 
+                    '<div class="portrait"><img src="' + v.img + '" onerror="this.src=\'images/scenario.jpg\'"></div>' +
+                    '<div class="card-info"><h3>' + v.name + '</h3><p>' + (v.desc || '') + '</p><p style="color:  #888888; font-size: 0.8rem;">Home State: ' + v.state + '</p></div>';
+                vpContainer.appendChild(vpCard);
+            }
+        }
     },
 
-    // Select opponent card
     selectOpponentCard: function(cardElement, party, type) {
-        const partyColor = PARTIES[party].color;
-        const prefix = party. toLowerCase();
-        const containerType = type === 'pres' ? 'pres' : 'vp';
+        var partyColor = PARTIES[party].color;
+        var prefix = party. toLowerCase();
+        var containerId = prefix + '-' + type + '-cards';
         
-        const container = document.getElementById(prefix + '-' + containerType + '-cards');
-        container.querySelectorAll('.opponent-card').forEach(c => {
-            c.style.borderColor = 'transparent';
-            c.classList.remove('selected');
-        });
+        var container = document.getElementById(containerId);
+        var cards = container.querySelectorAll('.opponent-card');
+        for (var i = 0; i < cards.length; i++) {
+            cards[i].style.borderColor = 'transparent';
+            cards[i].classList.remove('selected');
+        }
         
         cardElement.style.borderColor = partyColor;
-        cardElement.classList. add('selected');
+        cardElement.style.borderWidth = '3px';
+        cardElement.classList.add('selected');
         
-        const id = cardElement.dataset.id;
+        var id = cardElement.getAttribute('data-id');
         
         if (party === 'D') {
             if (type === 'pres') {
-                gameData.demTicket. pres = CANDIDATES.find(c => c.id === id);
+                for (var j = 0; j < CANDIDATES.length; j++) {
+                    if (CANDIDATES[j].id === id) {
+                        gameData.demTicket. pres = CANDIDATES[j];
+                        break;
+                    }
+                }
             } else {
-                gameData.demTicket.vp = VPS.find(v => v.id === id);
+                for (var k = 0; k < VPS.length; k++) {
+                    if (VPS[k].id === id) {
+                        gameData. demTicket.vp = VPS[k];
+                        break;
+                    }
+                }
             }
         } else if (party === 'R') {
             if (type === 'pres') {
-                gameData. repTicket.pres = CANDIDATES. find(c => c.id === id);
+                for (var m = 0; m < CANDIDATES.length; m++) {
+                    if (CANDIDATES[m].id === id) {
+                        gameData. repTicket.pres = CANDIDATES[m];
+                        break;
+                    }
+                }
             } else {
-                gameData. repTicket.vp = VPS. find(v => v.id === id);
+                for (var n = 0; n < VPS.length; n++) {
+                    if (VPS[n].id === id) {
+                        gameData. repTicket.vp = VPS[n];
+                        break;
+                    }
+                }
             }
         }
         
         this.updateStartButton();
     },
 
-    // Update start button state
     updateStartButton: function() {
-        const btn = document.getElementById('start-campaign-btn');
-        const isThirdParty = Utils.isThirdParty(gameData. selectedParty);
+        var btn = document.getElementById('start-campaign-btn');
+        var isThirdParty = Utils.isThirdParty(gameData. selectedParty);
         
-        let canStart = false;
+        var canStart = false;
         
         if (isThirdParty) {
             canStart = gameData.demTicket.pres && gameData.demTicket.vp && 
                        gameData.repTicket.pres && gameData.repTicket.vp;
         } else if (gameData.selectedParty === 'D') {
             canStart = gameData.repTicket.pres && gameData.repTicket.vp;
-        } else {
-            canStart = gameData.demTicket.pres && gameData.demTicket.vp;
+        } else if (gameData.selectedParty === 'R') {
+            canStart = gameData.demTicket. pres && gameData.demTicket. vp;
         }
         
-        btn. disabled = !canStart;
-        btn.style.opacity = canStart ? '1' : '0.5';
+        btn.disabled = ! canStart;
+        btn.style.opacity = canStart ? '1' :  '0.5';
+        btn.style.cursor = canStart ? 'pointer' : 'not-allowed';
     }
 };
