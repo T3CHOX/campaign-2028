@@ -1,6 +1,6 @@
 /* DECISION 2028 - CAMPAIGN SIMULATOR - FIXED */
 
-: root {
+:root {
     --bg-dark: #121212;
     --panel-bg: #1e1e1e;
     --dem-blue: #00AEF3;
@@ -36,7 +36,7 @@ body {
     color: #00AEF3;
 }
 
-. red {
+.red {
     color: #E81B23;
 }
 
@@ -44,7 +44,7 @@ body {
     color:  #888888;
 }
 
-. screen {
+.screen {
     display: none;
     height: 100vh;
     width: 100vw;
@@ -99,7 +99,7 @@ body {
     line-height: 1.1;
 }
 
-. subtitle {
+.subtitle {
     font-size: 1.4rem;
     color: #aaaaaa;
     margin-bottom: 40px;
@@ -145,7 +145,7 @@ body {
     z-index: 50;
 }
 
-. logo {
+.logo {
     font-family: 'Merriweather', serif;
     font-weight: 900;
     font-size: 1.8rem;
@@ -156,7 +156,7 @@ body {
     color:  #E81B23;
 }
 
-. panel-container {
+.panel-container {
     max-width: 1400px;
     margin: 0 auto;
     padding:  40px 20px;
@@ -189,7 +189,7 @@ body {
     flex-wrap: wrap;
 }
 
-. minor-parties {
+.minor-parties {
     display: flex;
     gap: 20px;
     justify-content: center;
@@ -367,7 +367,7 @@ body {
     font-family: 'Merriweather', serif;
 }
 
-. ticket-selection {
+.ticket-selection {
     display:  flex;
     gap: 40px;
     justify-content: center;
@@ -484,7 +484,7 @@ body {
     flex:  2;
 }
 
-. ev-display {
+.ev-display {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -501,14 +501,14 @@ body {
     text-align: right;
 }
 
-. rep-score {
+.rep-score {
     color: #E81B23;
     text-shadow:  0 0 15px rgba(232, 27, 35, 0.5);
     min-width: 60px;
     text-align: left;
 }
 
-. divider {
+.divider {
     font-size: 0.75rem;
     color: #111111;
     background: #ffd700;
@@ -587,7 +587,7 @@ body {
     border-color: #ffffff;
 }
 
-. next-turn-btn {
+.next-turn-btn {
     padding: 12px 28px;
     background: #198754;
     color: white;
@@ -607,7 +607,7 @@ body {
     box-shadow: 0 6px 15px rgba(0,0,0,0.4);
 }
 
-. undo-btn {
+.undo-btn {
     padding: 8px 16px;
     background: #333333;
     color: #aaaaaa;
@@ -674,7 +674,7 @@ body {
     stroke-width: 2.5px !important;
 }
 
-. loading-map,
+.loading-map,
 .error-map {
     color: #666666;
     font-size: 1.2rem;
@@ -702,7 +702,7 @@ body {
     border-bottom: 1px solid #444444;
 }
 
-. county-back-btn {
+.county-back-btn {
     background: #333333;
     border: 1px solid #555555;
     color: #cccccc;
@@ -764,13 +764,13 @@ body {
     text-align: center;
 }
 
-. empty-icon {
+.empty-icon {
     font-size: 4rem;
     margin-bottom: 20px;
     opacity: 0.5;
 }
 
-. state-header-box {
+.state-header-box {
     display:  flex;
     justify-content: space-between;
     align-items: center;
@@ -817,7 +817,7 @@ body {
     transition: width 0.4s ease-out;
 }
 
-. poll-numbers {
+.poll-numbers {
     display:  flex;
     justify-content: space-between;
     font-weight: bold;
@@ -859,7 +859,7 @@ body {
     font-weight: bold;
 }
 
-. act-btn:hover {
+.act-btn:hover {
     background:  #333333;
     border-color: #00AEF3;
     transform: translateY(-2px);
@@ -918,7 +918,7 @@ body {
     text-align: center;
 }
 
-. tooltip-title {
+.tooltip-title {
     font-family: 'Merriweather', serif;
     font-weight: 700;
     font-size:  1.1rem;
@@ -973,7 +973,7 @@ body {
     align-items: center;
 }
 
-. modal-box {
+.modal-box {
     background:  #222222;
     border: 1px solid #555555;
     padding: 30px;
@@ -1016,7 +1016,7 @@ body {
     background:  #0a0a0a;
 }
 
-. election-header {
+.election-header {
     height: 80px;
     background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
     display: flex;
@@ -1061,7 +1061,7 @@ body {
     animation: pulse 2s infinite;
 }
 
-. election-header-center {
+.election-header-center {
     text-align: center;
 }
 
@@ -1110,7 +1110,7 @@ body {
     color: white;
 }
 
-. election-header-right {
+.election-header-right {
     display: flex;
     align-items: center;
 }
@@ -1136,7 +1136,7 @@ body {
     text-transform: uppercase;
 }
 
-. mode-btn:hover {
+.mode-btn:hover {
     color: #cccccc;
 }
 
@@ -1162,7 +1162,7 @@ body {
     border-bottom: 1px solid #333333;
 }
 
-. ev-candidate {
+.ev-candidate {
     display: flex;
     align-items: center;
     gap:  15px;
@@ -1193,7 +1193,7 @@ body {
     justify-content: flex-start;
 }
 
-. ev-info {
+.ev-info {
     display: flex;
     flex-direction: column;
 }
@@ -1202,7 +1202,7 @@ body {
     text-align: right;
 }
 
-. ev-name {
+.ev-name {
     font-size: 0.9rem;
     font-weight:  bold;
     color:  #cccccc;
@@ -1216,7 +1216,7 @@ body {
     line-height: 1;
 }
 
-. ev-dem .ev-count {
+.ev-dem .ev-count {
     color: #00AEF3;
 }
 
@@ -1245,7 +1245,7 @@ body {
     transition: width 0.5s ease-out;
 }
 
-. ev-fill-dem {
+.ev-fill-dem {
     background:  linear-gradient(90deg, #00AEF3, #0088cc);
 }
 
@@ -1254,7 +1254,7 @@ body {
     margin-left: auto;
 }
 
-. ev-marker {
+.ev-marker {
     position:  absolute;
     left: 50%;
     top:  50%;
@@ -1268,7 +1268,7 @@ body {
     z-index: 10;
 }
 
-. ev-labels {
+.ev-labels {
     display:  flex;
     justify-content: space-between;
     font-size: 0.75rem;
@@ -1317,7 +1317,7 @@ body {
     border-bottom: 1px solid #333333;
 }
 
-. elec-state-header {
+.elec-state-header {
     display:  flex;
     justify-content: space-between;
     align-items: center;
@@ -1351,7 +1351,7 @@ body {
     font-size: 1.1rem;
 }
 
-. elec-results-bar {
+.elec-results-bar {
     height:  35px;
     background: #333333;
     border-radius: 4px;
@@ -1407,7 +1407,7 @@ body {
     text-align: right;
 }
 
-. elec-projection {
+.elec-projection {
     text-align: center;
     padding: 15px;
     background: #252525;
@@ -1446,7 +1446,7 @@ body {
     font-size: 0.85rem;
 }
 
-. feed-item {
+.feed-item {
     padding: 10px;
     background: #252525;
     border-radius: 4px;
@@ -1514,7 +1514,7 @@ body {
     justify-content: center;
 }
 
-. winner-content {
+.winner-content {
     text-align:  center;
     animation: winnerZoom 0.5s ease-out;
 }
@@ -1530,7 +1530,7 @@ body {
     }
 }
 
-. winner-banner {
+.winner-banner {
     background:  #ffd700;
     color: #000000;
     padding:  10px 40px;
@@ -1565,7 +1565,7 @@ body {
     letter-spacing: 2px;
 }
 
-. winner-ev {
+.winner-ev {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1579,7 +1579,7 @@ body {
     line-height: 1;
 }
 
-. winner-ev span: last-child {
+.winner-ev span:last-child {
     font-size: 1rem;
     color: #888888;
     letter-spacing: 2px;

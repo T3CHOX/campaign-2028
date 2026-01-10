@@ -24,12 +24,12 @@ const ISSUES = [
 ];
 
 const CANDIDATES = [
-    { id: "harris", name: "Kamala Harris", party: "D", funds: 60, img: "images/harris. jpg", stamina: 8, desc: "The incumbent Vice President.", buff: "Incumbency" },
+    { id: "harris", name: "Kamala Harris", party: "D", funds: 60, img: "images/harris.jpg", stamina: 8, desc: "The incumbent Vice President.", buff: "Incumbency" },
     { id: "newsom", name: "Gavin Newsom", party: "D", funds: 75, img: "images/newsom.jpg", stamina: 9, desc: "California Governor.", buff: "War Chest" },
     { id: "whitmer", name: "Gretchen Whitmer", party: "D", funds: 55, img: "images/whitmer.jpg", stamina: 8, desc: "Michigan Governor.", buff: "Midwest Appeal" },
-    { id: "buttigieg", name:  "Pete Buttigieg", party: "D", funds: 50, img: "images/buttigieg. jpg", stamina:  8, desc: "Transportation Secretary.", buff: "Media Savvy" },
+    { id: "buttigieg", name: "Pete Buttigieg", party: "D", funds: 50, img: "images/buttigieg.jpg", stamina: 8, desc: "Transportation Secretary.", buff: "Media Savvy" },
     { id: "aoc", name: "Alexandria Ocasio-Cortez", party:  "D", funds:  45, img: "images/aoc.jpg", stamina: 10, desc: "Progressive firebrand.", buff: "Youth Vote" },
-    { id: "desantis", name:  "Ron DeSantis", party: "R", funds: 65, img: "images/desantis. jpg", stamina:  9, desc:  "Florida Governor.", buff: "Base Turnout" },
+    { id: "desantis", name: "Ron DeSantis", party: "R", funds: 65, img: "images/desantis.jpg", stamina: 9, desc: "Florida Governor.", buff: "Base Turnout" },
     { id: "vance", name: "JD Vance", party: "R", funds: 50, img: "images/vance.jpg", stamina: 8, desc: "Ohio Senator.", buff: "Populism" },
     { id: "ramaswamy", name:  "Vivek Ramaswamy", party: "R", funds: 70, img: "images/ramaswamy.jpg", stamina: 10, desc: "Biotech entrepreneur.", buff: "Outsider Energy" },
     { id: "haley", name: "Nikki Haley", party: "R", funds: 55, img: "images/haley.jpg", stamina: 8, desc: "Former UN Ambassador.", buff: "Suburban Appeal" },

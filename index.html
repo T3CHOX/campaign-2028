@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Decision 2028 | Campaign Simulator</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto: wght@300;400;700;900&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -32,7 +32,7 @@
                             <p class="party-desc">The center-left party focused on social equality and progressive policies.</p>
                         </div>
                     </div>
-                    <div class="card card-party card-major" onclick="app. selParty('R')" style="border-top: 5px solid #E81B23;">
+                    <div class="card card-party card-major" onclick="app.selParty('R')" style="border-top: 5px solid #E81B23;">
                         <div class="party-overlay">
                             <h3>Republican Party</h3>
                             <p class="party-desc">The center-right party focused on traditional values and limited government.</p>
@@ -84,7 +84,7 @@
         <div class="panel-container">
             <h2 class="section-title">SELECT RUNNING MATE</h2>
             <div class="cards-row" id="vp-cards"></div>
-            <button class="back-btn" onclick="app. goToScreen('candidate-screen')">&larr; BACK TO CANDIDATES</button>
+            <button class="back-btn" onclick="app.goToScreen('candidate-screen')">&larr; BACK TO CANDIDATES</button>
         </div>
     </section>
 
@@ -169,7 +169,7 @@
                         <h4>CAMPAIGN STRATEGY</h4>
                         <div class="action-grid">
                             <button class="act-btn" onclick="app.handleAction('fundraise')"><span>💰</span><span>FUNDRAISE</span></button>
-                            <button class="act-btn" onclick="app. handleAction('ad')"><span>📺</span><span>AD BLITZ</span></button>
+                            <button class="act-btn" onclick="app.handleAction('ad')"><span>📺</span><span>AD BLITZ</span></button>
                             <button class="act-btn" onclick="app.handleAction('rally')"><span>🎤</span><span>RALLY</span></button>
                             <button class="act-btn" onclick="app.openStateBio()"><span>📖</span><span>INTEL</span></button>
                         </div>
@@ -201,10 +201,10 @@
                     <span id="election-timezone">EST</span>
                 </div>
                 <div class="time-controls">
-                    <button class="time-btn" id="btn-pause" onclick="app. election.togglePause()">⏸️</button>
-                    <button class="time-btn" onclick="app.election. setSpeed(0.5)">½×</button>
-                    <button class="time-btn active" onclick="app. election.setSpeed(1)">1×</button>
-                    <button class="time-btn" onclick="app.election. setSpeed(2)">2×</button>
+                    <button class="time-btn" id="btn-pause" onclick="app.election.togglePause()">⏸️</button>
+                    <button class="time-btn" onclick="app.election.setSpeed(0.5)">½×</button>
+                    <button class="time-btn active" onclick="app.election.setSpeed(1)">1×</button>
+                    <button class="time-btn" onclick="app.election.setSpeed(2)">2×</button>
                     <button class="time-btn" onclick="app.election.setSpeed(5)">5×</button>
                     <button class="time-btn" onclick="app.election.setSpeed(10)">10×</button>
                 </div>
@@ -212,7 +212,7 @@
             <div class="election-header-right">
                 <div class="map-mode-toggle">
                     <button class="mode-btn active" id="mode-leader" onclick="app.election.setMapMode('leader')">CURRENT LEADER</button>
-                    <button class="mode-btn" id="mode-projected" onclick="app. election.setMapMode('projected')">PROJECTED WINNER</button>
+                    <button class="mode-btn" id="mode-projected" onclick="app.election.setMapMode('projected')">PROJECTED WINNER</button>
                 </div>
             </div>
         </header>
@@ -325,7 +325,7 @@
 <script src="js/utils.js"></script>
 <script src="js/screens.js"></script>
 <script src="js/campaign.js"></script>
-<script src="js/election. js"></script>
+<script src="js/election.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
