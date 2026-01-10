@@ -64,18 +64,18 @@ body {
     justify-content: center;
     align-items: center;
     text-align: center;
-    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+    background:  linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
 }
 
-.intro-content {
+. intro-content {
     max-width: 800px;
-    padding:  40px;
+    padding: 40px;
 }
 
 .breaking-banner {
-    background: var(--rep-red);
+    background:  var(--rep-red);
     color: white;
-    padding: 8px 20px;
+    padding:  8px 20px;
     font-weight: 900;
     letter-spacing: 3px;
     display: inline-block;
@@ -86,7 +86,7 @@ body {
 }
 
 @keyframes pulse {
-    0%, 100% { box-shadow: 0 4px 15px rgba(232, 27, 35, 0.4); }
+    0%, 100% { box-shadow:  0 4px 15px rgba(232, 27, 35, 0.4); }
     50% { box-shadow: 0 4px 25px rgba(232, 27, 35, 0.7); }
 }
 
@@ -94,7 +94,7 @@ body {
     font-family: 'Merriweather', serif;
     font-size: 5rem;
     margin: 0 0 20px 0;
-    text-shadow:  0 4px 10px rgba(0,0,0,0.8);
+    text-shadow: 0 4px 10px rgba(0,0,0,0.8);
     line-height: 1.1;
 }
 
@@ -106,7 +106,7 @@ body {
 
 .highlight { color: var(--dem-blue); }
 
-. start-btn {
+.start-btn {
     padding: 18px 60px;
     font-size: 1.4rem;
     background: var(--dem-blue);
@@ -116,7 +116,7 @@ body {
     cursor: pointer;
     text-transform: uppercase;
     transition: all 0.3s ease;
-    letter-spacing:  2px;
+    letter-spacing: 2px;
 }
 
 .start-btn:hover {
@@ -1812,3 +1812,4 @@ input:checked + .slider:before {
         height: 320px !important;
     }
 }
+
