@@ -1,14 +1,13 @@
 /* ============================================
    DECISION 2028 - CONFIGURATION & DATA
-   All game data:  parties, candidates, states, etc.
    ============================================ */
 
 const PARTIES = {
     D: { name: "Democratic Party", shortName: "Democrat", color: "#00AEF3" },
     R:  { name: "Republican Party", shortName:  "Republican", color:  "#E81B23" },
     F: { name: "Forward Party", shortName: "Forward", color: "#F2C75C" },
-    G: { name: "Green Party", shortName: "Green", color: "#198754" },
-    L: { name:  "Libertarian Party", shortName: "Libertarian", color: "#fd7e14" }
+    G: { name: "Green Party", shortName:  "Green", color:  "#198754" },
+    L: { name: "Libertarian Party", shortName: "Libertarian", color:  "#fd7e14" }
 };
 
 const ISSUES = [
@@ -25,14 +24,14 @@ const ISSUES = [
 ];
 
 const CANDIDATES = [
-    { id: "harris", name: "Kamala Harris", party: "D", funds: 60, img: "images/harris.jpg", stamina: 8, desc: "The incumbent Vice President.", buff: "Incumbency" },
+    { id: "harris", name: "Kamala Harris", party: "D", funds: 60, img: "images/harris. jpg", stamina: 8, desc: "The incumbent Vice President.", buff: "Incumbency" },
     { id: "newsom", name: "Gavin Newsom", party: "D", funds: 75, img: "images/newsom.jpg", stamina: 9, desc: "California Governor.", buff: "War Chest" },
     { id: "whitmer", name: "Gretchen Whitmer", party: "D", funds: 55, img: "images/whitmer.jpg", stamina: 8, desc: "Michigan Governor.", buff: "Midwest Appeal" },
     { id: "buttigieg", name:  "Pete Buttigieg", party: "D", funds: 50, img: "images/buttigieg. jpg", stamina:  8, desc: "Transportation Secretary.", buff: "Media Savvy" },
-    { id: "aoc", name: "Alexandria Ocasio-Cortez", party:  "D", funds:  45, img:  "images/aoc.jpg", stamina: 10, desc: "Progressive firebrand.", buff: "Youth Vote" },
-    { id: "desantis", name:  "Ron DeSantis", party: "R", funds: 65, img: "images/desantis.jpg", stamina: 9, desc: "Florida Governor.", buff: "Base Turnout" },
+    { id: "aoc", name: "Alexandria Ocasio-Cortez", party:  "D", funds:  45, img: "images/aoc.jpg", stamina: 10, desc: "Progressive firebrand.", buff: "Youth Vote" },
+    { id: "desantis", name:  "Ron DeSantis", party: "R", funds: 65, img: "images/desantis. jpg", stamina:  9, desc:  "Florida Governor.", buff: "Base Turnout" },
     { id: "vance", name: "JD Vance", party: "R", funds: 50, img: "images/vance.jpg", stamina: 8, desc: "Ohio Senator.", buff: "Populism" },
-    { id: "ramaswamy", name: "Vivek Ramaswamy", party: "R", funds: 70, img: "images/ramaswamy.jpg", stamina: 10, desc: "Biotech entrepreneur.", buff: "Outsider Energy" },
+    { id: "ramaswamy", name:  "Vivek Ramaswamy", party: "R", funds: 70, img: "images/ramaswamy.jpg", stamina: 10, desc: "Biotech entrepreneur.", buff: "Outsider Energy" },
     { id: "haley", name: "Nikki Haley", party: "R", funds: 55, img: "images/haley.jpg", stamina: 8, desc: "Former UN Ambassador.", buff: "Suburban Appeal" },
     { id: "yang", name: "Andrew Yang", party: "F", funds: 35, img: "images/yang.jpg", stamina: 8, desc: "Forward Party founder.", buff: "UBI Movement", debuff: "Third Party Penalty" },
     { id: "stein", name: "Jill Stein", party: "G", funds: 8, img: "images/scenario.jpg", stamina: 6, desc: "Green Party candidate.", buff: "Environmental Base", debuff: "Severe Third Party Penalty" },
@@ -56,9 +55,9 @@ const VPS = [
 
 const STATES = {
     "AL": { name: "Alabama", ev: 9, lean: -20 },
-    "AK": { name:  "Alaska", ev:  3, lean:  -15 },
+    "AK": { name: "Alaska", ev: 3, lean: -15 },
     "AZ": { name: "Arizona", ev: 11, lean: 0 },
-    "AR": { name:  "Arkansas", ev:  6, lean:  -25 },
+    "AR": { name:  "Arkansas", ev:  6, lean: -25 },
     "CA": { name:  "California", ev:  54, lean: 25 },
     "CO": { name:  "Colorado", ev:  10, lean: 8 },
     "CT": { name:  "Connecticut", ev:  7, lean: 12 },
@@ -73,26 +72,26 @@ const STATES = {
     "IA": { name: "Iowa", ev: 6, lean: -8 },
     "KS": { name: "Kansas", ev: 6, lean: -18 },
     "KY": { name: "Kentucky", ev: 8, lean: -25 },
-    "LA": { name:  "Louisiana", ev:  8, lean: -20 },
+    "LA": { name:  "Louisiana", ev:  8, lean:  -20 },
     "ME": { name:  "Maine", ev:  4, lean: 8 },
     "MD": { name:  "Maryland", ev:  10, lean: 25 },
     "MA": { name:  "Massachusetts", ev:  11, lean: 25 },
     "MI": { name:  "Michigan", ev:  15, lean: 1 },
     "MN": { name: "Minnesota", ev: 10, lean: 3 },
     "MS": { name:  "Mississippi", ev:  6, lean:  -18 },
-    "MO":  { name: "Missouri", ev: 10, lean: -15 },
-    "MT": { name:  "Montana", ev:  4, lean:  -15 },
+    "MO": { name: "Missouri", ev: 10, lean: -15 },
+    "MT": { name:  "Montana", ev:  4, lean: -15 },
     "NE": { name: "Nebraska", ev: 5, lean: -18 },
     "NV": { name: "Nevada", ev: 6, lean: 1 },
     "NH": { name:  "New Hampshire", ev: 4, lean: 5 },
     "NJ": { name: "New Jersey", ev: 14, lean: 12 },
     "NM": { name: "New Mexico", ev: 5, lean: 8 },
-    "NY": { name:  "New York", ev: 28, lean: 20 },
+    "NY": { name: "New York", ev:  28, lean: 20 },
     "NC": { name:  "North Carolina", ev: 16, lean: -1 },
     "ND": { name: "North Dakota", ev: 3, lean: -30 },
     "OH": { name:  "Ohio", ev:  17, lean: -8 },
     "OK": { name:  "Oklahoma", ev:  7, lean: -35 },
-    "OR": { name:  "Oregon", ev:  8, lean:  12 },
+    "OR": { name:  "Oregon", ev:  8, lean: 12 },
     "PA": { name:  "Pennsylvania", ev:  19, lean:  0 },
     "RI": { name: "Rhode Island", ev: 4, lean: 18 },
     "SC": { name:  "South Carolina", ev: 9, lean: -12 },
@@ -101,8 +100,8 @@ const STATES = {
     "TX": { name:  "Texas", ev:  40, lean: -5 },
     "UT": { name: "Utah", ev: 6, lean: -18 },
     "VT": { name: "Vermont", ev: 3, lean: 25 },
-    "VA": { name:  "Virginia", ev:  13, lean: 5 },
-    "WA": { name:  "Washington", ev:  12, lean: 15 },
+    "VA": { name:  "Virginia", ev:  13, lean:  5 },
+    "WA": { name: "Washington", ev: 12, lean: 15 },
     "WV": { name: "West Virginia", ev: 4, lean: -35 },
     "WI": { name: "Wisconsin", ev: 10, lean: 0 },
     "WY": { name: "Wyoming", ev: 3, lean: -40 }
@@ -118,17 +117,14 @@ const POLL_CLOSE_TIMES = {
     "ID": 23, "OR": 23, "WA": 23, "AK": 25
 };
 
-// Game state - shared across modules
-const gameData = {
+var gameData = {
     currentDate: new Date("2028-07-04"),
     electionDay: new Date("2028-11-03"),
     selectedParty: null,
     candidate: null,
     vp: null,
     demTicket: { pres: null, vp: null },
-    repTicket: { pres: null, vp: null },
-    thirdPartyTickets: [],
-    thirdPartiesEnabled: true,
+    repTicket: { pres:  null, vp:  null },
     funds: 50,
     energy: 8,
     maxEnergy: 8,
