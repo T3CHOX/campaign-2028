@@ -1,10 +1,9 @@
 /* ============================================
    DECISION 2028 - CAMPAIGN SIMULATOR
-   Complete Stylesheet
+   COMPLETE STYLESHEET
    ============================================ */
 
-/* --- GLOBAL VARIABLES & RESET --- */
-:root {
+: root {
     --bg-dark: #121212;
     --panel-bg: #1e1e1e;
     --dem-blue: #00AEF3;
@@ -20,10 +19,11 @@
 
 * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    margin: 0;
     font-family: 'Roboto', sans-serif;
     background:  var(--bg-dark);
     color: var(--text-white);
@@ -32,16 +32,14 @@ body {
     user-select: none;
 }
 
-/* UTILITIES */
 .hidden { display: none ! important; }
-. blue { color: var(--dem-blue); }
+.blue { color: var(--dem-blue); }
 .red { color: var(--rep-red); }
 .gray { color: #888; }
 .gold { color: var(--forward-gold); }
 .green { color: var(--green-party); }
 .orange { color: var(--libertarian-orange); }
 
-/* --- SCREENS --- */
 .screen {
     display: none;
     height: 100vh;
@@ -51,31 +49,31 @@ body {
 
 .screen.active {
     display:  flex;
-    animation: fadeEnt 0.5s ease forwards;
+    animation: fadeIn 0.5s ease forwards;
 }
 
-@keyframes fadeEnt { 
-    from { opacity:  0; } 
-    to { opacity: 1; } 
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-/* --- INTRO SCREEN --- */
+/* INTRO SCREEN */
 #intro-screen {
     justify-content: center;
     align-items: center;
     text-align: center;
-    background:  linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
 }
 
-. intro-content {
+.intro-content {
     max-width: 800px;
     padding: 40px;
 }
 
 .breaking-banner {
-    background:  var(--rep-red);
+    background: var(--rep-red);
     color: white;
-    padding:  8px 20px;
+    padding: 8px 20px;
     font-weight: 900;
     letter-spacing: 3px;
     display: inline-block;
@@ -90,11 +88,11 @@ body {
     50% { box-shadow: 0 4px 25px rgba(232, 27, 35, 0.7); }
 }
 
-. main-title {
+.main-title {
     font-family: 'Merriweather', serif;
     font-size: 5rem;
     margin: 0 0 20px 0;
-    text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+    text-shadow:  0 4px 10px rgba(0,0,0,0.8);
     line-height: 1.1;
 }
 
@@ -106,7 +104,7 @@ body {
 
 .highlight { color: var(--dem-blue); }
 
-.start-btn {
+. start-btn {
     padding: 18px 60px;
     font-size: 1.4rem;
     background: var(--dem-blue);
@@ -126,7 +124,11 @@ body {
     box-shadow: 0 0 30px rgba(255,255,255,0.3);
 }
 
-/* --- HEADERS --- */
+.start-btn:disabled {
+    cursor: not-allowed;
+}
+
+/* HEADERS */
 .news-header {
     background: linear-gradient(180deg, #1a1a1a 0%, #111 100%);
     color: white;
@@ -142,12 +144,12 @@ body {
     font-family: 'Merriweather', serif;
     font-weight: 900;
     font-size: 1.8rem;
-    letter-spacing:  -1px;
+    letter-spacing: -1px;
 }
 
-.red-text { color: var(--rep-red); }
+.red-text { color:  var(--rep-red); }
 
-/* --- PANELS & CARDS --- */
+/* PANELS */
 .panel-container {
     max-width: 1400px;
     margin: 0 auto;
@@ -167,7 +169,7 @@ body {
     color:  #ccc;
 }
 
-/* --- PARTY SELECTION GRID --- */
+/* PARTY SELECTION */
 .party-grid {
     display: flex;
     flex-direction: column;
@@ -176,14 +178,14 @@ body {
 }
 
 .major-parties {
-    display:  flex;
+    display: flex;
     gap: 40px;
     justify-content: center;
     flex-wrap: wrap;
 }
 
 .minor-parties {
-    display:  flex;
+    display: flex;
     gap: 20px;
     justify-content: center;
     flex-wrap: wrap;
@@ -200,10 +202,10 @@ body {
 
 .card-minor {
     width:  200px !important;
-    height: 200px !important;
+    height:  200px !important;
 }
 
-.card-minor . party-overlay h3 {
+. card-minor . party-overlay h3 {
     font-size: 1rem;
 }
 
@@ -211,7 +213,7 @@ body {
     font-size: 0.75rem ! important;
 }
 
-.debuff-tag {
+. debuff-tag {
     display: inline-block;
     background: rgba(255, 100, 100, 0.2);
     color: #ff6b6b;
@@ -222,9 +224,9 @@ body {
     margin-top: 10px;
 }
 
-/* --- CANDIDATE CARDS --- */
+/* CARDS */
 .cards-row {
-    display:  flex;
+    display: flex;
     gap: 25px;
     justify-content: center;
     flex-wrap: wrap;
@@ -233,13 +235,13 @@ body {
 
 .card {
     background: #2a2a2a;
-    border:  1px solid #444;
-    width: 240px;
+    border: 3px solid transparent;
+    width: 220px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     text-align: left;
     position: relative;
-    border-radius: 6px;
+    border-radius: 8px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -247,14 +249,12 @@ body {
 }
 
 .card:hover {
-    border-color: var(--dem-blue);
-    transform: translateY(-8px);
+    transform:  translateY(-8px);
     box-shadow: 0 12px 24px rgba(0,0,0,0.5);
 }
 
 .card.selected {
-    border-color: var(--gold) !important;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
 }
 
 .card-party {
@@ -276,13 +276,10 @@ body {
     flex-direction: column;
     justify-content: flex-end;
     padding: 20px;
-    box-sizing: border-box;
 }
 
 .card-party: hover .party-overlay {
-    background:  rgba(0,0,0,0.9);
-    justify-content: center;
-    align-items: center;
+    background: rgba(0,0,0,0.85);
 }
 
 .party-overlay h3 {
@@ -294,17 +291,11 @@ body {
 .party-desc {
     font-size: 0.85rem;
     color: #bbb;
-    margin:  0;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-. card-party:hover .party-desc {
-    opacity: 1;
+    margin: 0;
 }
 
 .portrait {
-    height: 200px;
+    height: 180px;
     background: #000;
     width: 100%;
     overflow: hidden;
@@ -317,83 +308,100 @@ body {
     object-position: top;
 }
 
-.card-info {
-    padding: 15px;
+. card-info {
+    padding:  15px;
     flex:  1;
     background: #2a2a2a;
 }
 
-.card h3 {
+.card-info h3 {
     margin: 0 0 5px 0;
     font-size: 1.1rem;
     font-weight: 700;
     color: #fff;
 }
 
-. card p {
+. card-info p {
     margin: 0;
     font-size: 0.8rem;
     color: #aaa;
     line-height: 1.4;
 }
 
-. buff-text {
+.buff-text {
     color:  #4ade80 !important;
-    font-size: 0.75rem;
+    font-size: 0.75rem ! important;
     margin-top: 8px ! important;
     font-weight: bold;
 }
 
-. debuff-text {
+.debuff-text {
     color: #f87171 !important;
-    font-size: 0.75rem;
-    margin-top: 4px !important;
+    font-size: 0.75rem !important;
+    margin-top:  4px !important;
     font-weight:  bold;
 }
 
-/* Opponent Selection */
-.opponent-card {
-    position: relative;
-}
-
-.selected-check {
-    position:  absolute;
-    top: 10px;
-    right: 10px;
-    background: var(--gold);
-    color: #000;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
+/* OPPONENT SELECTION */
+.opponent-instructions {
+    color: #888;
+    margin-bottom: 30px;
     font-size: 1rem;
 }
 
-.card-minor-opp {
-    width: 160px ! important;
-}
-
-.card-minor-opp .portrait {
-    display: none;
-}
-
-.opponent-section {
-    margin-bottom: 30px;
+. opponent-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    border:  1px solid #333;
 }
 
 .opponent-section h3 {
+    color: #ccc;
+    font-size: 1.2rem;
+    margin-bottom:  20px;
+    font-family: 'Merriweather', serif;
+}
+
+.ticket-selection {
+    display:  flex;
+    gap: 40px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.ticket-column {
+    flex:  1;
+    min-width: 300px;
+    max-width: 500px;
+}
+
+.ticket-column h4 {
     color: #888;
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 2px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+}
+
+. opponent-card {
+    border: 3px solid transparent ! important;
+    transition: all 0.2s ease ! important;
+}
+
+.opponent-card:hover {
+    border-color: #666 !important;
+}
+
+.opponent-card.selected {
+    border-width: 3px ! important;
 }
 
 .back-btn {
-    background:  transparent;
+    background: transparent;
     border:  1px solid #666;
     padding: 12px 30px;
     color: #aaa;
@@ -402,40 +410,38 @@ body {
     text-transform: uppercase;
     transition: 0.2s;
     margin-top: 20px;
+    margin-left: 15px;
 }
 
 .back-btn:hover {
     border-color: white;
-    color:  white;
+    color: white;
     background: rgba(255,255,255,0.1);
 }
 
-/* --- HUD (Game Header) --- */
+/* HUD */
 .hud-header {
     height: 90px;
     background: linear-gradient(180deg, #1a1a1a 0%, #111 100%);
     display: flex;
-    align-items: center;
+    align-items:  center;
     justify-content: space-between;
-    padding:  0 25px;
+    padding: 0 25px;
     border-bottom: 2px solid #333;
     z-index: 100;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
 
-.hud-left {
-    flex: 1;
-}
+.hud-left { flex: 1; }
 
 .candidate-badge {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 15px;
     background: rgba(255,255,255,0.05);
     padding: 8px 20px 8px 8px;
     border-radius: 50px;
     border: 1px solid #444;
-    display: inline-flex;
 }
 
 #hud-img {
@@ -485,7 +491,7 @@ body {
 }
 
 .dem-score {
-    color:  var(--dem-blue);
+    color: var(--dem-blue);
     text-shadow: 0 0 15px rgba(0, 174, 243, 0.5);
     min-width: 60px;
     text-align: right;
@@ -548,7 +554,6 @@ body {
     color: #4ade80;
     font-weight: bold;
     font-size: 1.1rem;
-    font-family: 'Roboto Mono', monospace;
 }
 
 .date-display {
@@ -572,14 +577,13 @@ body {
     transition: 0.3s;
 }
 
-.energy-pip. active {
-    background: var(--gold);
+.energy-pip.active {
+    background:  var(--gold);
     box-shadow: 0 0 8px var(--gold);
     border-color: #fff;
 }
 
-/* Buttons */
-.next-turn-btn {
+. next-turn-btn {
     padding: 12px 28px;
     background: var(--green-success);
     color: white;
@@ -595,7 +599,7 @@ body {
 
 .next-turn-btn:hover {
     background: #157347;
-    transform:  translateY(-2px);
+    transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(0,0,0,0.4);
 }
 
@@ -617,7 +621,7 @@ body {
     border-color: #777;
 }
 
-/* --- GAME AREA --- */
+/* GAME AREA */
 .game-area {
     display: flex;
     flex:  1;
@@ -656,14 +660,14 @@ body {
     stroke-width: 0.8px;
 }
 
-#us-map-svg path:hover {
+#us-map-svg path: hover {
     stroke: var(--gold) !important;
     stroke-width: 2px ! important;
     filter: brightness(1.2);
 }
 
 #us-map-svg path.selected {
-    stroke:  var(--gold) !important;
+    stroke: var(--gold) !important;
     stroke-width:  2.5px !important;
 }
 
@@ -672,7 +676,7 @@ body {
     font-size: 1.2rem;
 }
 
-/* --- COUNTY VIEW (ENLARGED) --- */
+/* COUNTY VIEW */
 #county-view-wrapper {
     position: absolute;
     top: 0;
@@ -695,7 +699,7 @@ body {
     border-bottom: 1px solid #444;
 }
 
-.county-back-btn {
+. county-back-btn {
     background: #333;
     border: 1px solid #555;
     color: #ccc;
@@ -728,63 +732,12 @@ body {
     align-items: center;
     justify-content: center;
     padding: 30px;
-    overflow:  hidden;
+    overflow: hidden;
 }
 
-#county-map-container svg,
-#county-svg {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: none !important;
-    max-height: none !important;
-}
-
-#county-map-container path {
-    stroke: #ffffff;
-    stroke-width: 0.3px;
-    transition: fill 0.2s;
-    cursor: pointer;
-}
-
-#county-map-container path:hover {
-    stroke: var(--gold) !important;
-    stroke-width:  1. 5px !important;
-    filter: brightness(1.2);
-}
-
-/* Procedural county grid */
-. procedural-county-grid {
-    display:  grid;
-    gap: 4px;
-    padding: 40px;
-    width: 100%;
-    max-width:  900px;
-}
-
-.procedural-county {
-    aspect-ratio: 1. 5;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    color: rgba(255,255,255,0.7);
-    text-align: center;
-    padding: 5px;
-    border: 1px solid rgba(255,255,255,0.2);
-}
-
-.procedural-county: hover {
-    transform: scale(1.05);
-    border-color: var(--gold);
-    z-index: 10;
-}
-
-/* --- SIDEBAR --- */
+/* SIDEBAR */
 #sidebar {
-    width:  380px;
+    width: 380px;
     background: var(--panel-bg);
     border-left: 1px solid #333;
     display: flex;
@@ -794,7 +747,7 @@ body {
 }
 
 #state-panel, #empty-msg {
-    padding: 25px;
+    padding:  25px;
     flex: 1;
     overflow-y: auto;
 }
@@ -815,7 +768,7 @@ body {
 }
 
 . state-header-box {
-    display:  flex;
+    display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 2px solid #333;
@@ -826,11 +779,7 @@ body {
 .state-header-box h2 {
     margin: 0;
     font-family: 'Merriweather', serif;
-    font-size: 1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 240px;
+    font-size: 1.2rem;
 }
 
 .ev-badge {
@@ -840,10 +789,8 @@ body {
     border:  1px solid #555;
     font-size: 0.85rem;
     border-radius: 4px;
-    white-space: nowrap;
 }
 
-/* Poll Bar */
 .poll-vis {
     background: #252525;
     padding: 15px;
@@ -874,7 +821,6 @@ body {
     font-size: 1. 1rem;
 }
 
-/* Actions */
 .action-menu h4, .issues-list h4, #log-feed h4 {
     border-bottom: 1px solid #333;
     padding-bottom: 8px;
@@ -896,7 +842,7 @@ body {
     padding: 18px 10px;
     border: 1px solid #444;
     background:  #2a2a2a;
-    color:  white;
+    color: white;
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -915,19 +861,28 @@ body {
 }
 
 .act-btn span: first-child {
-    font-size:  1.5rem;
+    font-size: 1.5rem;
 }
 
 .issues-list {
     margin-bottom: 20px;
 }
 
-/* Log Feed */
+.issue-tag {
+    display:  inline-block;
+    background: #333;
+    padding: 5px 12px;
+    margin:  3px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
 #log-feed {
     height: 140px;
     border-top: 1px solid #333;
     background: #151515;
-    padding:  15px;
+    padding: 15px;
     overflow-y: auto;
 }
 
@@ -942,69 +897,7 @@ body {
     border-bottom: 1px solid #222;
 }
 
-/* --- TOGGLE SWITCH --- */
-.toggle-wrapper {
-    display:  flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #222;
-    padding:  15px 20px;
-    border:  1px solid #444;
-    border-radius: 6px;
-}
-
-.toggle-label {
-    font-weight: bold;
-    color: #ccc;
-    font-size: 0.9rem;
-}
-
-.switch {
-    position:  relative;
-    display: inline-block;
-    width: 50px;
-    height: 26px;
-}
-
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-. slider {
-    position:  absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #555;
-    transition:  .4s;
-    border-radius:  34px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 18px;
-    width: 18px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked + .slider {
-    background-color: var(--dem-blue);
-}
-
-input:checked + .slider:before {
-    transform: translateX(24px);
-}
-
-/* --- TOOLTIPS --- */
+/* TOOLTIP */
 #map-tooltip {
     position: fixed;
     background:  rgba(0,0,0,0.95);
@@ -1027,7 +920,6 @@ input:checked + .slider:before {
     font-size:  1.1rem;
     display: block;
     margin-bottom: 8px;
-    color: #fff;
 }
 
 . tooltip-divider {
@@ -1047,25 +939,25 @@ input:checked + .slider:before {
     margin-top: 5px;
 }
 
-/* --- TOAST --- */
+/* TOAST */
 #toast {
     position: fixed;
     bottom: 40px;
     left: 50%;
     transform: translateX(-50%);
     background: #333;
-    color: white;
+    color:  white;
     padding: 15px 40px;
     border-radius: 50px;
     opacity: 0;
     transition: opacity 0.4s;
     font-weight: bold;
     z-index: 9000;
-    border: 1px solid #555;
+    border:  1px solid #555;
     box-shadow: 0 5px 25px rgba(0,0,0,0.5);
 }
 
-/* --- MODALS --- */
+/* MODAL */
 #bio-modal {
     position: fixed;
     top: 0;
@@ -1081,26 +973,30 @@ input:checked + .slider:before {
 
 .modal-box {
     background:  #222;
-    border: 1px solid #555;
+    border:  1px solid #555;
     padding: 30px;
-    max-width: 600px;
+    max-width: 500px;
     width: 90%;
-    max-height:  80vh;
-    overflow-y:  auto;
     border-radius: 8px;
     box-shadow: 0 10px 50px rgba(0,0,0,0.8);
 }
 
 .modal-box h2 {
-    margin-top: 0;
+    margin:  0 0 20px 0;
+    font-family: 'Merriweather', serif;
     border-bottom: 1px solid #444;
     padding-bottom: 15px;
-    font-family: 'Merriweather', serif;
+}
+
+.bio-stat {
+    padding: 10px 0;
+    border-bottom: 1px solid #333;
+    font-size: 1rem;
 }
 
 .modal-box button {
     margin-top: 20px;
-    padding:  12px 30px;
+    padding: 12px 30px;
     background: #444;
     border: none;
     color: white;
@@ -1114,15 +1010,11 @@ input:checked + .slider:before {
     background: #555;
 }
 
-/* ============================================
-   ELECTION NIGHT STYLES
-   ============================================ */
-
+/* ELECTION NIGHT */
 #election-screen {
     background: #0a0a0a;
 }
 
-/* Election Header */
 .election-header {
     height: 80px;
     background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
@@ -1134,9 +1026,9 @@ input:checked + .slider:before {
 }
 
 .election-header-left {
-    display:  flex;
+    display: flex;
     align-items: center;
-    gap: 20px;
+    gap:  20px;
 }
 
 .network-bug {
@@ -1149,14 +1041,13 @@ input:checked + .slider:before {
     font-family: 'Merriweather', serif;
     font-size: 1rem;
     font-weight: 700;
-    color: #fff;
 }
 
 .bug-year {
     font-family: 'Merriweather', serif;
     font-size: 1.4rem;
     font-weight: 900;
-    color:  var(--rep-red);
+    color: var(--rep-red);
 }
 
 .election-banner {
@@ -1176,7 +1067,6 @@ input:checked + .slider:before {
 .election-time-display {
     font-size: 2rem;
     font-weight: 900;
-    font-family: 'Roboto Mono', monospace;
 }
 
 #election-time {
@@ -1196,8 +1086,8 @@ input:checked + .slider:before {
     justify-content: center;
 }
 
-. time-btn {
-    background:  #333;
+.time-btn {
+    background: #333;
     border: 1px solid #555;
     color: #aaa;
     padding: 4px 12px;
@@ -1213,15 +1103,15 @@ input:checked + .slider:before {
     color:  white;
 }
 
-. time-btn. active {
+.time-btn. active {
     background: var(--dem-blue);
     border-color: var(--dem-blue);
     color: white;
 }
 
-. election-header-right {
+.election-header-right {
     display: flex;
-    align-items: center;
+    align-items:  center;
 }
 
 .map-mode-toggle {
@@ -1233,7 +1123,7 @@ input:checked + .slider:before {
 }
 
 .mode-btn {
-    background:  transparent;
+    background: transparent;
     border:  none;
     color:  #888;
     padding: 8px 16px;
@@ -1243,7 +1133,6 @@ input:checked + .slider:before {
     border-radius: 3px;
     transition: 0.2s;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .mode-btn:hover {
@@ -1255,7 +1144,6 @@ input:checked + .slider:before {
     color:  white;
 }
 
-/* Election Main Area */
 .election-main {
     flex: 1;
     display: flex;
@@ -1263,58 +1151,44 @@ input:checked + .slider:before {
     overflow: hidden;
 }
 
-/* EV Banner */
 .election-ev-banner {
     height: 100px;
-    background: linear-gradient(180deg, #151515 0%, #1a1a1a 100%);
+    background:  linear-gradient(180deg, #151515 0%, #1a1a1a 100%);
     display: flex;
     align-items: center;
-    justify-content:  center;
+    justify-content: center;
     padding: 0 40px;
     border-bottom: 1px solid #333;
 }
 
-. ev-candidate {
-    display:  flex;
+.ev-candidate {
+    display: flex;
     align-items: center;
-    gap: 15px;
+    gap:  15px;
     min-width: 250px;
 }
 
 .ev-candidate img {
-    width: 60px;
+    width:  60px;
     height: 60px;
     border-radius: 50%;
     object-fit:  cover;
     border: 3px solid;
 }
 
-.ev-dem img {
-    border-color: var(--dem-blue);
-}
+.ev-dem img { border-color: var(--dem-blue); }
+.ev-rep img { border-color: var(--rep-red); }
+.ev-dem { justify-content: flex-end; }
+. ev-rep { justify-content: flex-start; }
 
-.ev-rep img {
-    border-color:  var(--rep-red);
-}
-
-.ev-dem {
-    justify-content: flex-end;
-}
-
-.ev-rep {
-    justify-content: flex-start;
-}
-
-.ev-info {
+. ev-info {
     display: flex;
     flex-direction: column;
 }
 
-.ev-dem . ev-info {
-    text-align: right;
-}
+.ev-dem . ev-info { text-align: right; }
 
-. ev-name {
+.ev-name {
     font-size: 0.9rem;
     font-weight:  bold;
     color:  #ccc;
@@ -1328,22 +1202,17 @@ input:checked + .slider:before {
     line-height: 1;
 }
 
-. ev-dem .ev-count {
-    color: var(--dem-blue);
-}
-
-.ev-rep .ev-count {
-    color: var(--rep-red);
-}
+. ev-dem .ev-count { color: var(--dem-blue); }
+.ev-rep . ev-count { color: var(--rep-red); }
 
 .ev-progress-wrapper {
     flex: 1;
     max-width: 500px;
-    margin: 0 40px;
+    margin:  0 40px;
 }
 
 .ev-progress-bar {
-    height:  30px;
+    height: 30px;
     background: #333;
     border-radius:  4px;
     display: flex;
@@ -1370,7 +1239,7 @@ input:checked + .slider:before {
     position:  absolute;
     left: 50%;
     top: 50%;
-    transform:  translate(-50%, -50%);
+    transform: translate(-50%, -50%);
     background: var(--gold);
     color: #000;
     padding:  2px 8px;
@@ -1388,7 +1257,6 @@ input:checked + .slider:before {
     margin-top: 5px;
 }
 
-/* Election Content */
 .election-content {
     flex: 1;
     display: flex;
@@ -1401,7 +1269,6 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: center;
     padding:  20px;
-    position: relative;
 }
 
 #election-map-wrapper {
@@ -1417,34 +1284,22 @@ input:checked + .slider:before {
     max-height: 100%;
 }
 
-#election-county-wrapper {
-    position:  absolute;
-    top: 0;
-    left: 0;
-    width:  100%;
-    height: 100%;
-    background: var(--bg-dark);
-    display: flex;
-    flex-direction: column;
-}
-
-/* Election Sidebar */
 #election-sidebar {
-    width: 380px;
+    width:  380px;
     background: var(--panel-bg);
     border-left: 1px solid #333;
-    display: flex;
+    display:  flex;
     flex-direction: column;
     overflow:  hidden;
 }
 
 #election-state-info {
-    padding:  20px;
+    padding: 20px;
     border-bottom: 1px solid #333;
 }
 
-.elec-state-header {
-    display:  flex;
+. elec-state-header {
+    display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
@@ -1477,7 +1332,7 @@ input:checked + .slider:before {
     font-size: 1.1rem;
 }
 
-.elec-results-bar {
+. elec-results-bar {
     height:  35px;
     background: #333;
     border-radius:  4px;
@@ -1496,13 +1351,8 @@ input:checked + .slider:before {
     font-size: 0.9rem;
 }
 
-.elec-bar-dem {
-    background: var(--dem-blue);
-}
-
-.elec-bar-rep {
-    background: var(--rep-red);
-}
+.elec-bar-dem { background: var(--dem-blue); }
+.elec-bar-rep { background: var(--rep-red); }
 
 .elec-vote-counts {
     margin-bottom: 15px;
@@ -1522,7 +1372,6 @@ input:checked + .slider:before {
 }
 
 .elec-votes {
-    font-family: 'Roboto Mono', monospace;
     margin-right: 15px;
     color: #aaa;
 }
@@ -1533,16 +1382,11 @@ input:checked + .slider:before {
     text-align: right;
 }
 
-.third-party-row {
-    opacity: 0.7;
-}
-
 . elec-projection {
     text-align: center;
     padding: 15px;
     background: #252525;
     border-radius: 6px;
-    margin-bottom: 15px;
 }
 
 .proj-status {
@@ -1551,32 +1395,9 @@ input:checked + .slider:before {
     letter-spacing: 1px;
 }
 
-.proj-status.called-dem {
-    color:  var(--dem-blue);
-}
+.proj-status.called-dem { color: var(--dem-blue); }
+.proj-status.called-rep { color: var(--rep-red); }
 
-.proj-status. called-rep {
-    color: var(--rep-red);
-}
-
-.elec-county-btn {
-    width: 100%;
-    padding: 12px;
-    background: #333;
-    border: 1px solid #555;
-    color:  #ccc;
-    cursor: pointer;
-    font-weight: bold;
-    border-radius: 4px;
-    transition: 0.2s;
-}
-
-.elec-county-btn:hover {
-    background:  #444;
-    color: white;
-}
-
-/* Election Feed */
 #election-feed {
     flex: 1;
     padding: 15px;
@@ -1585,7 +1406,7 @@ input:checked + .slider:before {
 }
 
 #election-feed h4 {
-    margin:  0 0 15px 0;
+    margin: 0 0 15px 0;
     color: var(--rep-red);
     font-size: 0.85rem;
     letter-spacing: 1px;
@@ -1595,7 +1416,7 @@ input:checked + .slider:before {
     font-size: 0.85rem;
 }
 
-.feed-item {
+. feed-item {
     padding: 10px;
     background: #252525;
     border-radius: 4px;
@@ -1603,17 +1424,10 @@ input:checked + .slider:before {
     border-left: 3px solid #555;
 }
 
-. feed-item.call-dem {
-    border-left-color: var(--dem-blue);
-}
-
-.feed-item.call-rep {
-    border-left-color: var(--rep-red);
-}
-
-.feed-time {
+. feed-time {
     font-size: 0.75rem;
     color: #888;
+    display: block;
     margin-bottom: 4px;
 }
 
@@ -1621,7 +1435,6 @@ input:checked + .slider:before {
     color: #ddd;
 }
 
-/* Race Calls */
 #race-calls {
     padding: 15px;
     max-height: 200px;
@@ -1641,24 +1454,17 @@ input:checked + .slider:before {
     gap: 6px;
 }
 
-.race-call-chip {
+. race-call-chip {
     padding: 4px 10px;
     border-radius: 3px;
     font-size: 0.75rem;
     font-weight: bold;
 }
 
-.race-call-chip.dem {
-    background:  var(--dem-blue);
-    color: white;
-}
+.race-call-chip.dem { background: var(--dem-blue); color: white; }
+.race-call-chip. rep { background: var(--rep-red); color: white; }
 
-.race-call-chip.rep {
-    background:  var(--rep-red);
-    color: white;
-}
-
-/* Winner Overlay */
+/* WINNER OVERLAY */
 #winner-overlay {
     position: fixed;
     top: 0;
@@ -1672,20 +1478,14 @@ input:checked + .slider:before {
     justify-content: center;
 }
 
-. winner-content {
+.winner-content {
     text-align: center;
     animation: winnerZoom 0.5s ease-out;
 }
 
 @keyframes winnerZoom {
-    from {
-        transform: scale(0.8);
-        opacity: 0;
-    }
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
 }
 
 . winner-banner {
@@ -1703,7 +1503,7 @@ input:checked + .slider:before {
     width:  200px;
     height: 200px;
     border-radius: 50%;
-    object-fit:  cover;
+    object-fit: cover;
     border: 5px solid var(--gold);
     box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
     margin-bottom: 30px;
@@ -1759,57 +1559,3 @@ input:checked + .slider:before {
     border-color: white;
     color: white;
 }
-
-/* --- RESPONSIVE --- */
-@media (max-width: 1200px) {
-    #sidebar, #election-sidebar {
-        width: 320px;
-    }
-    
-    . ev-display {
-        font-size: 1.5rem;
-    }
-    
-    .progress-bar-bg {
-        width: 300px;
-    }
-}
-
-@media (max-width: 900px) {
-    . hud-header {
-        flex-wrap: wrap;
-        height: auto;
-        padding:  15px;
-        gap: 15px;
-    }
-    
-    . hud-left, .hud-center, .hud-right {
-        flex:  none;
-        width: 100%;
-        justify-content: center;
-    }
-    
-    #sidebar, #election-sidebar {
-        position: fixed;
-        right: -100%;
-        top: 0;
-        height: 100%;
-        transition: right 0.3s;
-        z-index: 500;
-    }
-    
-    #sidebar. open, #election-sidebar. open {
-        right: 0;
-    }
-    
-    .major-parties {
-        flex-direction: column;
-        gap: 20px;
-    }
-    
-    . card-major {
-        width: 280px ! important;
-        height: 320px !important;
-    }
-}
-
