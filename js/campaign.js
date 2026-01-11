@@ -335,7 +335,11 @@ var Campaign = {
     },
 
     closeCountyView: function() {
-        document.getElementById('county-view-wrapper').classList.add('hidden');
-        document.getElementById('us-map-wrapper').classList.remove('hidden');
+        if (typeof Counties !== 'undefined') {
+            Counties.closeCountyView();
+        } else {
+            document.getElementById('county-view-wrapper').classList.add('hidden');
+            document.getElementById('us-map-wrapper').classList.remove('hidden');
+        }
     }
 };
