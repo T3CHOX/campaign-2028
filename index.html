@@ -172,6 +172,8 @@
                             <button class="act-btn" onclick="app.handleAction('ad')"><span>📺</span><span>AD BLITZ</span></button>
                             <button class="act-btn" onclick="app.handleAction('rally')"><span>🎤</span><span>RALLY</span></button>
                             <button class="act-btn" onclick="app.openStateBio()"><span>📖</span><span>INTEL</span></button>
+                            <button class="act-btn" onclick="app.openCountyView()"><span>🗺️</span><span>BREAKDOWN</span></button>
+                            <button class="act-btn" onclick="app.openIssuesPanel()"><span>📊</span><span>ISSUES</span></button>
                         </div>
                     </div>
                     <div class="issues-list"><h4>TOP ISSUES</h4><div id="sp-issues-list"></div></div>
@@ -322,6 +324,12 @@
     
     <!-- Load scripts in dependency order -->
 <script src="js/config.js"></script>
+<script src="js/issues.js"></script>
+<script src="js/interestGroups.js"></script>
+<script src="js/states.js"></script>
+<script src="js/turnout.js"></script>
+<script src="js/counties.js"></script>
+<script src="js/ai.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/screens.js"></script>
 <script src="js/campaign.js"></script>

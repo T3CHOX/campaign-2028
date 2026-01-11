@@ -7,6 +7,11 @@ var Campaign = {
         var wrapper = document.getElementById('us-map-wrapper');
         wrapper.innerHTML = '<div class="loading-map">Loading map...</div>';
         
+        // Load county data first
+        Counties.loadCountyData(function() {
+            console.log('County data loaded');
+        });
+        
         var xhr = new XMLHttpRequest();
         xhr.open('GET', 'map.svg', true);
         xhr.onreadystatechange = function() {
@@ -25,6 +30,12 @@ var Campaign = {
                             path.style.cursor = 'pointer';
                             (function(c) {
                                 path.onclick = function() { Campaign.clickState(c); };
+                                path.ondblclick = function() {
+                                    // Double-click to open county view
+                                    if (typeof Counties !== 'undefined') {
+                                        Counties.openCountyView(c);
+                                    }
+                                };
                                 path.onmousemove = function(e) { Campaign.showTooltip(e, gameData.states[c]); };
                                 path.onmouseleave = function() { document.getElementById('map-tooltip').style.display = 'none'; };
                             })(code);
@@ -35,7 +46,7 @@ var Campaign = {
                     Campaign.colorMap();
                 }
             } else if (xhr.readyState === 4) {
-                wrapper.innerHTML = '<div class="error-map">Failed to load map.  Make sure map.svg exists.</div>';
+                wrapper.innerHTML = '<div class="error-map">Failed to load map. Make sure map.svg exists.</div>';
             }
         };
         xhr.send();
@@ -83,14 +94,17 @@ var Campaign = {
         repPct = Math.max(0, Math.min(100, repPct));
         
         document.getElementById('poll-bar-wrap').innerHTML = 
-            '<div style="width: ' + demPct + '%; background:  #00AEF3;"></div>' +
+            '<div style="width: ' + demPct + '%; background: #00AEF3;"></div>' +
             '<div style="width: ' + repPct + '%; background: #E81B23;"></div>';
         document.getElementById('poll-dem-val').innerText = demPct.toFixed(1) + '%';
         document.getElementById('poll-rep-val').innerText = repPct.toFixed(1) + '%';
         
         var issuesList = document.getElementById('sp-issues-list');
         issuesList.innerHTML = '';
-        var shuffled = Utils.shuffleArray(ISSUES).slice(0, 3);
+        
+        // Use CORE_ISSUES if available, otherwise fallback to old ISSUES
+        var issueSource = (typeof CORE_ISSUES !== 'undefined') ? CORE_ISSUES : ISSUES;
+        var shuffled = Utils.shuffleArray(issueSource).slice(0, 3);
         for (var j = 0; j < shuffled.length; j++) {
             issuesList.innerHTML += '<span class="issue-tag">' + shuffled[j].name + '</span>';
         }
@@ -151,8 +165,32 @@ var Campaign = {
         
         if (action === 'fundraise') {
             if (gameData.energy < 1) return Utils.showToast("Not enough energy!");
-            var raised = 2 + Math.random() * 3;
+            
+            // Advanced fundraising formula
+            var baseAmount = STATE_FUNDRAISING_POTENTIAL[gameData.selectedState] || 2.0;
+            
+            // Party alignment bonus
+            var alignmentBonus = 1.0;
+            if ((gameData.selectedParty === 'D' && s.margin > 0) || 
+                (gameData.selectedParty === 'R' && s.margin < 0)) {
+                alignmentBonus = 1.3; // Fundraising in friendly state
+            } else if ((gameData.selectedParty === 'D' && s.margin < -10) ||
+                       (gameData.selectedParty === 'R' && s.margin > 10)) {
+                alignmentBonus = 0.7; // Fundraising in hostile state
+            }
+            
+            // Candidate charisma modifier
+            var charismaModifier = gameData.candidate.funds ? (gameData.candidate.funds / 60) : 1.0;
+            
+            // Fatigue penalty
+            var fatiguePenalty = Math.max(0.5, 1.0 - ((s.fundraisingVisits || 0) * 0.1));
+            
+            // Calculate final amount with randomness
+            var raised = baseAmount * alignmentBonus * charismaModifier * fatiguePenalty;
+            raised *= (0.8 + Math.random() * 0.4); // ±20% variance
+            
             gameData.funds += raised;
+            s.fundraisingVisits = (s.fundraisingVisits || 0) + 1;
             message = 'Raised $' + raised.toFixed(1) + 'M in ' + s.name;
             cost.energy = 1;
         } else if (action === 'rally') {
@@ -233,28 +271,19 @@ var Campaign = {
         Utils.showToast("Week advanced!");
     },
 
-    opponentTurn:  function() {
-        var stateCodes = [];
-        for (var code in gameData.states) {
-            stateCodes.push(code);
-        }
-        var numActions = 3 + Math.floor(Math.random() * 3);
-        
-        for (var i = 0; i < numActions; i++) {
-            var randomState = stateCodes[Math.floor(Math.random() * stateCodes.length)];
-            var s = gameData.states[randomState];
-            var effect = 0.5 + Math.random() * 1.5;
-            
-            if (gameData.selectedParty === 'D') {
-                s.margin -= effect;
-            } else if (gameData.selectedParty === 'R') {
-                s.margin += effect;
-            } else {
-                if (Math.random() > 0.5) {
-                    s.margin += effect * 0.5;
-                } else {
-                    s.margin -= effect * 0.5;
-                }
+    opponentTurn: function() {
+        // Execute AI turns for opponents
+        if (gameData.selectedParty === 'D' && gameData.repTicket.pres) {
+            OpponentAI.executeTurn('R', gameData.repTicket.pres.stamina || 8);
+        } else if (gameData.selectedParty === 'R' && gameData.demTicket.pres) {
+            OpponentAI.executeTurn('D', gameData.demTicket.pres.stamina || 8);
+        } else if (Utils.isThirdParty(gameData.selectedParty)) {
+            // Both major party opponents act
+            if (gameData.demTicket.pres) {
+                OpponentAI.executeTurn('D', gameData.demTicket.pres.stamina || 8);
+            }
+            if (gameData.repTicket.pres) {
+                OpponentAI.executeTurn('R', gameData.repTicket.pres.stamina || 8);
             }
         }
         
@@ -306,7 +335,11 @@ var Campaign = {
     },
 
     closeCountyView: function() {
-        document.getElementById('county-view-wrapper').classList.add('hidden');
-        document.getElementById('us-map-wrapper').classList.remove('hidden');
+        if (typeof Counties !== 'undefined') {
+            Counties.closeCountyView();
+        } else {
+            document.getElementById('county-view-wrapper').classList.add('hidden');
+            document.getElementById('us-map-wrapper').classList.remove('hidden');
+        }
     }
 };

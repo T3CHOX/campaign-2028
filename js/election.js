@@ -3,7 +3,7 @@
    ============================================ */
 
 var Election = {
-    time: 17. 5,
+    time: 17.5,
     speed: 1,
     paused: false,
     interval: null,
@@ -55,7 +55,7 @@ var Election = {
 
             if (this.time >= closeTime && !s.called) {
                 if (s.reportedPct < 100) {
-                    var increment = (Math.random() * 1. 5 + 0.3) * this.speed;
+                    var increment = (Math.random() * 1.5 + 0.3) * this.speed;
                     s.reportedPct = Math.min(100, s.reportedPct + increment);
 
                     var totalVotes = s.ev * 120000;

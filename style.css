@@ -1601,3 +1601,257 @@ body {
     border-color: white;
     color: white;
 }
+
+/* ========================================
+   COUNTY VIEW STYLES
+   ======================================== */
+
+#county-view-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-dark);
+    z-index: 100;
+}
+
+#county-view-header {
+    background: var(--panel-bg);
+    padding: 20px;
+    border-bottom: 2px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.county-back-btn {
+    background: #333;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    border-radius: 4px;
+    transition: 0.2s;
+}
+
+.county-back-btn:hover {
+    background: #444;
+}
+
+#cv-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    flex: 1;
+    text-align: center;
+}
+
+#county-map-container {
+    height: calc(100vh - 100px);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#county-map-svg {
+    max-width: 90%;
+    max-height: 90%;
+}
+
+#county-map-svg path {
+    stroke: #333;
+    stroke-width: 0.5;
+    transition: fill 0.2s, stroke 0.2s;
+}
+
+#county-map-svg path:hover {
+    stroke: white;
+    stroke-width: 1.5;
+}
+
+/* ========================================
+   ISSUES PANEL STYLES
+   ======================================== */
+
+#issues-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.issues-panel {
+    background: var(--panel-bg);
+    border: 2px solid #333;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 30px;
+}
+
+.issues-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #333;
+    padding-bottom: 15px;
+}
+
+.issues-panel-header h2 {
+    font-size: 1.8rem;
+    margin: 0;
+}
+
+.issues-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.issues-close-btn:hover {
+    color: var(--rep-red);
+}
+
+.issue-item {
+    margin: 25px 0;
+    padding: 20px;
+    background: #1a1a1a;
+    border-radius: 6px;
+}
+
+.issue-item h3 {
+    margin: 0 0 15px 0;
+    font-size: 1.2rem;
+}
+
+.issue-scale {
+    position: relative;
+    height: 40px;
+    background: linear-gradient(to right, var(--dem-blue), #888, var(--rep-red));
+    border-radius: 20px;
+    margin: 15px 0;
+}
+
+.issue-marker {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid white;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.issue-marker:hover {
+    transform: translate(-50%, -50%) scale(1.3);
+}
+
+.issue-marker.player {
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+    border-width: 3px;
+}
+
+.issue-marker.dem {
+    background: var(--dem-blue);
+}
+
+.issue-marker.rep {
+    background: var(--rep-red);
+}
+
+.issue-marker.state {
+    background: var(--forward-gold);
+}
+
+.issues-toggle {
+    margin-top: 30px;
+    padding: 15px;
+    background: #1a1a1a;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.issues-toggle input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+/* ========================================
+   NATIONAL OVERVIEW STYLES
+   ======================================== */
+
+.national-overview {
+    padding: 20px;
+}
+
+.national-overview h3 {
+    font-size: 1.3rem;
+    margin: 20px 0 10px 0;
+    color: var(--forward-gold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.popular-vote-display {
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.popular-vote-display div {
+    margin: 8px 0;
+    font-size: 1.1rem;
+}
+
+.tossup-states {
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.tossup-states span {
+    display: inline-block;
+    margin: 5px 8px;
+    padding: 5px 12px;
+    background: #333;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+/* ========================================
+   LOADING/ERROR STATES
+   ======================================== */
+
+.loading-map, .error-map {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 1.5rem;
+    color: #666;
+}
+
+.error-map {
+    color: var(--rep-red);
+}

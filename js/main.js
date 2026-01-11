@@ -16,9 +16,16 @@ function initGameData() {
             reportedPct: 0,
             reportedVotes: { D: 0, R: 0 },
             called: false,
-            calledFor: null
+            calledFor: null,
+            fundraisingVisits: 0
         };
     }
+    
+    // Enhance state data if states.js is loaded
+    if (typeof enhanceStateData !== 'undefined') {
+        enhanceStateData();
+    }
+    
     console.log("🗳️ Decision 2028 Initialized");
 }
 
@@ -65,7 +72,16 @@ var app = {
     openStateBio: function() { Campaign.openStateBio(); },
     nextWeek: function() { Campaign.nextWeek(); },
     undoLastAction: function() { Campaign.undoLastAction(); },
-    closeCountyView: function() { Campaign.closeCountyView(); },
+    closeCountyView: function() { Counties.closeCountyView(); },
+    openCountyView: function() { 
+        if (gameData.selectedState && typeof Counties !== 'undefined') {
+            Counties.openCountyView(gameData.selectedState);
+        }
+    },
+    openIssuesPanel: function() {
+        // Placeholder for issues panel
+        Utils.showToast("Issues panel coming soon!");
+    },
     election: {
         togglePause: function() { Election.togglePause(); },
         setSpeed: function(s) { Election.setSpeed(s); },
