@@ -92,9 +92,112 @@ var Counties = {
         var county = this.countyData[fips];
         if (!county) return;
         
+        // Store selected county
+        gameData.selectedCounty = fips;
+        
         // Show county info in sidebar
         document.getElementById('sp-name').innerText = county.n || 'County';
-        // Update actions to be county-specific
+        
+        // Show county-specific actions in sidebar
+        // Mark that we're in county view mode
+        gameData.inCountyView = true;
+    },
+    
+    // Rally in a specific county
+    rallyInCounty: function(fips) {
+        if (!fips || !this.countyData[fips]) return;
+        
+        if (gameData.energy < 1) {
+            Utils.showToast("Not enough energy!");
+            return;
+        }
+        if (gameData.funds < 0.5) {
+            Utils.showToast("Need $0.5M for county rally!");
+            return;
+        }
+        
+        Campaign.saveState();
+        
+        var county = this.countyData[fips];
+        
+        // Apply turnout boost to this county
+        var turnoutBoost = 0.1 + Math.random() * 0.1; // 10-20% boost
+        
+        if (gameData.selectedParty === 'D') {
+            county.turnout.player = (county.turnout.player || 1.0) + turnoutBoost;
+        } else if (gameData.selectedParty === 'R') {
+            county.turnout.player = (county.turnout.player || 1.0) + turnoutBoost;
+        } else {
+            county.turnout.thirdParty = (county.turnout.thirdParty || 0.7) + (turnoutBoost * 0.5);
+        }
+        
+        // Cap turnout at 1.5 (150%)
+        county.turnout.player = Math.min(1.5, county.turnout.player || 1.0);
+        
+        // Apply smaller boost to adjacent counties
+        var adjacentBoost = turnoutBoost * 0.3;
+        // For simplicity, boost nearby counties (would need proper adjacency data)
+        
+        gameData.energy -= 1;
+        gameData.funds -= 0.5;
+        
+        // Update state-level margin based on county votes
+        this.updateStateFromCounties(this.currentState);
+        
+        var message = 'County rally in ' + (county.n || 'County') + '! Turnout boost: +' + (turnoutBoost * 100).toFixed(0) + '%';
+        Utils.addLog(message);
+        Campaign.updateHUD();
+        Campaign.colorMap();
+        Utils.showToast(message);
+    },
+    
+    // Update state-level margin from county data
+    updateStateFromCounties: function(stateCode) {
+        var stateFips = this.getStateFipsPrefix(stateCode);
+        var totalDemVotes = 0;
+        var totalRepVotes = 0;
+        
+        for (var fips in this.countyData) {
+            if (fips.substring(0, 2) === stateFips) {
+                var county = this.countyData[fips];
+                if (county.v) {
+                    var demVotes = (county.v.D || 0) * (county.turnout.player || 1.0);
+                    var repVotes = (county.v.R || 0) * (county.turnout.player || 1.0);
+                    totalDemVotes += demVotes;
+                    totalRepVotes += repVotes;
+                }
+            }
+        }
+        
+        // Calculate new margin
+        var totalVotes = totalDemVotes + totalRepVotes;
+        if (totalVotes > 0) {
+            var demPct = (totalDemVotes / totalVotes) * 100;
+            var repPct = (totalRepVotes / totalVotes) * 100;
+            var newMargin = demPct - repPct;
+            
+            // Update state margin
+            if (gameData.states[stateCode]) {
+                gameData.states[stateCode].margin = newMargin;
+            }
+        }
+    },
+    
+    // Get state FIPS prefix from state code
+    getStateFipsPrefix: function(stateCode) {
+        var fipsMap = {
+            'AL': '01', 'AK': '02', 'AZ': '04', 'AR': '05', 'CA': '06',
+            'CO': '08', 'CT': '09', 'DE': '10', 'DC': '11', 'FL': '12',
+            'GA': '13', 'HI': '15', 'ID': '16', 'IL': '17', 'IN': '18',
+            'IA': '19', 'KS': '20', 'KY': '21', 'LA': '22', 'ME': '23',
+            'MD': '24', 'MA': '25', 'MI': '26', 'MN': '27', 'MS': '28',
+            'MO': '29', 'MT': '30', 'NE': '31', 'NV': '32', 'NH': '33',
+            'NJ': '34', 'NM': '35', 'NY': '36', 'NC': '37', 'ND': '38',
+            'OH': '39', 'OK': '40', 'OR': '41', 'PA': '42', 'RI': '44',
+            'SC': '45', 'SD': '46', 'TN': '47', 'TX': '48', 'UT': '49',
+            'VT': '50', 'VA': '51', 'WA': '53', 'WV': '54', 'WI': '55', 'WY': '56'
+        };
+        return fipsMap[stateCode] || '00';
     },
     
     // Close county view
@@ -102,6 +205,8 @@ var Counties = {
         document.getElementById('county-view-wrapper').classList.add('hidden');
         document.getElementById('us-map-wrapper').classList.remove('hidden');
         this.currentState = null;
+        gameData.inCountyView = false;
+        gameData.selectedCounty = null;
     },
     
     // Get adjacent counties (simplified)

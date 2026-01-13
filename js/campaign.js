@@ -107,8 +107,22 @@ var Campaign = {
         document.getElementById('poll-dem-val').innerText = demPct.toFixed(1) + '%';
         document.getElementById('poll-rep-val').innerText = repPct.toFixed(1) + '%';
         
+        // Calculate and display turnout if available
+        var turnoutText = 'Normal';
+        var turnoutBoosts = s.turnoutBoosts || {};
+        var totalBoost = 0;
+        for (var issue in turnoutBoosts) {
+            totalBoost += turnoutBoosts[issue];
+        }
+        if (s.rallies) totalBoost += s.rallies * 0.05;
+        
+        if (totalBoost > 0.15) turnoutText = 'Strong';
+        else if (totalBoost > 0.08) turnoutText = 'Good';
+        else if (totalBoost > 0.03) turnoutText = 'Moderate';
+        
         var issuesList = document.getElementById('sp-issues-list');
         issuesList.innerHTML = '';
+        issuesList.innerHTML += '<div style="background: #2a2a2a; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (totalBoost > 0.1 ? '#198754' : '#ccc') + '">' + turnoutText + '</span></div>';
         
         // Use CORE_ISSUES if available, otherwise fallback to old ISSUES
         var issueSource = (typeof CORE_ISSUES !== 'undefined') ? CORE_ISSUES : ISSUES;
@@ -202,6 +216,13 @@ var Campaign = {
             message = 'Raised $' + raised.toFixed(1) + 'M in ' + s.name;
             cost.energy = 1;
         } else if (action === 'rally') {
+            // Check if we're in county view
+            if (gameData.inCountyView && gameData.selectedCounty) {
+                Counties.rallyInCounty(gameData.selectedCounty);
+                return;
+            }
+            
+            // State-level rally
             if (gameData.energy < 2) return Utils.showToast("Need 2 energy for rally!");
             if (gameData.funds < 1) return Utils.showToast("Need $1M for rally!");
             effect = 1 + Math.random() * 2;
@@ -323,6 +344,13 @@ var Campaign = {
         this.saveState();
         gameData.currentDate.setDate(gameData.currentDate.getDate() + 7);
         gameData.energy = gameData.maxEnergy;
+        
+        // Random chance for PAC offer (20% per week)
+        if (Math.random() < 0.2 && typeof app.triggerPacOffer !== 'undefined') {
+            setTimeout(function() {
+                app.triggerPacOffer();
+            }, 1000);
+        }
         
         this.opponentTurn();
         

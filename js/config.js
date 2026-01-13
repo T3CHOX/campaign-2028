@@ -131,5 +131,8 @@ var gameData = {
     states: {},
     selectedState: null,
     historyStack: [],
-    logs: []
+    logs: [],
+    pacEndorsements: [],
+    lockedIssues: {},
+    currentPacOffer: null
 };

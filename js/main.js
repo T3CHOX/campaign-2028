@@ -110,8 +110,14 @@ var app = {
                 
                 for (var i = 0; i < categoryIssues.length; i++) {
                     var issue = categoryIssues[i];
+                    var isLocked = gameData.lockedIssues && gameData.lockedIssues[issue.id];
+                    
                     issuesHtml += '<div class="issue-item">';
-                    issuesHtml += '<h3>' + issue.name + '</h3>';
+                    issuesHtml += '<h3>' + issue.name;
+                    if (isLocked) {
+                        issuesHtml += ' <span class="pac-locked-badge">LOCKED</span>';
+                    }
+                    issuesHtml += '</h3>';
                     issuesHtml += '<div class="issue-scale">';
                     
                     // Get positions
@@ -146,6 +152,14 @@ var app = {
                     
                     issuesHtml += '</div>'; // close issue-scale
                     issuesHtml += '<div class="issue-labels"><span>Progressive (-10)</span><span>Center (0)</span><span>Conservative (+10)</span></div>';
+                    
+                    // Add shift position button if not locked
+                    if (!isLocked) {
+                        issuesHtml += '<div style="margin-top: 10px; text-align: center;">';
+                        issuesHtml += '<button class="speech-issue-btn" style="padding: 8px 15px; display: inline-block; width: auto;" onclick="app.shiftIssuePosition(\'' + issue.id + '\')">Shift Position</button>';
+                        issuesHtml += '</div>';
+                    }
+                    
                     issuesHtml += '</div>'; // close issue-item
                 }
             }
@@ -257,6 +271,182 @@ var app = {
     },
     closeSpeechModal: function() {
         document.getElementById('speech-modal').classList.add('hidden');
+    },
+    // PAC Endorsement System
+    triggerPacOffer: function() {
+        if (typeof PACS === 'undefined') return;
+        
+        // Don't offer if we already have too many endorsements
+        if (gameData.pacEndorsements.length >= 3) return;
+        
+        // Random chance to trigger PAC offer during gameplay
+        var pacKeys = Object.keys(PACS);
+        var eligiblePacs = [];
+        
+        for (var i = 0; i < pacKeys.length; i++) {
+            var pacId = pacKeys[i];
+            var pac = PACS[pacId];
+            
+            // Check if already endorsed
+            var alreadyEndorsed = false;
+            for (var j = 0; j < gameData.pacEndorsements.length; j++) {
+                if (gameData.pacEndorsements[j] === pacId) {
+                    alreadyEndorsed = true;
+                    break;
+                }
+            }
+            
+            if (!alreadyEndorsed) {
+                // Check alignment with candidate position
+                var candidatePos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[pac.priority_issue]) || 0;
+                var alignment = 1 - (Math.abs(candidatePos - pac.desired_position) / 20);
+                
+                // PAC will only offer if alignment is reasonable (>40%)
+                if (alignment > 0.4) {
+                    eligiblePacs.push(pacId);
+                }
+            }
+        }
+        
+        if (eligiblePacs.length > 0) {
+            // Select random eligible PAC
+            var selectedPac = eligiblePacs[Math.floor(Math.random() * eligiblePacs.length)];
+            gameData.currentPacOffer = selectedPac;
+            this.showPacOffer(selectedPac);
+        }
+    },
+    showPacOffer: function(pacId) {
+        var pac = PACS[pacId];
+        if (!pac) return;
+        
+        var issue = CORE_ISSUES.find(function(i) { return i.id === pac.priority_issue; });
+        var issueName = issue ? issue.name : pac.priority_issue;
+        
+        var candidatePos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[pac.priority_issue]) || 0;
+        
+        var html = '';
+        html += '<div class="pac-detail-item">';
+        html += '<strong>' + pac.name + '</strong>';
+        html += '<p>' + pac.description + '</p>';
+        html += '</div>';
+        
+        html += '<div class="pac-detail-item">';
+        html += '<strong>Contribution: $' + pac.contribution + 'M</strong>';
+        html += '<p>One-time campaign contribution</p>';
+        html += '</div>';
+        
+        html += '<div class="pac-detail-item">';
+        html += '<strong>Key Issue: ' + issueName + '</strong>';
+        html += '<p>Your current position: ' + candidatePos + ' | Required position: ' + pac.desired_position + '</p>';
+        html += '</div>';
+        
+        html += '<div class="pac-warning">';
+        html += '<strong>⚠️ WARNING</strong>';
+        html += '<p>Accepting this endorsement will LOCK your position on ' + issueName + '. You will not be able to shift your stance on this issue for the rest of the campaign.</p>';
+        html += '<p>Declining will allow your opponent to receive this endorsement instead.</p>';
+        html += '</div>';
+        
+        document.getElementById('pac-details').innerHTML = html;
+        document.getElementById('pac-modal').classList.remove('hidden');
+    },
+    acceptPacEndorsement: function() {
+        if (!gameData.currentPacOffer) return;
+        
+        var pac = PACS[gameData.currentPacOffer];
+        
+        // Add endorsement
+        gameData.pacEndorsements.push(gameData.currentPacOffer);
+        
+        // Lock issue
+        gameData.lockedIssues[pac.priority_issue] = true;
+        
+        // Add funds
+        gameData.funds += pac.contribution;
+        
+        // Update candidate position to match PAC requirement (slight adjustment if needed)
+        var candidatePos = gameData.candidate.issuePositions[pac.priority_issue] || 0;
+        var positionDiff = Math.abs(candidatePos - pac.desired_position);
+        if (positionDiff > 2) {
+            // Move position closer to PAC requirement
+            gameData.candidate.issuePositions[pac.priority_issue] = pac.desired_position;
+        }
+        
+        Utils.addLog('Accepted endorsement from ' + pac.name + ' (+$' + pac.contribution + 'M)');
+        Utils.showToast('PAC Endorsement: +$' + pac.contribution + 'M!');
+        
+        Campaign.updateHUD();
+        this.closePacModal();
+        gameData.currentPacOffer = null;
+    },
+    declinePacEndorsement: function() {
+        if (!gameData.currentPacOffer) return;
+        
+        var pac = PACS[gameData.currentPacOffer];
+        
+        // Give endorsement to opponent (simplified - just log it)
+        Utils.addLog('Declined ' + pac.name + ' endorsement. Opponent may receive it.');
+        
+        this.closePacModal();
+        gameData.currentPacOffer = null;
+    },
+    closePacModal: function() {
+        document.getElementById('pac-modal').classList.add('hidden');
+    },
+    // Issue Shift Mechanic
+    shiftIssuePosition: function(issueId) {
+        // Check if issue is locked
+        if (gameData.lockedIssues && gameData.lockedIssues[issueId]) {
+            Utils.showToast("This issue is locked by a PAC endorsement!");
+            return;
+        }
+        
+        var issue = CORE_ISSUES.find(function(i) { return i.id === issueId; });
+        if (!issue) return;
+        
+        var currentPos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[issueId]) || 0;
+        
+        // Prompt for new position
+        var newPosStr = prompt("Shift your position on " + issue.name + "\nCurrent: " + currentPos + "\nEnter new position (-10 to +10):", currentPos);
+        
+        if (newPosStr === null) return; // User cancelled
+        
+        var newPos = parseFloat(newPosStr);
+        
+        if (isNaN(newPos) || newPos < -10 || newPos > 10) {
+            Utils.showToast("Invalid position! Must be between -10 and +10");
+            return;
+        }
+        
+        var shift = Math.abs(newPos - currentPos);
+        
+        if (shift < 1) {
+            Utils.showToast("Position shift too small!");
+            return;
+        }
+        
+        // Calculate credibility penalty
+        var credibilityPenalty = shift * 0.5; // Lose 0.5 points per position point shifted
+        
+        // Apply debuff to all states
+        for (var code in gameData.states) {
+            if (gameData.selectedParty === 'D') {
+                gameData.states[code].margin -= credibilityPenalty;
+            } else if (gameData.selectedParty === 'R') {
+                gameData.states[code].margin += credibilityPenalty;
+            }
+        }
+        
+        // Update position
+        if (!gameData.candidate.issuePositions) {
+            gameData.candidate.issuePositions = {};
+        }
+        gameData.candidate.issuePositions[issueId] = newPos;
+        
+        Utils.addLog("Shifted position on " + issue.name + " to " + newPos + " (credibility penalty: -" + credibilityPenalty.toFixed(1) + ")");
+        Utils.showToast("Position shifted! Credibility penalty applied.");
+        
+        Campaign.colorMap();
+        this.renderIssuesPanel();
     },
     election: {
         togglePause: function() { Election.togglePause(); },
