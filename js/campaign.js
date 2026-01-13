@@ -2,6 +2,13 @@
    DECISION 2028 - CAMPAIGN GAMEPLAY
    ============================================ */
 
+// Game balance constants
+var GAME_CONSTANTS = {
+    PAC_OFFER_CHANCE: 0.2,
+    PAC_OFFER_DELAY: 1000,
+    CREDIBILITY_PENALTY_MULTIPLIER: 0.5
+};
+
 var Campaign = {
     initMap: function() {
         var wrapper = document.getElementById('us-map-wrapper');
@@ -336,8 +343,37 @@ var Campaign = {
             '<div class="bio-stat"><strong>Current Polling:</strong> <span style="color: ' + (s.margin > 0 ?  '#00AEF3' : '#E81B23') + '">' + leaning + '</span></div>' +
             '<div class="bio-stat"><strong>Campaign Visits:</strong> ' + (s.visited ? 'Yes' : 'Not yet') + '</div>' +
             '<div class="bio-stat"><strong>Ad Spending:</strong> $' + (s.adSpent || 0).toFixed(1) + 'M</div>' +
-            '<div class="bio-stat"><strong>Rallies Held:</strong> ' + (s.rallies || 0) + '</div>';
+            '<div class="bio-stat"><strong>Rallies Held:</strong> ' + (s.rallies || 0) + '</div>' +
+            this.getInterestGroupBreakdown(gameData.selectedState);
         document.getElementById('bio-modal').classList.remove('hidden');
+    },
+    
+    getInterestGroupBreakdown: function(stateCode) {
+        if (typeof STATE_DEMOGRAPHICS === 'undefined' || !STATE_DEMOGRAPHICS[stateCode]) {
+            return '';
+        }
+        
+        var demographics = STATE_DEMOGRAPHICS[stateCode];
+        var html = '<div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #444;"><strong>Interest Group Demographics:</strong></div>';
+        
+        // Show top demographic groups
+        var groups = [];
+        for (var group in demographics) {
+            if (demographics[group] > 10) {
+                groups.push({ name: group, pct: demographics[group] });
+            }
+        }
+        
+        // Sort by percentage
+        groups.sort(function(a, b) { return b.pct - a.pct; });
+        
+        for (var i = 0; i < Math.min(6, groups.length); i++) {
+            var g = groups[i];
+            var displayName = g.name.charAt(0).toUpperCase() + g.name.slice(1).replace('_', ' ');
+            html += '<div class="bio-stat" style="font-size: 0.9rem;">' + displayName + ': ' + g.pct + '%</div>';
+        }
+        
+        return html;
     },
 
     nextWeek: function() {
@@ -345,11 +381,11 @@ var Campaign = {
         gameData.currentDate.setDate(gameData.currentDate.getDate() + 7);
         gameData.energy = gameData.maxEnergy;
         
-        // Random chance for PAC offer (20% per week)
-        if (Math.random() < 0.2 && typeof app.triggerPacOffer !== 'undefined') {
+        // Random chance for PAC offer
+        if (Math.random() < GAME_CONSTANTS.PAC_OFFER_CHANCE && typeof app.triggerPacOffer !== 'undefined') {
             setTimeout(function() {
                 app.triggerPacOffer();
-            }, 1000);
+            }, GAME_CONSTANTS.PAC_OFFER_DELAY);
         }
         
         this.opponentTurn();

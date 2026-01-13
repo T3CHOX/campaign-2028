@@ -424,8 +424,8 @@ var app = {
             return;
         }
         
-        // Calculate credibility penalty
-        var credibilityPenalty = shift * 0.5; // Lose 0.5 points per position point shifted
+        // Calculate credibility penalty using constant
+        var credibilityPenalty = shift * GAME_CONSTANTS.CREDIBILITY_PENALTY_MULTIPLIER;
         
         // Apply debuff to all states
         for (var code in gameData.states) {

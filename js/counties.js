@@ -165,14 +165,18 @@ var Counties = {
         var turnoutBoost = 0.1 + Math.random() * 0.1; // 10-20% boost
         
         if (gameData.selectedParty === 'D') {
+            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
             county.turnout.player = (county.turnout.player || 1.0) + turnoutBoost;
         } else if (gameData.selectedParty === 'R') {
+            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
             county.turnout.player = (county.turnout.player || 1.0) + turnoutBoost;
         } else {
+            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
             county.turnout.thirdParty = (county.turnout.thirdParty || 0.7) + (turnoutBoost * 0.5);
         }
         
         // Cap turnout at 1.5 (150%)
+        if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
         county.turnout.player = Math.min(1.5, county.turnout.player || 1.0);
         
         // Apply smaller boost to adjacent counties
