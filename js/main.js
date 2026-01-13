@@ -448,6 +448,91 @@ var app = {
         Campaign.colorMap();
         this.renderIssuesPanel();
     },
+    
+    openInterestGroups: function() {
+        document.getElementById('interest-groups-modal').classList.remove('hidden');
+        this.renderInterestGroups('all');
+    },
+    
+    closeInterestGroups: function() {
+        document.getElementById('interest-groups-modal').classList.add('hidden');
+    },
+    
+    filterInterestGroups: function(category) {
+        // Update active tab
+        var tabs = document.querySelectorAll('.ig-tab');
+        for (var i = 0; i < tabs.length; i++) {
+            tabs[i].classList.remove('active');
+            if (tabs[i].getAttribute('data-category') === category) {
+                tabs[i].classList.add('active');
+            }
+        }
+        this.renderInterestGroups(category);
+    },
+    
+    renderInterestGroups: function(category) {
+        var html = '';
+        
+        if (category === 'pacs') {
+            // Show PACs
+            html += '<div class="ig-section-title">POLITICAL ACTION COMMITTEES</div>';
+            html += '<div class="pacs-grid">';
+            
+            for (var pacId in PACS) {
+                var pac = PACS[pacId];
+                html += '<div class="pac-card">';
+                html += '<div class="pac-name">' + pac.name + '</div>';
+                html += '<div class="pac-desc">' + pac.description + '</div>';
+                html += '<div class="pac-details">';
+                html += '<div><strong>Priority Issue:</strong> ' + (pac.priority_issue || 'Various') + '</div>';
+                html += '<div><strong>Contribution:</strong> $' + pac.contribution + 'M</div>';
+                html += '</div>';
+                html += '</div>';
+            }
+            
+            html += '</div>';
+        } else {
+            // Show Interest Groups
+            for (var groupId in INTEREST_GROUPS) {
+                var group = INTEREST_GROUPS[groupId];
+                
+                if (category !== 'all' && group.category !== category) {
+                    continue;
+                }
+                
+                if (!html.includes('class="ig-section-title">' + group.category)) {
+                    html += '<div class="ig-section-title">' + group.category + '</div>';
+                }
+                
+                html += '<div class="ig-card">';
+                html += '<div class="ig-name">' + group.name + '</div>';
+                
+                // Show political leaning
+                var leanText = '';
+                var leanColor = '';
+                if (Math.abs(group.baseline) < 2) {
+                    leanText = 'SWING';
+                    leanColor = '#888';
+                } else if (group.baseline > 0) {
+                    leanText = 'R+' + Math.abs(group.baseline);
+                    leanColor = '#E81B23';
+                } else {
+                    leanText = 'D+' + Math.abs(group.baseline);
+                    leanColor = '#00AEF3';
+                }
+                html += '<div class="ig-lean" style="color: ' + leanColor + '">' + leanText + '</div>';
+                
+                // Show priorities
+                html += '<div class="ig-priorities"><strong>Priority Issues:</strong> ';
+                html += group.priorities.slice(0, 3).join(', ') + '</div>';
+                
+                html += '</div>';
+            }
+        }
+        
+        document.getElementById('interest-groups-grid').innerHTML = html;
+    },
+    
     election: {
         togglePause: function() { Election.togglePause(); },
         setSpeed: function(s) { Election.setSpeed(s); },
