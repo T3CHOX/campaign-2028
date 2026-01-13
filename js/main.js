@@ -458,6 +458,23 @@ var app = {
         document.getElementById('interest-groups-modal').classList.add('hidden');
     },
     
+    countyRally: function() {
+        if (!gameData.selectedCounty) {
+            Utils.showToast("Select a county first!");
+            return;
+        }
+        Counties.rallyInCounty(gameData.selectedCounty);
+    },
+    
+    countySpeech: function() {
+        if (!gameData.selectedCounty) {
+            Utils.showToast("Select a county first!");
+            return;
+        }
+        // Open speech modal for county-specific campaigning
+        Utils.showToast("County speech feature - coming soon!");
+    },
+    
     filterInterestGroups: function(category) {
         // Update active tab
         var tabs = document.querySelectorAll('.ig-tab');

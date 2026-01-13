@@ -142,9 +142,18 @@ var Counties = {
         // Show county info in sidebar
         document.getElementById('sp-name').innerText = county.n || 'County';
         
-        // Show county-specific actions in sidebar
         // Mark that we're in county view mode
         gameData.inCountyView = true;
+        
+        // Add county-specific action buttons
+        var actionGrid = document.querySelector('.action-grid');
+        if (actionGrid) {
+            // Clear existing buttons and add county actions
+            actionGrid.innerHTML = 
+                '<button class="act-btn" onclick="app.countyRally()"><span>🎤</span><span>RALLY</span></button>' +
+                '<button class="act-btn" onclick="app.countySpeech()"><span>🎙️</span><span>SPEECH</span></button>' +
+                '<button class="act-btn" onclick="app.closeCountyView()"><span>🗺️</span><span>BACK TO MAP</span></button>';
+        }
     },
     
     // Rally in a specific county
@@ -289,6 +298,17 @@ var Counties = {
         this.currentState = null;
         gameData.inCountyView = false;
         gameData.selectedCounty = null;
+        
+        // Restore state action buttons
+        var actionGrid = document.querySelector('.action-grid');
+        if (actionGrid) {
+            actionGrid.innerHTML = 
+                '<button class="act-btn" onclick="app.handleAction(\'fundraise\')"><span>💰</span><span>FUNDRAISE</span></button>' +
+                '<button class="act-btn" onclick="app.handleAction(\'ad\')"><span>📺</span><span>AD BLITZ</span></button>' +
+                '<button class="act-btn" onclick="app.openStateBio()"><span>📖</span><span>INTEL</span></button>' +
+                '<button class="act-btn" onclick="app.openCountyView()"><span>🗺️</span><span>BREAKDOWN</span></button>' +
+                '<button class="act-btn" onclick="app.openIssuesPanel()"><span>📊</span><span>ISSUES</span></button>';
+        }
     },
     
     // Get adjacent counties (simplified)
