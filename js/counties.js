@@ -66,6 +66,11 @@ var Counties = {
                             path.style.display = 'block';
                             (function(f) {
                                 path.onclick = function() { Counties.selectCounty(f); };
+                                path.onmousemove = function(e) { Counties.showCountyTooltip(e, f); };
+                                path.onmouseleave = function() { 
+                                    var tooltip = document.getElementById('map-tooltip');
+                                    if (tooltip) tooltip.style.display = 'none';
+                                };
                             })(fips);
                         } else {
                             path.style.display = 'none';
@@ -84,7 +89,43 @@ var Counties = {
     
     // Color county map based on margins
     colorCountyMap: function() {
-        // Placeholder for coloring counties
+        if (!this.currentState) return;
+        
+        var stateFips = this.getStateFipsPrefix(this.currentState);
+        
+        for (var fips in this.countyData) {
+            if (fips.substring(0, 2) === stateFips) {
+                var county = this.countyData[fips];
+                var path = document.getElementById(fips);
+                
+                if (path && county.v) {
+                    // Calculate margin based on votes
+                    var demVotes = (county.v.D || 0) * (county.turnout.player || 1.0);
+                    var repVotes = (county.v.R || 0) * (county.turnout.player || 1.0);
+                    var total = demVotes + repVotes;
+                    
+                    if (total > 0) {
+                        var demPct = (demVotes / total) * 100;
+                        var repPct = (repVotes / total) * 100;
+                        var margin = demPct - repPct;
+                        
+                        // Use the same color function as state map
+                        if (typeof Utils !== 'undefined' && Utils.getMarginColor) {
+                            path.style.fill = Utils.getMarginColor(margin);
+                        } else {
+                            // Fallback coloring
+                            if (Math.abs(margin) < 2) {
+                                path.style.fill = '#808080';
+                            } else if (margin > 0) {
+                                path.style.fill = margin > 10 ? '#0066CC' : '#4d94ff';
+                            } else {
+                                path.style.fill = margin < -10 ? '#CC0000' : '#ff4d4d';
+                            }
+                        }
+                    }
+                }
+            }
+        }
     },
     
     // Select a county
@@ -181,6 +222,43 @@ var Counties = {
                 gameData.states[stateCode].margin = newMargin;
             }
         }
+    },
+    
+    // Show county tooltip
+    showCountyTooltip: function(e, fips) {
+        var county = this.countyData[fips];
+        if (!county) return;
+        
+        var tooltip = document.getElementById('map-tooltip');
+        if (!tooltip) return;
+        
+        var demVotes = (county.v.D || 0) * (county.turnout.player || 1.0);
+        var repVotes = (county.v.R || 0) * (county.turnout.player || 1.0);
+        var total = demVotes + repVotes;
+        
+        var marginText = 'N/A';
+        var color = '#888';
+        
+        if (total > 0) {
+            var demPct = (demVotes / total) * 100;
+            var repPct = (repVotes / total) * 100;
+            var margin = demPct - repPct;
+            
+            if (Math.abs(margin) < 2) {
+                marginText = 'TOSS-UP';
+            } else {
+                marginText = (margin > 0 ? 'D+' : 'R+') + Math.abs(margin).toFixed(1);
+            }
+            color = margin > 0 ? '#00AEF3' : '#E81B23';
+        }
+        
+        tooltip.innerHTML = 
+            '<span class="tooltip-title">' + (county.n || 'County') + '</span>' +
+            '<div class="tooltip-divider"></div>' +
+            '<span class="tooltip-leader" style="color: ' + color + '">' + marginText + '</span>';
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX + 15) + 'px';
+        tooltip.style.top = (e.clientY + 15) + 'px';
     },
     
     // Get state FIPS prefix from state code

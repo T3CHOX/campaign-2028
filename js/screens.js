@@ -38,6 +38,10 @@ var Screens = {
                         '<p>' + (c.desc || '') + '</p>' +
                         '<p class="buff-text">✦ ' + c.buff + '</p>' +
                         (c.debuff ? '<p class="debuff-text">⚠ ' + c.debuff + '</p>' : '') +
+                        '<div class="group-modifiers" title="Demographic appeal boosts">' +
+                            (typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[c.id] ? 
+                                '<p class="group-mod-text">👥 Special Appeal: ' + Object.keys(CANDIDATE_GROUP_MODIFIERS[c.id]).length + ' groups</p>' : '') +
+                        '</div>' +
                     '</div>';
                 container.appendChild(card);
             }
