@@ -66,6 +66,11 @@ var Counties = {
                             path.style.display = 'block';
                             (function(f) {
                                 path.onclick = function() { Counties.selectCounty(f); };
+                                path.onmousemove = function(e) { Counties.showCountyTooltip(e, f); };
+                                path.onmouseleave = function() { 
+                                    var tooltip = document.getElementById('map-tooltip');
+                                    if (tooltip) tooltip.style.display = 'none';
+                                };
                             })(fips);
                         } else {
                             path.style.display = 'none';
@@ -84,7 +89,46 @@ var Counties = {
     
     // Color county map based on margins
     colorCountyMap: function() {
-        // Placeholder for coloring counties
+        if (!this.currentState) return;
+        
+        var stateFips = this.getStateFipsPrefix(this.currentState);
+        
+        for (var fips in this.countyData) {
+            if (fips.substring(0, 2) === stateFips) {
+                var county = this.countyData[fips];
+                var path = document.getElementById(fips);
+                
+                if (path && county.v) {
+                    // Calculate margin based on votes with correct turnout
+                    var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
+                    var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
+                    
+                    var demVotes = (county.v.D || 0) * demTurnout;
+                    var repVotes = (county.v.R || 0) * repTurnout;
+                    var total = demVotes + repVotes;
+                    
+                    if (total > 0) {
+                        var demPct = (demVotes / total) * 100;
+                        var repPct = (repVotes / total) * 100;
+                        var margin = demPct - repPct;
+                        
+                        // Use the same color function as state map
+                        if (typeof Utils !== 'undefined' && Utils.getMarginColor) {
+                            path.style.fill = Utils.getMarginColor(margin);
+                        } else {
+                            // Fallback coloring
+                            if (Math.abs(margin) < 2) {
+                                path.style.fill = '#808080';
+                            } else if (margin > 0) {
+                                path.style.fill = margin > 10 ? '#0066CC' : '#4d94ff';
+                            } else {
+                                path.style.fill = margin < -10 ? '#CC0000' : '#ff4d4d';
+                            }
+                        }
+                    }
+                }
+            }
+        }
     },
     
     // Select a county
@@ -92,9 +136,158 @@ var Counties = {
         var county = this.countyData[fips];
         if (!county) return;
         
+        // Store selected county
+        gameData.selectedCounty = fips;
+        
         // Show county info in sidebar
         document.getElementById('sp-name').innerText = county.n || 'County';
-        // Update actions to be county-specific
+        
+        // Show county-specific actions in sidebar
+        // Mark that we're in county view mode
+        gameData.inCountyView = true;
+    },
+    
+    // Rally in a specific county
+    rallyInCounty: function(fips) {
+        if (!fips || !this.countyData[fips]) return;
+        
+        if (gameData.energy < 1) {
+            Utils.showToast("Not enough energy!");
+            return;
+        }
+        if (gameData.funds < 0.5) {
+            Utils.showToast("Need $0.5M for county rally!");
+            return;
+        }
+        
+        Campaign.saveState();
+        
+        var county = this.countyData[fips];
+        
+        // Apply turnout boost to this county
+        var turnoutBoost = 0.1 + Math.random() * 0.1; // 10-20% boost
+        
+        if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+        
+        if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
+            county.turnout.player = (county.turnout.player || 1.0) + turnoutBoost;
+        } else {
+            county.turnout.thirdParty = (county.turnout.thirdParty || 0.7) + (turnoutBoost * 0.5);
+        }
+        
+        // Cap turnout at 1.5 (150%)
+        county.turnout.player = Math.min(1.5, county.turnout.player || 1.0);
+        county.turnout.thirdParty = Math.min(1.5, county.turnout.thirdParty || 0.7);
+        
+        // Apply smaller boost to adjacent counties
+        var adjacentBoost = turnoutBoost * 0.3;
+        // For simplicity, boost nearby counties (would need proper adjacency data)
+        
+        gameData.energy -= 1;
+        gameData.funds -= 0.5;
+        
+        // Update state-level margin based on county votes
+        this.updateStateFromCounties(this.currentState);
+        
+        var message = 'County rally in ' + (county.n || 'County') + '! Turnout boost: +' + (turnoutBoost * 100).toFixed(0) + '%';
+        Utils.addLog(message);
+        Campaign.updateHUD();
+        Campaign.colorMap();
+        Utils.showToast(message);
+    },
+    
+    // Update state-level margin from county data
+    updateStateFromCounties: function(stateCode) {
+        var stateFips = this.getStateFipsPrefix(stateCode);
+        var totalDemVotes = 0;
+        var totalRepVotes = 0;
+        
+        for (var fips in this.countyData) {
+            if (fips.substring(0, 2) === stateFips) {
+                var county = this.countyData[fips];
+                if (county.v && county.turnout) {
+                    // Use correct turnout for each party
+                    var demTurnout = gameData.selectedParty === 'D' ? (county.turnout.player || 1.0) : (county.turnout.demOpponent || 1.0);
+                    var repTurnout = gameData.selectedParty === 'R' ? (county.turnout.player || 1.0) : (county.turnout.repOpponent || 1.0);
+                    
+                    var demVotes = (county.v.D || 0) * demTurnout;
+                    var repVotes = (county.v.R || 0) * repTurnout;
+                    totalDemVotes += demVotes;
+                    totalRepVotes += repVotes;
+                }
+            }
+        }
+        
+        // Calculate new margin
+        var totalVotes = totalDemVotes + totalRepVotes;
+        if (totalVotes > 0) {
+            var demPct = (totalDemVotes / totalVotes) * 100;
+            var repPct = (totalRepVotes / totalVotes) * 100;
+            var newMargin = demPct - repPct;
+            
+            // Update state margin
+            if (gameData.states[stateCode]) {
+                gameData.states[stateCode].margin = newMargin;
+            }
+        }
+    },
+    
+    // Show county tooltip
+    showCountyTooltip: function(e, fips) {
+        var county = this.countyData[fips];
+        if (!county) return;
+        
+        var tooltip = document.getElementById('map-tooltip');
+        if (!tooltip) return;
+        
+        // Use correct turnout for each party
+        var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
+        var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
+        
+        var demVotes = (county.v.D || 0) * demTurnout;
+        var repVotes = (county.v.R || 0) * repTurnout;
+        var total = demVotes + repVotes;
+        
+        var marginText = 'N/A';
+        var color = '#888';
+        
+        if (total > 0) {
+            var demPct = (demVotes / total) * 100;
+            var repPct = (repVotes / total) * 100;
+            var margin = demPct - repPct;
+            
+            if (Math.abs(margin) < 2) {
+                marginText = 'TOSS-UP';
+            } else {
+                marginText = (margin > 0 ? 'D+' : 'R+') + Math.abs(margin).toFixed(1);
+            }
+            color = margin > 0 ? '#00AEF3' : '#E81B23';
+        }
+        
+        tooltip.innerHTML = 
+            '<span class="tooltip-title">' + (county.n || 'County') + '</span>' +
+            '<div class="tooltip-divider"></div>' +
+            '<span class="tooltip-leader" style="color: ' + color + '">' + marginText + '</span>';
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX + 15) + 'px';
+        tooltip.style.top = (e.clientY + 15) + 'px';
+    },
+    
+    // Get state FIPS prefix from state code
+    getStateFipsPrefix: function(stateCode) {
+        var fipsMap = {
+            'AL': '01', 'AK': '02', 'AZ': '04', 'AR': '05', 'CA': '06',
+            'CO': '08', 'CT': '09', 'DE': '10', 'DC': '11', 'FL': '12',
+            'GA': '13', 'HI': '15', 'ID': '16', 'IL': '17', 'IN': '18',
+            'IA': '19', 'KS': '20', 'KY': '21', 'LA': '22', 'ME': '23',
+            'MD': '24', 'MA': '25', 'MI': '26', 'MN': '27', 'MS': '28',
+            'MO': '29', 'MT': '30', 'NE': '31', 'NV': '32', 'NH': '33',
+            'NJ': '34', 'NM': '35', 'NY': '36', 'NC': '37', 'ND': '38',
+            'OH': '39', 'OK': '40', 'OR': '41', 'PA': '42', 'RI': '44',
+            'SC': '45', 'SD': '46', 'TN': '47', 'TX': '48', 'UT': '49',
+            'VT': '50', 'VA': '51', 'WA': '53', 'WV': '54', 'WI': '55', 'WY': '56'
+        };
+        return fipsMap[stateCode] || '00';
     },
     
     // Close county view
@@ -102,6 +295,8 @@ var Counties = {
         document.getElementById('county-view-wrapper').classList.add('hidden');
         document.getElementById('us-map-wrapper').classList.remove('hidden');
         this.currentState = null;
+        gameData.inCountyView = false;
+        gameData.selectedCounty = null;
     },
     
     // Get adjacent counties (simplified)

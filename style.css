@@ -1855,3 +1855,228 @@ body {
 .error-map {
     color: var(--rep-red);
 }
+
+/* ========================================
+   ENHANCED MODAL STYLES
+   ======================================== */
+
+.issues-modal-box {
+    max-width: 900px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.issues-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #444;
+    padding-bottom: 15px;
+}
+
+.issues-modal-header h2 {
+    margin: 0;
+    font-family: 'Merriweather', serif;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: 0.2s;
+}
+
+.modal-close-btn:hover {
+    color: var(--rep-red);
+    transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-close-btn:hover {
+        transform: none;
+    }
+}
+
+#issues-scales {
+    margin-top: 20px;
+}
+
+.issue-category-header {
+    background: #2a2a2a;
+    padding: 10px 15px;
+    margin: 25px 0 10px 0;
+    border-left: 4px solid var(--forward-gold);
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.issue-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+    font-size: 0.85rem;
+    color: #999;
+}
+
+.national-modal-box {
+    max-width: 700px;
+    width: 90%;
+}
+
+.national-section {
+    margin: 25px 0;
+}
+
+.national-section h3 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    color: var(--forward-gold);
+    border-bottom: 1px solid #444;
+    padding-bottom: 8px;
+}
+
+#popular-vote-display, #electoral-projection-display, #tossup-states-list {
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.vote-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0;
+    padding: 8px;
+    background: #222;
+    border-radius: 4px;
+}
+
+.tossup-state-item {
+    display: inline-block;
+    margin: 5px;
+    padding: 8px 12px;
+    background: #333;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.tossup-state-item:hover {
+    background: #444;
+    transform: scale(1.05);
+}
+
+.speech-modal-box {
+    max-width: 600px;
+    width: 90%;
+}
+
+.speech-issue-btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    background: #2a2a2a;
+    border: 2px solid #444;
+    color: white;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: 0.2s;
+    text-align: left;
+}
+
+.speech-issue-btn:hover {
+    background: #333;
+    border-color: var(--forward-gold);
+    transform: translateX(5px);
+}
+
+.speech-issue-btn .issue-alignment {
+    display: block;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    color: #999;
+}
+
+.speech-issue-btn .issue-alignment.good {
+    color: var(--green-success);
+}
+
+.speech-issue-btn .issue-alignment.poor {
+    color: var(--rep-red);
+}
+
+.pac-modal-box {
+    max-width: 600px;
+    width: 90%;
+}
+
+.pac-detail-item {
+    padding: 15px;
+    margin: 10px 0;
+    background: #2a2a2a;
+    border-radius: 6px;
+    border-left: 4px solid var(--forward-gold);
+}
+
+.pac-detail-item strong {
+    color: var(--forward-gold);
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+}
+
+.pac-warning {
+    background: rgba(232, 27, 35, 0.2);
+    border: 1px solid var(--rep-red);
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 6px;
+    color: #ffcccc;
+}
+
+.pac-endorsements-list {
+    margin-top: 20px;
+}
+
+.pac-endorsement-item {
+    background: #2a2a2a;
+    padding: 10px 15px;
+    margin: 8px 0;
+    border-radius: 4px;
+    border-left: 3px solid var(--green-success);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pac-locked-badge {
+    background: var(--rep-red);
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.group-modifiers {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #333;
+}
+
+.group-mod-text {
+    font-size: 0.85rem;
+    color: var(--forward-gold);
+    margin: 5px 0;
+}

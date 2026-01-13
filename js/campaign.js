@@ -2,10 +2,24 @@
    DECISION 2028 - CAMPAIGN GAMEPLAY
    ============================================ */
 
+// Game balance constants
+var GAME_CONSTANTS = {
+    PAC_OFFER_CHANCE: 0.2,
+    PAC_OFFER_DELAY: 1000,
+    CREDIBILITY_PENALTY_MULTIPLIER: 0.5
+};
+
 var Campaign = {
     initMap: function() {
         var wrapper = document.getElementById('us-map-wrapper');
         wrapper.innerHTML = '<div class="loading-map">Loading map...</div>';
+        
+        // Add double-click handler for national overview
+        wrapper.ondblclick = function(e) {
+            if (e.target === wrapper || e.target.id === 'us-map-svg') {
+                app.openNationalOverview();
+            }
+        };
         
         // Load county data first
         Counties.loadCountyData(function() {
@@ -30,7 +44,8 @@ var Campaign = {
                             path.style.cursor = 'pointer';
                             (function(c) {
                                 path.onclick = function() { Campaign.clickState(c); };
-                                path.ondblclick = function() {
+                                path.ondblclick = function(e) {
+                                    e.stopPropagation();
                                     // Double-click to open county view
                                     if (typeof Counties !== 'undefined') {
                                         Counties.openCountyView(c);
@@ -99,8 +114,22 @@ var Campaign = {
         document.getElementById('poll-dem-val').innerText = demPct.toFixed(1) + '%';
         document.getElementById('poll-rep-val').innerText = repPct.toFixed(1) + '%';
         
+        // Calculate and display turnout if available
+        var turnoutText = 'Normal';
+        var turnoutBoosts = s.turnoutBoosts || {};
+        var totalBoost = 0;
+        for (var issue in turnoutBoosts) {
+            totalBoost += turnoutBoosts[issue];
+        }
+        if (s.rallies) totalBoost += s.rallies * 0.05;
+        
+        if (totalBoost > 0.15) turnoutText = 'Strong';
+        else if (totalBoost > 0.08) turnoutText = 'Good';
+        else if (totalBoost > 0.03) turnoutText = 'Moderate';
+        
         var issuesList = document.getElementById('sp-issues-list');
         issuesList.innerHTML = '';
+        issuesList.innerHTML += '<div style="background: #2a2a2a; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (totalBoost > 0.1 ? '#198754' : '#ccc') + '">' + turnoutText + '</span></div>';
         
         // Use CORE_ISSUES if available, otherwise fallback to old ISSUES
         var issueSource = (typeof CORE_ISSUES !== 'undefined') ? CORE_ISSUES : ISSUES;
@@ -194,6 +223,13 @@ var Campaign = {
             message = 'Raised $' + raised.toFixed(1) + 'M in ' + s.name;
             cost.energy = 1;
         } else if (action === 'rally') {
+            // Check if we're in county view
+            if (gameData.inCountyView && gameData.selectedCounty) {
+                Counties.rallyInCounty(gameData.selectedCounty);
+                return;
+            }
+            
+            // State-level rally
             if (gameData.energy < 2) return Utils.showToast("Need 2 energy for rally!");
             if (gameData.funds < 1) return Utils.showToast("Need $1M for rally!");
             effect = 1 + Math.random() * 2;
@@ -209,6 +245,10 @@ var Campaign = {
             cost.energy = 0;
             s.adSpent = (s.adSpent || 0) + 3;
             message = 'Ad blitz in ' + s.name + '! +' + effect.toFixed(1) + ' points';
+        } else if (action === 'speech') {
+            // Open speech modal to select issue
+            app.openSpeechModal();
+            return;
         }
         
         this.saveState();
@@ -230,6 +270,61 @@ var Campaign = {
         Utils.showToast(message);
     },
 
+    handleSpeech: function(issueId) {
+        if (!gameData.selectedState) return;
+        
+        var s = gameData.states[gameData.selectedState];
+        if (gameData.energy < 1) {
+            Utils.showToast("Not enough energy!");
+            return;
+        }
+        if (gameData.funds < 0.5) {
+            Utils.showToast("Need $0.5M for campaign speech!");
+            return;
+        }
+        
+        this.saveState();
+        
+        // Get positions
+        var statePos = (STATE_ISSUE_POSITIONS[gameData.selectedState] && STATE_ISSUE_POSITIONS[gameData.selectedState][issueId]) || 0;
+        var candidatePos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[issueId]) || 0;
+        
+        // Calculate alignment (how close candidate is to state position)
+        var alignment = 1 - (Math.abs(statePos - candidatePos) / 20); // 0 to 1
+        
+        // Base effect modified by alignment
+        var baseEffect = 0.5 + Math.random() * 1.0;
+        var effect = baseEffect * (0.5 + alignment); // 0.5x to 1.5x multiplier
+        
+        // Apply turnout boost (stored for turnout calculations)
+        if (!s.turnoutBoosts) s.turnoutBoosts = {};
+        s.turnoutBoosts[issueId] = (s.turnoutBoosts[issueId] || 0) + (alignment * 0.1);
+        
+        gameData.energy -= 1;
+        gameData.funds -= 0.5;
+        
+        var issueName = CORE_ISSUES.find(function(i) { return i.id === issueId; }).name;
+        
+        if (gameData.selectedParty === 'D') {
+            s.margin += effect;
+        } else if (gameData.selectedParty === 'R') {
+            s.margin -= effect;
+        } else {
+            s.margin += effect * 0.3;
+        }
+        
+        var alignmentText = alignment > 0.7 ? 'Great' : (alignment > 0.4 ? 'Good' : 'Modest');
+        var message = 'Speech on ' + issueName + ' in ' + s.name + '! ' + alignmentText + ' alignment. +' + effect.toFixed(1);
+        
+        Utils.addLog(message);
+        this.updateHUD();
+        this.colorMap();
+        this.clickState(gameData.selectedState);
+        Utils.showToast(message);
+        
+        app.closeSpeechModal();
+    },
+
     openStateBio: function() {
         if (! gameData.selectedState) return;
         var s = gameData.states[gameData.selectedState];
@@ -248,14 +343,50 @@ var Campaign = {
             '<div class="bio-stat"><strong>Current Polling:</strong> <span style="color: ' + (s.margin > 0 ?  '#00AEF3' : '#E81B23') + '">' + leaning + '</span></div>' +
             '<div class="bio-stat"><strong>Campaign Visits:</strong> ' + (s.visited ? 'Yes' : 'Not yet') + '</div>' +
             '<div class="bio-stat"><strong>Ad Spending:</strong> $' + (s.adSpent || 0).toFixed(1) + 'M</div>' +
-            '<div class="bio-stat"><strong>Rallies Held:</strong> ' + (s.rallies || 0) + '</div>';
+            '<div class="bio-stat"><strong>Rallies Held:</strong> ' + (s.rallies || 0) + '</div>' +
+            this.getInterestGroupBreakdown(gameData.selectedState);
         document.getElementById('bio-modal').classList.remove('hidden');
+    },
+    
+    getInterestGroupBreakdown: function(stateCode) {
+        if (typeof STATE_DEMOGRAPHICS === 'undefined' || !STATE_DEMOGRAPHICS[stateCode]) {
+            return '';
+        }
+        
+        var demographics = STATE_DEMOGRAPHICS[stateCode];
+        var html = '<div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #444;"><strong>Interest Group Demographics:</strong></div>';
+        
+        // Show top demographic groups
+        var groups = [];
+        for (var group in demographics) {
+            if (demographics[group] > 10) {
+                groups.push({ name: group, pct: demographics[group] });
+            }
+        }
+        
+        // Sort by percentage
+        groups.sort(function(a, b) { return b.pct - a.pct; });
+        
+        for (var i = 0; i < Math.min(6, groups.length); i++) {
+            var g = groups[i];
+            var displayName = g.name.charAt(0).toUpperCase() + g.name.slice(1).replace('_', ' ');
+            html += '<div class="bio-stat" style="font-size: 0.9rem;">' + displayName + ': ' + g.pct + '%</div>';
+        }
+        
+        return html;
     },
 
     nextWeek: function() {
         this.saveState();
         gameData.currentDate.setDate(gameData.currentDate.getDate() + 7);
         gameData.energy = gameData.maxEnergy;
+        
+        // Random chance for PAC offer
+        if (Math.random() < GAME_CONSTANTS.PAC_OFFER_CHANCE && typeof app.triggerPacOffer !== 'undefined') {
+            setTimeout(function() {
+                app.triggerPacOffer();
+            }, GAME_CONSTANTS.PAC_OFFER_DELAY);
+        }
         
         this.opponentTurn();
         
