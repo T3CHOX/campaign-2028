@@ -99,9 +99,12 @@ var Counties = {
                 var path = document.getElementById(fips);
                 
                 if (path && county.v) {
-                    // Calculate margin based on votes
-                    var demVotes = (county.v.D || 0) * (county.turnout.player || 1.0);
-                    var repVotes = (county.v.R || 0) * (county.turnout.player || 1.0);
+                    // Calculate margin based on votes with correct turnout
+                    var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
+                    var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
+                    
+                    var demVotes = (county.v.D || 0) * demTurnout;
+                    var repVotes = (county.v.R || 0) * repTurnout;
                     var total = demVotes + repVotes;
                     
                     if (total > 0) {
@@ -164,20 +167,17 @@ var Counties = {
         // Apply turnout boost to this county
         var turnoutBoost = 0.1 + Math.random() * 0.1; // 10-20% boost
         
-        if (gameData.selectedParty === 'D') {
-            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
-            county.turnout.player = (county.turnout.player || 1.0) + turnoutBoost;
-        } else if (gameData.selectedParty === 'R') {
-            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+        if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+        
+        if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
             county.turnout.player = (county.turnout.player || 1.0) + turnoutBoost;
         } else {
-            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
             county.turnout.thirdParty = (county.turnout.thirdParty || 0.7) + (turnoutBoost * 0.5);
         }
         
         // Cap turnout at 1.5 (150%)
-        if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
         county.turnout.player = Math.min(1.5, county.turnout.player || 1.0);
+        county.turnout.thirdParty = Math.min(1.5, county.turnout.thirdParty || 0.7);
         
         // Apply smaller boost to adjacent counties
         var adjacentBoost = turnoutBoost * 0.3;
@@ -205,9 +205,13 @@ var Counties = {
         for (var fips in this.countyData) {
             if (fips.substring(0, 2) === stateFips) {
                 var county = this.countyData[fips];
-                if (county.v) {
-                    var demVotes = (county.v.D || 0) * (county.turnout.player || 1.0);
-                    var repVotes = (county.v.R || 0) * (county.turnout.player || 1.0);
+                if (county.v && county.turnout) {
+                    // Use correct turnout for each party
+                    var demTurnout = gameData.selectedParty === 'D' ? (county.turnout.player || 1.0) : (county.turnout.demOpponent || 1.0);
+                    var repTurnout = gameData.selectedParty === 'R' ? (county.turnout.player || 1.0) : (county.turnout.repOpponent || 1.0);
+                    
+                    var demVotes = (county.v.D || 0) * demTurnout;
+                    var repVotes = (county.v.R || 0) * repTurnout;
                     totalDemVotes += demVotes;
                     totalRepVotes += repVotes;
                 }
@@ -236,8 +240,12 @@ var Counties = {
         var tooltip = document.getElementById('map-tooltip');
         if (!tooltip) return;
         
-        var demVotes = (county.v.D || 0) * (county.turnout.player || 1.0);
-        var repVotes = (county.v.R || 0) * (county.turnout.player || 1.0);
+        // Use correct turnout for each party
+        var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
+        var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
+        
+        var demVotes = (county.v.D || 0) * demTurnout;
+        var repVotes = (county.v.R || 0) * repTurnout;
         var total = demVotes + repVotes;
         
         var marginText = 'N/A';

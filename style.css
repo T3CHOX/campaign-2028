@@ -1897,6 +1897,12 @@ body {
     transform: rotate(90deg);
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .modal-close-btn:hover {
+        transform: none;
+    }
+}
+
 #issues-scales {
     margin-top: 20px;
 }
