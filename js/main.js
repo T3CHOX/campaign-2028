@@ -79,8 +79,184 @@ var app = {
         }
     },
     openIssuesPanel: function() {
-        // Placeholder for issues panel
-        Utils.showToast("Issues panel coming soon!");
+        if (!gameData.selectedState) {
+            Utils.showToast("Select a state first!");
+            return;
+        }
+        document.getElementById('issues-modal').classList.remove('hidden');
+        this.renderIssuesPanel();
+    },
+    closeIssuesPanel: function() {
+        document.getElementById('issues-modal').classList.add('hidden');
+    },
+    renderIssuesPanel: function() {
+        var showThirdParty = document.getElementById('show-third-party-toggle').checked;
+        var state = gameData.states[gameData.selectedState];
+        var stateCode = gameData.selectedState;
+        
+        document.getElementById('issues-modal-title').innerText = 'ISSUE POSITIONS - ' + state.name;
+        
+        var issuesHtml = '';
+        var categories = ['Economic', 'Social', 'Healthcare', 'Environment', 'Foreign', 'Governance'];
+        
+        for (var c = 0; c < categories.length; c++) {
+            var category = categories[c];
+            var categoryIssues = CORE_ISSUES.filter(function(issue) {
+                return issue.category === category;
+            });
+            
+            if (categoryIssues.length > 0) {
+                issuesHtml += '<div class="issue-category-header">' + category + '</div>';
+                
+                for (var i = 0; i < categoryIssues.length; i++) {
+                    var issue = categoryIssues[i];
+                    issuesHtml += '<div class="issue-item">';
+                    issuesHtml += '<h3>' + issue.name + '</h3>';
+                    issuesHtml += '<div class="issue-scale">';
+                    
+                    // Get positions
+                    var statePos = (STATE_ISSUE_POSITIONS[stateCode] && STATE_ISSUE_POSITIONS[stateCode][issue.id]) || 0;
+                    var playerPos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[issue.id]) || 0;
+                    
+                    // Convert positions from -10 to +10 to percentage for positioning
+                    var stateLeft = ((statePos + 10) / 20) * 100;
+                    var playerLeft = ((playerPos + 10) / 20) * 100;
+                    
+                    // State marker
+                    issuesHtml += '<div class="issue-marker state" style="left: ' + stateLeft + '%" title="' + state.name + ' voters: ' + statePos + '"></div>';
+                    
+                    // Player marker
+                    var playerColor = gameData.selectedParty === 'D' ? 'dem' : (gameData.selectedParty === 'R' ? 'rep' : '');
+                    issuesHtml += '<div class="issue-marker player ' + playerColor + '" style="left: ' + playerLeft + '%" title="Your position: ' + playerPos + '"></div>';
+                    
+                    // Opponent markers
+                    if (showThirdParty) {
+                        var demPos = (gameData.demTicket.pres && gameData.demTicket.pres.issuePositions && gameData.demTicket.pres.issuePositions[issue.id]) || 0;
+                        var repPos = (gameData.repTicket.pres && gameData.repTicket.pres.issuePositions && gameData.repTicket.pres.issuePositions[issue.id]) || 0;
+                        
+                        if (gameData.selectedParty !== 'D') {
+                            var demLeft = ((demPos + 10) / 20) * 100;
+                            issuesHtml += '<div class="issue-marker dem" style="left: ' + demLeft + '%" title="Democrat: ' + demPos + '"></div>';
+                        }
+                        if (gameData.selectedParty !== 'R') {
+                            var repLeft = ((repPos + 10) / 20) * 100;
+                            issuesHtml += '<div class="issue-marker rep" style="left: ' + repLeft + '%" title="Republican: ' + repPos + '"></div>';
+                        }
+                    }
+                    
+                    issuesHtml += '</div>'; // close issue-scale
+                    issuesHtml += '<div class="issue-labels"><span>Progressive (-10)</span><span>Center (0)</span><span>Conservative (+10)</span></div>';
+                    issuesHtml += '</div>'; // close issue-item
+                }
+            }
+        }
+        
+        document.getElementById('issues-scales').innerHTML = issuesHtml;
+    },
+    openNationalOverview: function() {
+        document.getElementById('national-modal').classList.remove('hidden');
+        this.renderNationalOverview();
+    },
+    closeNationalOverview: function() {
+        document.getElementById('national-modal').classList.add('hidden');
+    },
+    renderNationalOverview: function() {
+        // Calculate popular vote
+        var totalVotes = { D: 0, R: 0, other: 0 };
+        var tossupStates = [];
+        
+        for (var code in gameData.states) {
+            var s = gameData.states[code];
+            if (Math.abs(s.margin) < 3) {
+                tossupStates.push(s);
+            }
+            
+            // Rough popular vote calculation based on state population and margins
+            var stateVotes = s.ev * 500000; // Rough estimate
+            if (s.margin > 0) {
+                totalVotes.D += stateVotes * (0.5 + s.margin / 100);
+                totalVotes.R += stateVotes * (0.5 - s.margin / 100);
+            } else {
+                totalVotes.R += stateVotes * (0.5 + Math.abs(s.margin) / 100);
+                totalVotes.D += stateVotes * (0.5 - Math.abs(s.margin) / 100);
+            }
+        }
+        
+        var total = totalVotes.D + totalVotes.R + totalVotes.other;
+        var demPct = (totalVotes.D / total * 100).toFixed(1);
+        var repPct = (totalVotes.R / total * 100).toFixed(1);
+        
+        document.getElementById('popular-vote-display').innerHTML = 
+            '<div class="vote-row"><span style="color: #00AEF3;">Democrat</span><span>' + demPct + '%</span></div>' +
+            '<div class="vote-row"><span style="color: #E81B23;">Republican</span><span>' + repPct + '%</span></div>';
+        
+        // Electoral projection
+        var demEV = 0, repEV = 0;
+        for (var code2 in gameData.states) {
+            var state = gameData.states[code2];
+            if (state.margin > 0) demEV += state.ev;
+            else repEV += state.ev;
+        }
+        
+        document.getElementById('electoral-projection-display').innerHTML = 
+            '<div class="vote-row"><span style="color: #00AEF3;">Democrat</span><span>' + demEV + ' EV</span></div>' +
+            '<div class="vote-row"><span style="color: #E81B23;">Republican</span><span>' + repEV + ' EV</span></div>' +
+            '<div style="margin-top: 15px; text-align: center; font-size: 1.1rem; color: #ffd700;">Needed to Win: 270 EV</div>';
+        
+        // Toss-up states
+        var tossupHtml = '';
+        if (tossupStates.length === 0) {
+            tossupHtml = '<div style="text-align: center; color: #666;">No toss-up states</div>';
+        } else {
+            for (var i = 0; i < tossupStates.length; i++) {
+                tossupHtml += '<span class="tossup-state-item">' + tossupStates[i].name + ' (' + tossupStates[i].ev + ')</span>';
+            }
+        }
+        document.getElementById('tossup-states-list').innerHTML = tossupHtml;
+    },
+    openSpeechModal: function() {
+        if (!gameData.selectedState) {
+            Utils.showToast("Select a state first!");
+            return;
+        }
+        
+        var state = gameData.states[gameData.selectedState];
+        var stateCode = gameData.selectedState;
+        
+        // Get top issues for the state
+        var issueSource = CORE_ISSUES;
+        var issuesHtml = '';
+        
+        for (var i = 0; i < issueSource.length; i++) {
+            var issue = issueSource[i];
+            var statePos = (STATE_ISSUE_POSITIONS[stateCode] && STATE_ISSUE_POSITIONS[stateCode][issue.id]) || 0;
+            var candidatePos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[issue.id]) || 0;
+            var alignment = 1 - (Math.abs(statePos - candidatePos) / 20);
+            
+            var alignmentText = '';
+            var alignmentClass = '';
+            if (alignment > 0.7) {
+                alignmentText = 'Excellent alignment with ' + state.name + ' voters';
+                alignmentClass = 'good';
+            } else if (alignment > 0.4) {
+                alignmentText = 'Good alignment with ' + state.name + ' voters';
+                alignmentClass = 'good';
+            } else {
+                alignmentText = 'Weak alignment with ' + state.name + ' voters';
+                alignmentClass = 'poor';
+            }
+            
+            issuesHtml += '<button class="speech-issue-btn" onclick="Campaign.handleSpeech(\'' + issue.id + '\')">';
+            issuesHtml += issue.name;
+            issuesHtml += '<span class="issue-alignment ' + alignmentClass + '">' + alignmentText + '</span>';
+            issuesHtml += '</button>';
+        }
+        
+        document.getElementById('speech-issues-list').innerHTML = issuesHtml;
+        document.getElementById('speech-modal').classList.remove('hidden');
+    },
+    closeSpeechModal: function() {
+        document.getElementById('speech-modal').classList.add('hidden');
     },
     election: {
         togglePause: function() { Election.togglePause(); },

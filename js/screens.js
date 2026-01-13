@@ -48,6 +48,10 @@ var Screens = {
         for (var i = 0; i < CANDIDATES.length; i++) {
             if (CANDIDATES[i].id === id) {
                 gameData.candidate = CANDIDATES[i];
+                // Add issue positions from CANDIDATE_POSITIONS if available
+                if (typeof CANDIDATE_POSITIONS !== 'undefined' && CANDIDATE_POSITIONS[id]) {
+                    gameData.candidate.issuePositions = CANDIDATE_POSITIONS[id];
+                }
                 break;
             }
         }
@@ -227,6 +231,10 @@ var Screens = {
                 for (var j = 0; j < CANDIDATES.length; j++) {
                     if (CANDIDATES[j].id === id) {
                         gameData.demTicket.pres = CANDIDATES[j];
+                        // Add issue positions
+                        if (typeof CANDIDATE_POSITIONS !== 'undefined' && CANDIDATE_POSITIONS[id]) {
+                            gameData.demTicket.pres.issuePositions = CANDIDATE_POSITIONS[id];
+                        }
                         break;
                     }
                 }
@@ -243,6 +251,10 @@ var Screens = {
                 for (var m = 0; m < CANDIDATES.length; m++) {
                     if (CANDIDATES[m].id === id) {
                         gameData.repTicket.pres = CANDIDATES[m];
+                        // Add issue positions
+                        if (typeof CANDIDATE_POSITIONS !== 'undefined' && CANDIDATE_POSITIONS[id]) {
+                            gameData.repTicket.pres.issuePositions = CANDIDATE_POSITIONS[id];
+                        }
                         break;
                     }
                 }

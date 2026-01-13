@@ -7,6 +7,13 @@ var Campaign = {
         var wrapper = document.getElementById('us-map-wrapper');
         wrapper.innerHTML = '<div class="loading-map">Loading map...</div>';
         
+        // Add double-click handler for national overview
+        wrapper.ondblclick = function(e) {
+            if (e.target === wrapper || e.target.id === 'us-map-svg') {
+                app.openNationalOverview();
+            }
+        };
+        
         // Load county data first
         Counties.loadCountyData(function() {
             console.log('County data loaded');
@@ -30,7 +37,8 @@ var Campaign = {
                             path.style.cursor = 'pointer';
                             (function(c) {
                                 path.onclick = function() { Campaign.clickState(c); };
-                                path.ondblclick = function() {
+                                path.ondblclick = function(e) {
+                                    e.stopPropagation();
                                     // Double-click to open county view
                                     if (typeof Counties !== 'undefined') {
                                         Counties.openCountyView(c);
@@ -209,6 +217,10 @@ var Campaign = {
             cost.energy = 0;
             s.adSpent = (s.adSpent || 0) + 3;
             message = 'Ad blitz in ' + s.name + '! +' + effect.toFixed(1) + ' points';
+        } else if (action === 'speech') {
+            // Open speech modal to select issue
+            app.openSpeechModal();
+            return;
         }
         
         this.saveState();
@@ -228,6 +240,61 @@ var Campaign = {
         this.colorMap();
         this.clickState(gameData.selectedState);
         Utils.showToast(message);
+    },
+
+    handleSpeech: function(issueId) {
+        if (!gameData.selectedState) return;
+        
+        var s = gameData.states[gameData.selectedState];
+        if (gameData.energy < 1) {
+            Utils.showToast("Not enough energy!");
+            return;
+        }
+        if (gameData.funds < 0.5) {
+            Utils.showToast("Need $0.5M for campaign speech!");
+            return;
+        }
+        
+        this.saveState();
+        
+        // Get positions
+        var statePos = (STATE_ISSUE_POSITIONS[gameData.selectedState] && STATE_ISSUE_POSITIONS[gameData.selectedState][issueId]) || 0;
+        var candidatePos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[issueId]) || 0;
+        
+        // Calculate alignment (how close candidate is to state position)
+        var alignment = 1 - (Math.abs(statePos - candidatePos) / 20); // 0 to 1
+        
+        // Base effect modified by alignment
+        var baseEffect = 0.5 + Math.random() * 1.0;
+        var effect = baseEffect * (0.5 + alignment); // 0.5x to 1.5x multiplier
+        
+        // Apply turnout boost (stored for turnout calculations)
+        if (!s.turnoutBoosts) s.turnoutBoosts = {};
+        s.turnoutBoosts[issueId] = (s.turnoutBoosts[issueId] || 0) + (alignment * 0.1);
+        
+        gameData.energy -= 1;
+        gameData.funds -= 0.5;
+        
+        var issueName = CORE_ISSUES.find(function(i) { return i.id === issueId; }).name;
+        
+        if (gameData.selectedParty === 'D') {
+            s.margin += effect;
+        } else if (gameData.selectedParty === 'R') {
+            s.margin -= effect;
+        } else {
+            s.margin += effect * 0.3;
+        }
+        
+        var alignmentText = alignment > 0.7 ? 'Great' : (alignment > 0.4 ? 'Good' : 'Modest');
+        var message = 'Speech on ' + issueName + ' in ' + s.name + '! ' + alignmentText + ' alignment. +' + effect.toFixed(1);
+        
+        Utils.addLog(message);
+        this.updateHUD();
+        this.colorMap();
+        this.clickState(gameData.selectedState);
+        Utils.showToast(message);
+        
+        app.closeSpeechModal();
     },
 
     openStateBio: function() {

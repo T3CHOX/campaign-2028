@@ -171,6 +171,7 @@
                             <button class="act-btn" onclick="app.handleAction('fundraise')"><span>💰</span><span>FUNDRAISE</span></button>
                             <button class="act-btn" onclick="app.handleAction('ad')"><span>📺</span><span>AD BLITZ</span></button>
                             <button class="act-btn" onclick="app.handleAction('rally')"><span>🎤</span><span>RALLY</span></button>
+                            <button class="act-btn" onclick="app.handleAction('speech')"><span>🎙️</span><span>SPEECH</span></button>
                             <button class="act-btn" onclick="app.openStateBio()"><span>📖</span><span>INTEL</span></button>
                             <button class="act-btn" onclick="app.openCountyView()"><span>🗺️</span><span>BREAKDOWN</span></button>
                             <button class="act-btn" onclick="app.openIssuesPanel()"><span>📊</span><span>ISSUES</span></button>
@@ -321,6 +322,63 @@
 
     <div id="map-tooltip"></div>
     <div id="toast"></div>
+    
+    <!-- Issues Panel Modal -->
+    <div id="issues-modal" class="hidden">
+        <div class="modal-box issues-modal-box">
+            <div class="issues-modal-header">
+                <h2 id="issues-modal-title">ISSUE POSITIONS</h2>
+                <button class="modal-close-btn" onclick="app.closeIssuesPanel()">×</button>
+            </div>
+            <div id="issues-modal-content">
+                <div class="issues-toggle">
+                    <label>
+                        <input type="checkbox" id="show-third-party-toggle" onchange="app.renderIssuesPanel()">
+                        Show Third-Party Positions
+                    </label>
+                </div>
+                <div id="issues-scales"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- National Overview Panel Modal -->
+    <div id="national-modal" class="hidden">
+        <div class="modal-box national-modal-box">
+            <div class="modal-header">
+                <h2>NATIONAL OVERVIEW</h2>
+                <button class="modal-close-btn" onclick="app.closeNationalOverview()">×</button>
+            </div>
+            <div id="national-content">
+                <div class="national-section">
+                    <h3>Popular Vote Projection</h3>
+                    <div id="popular-vote-display"></div>
+                </div>
+                <div class="national-section">
+                    <h3>Electoral College Projection</h3>
+                    <div id="electoral-projection-display"></div>
+                </div>
+                <div class="national-section">
+                    <h3>Toss-Up States</h3>
+                    <div id="tossup-states-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Campaign Speech Modal -->
+    <div id="speech-modal" class="hidden">
+        <div class="modal-box speech-modal-box">
+            <div class="modal-header">
+                <h2>CAMPAIGN SPEECH</h2>
+                <button class="modal-close-btn" onclick="app.closeSpeechModal()">×</button>
+            </div>
+            <div id="speech-content">
+                <p style="margin-bottom: 20px; color: #ccc;">Select an issue to focus your campaign speech on. Your alignment with the state's position affects turnout.</p>
+                <div id="speech-issues-list"></div>
+            </div>
+        </div>
+    </div>
     
     <!-- Load scripts in dependency order -->
 <script src="js/config.js"></script>
