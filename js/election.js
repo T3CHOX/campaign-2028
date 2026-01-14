@@ -83,6 +83,11 @@ var Election = {
                     // Apply count speed modifier (slower for close states)
                     var increment = (Math.random() * 1.5 + 0.3) * this.speed * (s.countSpeed || 1.0);
                     s.reportedPct = Math.min(100, s.reportedPct + increment);
+                    
+                    // Force to 100% if very close to ensure all states complete
+                    if (s.reportedPct > 99.5) {
+                        s.reportedPct = 100;
+                    }
 
                     var totalVotes = s.ev * 120000;
                     
@@ -164,8 +169,8 @@ var Election = {
         this.updateDisplay();
         this.colorElectionMap();
 
-        // Only show winner overlay when someone reaches 270 and we haven't shown it yet
-        if ((this.demEV >= 270 || this.repEV >= 270) && !this.winnerShown && allCounted) {
+        // Show winner overlay when someone reaches 270 and we haven't shown it yet
+        if ((this.demEV >= 270 || this.repEV >= 270) && !this.winnerShown) {
             this.showWinner();
         }
     },
@@ -464,15 +469,116 @@ var Election = {
     openCountyElectionView: function(stateCode) {
         // Store the current state for the county view
         gameData.electionCountyViewState = stateCode;
+        var state = gameData.states[stateCode];
         
-        // Show alert for now - county election view would need full implementation
-        alert('County-level results for ' + gameData.states[stateCode].name + ' - Feature coming soon!');
+        // Create a modal overlay for county results
+        var overlay = document.getElementById('county-election-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'county-election-overlay';
+            overlay.className = 'modal-overlay';
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px;';
+            document.body.appendChild(overlay);
+        }
         
-        // In a full implementation, this would:
-        // 1. Load county map SVG
-        // 2. Color counties by reported results
-        // 3. Show county-level vote counts
-        // 4. Keep state sidebar visible
-        // 5. Add tooltips on county hover
+        // Build county results content
+        var html = '<div style="background: #1e1e1e; border: 2px solid #ffd700; border-radius: 10px; padding: 30px; max-width: 90%; max-height: 90%; overflow-y: auto;">';
+        html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #444; padding-bottom: 15px;">';
+        html += '<h2 style="margin: 0; color: #ffd700;">' + state.name + ' - COUNTY RESULTS</h2>';
+        html += '<button onclick="Election.closeCountyElectionView()" style="background: #444; border: none; color: white; padding: 8px 20px; cursor: pointer; border-radius: 4px; font-weight: bold;">CLOSE</button>';
+        html += '</div>';
+        
+        // Show overall state results
+        html += '<div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 20px;">';
+        html += '<div style="text-align: center; font-size: 0.9rem; color: #888; margin-bottom: 10px;">' + Math.floor(state.reportedPct) + '% Reporting</div>';
+        
+        var total = state.reportedVotes.D + state.reportedVotes.R;
+        var demPct = total > 0 ? (state.reportedVotes.D / total) * 100 : 50;
+        var repPct = total > 0 ? (state.reportedVotes.R / total) * 100 : 50;
+        
+        html += '<div style="height: 30px; background: #333; border-radius: 4px; display: flex; overflow: hidden; margin-bottom: 10px;">';
+        html += '<div style="width: ' + demPct + '%; background: #00AEF3;"></div>';
+        html += '<div style="width: ' + repPct + '%; background: #E81B23;"></div>';
+        html += '</div>';
+        
+        html += '<div style="display: flex; justify-content: space-between; font-size: 1.1rem;">';
+        html += '<span style="color: #00AEF3; font-weight: bold;">' + demPct.toFixed(1) + '%</span>';
+        html += '<span style="color: #E81B23; font-weight: bold;">' + repPct.toFixed(1) + '%</span>';
+        html += '</div>';
+        html += '</div>';
+        
+        // County-by-county breakdown
+        html += '<div style="background: #252525; padding: 15px; border-radius: 6px;">';
+        html += '<h3 style="margin: 0 0 15px 0; color: #ccc;">County Breakdown</h3>';
+        
+        if (typeof Counties !== 'undefined' && Counties.countyData) {
+            var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
+            
+            if (stateFips) {
+                var countyResults = [];
+                
+                for (var fips in Counties.countyData) {
+                    if (fips.substring(0, 2) === stateFips) {
+                        var county = Counties.countyData[fips];
+                        if (county.v) {
+                            var demVotes = county.v.D || 0;
+                            var repVotes = county.v.R || 0;
+                            var countyTotal = demVotes + repVotes;
+                            
+                            if (countyTotal > 0) {
+                                var countyDemPct = (demVotes / countyTotal) * 100;
+                                var countyRepPct = (repVotes / countyTotal) * 100;
+                                var margin = countyDemPct - countyRepPct;
+                                
+                                countyResults.push({
+                                    name: county.n || 'County',
+                                    demPct: countyDemPct,
+                                    repPct: countyRepPct,
+                                    margin: margin,
+                                    totalVotes: countyTotal
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // Sort by largest margin
+                countyResults.sort(function(a, b) { return Math.abs(b.margin) - Math.abs(a.margin); });
+                
+                // Display top counties
+                for (var i = 0; i < Math.min(15, countyResults.length); i++) {
+                    var cr = countyResults[i];
+                    var leader = cr.margin > 0 ? 'D' : 'R';
+                    var leaderColor = leader === 'D' ? '#00AEF3' : '#E81B23';
+                    var marginText = (cr.margin > 0 ? 'D+' : 'R+') + Math.abs(cr.margin).toFixed(1);
+                    
+                    html += '<div style="padding: 8px; margin: 5px 0; background: #1a1a1a; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">';
+                    html += '<span style="color: #ccc;">' + cr.name + '</span>';
+                    html += '<span style="color: ' + leaderColor + '; font-weight: bold;">' + marginText + '</span>';
+                    html += '</div>';
+                }
+                
+                if (countyResults.length > 15) {
+                    html += '<div style="text-align: center; color: #666; margin-top: 10px; font-size: 0.9rem;">+ ' + (countyResults.length - 15) + ' more counties</div>';
+                }
+            } else {
+                html += '<div style="text-align: center; color: #666;">County data not available</div>';
+            }
+        } else {
+            html += '<div style="text-align: center; color: #666;">County data not available</div>';
+        }
+        
+        html += '</div>';
+        html += '</div>';
+        
+        overlay.innerHTML = html;
+        overlay.style.display = 'flex';
+    },
+    
+    closeCountyElectionView: function() {
+        var overlay = document.getElementById('county-election-overlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
     }
 };

@@ -78,8 +78,8 @@ var Counties = {
                                 countyCount++;
                                 path.style.cursor = 'pointer';
                                 path.style.display = 'block';
-                                path.style.stroke = '#000';
-                                path.style.strokeWidth = '0.5';
+                                path.style.stroke = '#ffffff';
+                                path.style.strokeWidth = '0.3';
                                 
                                 (function(f) {
                                     path.onclick = function() { Counties.selectCounty(f); };
@@ -201,8 +201,8 @@ var Counties = {
         
         var county = this.countyData[fips];
         
-        // Apply turnout boost to this county
-        var turnoutBoost = 0.1 + Math.random() * 0.1; // 10-20% boost
+        // Apply turnout boost to this county - more realistic values (3-8% boost)
+        var turnoutBoost = 0.03 + Math.random() * 0.05; // 3-8% boost
         
         if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
         
@@ -212,9 +212,9 @@ var Counties = {
             county.turnout.thirdParty = (county.turnout.thirdParty || 0.7) + (turnoutBoost * 0.5);
         }
         
-        // Cap turnout at 1.5 (150%)
-        county.turnout.player = Math.min(1.5, county.turnout.player || 1.0);
-        county.turnout.thirdParty = Math.min(1.5, county.turnout.thirdParty || 0.7);
+        // Cap turnout at 1.3 (130% - more realistic)
+        county.turnout.player = Math.min(1.3, county.turnout.player || 1.0);
+        county.turnout.thirdParty = Math.min(1.3, county.turnout.thirdParty || 0.7);
         
         // Apply smaller boost to adjacent counties
         var adjacentBoost = turnoutBoost * 0.3;
@@ -226,10 +226,11 @@ var Counties = {
         // Update state-level margin based on county votes
         this.updateStateFromCounties(this.currentState);
         
-        var message = 'County rally in ' + (county.n || 'County') + '! Turnout boost: +' + (turnoutBoost * 100).toFixed(0) + '%';
+        var message = 'County rally in ' + (county.n || 'County') + '! Turnout boost: +' + (turnoutBoost * 100).toFixed(1) + '%';
         Utils.addLog(message);
         Campaign.updateHUD();
         Campaign.colorMap();
+        this.colorCountyMap();
         Utils.showToast(message);
     },
     
@@ -303,8 +304,26 @@ var Counties = {
             color = margin > 0 ? '#00AEF3' : '#E81B23';
         }
         
+        // Determine proper suffix based on state
+        var countyName = county.n || 'County';
+        var suffix = 'County';
+        var stateFips = fips.substring(0, 2);
+        
+        // Alaska uses "Borough", Louisiana uses "Parish"
+        if (stateFips === '02') {  // Alaska FIPS code
+            suffix = 'Borough';
+        } else if (stateFips === '22') {  // Louisiana FIPS code
+            suffix = 'Parish';
+        }
+        
+        // Only add suffix if the name doesn't already contain it
+        if (!countyName.includes(suffix) && !countyName.includes('County') && 
+            !countyName.includes('Borough') && !countyName.includes('Parish')) {
+            countyName = countyName + ' ' + suffix;
+        }
+        
         tooltip.innerHTML = 
-            '<span class="tooltip-title">' + (county.n || 'County') + '</span>' +
+            '<span class="tooltip-title">' + countyName + '</span>' +
             '<div class="tooltip-divider"></div>' +
             '<span class="tooltip-leader" style="color: ' + color + '">' + marginText + '</span>';
         tooltip.style.display = 'block';

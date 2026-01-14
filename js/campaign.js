@@ -247,6 +247,31 @@ var Campaign = {
             cost.energy = 0;
             s.adSpent = (s.adSpent || 0) + 3;
             message = 'Ad blitz in ' + s.name + '! +' + effect.toFixed(1) + ' points';
+            
+            // Spread ad impact evenly across all counties in the state
+            if (typeof Counties !== 'undefined' && Counties.countyData) {
+                var stateFips = STATES[gameData.selectedState] ? STATES[gameData.selectedState].fips : null;
+                if (stateFips) {
+                    // Small boost to turnout in all counties (0.5-1% per county)
+                    var countyAdBoost = 0.005 + Math.random() * 0.005;
+                    
+                    for (var fips in Counties.countyData) {
+                        if (fips.substring(0, 2) === stateFips) {
+                            var county = Counties.countyData[fips];
+                            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+                            
+                            if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
+                                county.turnout.player = Math.min(1.3, (county.turnout.player || 1.0) + countyAdBoost);
+                            } else {
+                                county.turnout.thirdParty = Math.min(1.3, (county.turnout.thirdParty || 0.7) + (countyAdBoost * 0.5));
+                            }
+                        }
+                    }
+                    
+                    // Update state margin from county data
+                    Counties.updateStateFromCounties(gameData.selectedState);
+                }
+            }
         } else if (action === 'speech') {
             // Open speech modal to select issue
             app.openSpeechModal();
