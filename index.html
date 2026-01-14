@@ -111,7 +111,6 @@
                         <span class="cand-party" id="hud-party-name">NOMINEE</span>
                     </div>
                 </div>
-                <button class="interest-groups-btn" onclick="app.openInterestGroups()">📊 INTEREST GROUPS</button>
             </div>
             <div class="hud-center">
                 <div class="ev-display">
@@ -123,6 +122,7 @@
             </div>
             <div class="hud-right">
                 <button class="undo-btn" onclick="app.undoLastAction()">⟲ UNDO</button>
+                <button class="interest-groups-btn" onclick="app.openInterestGroups()">📊 INTEREST GROUPS</button>
                 <div class="stat-group">
                     <label>ENERGY</label>
                     <div class="energy-container" id="hud-energy"></div>
@@ -204,12 +204,12 @@
                 </div>
                 <div class="time-controls">
                     <button class="time-btn" id="btn-pause" onclick="app.election.togglePause()">⏸️</button>
-                    <button class="time-btn" onclick="app.election.setSpeed(0.25)">0.25×</button>
-                    <button class="time-btn" onclick="app.election.setSpeed(0.5)">0.5×</button>
-                    <button class="time-btn active" onclick="app.election.setSpeed(1)">1×</button>
-                    <button class="time-btn" onclick="app.election.setSpeed(2)">2×</button>
-                    <button class="time-btn" onclick="app.election.setSpeed(5)">5×</button>
-                    <button class="time-btn" onclick="app.election.setSpeed(10)">10×</button>
+                    <button class="time-btn" id="btn-0.25x" onclick="app.election.setSpeed(0.25)">0.25×</button>
+                    <button class="time-btn" id="btn-0.5x" onclick="app.election.setSpeed(0.5)">0.5×</button>
+                    <button class="time-btn active" id="btn-1x" onclick="app.election.setSpeed(1)">1×</button>
+                    <button class="time-btn" id="btn-2x" onclick="app.election.setSpeed(2)">2×</button>
+                    <button class="time-btn" id="btn-5x" onclick="app.election.setSpeed(5)">5×</button>
+                    <button class="time-btn" id="btn-10x" onclick="app.election.setSpeed(10)">10×</button>
                 </div>
             </div>
             <div class="election-header-right">
@@ -232,8 +232,9 @@
                 <div class="ev-progress-wrapper">
                     <div class="ev-progress-bar">
                         <div class="ev-fill ev-fill-dem" id="elec-bar-dem"></div>
-                        <div class="ev-marker">270</div>
+                        <div class="ev-marker">269</div>
                         <div class="ev-fill ev-fill-rep" id="elec-bar-rep"></div>
+                        <div class="ev-fill ev-fill-third" id="elec-bar-third" style="display: none;"></div>
                     </div>
                     <div class="ev-labels">
                         <span>0</span>

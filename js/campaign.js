@@ -237,6 +237,8 @@ var Campaign = {
             cost.funds = 1;
             s.rallies = (s.rallies || 0) + 1;
             s.visited = true;
+            s.lastCampaignDate = new Date(gameData.currentDate);
+            s.campaignActionsCount = (s.campaignActionsCount || 0) + 1;
             message = 'Rally in ' + s.name + '! +' + effect.toFixed(1) + ' points';
         } else if (action === 'ad') {
             if (gameData.funds < 3) return Utils.showToast("Need $3M for ad blitz!");
@@ -300,6 +302,9 @@ var Campaign = {
         if (!s.turnoutBoosts) s.turnoutBoosts = {};
         s.turnoutBoosts[issueId] = (s.turnoutBoosts[issueId] || 0) + (alignment * 0.1);
         
+        s.lastCampaignDate = new Date(gameData.currentDate);
+        s.campaignActionsCount = (s.campaignActionsCount || 0) + 1;
+        
         gameData.energy -= 1;
         gameData.funds -= 0.5;
         
@@ -337,13 +342,23 @@ var Campaign = {
             leaning = (s.margin > 0 ? 'D+' :  'R+') + marginText;
         }
         
+        // Format last campaign date
+        var lastCampaignText = 'Never';
+        if (s.lastCampaignDate) {
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'];
+            var date = new Date(s.lastCampaignDate);
+            var monthStr = months[date.getMonth()];
+            var dayStr = date.getDate();
+            var count = s.campaignActionsCount || 0;
+            lastCampaignText = monthStr + ' ' + dayStr + ' (<u>' + count + '</u>)';
+        }
+        
         document.getElementById('bio-title').innerText = s.name + ' - Intelligence Report';
         document.getElementById('bio-content').innerHTML = 
             '<div class="bio-stat"><strong>Electoral Votes:</strong> ' + s.ev + '</div>' +
             '<div class="bio-stat"><strong>Current Polling:</strong> <span style="color: ' + (s.margin > 0 ?  '#00AEF3' : '#E81B23') + '">' + leaning + '</span></div>' +
-            '<div class="bio-stat"><strong>Campaign Visits:</strong> ' + (s.visited ? 'Yes' : 'Not yet') + '</div>' +
+            '<div class="bio-stat"><strong>Last Campaigned:</strong> ' + lastCampaignText + '</div>' +
             '<div class="bio-stat"><strong>Ad Spending:</strong> $' + (s.adSpent || 0).toFixed(1) + 'M</div>' +
-            '<div class="bio-stat"><strong>Rallies Held:</strong> ' + (s.rallies || 0) + '</div>' +
             this.getInterestGroupBreakdown(gameData.selectedState);
         document.getElementById('bio-modal').classList.remove('hidden');
     },
