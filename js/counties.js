@@ -226,6 +226,55 @@ var Counties = {
         // Show county info in sidebar
         document.getElementById('sp-name').innerText = county.n || 'County';
         
+        // Show population instead of EV
+        var populationDiv = document.getElementById('sp-ev');
+        if (populationDiv) {
+            populationDiv.innerText = 'Pop: ' + (county.p || 0).toLocaleString();
+        }
+        
+        // Calculate and display vote percentages with bar
+        var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
+        var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
+        
+        var demVotes = (county.v.D || 0) * demTurnout;
+        var repVotes = (county.v.R || 0) * repTurnout;
+        var total = demVotes + repVotes;
+        
+        if (total > 0) {
+            var demPct = (demVotes / total) * 100;
+            var repPct = (repVotes / total) * 100;
+            
+            demPct = Math.max(0, Math.min(100, demPct));
+            repPct = Math.max(0, Math.min(100, repPct));
+            
+            document.getElementById('poll-bar-wrap').innerHTML = 
+                '<div style="width: ' + demPct + '%; background: #00AEF3;"></div>' +
+                '<div style="width: ' + repPct + '%; background: #E81B23;"></div>';
+            document.getElementById('poll-dem-val').innerText = demPct.toFixed(1) + '%';
+            document.getElementById('poll-rep-val').innerText = repPct.toFixed(1) + '%';
+        }
+        
+        // Show turnout info
+        var issuesList = document.getElementById('sp-issues-list');
+        if (issuesList) {
+            var turnoutBoost = 0;
+            if (county.turnout) {
+                if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
+                    turnoutBoost = (county.turnout.player || 1.0) - 1.0;
+                } else {
+                    turnoutBoost = (county.turnout.thirdParty || 0.7) - 0.7;
+                }
+            }
+            
+            var turnoutText = 'Normal';
+            if (turnoutBoost > 0.15) turnoutText = 'Strong';
+            else if (turnoutBoost > 0.08) turnoutText = 'Good';
+            else if (turnoutBoost > 0.03) turnoutText = 'Moderate';
+            
+            issuesList.innerHTML = '<div style="background: #2a2a2a; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (turnoutBoost > 0.1 ? '#198754' : '#ccc') + '">' + turnoutText + '</span></div>';
+            issuesList.innerHTML += '<div style="background: #2a2a2a; padding: 8px; border-radius: 4px;"><strong>Type:</strong> ' + (county.t || 'Unknown') + '</div>';
+        }
+        
         // Mark that we're in county view mode
         gameData.inCountyView = true;
         
@@ -352,11 +401,8 @@ var Counties = {
             var repPct = (repVotes / total) * 100;
             var margin = demPct - repPct;
             
-            if (Math.abs(margin) < 2) {
-                marginText = 'TOSS-UP';
-            } else {
-                marginText = (margin > 0 ? 'D+' : 'R+') + Math.abs(margin).toFixed(1);
-            }
+            // Always show exact margin, no "TOSS-UP" label
+            marginText = (margin > 0 ? 'D+' : 'R+') + Math.abs(margin).toFixed(1);
             color = margin > 0 ? '#00AEF3' : '#E81B23';
         }
         
@@ -420,5 +466,167 @@ var Counties = {
     getAdjacentCounties: function(fips) {
         // Would need adjacency data - returning empty for now
         return [];
+    },
+    
+    // Open county speech modal
+    openCountySpeechModal: function(fips) {
+        var county = this.countyData[fips];
+        if (!county) return;
+        
+        // Check energy
+        if (gameData.energy < 1) {
+            Utils.showToast("Not enough energy!");
+            return;
+        }
+        
+        // Build speech modal content
+        var modal = document.getElementById('speech-modal');
+        if (!modal) return;
+        
+        var countyName = county.n || 'County';
+        document.getElementById('speech-modal').querySelector('h2').innerText = 'Campaign Speech - ' + countyName;
+        
+        var issuesHtml = '';
+        for (var i = 0; i < CORE_ISSUES.length; i++) {
+            var issue = CORE_ISSUES[i];
+            
+            issuesHtml += '<button class="speech-issue-btn" onclick="Counties.handleCountySpeech(\'' + fips + '\', \'' + issue.id + '\')">';
+            issuesHtml += issue.name;
+            issuesHtml += '<span class="issue-alignment">Will affect interest groups based on your position</span>';
+            issuesHtml += '</button>';
+        }
+        
+        document.getElementById('speech-issues-list').innerHTML = issuesHtml;
+        modal.classList.remove('hidden');
+    },
+    
+    // Handle county speech on an issue
+    handleCountySpeech: function(fips, issueId) {
+        var county = this.countyData[fips];
+        if (!county || gameData.energy < 1) return;
+        
+        Campaign.saveState();
+        
+        // Close modal
+        document.getElementById('speech-modal').classList.add('hidden');
+        
+        // Consume energy
+        gameData.energy -= 1;
+        
+        // Get candidate's position on this issue
+        var candidatePos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[issueId]) || 0;
+        
+        // Small voter count increase in this county (2-5%)
+        var voterBoost = 0.02 + Math.random() * 0.03;
+        
+        if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+        
+        if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
+            county.turnout.player = Math.min(1.3, (county.turnout.player || 1.0) + voterBoost);
+        } else {
+            county.turnout.thirdParty = Math.min(1.3, (county.turnout.thirdParty || 0.7) + (voterBoost * 0.5));
+        }
+        
+        // Now affect interest groups based on issue alignment
+        for (var groupId in INTEREST_GROUPS) {
+            var group = INTEREST_GROUPS[groupId];
+            
+            // Check if this issue is a priority for this group
+            var isPriority = group.priorities && group.priorities.includes(issueId);
+            
+            if (isPriority) {
+                // Calculate alignment based on position overlap
+                var groupPreferredPos = group.issue_positions ? (group.issue_positions[issueId] || 0) : 0;
+                var positionDiff = Math.abs(candidatePos - groupPreferredPos);
+                
+                var supportChange = 0;
+                
+                if (positionDiff === 0) {
+                    // Perfect overlap
+                    supportChange = 0.5;
+                } else if (positionDiff < 5) {
+                    // Partial overlap - linear decay
+                    supportChange = 0.5 * (1 - positionDiff / 5);
+                } else if (positionDiff >= 5) {
+                    // Nullified or negative
+                    supportChange = -0.5 * ((positionDiff - 5) / 10);
+                    supportChange = Math.max(supportChange, -0.5);
+                }
+                
+                // Apply the change to candidate's support in this group
+                if (gameData.interestGroupSupport && gameData.interestGroupSupport[groupId]) {
+                    var candId = gameData.candidate.id;
+                    var currentSupport = gameData.interestGroupSupport[groupId][candId] || 0;
+                    var newSupport = currentSupport + supportChange;
+                    
+                    // Ensure valid range
+                    newSupport = Math.max(0, Math.min(100, newSupport));
+                    
+                    // Store change for display
+                    if (!gameData.interestGroupChanges[groupId]) {
+                        gameData.interestGroupChanges[groupId] = {};
+                    }
+                    gameData.interestGroupChanges[groupId][candId] = (gameData.interestGroupChanges[groupId][candId] || 0) + supportChange;
+                    
+                    // Apply change
+                    gameData.interestGroupSupport[groupId][candId] = newSupport;
+                    
+                    // Propagate this change to ALL counties based on group population percentage
+                    this.propagateInterestGroupChange(groupId, candId, supportChange);
+                }
+            }
+        }
+        
+        // Update display
+        this.updateStateFromCounties(this.currentState);
+        Campaign.updateHUD();
+        Campaign.colorMap();
+        this.colorCountyMap();
+        
+        var message = 'Campaign speech on ' + issueId + ' in ' + (county.n || 'County') + '!';
+        Utils.addLog(message);
+        Utils.showToast(message);
+    },
+    
+    // Propagate interest group support change to all counties
+    propagateInterestGroupChange: function(groupId, candId, supportChange) {
+        // Get the group's population percentage in each county (from STATE_DEMOGRAPHICS if available)
+        // For now, use a simplified approach based on state demographics
+        
+        for (var fips in this.countyData) {
+            var county = this.countyData[fips];
+            var stateFips = fips.substring(0, 2);
+            
+            // Find which state this belongs to
+            var stateCode = null;
+            for (var code in STATES) {
+                if (STATES[code].fips === stateFips) {
+                    stateCode = code;
+                    break;
+                }
+            }
+            
+            if (!stateCode || !STATE_DEMOGRAPHICS[stateCode]) continue;
+            
+            // Get group percentage in this state (approximate for county)
+            var groupPct = STATE_DEMOGRAPHICS[stateCode][groupId] || 0;
+            
+            // Calculate vote shift: CHANGE × Interest Group %
+            var voteShift = supportChange * (groupPct / 100);
+            
+            // Apply to county votes
+            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+            
+            // Determine which party benefits
+            if (candId === gameData.candidate.id) {
+                if (gameData.selectedParty === 'D') {
+                    // Player is Democrat - adjust turnout
+                    county.turnout.player = Math.min(1.5, Math.max(0.5, (county.turnout.player || 1.0) + (voteShift / 100)));
+                } else if (gameData.selectedParty === 'R') {
+                    // Player is Republican - adjust turnout
+                    county.turnout.player = Math.min(1.5, Math.max(0.5, (county.turnout.player || 1.0) + (voteShift / 100)));
+                }
+            }
+        }
     }
 };

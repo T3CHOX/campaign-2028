@@ -134,5 +134,8 @@ var gameData = {
     logs: [],
     pacEndorsements: [],
     lockedIssues: {},
-    currentPacOffer: null
+    currentPacOffer: null,
+    // Interest group support tracking
+    interestGroupSupport: {},  // Will store support % for each candidate per group
+    interestGroupChanges: {}   // Will store last turn's changes for display
 };

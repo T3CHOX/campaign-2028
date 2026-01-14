@@ -58,10 +58,101 @@ function startGame() {
         gameData.energy = gameData.maxEnergy;
     }
     
+    // Initialize interest group support for all candidates
+    initializeInterestGroupSupport();
+    
     Screens.goTo('game-screen');
     Campaign.initMap();
     Campaign.updateHUD();
     Utils.addLog("Campaign begins!  Good luck, " + gameData.candidate.name + "!");
+}
+
+// Initialize interest group support percentages for all candidates
+function initializeInterestGroupSupport() {
+    gameData.interestGroupSupport = {};
+    gameData.interestGroupChanges = {};
+    
+    // Get all candidates running (player, opponents, and third parties)
+    var allCandidates = [];
+    
+    // Player's ticket
+    if (gameData.candidate) {
+        allCandidates.push({
+            id: gameData.candidate.id,
+            name: gameData.candidate.name,
+            party: gameData.selectedParty
+        });
+    }
+    
+    // Democrat ticket
+    if (gameData.demTicket.pres && gameData.selectedParty !== 'D') {
+        allCandidates.push({
+            id: gameData.demTicket.pres.id,
+            name: gameData.demTicket.pres.name,
+            party: 'D'
+        });
+    }
+    
+    // Republican ticket
+    if (gameData.repTicket.pres && gameData.selectedParty !== 'R') {
+        allCandidates.push({
+            id: gameData.repTicket.pres.id,
+            name: gameData.repTicket.pres.name,
+            party: 'R'
+        });
+    }
+    
+    // Always include Jill Stein (Green) and Chase Oliver (Libertarian) as third parties
+    allCandidates.push({
+        id: 'stein',
+        name: 'Jill Stein',
+        party: 'G'
+    });
+    allCandidates.push({
+        id: 'oliver',
+        name: 'Chase Oliver',
+        party: 'L'
+    });
+    
+    // For each interest group, calculate initial support for each candidate
+    for (var groupId in INTEREST_GROUPS) {
+        var group = INTEREST_GROUPS[groupId];
+        gameData.interestGroupSupport[groupId] = {};
+        gameData.interestGroupChanges[groupId] = {};
+        
+        var totalSupport = 0;
+        var supportValues = [];
+        
+        // Calculate base support for each candidate
+        for (var i = 0; i < allCandidates.length; i++) {
+            var cand = allCandidates[i];
+            var baseSupport = 25; // Start with equal base
+            
+            // Apply group baseline lean (convert to support)
+            if (cand.party === 'D') {
+                baseSupport += Math.max(-group.baseline * 3, 0);
+            } else if (cand.party === 'R') {
+                baseSupport += Math.max(group.baseline * 3, 0);
+            } else {
+                baseSupport = baseSupport * 0.3; // Third parties get much less support
+            }
+            
+            // Apply candidate-specific modifiers
+            if (CANDIDATE_GROUP_MODIFIERS[cand.id] && CANDIDATE_GROUP_MODIFIERS[cand.id][groupId]) {
+                baseSupport += CANDIDATE_GROUP_MODIFIERS[cand.id][groupId];
+            }
+            
+            supportValues.push({ candId: cand.id, support: Math.max(baseSupport, 0.1) });
+            totalSupport += Math.max(baseSupport, 0.1);
+        }
+        
+        // Normalize to 100%
+        for (var j = 0; j < supportValues.length; j++) {
+            var pct = (supportValues[j].support / totalSupport) * 100;
+            gameData.interestGroupSupport[groupId][supportValues[j].candId] = pct;
+            gameData.interestGroupChanges[groupId][supportValues[j].candId] = 0; // No change initially
+        }
+    }
 }
 
 var app = {
@@ -484,7 +575,7 @@ var app = {
             return;
         }
         // Open speech modal for county-specific campaigning
-        Utils.showToast("County speech feature - coming soon!");
+        Counties.openCountySpeechModal(gameData.selectedCounty);
     },
     
     filterInterestGroups: function(category) {
@@ -503,15 +594,27 @@ var app = {
         var html = '';
         
         if (category === 'pacs') {
-            // Show PACs
-            html += '<div class="ig-section-title">POLITICAL ACTION COMMITTEES</div>';
+            // Show PACs & Special Interest Groups section
+            html += '<div class="ig-main-section-title">PAC\'S & SPECIAL INTEREST GROUPS</div>';
             html += '<div class="pacs-grid">';
             
             for (var pacId in PACS) {
                 var pac = PACS[pacId];
                 html += '<div class="pac-card">';
+                
+                // Placeholder for logo/image
+                html += '<div class="ig-logo-placeholder">📊</div>';
+                
                 html += '<div class="pac-name">' + pac.name + '</div>';
                 html += '<div class="pac-desc">' + pac.description + '</div>';
+                
+                // Show candidate support if available
+                if (gameData.interestGroupSupport && gameData.interestGroupSupport[pacId]) {
+                    html += '<div class="pac-support">';
+                    html += this.renderCandidateSupport(pacId);
+                    html += '</div>';
+                }
+                
                 html += '<div class="pac-details">';
                 html += '<div><strong>Priority Issue:</strong> ' + (pac.priority_issue || 'Various') + '</div>';
                 html += '<div><strong>Contribution:</strong> $' + pac.contribution + 'M</div>';
@@ -521,7 +624,11 @@ var app = {
             
             html += '</div>';
         } else {
-            // Show Interest Groups
+            // Show Voter Blocks section
+            html += '<div class="ig-main-section-title">VOTER BLOCKS</div>';
+            
+            // Group interest groups by category for organized display
+            var groupedByCategory = {};
             for (var groupId in INTEREST_GROUPS) {
                 var group = INTEREST_GROUPS[groupId];
                 
@@ -529,37 +636,173 @@ var app = {
                     continue;
                 }
                 
-                if (!html.includes('class="ig-section-title">' + group.category)) {
-                    html += '<div class="ig-section-title">' + group.category + '</div>';
+                if (!groupedByCategory[group.category]) {
+                    groupedByCategory[group.category] = [];
                 }
+                groupedByCategory[group.category].push({ id: groupId, group: group });
+            }
+            
+            // Render each category
+            for (var cat in groupedByCategory) {
+                html += '<div class="ig-section-title">' + cat + '</div>';
+                html += '<div class="ig-cards-container">';
                 
-                html += '<div class="ig-card">';
-                html += '<div class="ig-name">' + group.name + '</div>';
-                
-                // Show political leaning
-                var leanText = '';
-                var leanColor = '';
-                if (Math.abs(group.baseline) < 2) {
-                    leanText = 'SWING';
-                    leanColor = '#888';
-                } else if (group.baseline > 0) {
-                    leanText = 'R+' + Math.abs(group.baseline);
-                    leanColor = '#E81B23';
-                } else {
-                    leanText = 'D+' + Math.abs(group.baseline);
-                    leanColor = '#00AEF3';
+                var groups = groupedByCategory[cat];
+                for (var i = 0; i < groups.length; i++) {
+                    var groupId = groups[i].id;
+                    var group = groups[i].group;
+                    
+                    html += '<div class="ig-card">';
+                    
+                    // Placeholder for logo/image
+                    html += '<div class="ig-logo-placeholder">👥</div>';
+                    
+                    html += '<div class="ig-name">' + group.name + '</div>';
+                    
+                    // Show candidate support
+                    if (gameData.interestGroupSupport && gameData.interestGroupSupport[groupId]) {
+                        html += '<div class="ig-support">';
+                        html += this.renderCandidateSupport(groupId);
+                        html += '</div>';
+                    }
+                    
+                    html += '</div>';
                 }
-                html += '<div class="ig-lean" style="color: ' + leanColor + '">' + leanText + '</div>';
-                
-                // Show priorities
-                html += '<div class="ig-priorities"><strong>Priority Issues:</strong> ';
-                html += group.priorities.slice(0, 3).join(', ') + '</div>';
                 
                 html += '</div>';
             }
         }
         
         document.getElementById('interest-groups-grid').innerHTML = html;
+    },
+    
+    // Helper function to render candidate support for a group
+    renderCandidateSupport: function(groupId) {
+        var html = '';
+        
+        if (!gameData.interestGroupSupport || !gameData.interestGroupSupport[groupId]) {
+            return html;
+        }
+        
+        var groupSupport = gameData.interestGroupSupport[groupId];
+        var groupChanges = gameData.interestGroupChanges[groupId] || {};
+        
+        // Get all candidates with their support values
+        var candidates = [];
+        for (var candId in groupSupport) {
+            var candInfo = this.getCandidateInfo(candId);
+            if (candInfo) {
+                candidates.push({
+                    id: candId,
+                    name: candInfo.name,
+                    party: candInfo.party,
+                    support: groupSupport[candId],
+                    change: groupChanges[candId] || 0
+                });
+            }
+        }
+        
+        // Sort by support descending
+        candidates.sort(function(a, b) { return b.support - a.support; });
+        
+        // Find max support for underlining
+        var maxSupport = candidates.length > 0 ? candidates[0].support : 0;
+        
+        // Render each candidate
+        for (var i = 0; i < candidates.length; i++) {
+            var cand = candidates[i];
+            var partyColor = this.getPartyColor(cand.party);
+            var isLeader = (Math.abs(cand.support - maxSupport) < 0.01);
+            
+            html += '<div class="candidate-support-row">';
+            
+            // Candidate image in circle
+            html += '<img src="images/' + cand.id + '.jpg" class="candidate-support-img" onerror="this.src=\'images/scenario.jpg\'">';
+            
+            // Candidate name and support percentage (party colored)
+            var nameStyle = 'color: ' + partyColor + ';';
+            if (isLeader) {
+                nameStyle += ' text-decoration: underline;';
+            }
+            html += '<span class="candidate-support-name" style="' + nameStyle + '">' + cand.name + ': </span>';
+            
+            // Support percentage (party colored, underlined if leader)
+            var supportStyle = 'color: ' + partyColor + ';';
+            if (isLeader) {
+                supportStyle += ' text-decoration: underline; font-weight: bold;';
+            }
+            html += '<span class="candidate-support-pct" style="' + supportStyle + '">' + cand.support.toFixed(1) + '%</span>';
+            
+            // Change indicator (very small, color coded)
+            if (cand.change !== 0) {
+                var changeColor = cand.change > 0 ? '#00ff00' : (cand.change < 0 ? '#ff0000' : '#ffff00');
+                var changeText = (cand.change > 0 ? '+' : '') + cand.change.toFixed(2);
+                html += ' <span class="candidate-support-change" style="color: ' + changeColor + '; font-size: 0.65em;">(' + changeText + ')</span>';
+            }
+            
+            html += '</div>';
+        }
+        
+        return html;
+    },
+    
+    // Helper to get candidate info
+    getCandidateInfo: function(candId) {
+        // Check player
+        if (gameData.candidate && gameData.candidate.id === candId) {
+            return {
+                name: gameData.candidate.name,
+                party: gameData.selectedParty
+            };
+        }
+        
+        // Check democrat ticket
+        if (gameData.demTicket.pres && gameData.demTicket.pres.id === candId) {
+            return {
+                name: gameData.demTicket.pres.name,
+                party: 'D'
+            };
+        }
+        
+        // Check republican ticket
+        if (gameData.repTicket.pres && gameData.repTicket.pres.id === candId) {
+            return {
+                name: gameData.repTicket.pres.name,
+                party: 'R'
+            };
+        }
+        
+        // Check if it's a third party candidate
+        if (candId === 'stein') {
+            return { name: 'Jill Stein', party: 'G' };
+        }
+        if (candId === 'oliver') {
+            return { name: 'Chase Oliver', party: 'L' };
+        }
+        
+        // Fallback - check CANDIDATES array
+        for (var i = 0; i < CANDIDATES.length; i++) {
+            if (CANDIDATES[i].id === candId) {
+                return {
+                    name: CANDIDATES[i].name,
+                    party: CANDIDATES[i].party
+                };
+            }
+        }
+        
+        return null;
+    },
+    
+    // Helper to get party color
+    getPartyColor: function(party) {
+        var colors = {
+            'D': '#00AEF3',
+            'R': '#E81B23',
+            'G': '#198754',
+            'L': '#fd7e14',
+            'F': '#F2C75C'
+        };
+        return colors[party] || '#888';
     },
     
     election: {
