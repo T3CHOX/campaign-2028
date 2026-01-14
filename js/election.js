@@ -577,11 +577,17 @@ var Election = {
                 var countyResults = [];
                 
                 for (var fips in Counties.countyData) {
-                    if (fips.substring(0, 2) === stateFips) {
+                    // Normalize FIPS for comparison
+                    var normalizedFips = Counties.normalizeFips(fips);
+                    if (normalizedFips.substring(0, 2) === stateFips) {
                         var county = Counties.countyData[fips];
                         if (county.v) {
-                            var demVotes = county.v.D || 0;
-                            var repVotes = county.v.R || 0;
+                            // Use turnout data if available (same as colorCountyMap)
+                            var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
+                            var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
+                            
+                            var demVotes = (county.v.D || 0) * demTurnout;
+                            var repVotes = (county.v.R || 0) * repTurnout;
                             var countyTotal = demVotes + repVotes;
                             
                             if (countyTotal > 0) {
@@ -589,12 +595,17 @@ var Election = {
                                 var countyRepPct = (repVotes / countyTotal) * 100;
                                 var margin = countyDemPct - countyRepPct;
                                 
+                                // County reporting follows state average
+                                var reportingPct = state.reportedPct;
+                                
                                 countyResults.push({
+                                    fips: fips,
                                     name: county.n || 'County',
                                     demPct: countyDemPct,
                                     repPct: countyRepPct,
                                     margin: margin,
-                                    totalVotes: countyTotal
+                                    totalVotes: countyTotal,
+                                    reportingPct: reportingPct
                                 });
                             }
                         }
@@ -611,9 +622,12 @@ var Election = {
                     var leaderColor = leader === 'D' ? '#00AEF3' : '#E81B23';
                     var marginText = (cr.margin > 0 ? 'D+' : 'R+') + Math.abs(cr.margin).toFixed(1);
                     
-                    html += '<div style="padding: 8px; margin: 5px 0; background: #1a1a1a; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">';
+                    html += '<div style="padding: 8px; margin: 5px 0; background: #1a1a1a; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="Election.showCountyDetail(\'' + cr.fips + '\')">';
                     html += '<span style="color: #ccc;">' + cr.name + '</span>';
+                    html += '<div style="display: flex; gap: 15px; align-items: center;">';
+                    html += '<span style="color: #666; font-size: 0.85rem;">' + Math.floor(cr.reportingPct) + '%</span>';
                     html += '<span style="color: ' + leaderColor + '; font-weight: bold;">' + marginText + '</span>';
+                    html += '</div>';
                     html += '</div>';
                 }
                 
@@ -636,6 +650,93 @@ var Election = {
     
     closeCountyElectionView: function() {
         var overlay = document.getElementById('county-election-overlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    },
+    
+    showCountyDetail: function(fips) {
+        // Show detailed vote breakdown for a specific county
+        var county = Counties.countyData[fips];
+        if (!county) return;
+        
+        var overlay = document.getElementById('county-detail-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'county-detail-overlay';
+            overlay.className = 'modal-overlay';
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; display: flex; justify-content: center; align-items: center; padding: 20px;';
+            document.body.appendChild(overlay);
+        }
+        
+        // Get state for reporting percentage
+        var stateCode = gameData.electionCountyViewState;
+        var state = gameData.states[stateCode];
+        var reportingPct = state ? state.reportedPct : 100;
+        
+        // Calculate votes with turnout
+        var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
+        var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
+        
+        var demVotes = Math.floor((county.v.D || 0) * demTurnout * (reportingPct / 100));
+        var repVotes = Math.floor((county.v.R || 0) * repTurnout * (reportingPct / 100));
+        var totalVotes = demVotes + repVotes;
+        
+        var demPct = totalVotes > 0 ? (demVotes / totalVotes) * 100 : 50;
+        var repPct = totalVotes > 0 ? (repVotes / totalVotes) * 100 : 50;
+        var margin = demPct - repPct;
+        
+        var html = '<div style="background: #1e1e1e; border: 2px solid #ffd700; border-radius: 10px; padding: 30px; max-width: 600px; width: 100%;">';
+        html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #444; padding-bottom: 15px;">';
+        html += '<h2 style="margin: 0; color: #ffd700;">' + (county.n || 'County') + '</h2>';
+        html += '<button onclick="Election.closeCountyDetail()" style="background: #444; border: none; color: white; padding: 8px 20px; cursor: pointer; border-radius: 4px; font-weight: bold;">BACK</button>';
+        html += '</div>';
+        
+        // Reporting percentage
+        html += '<div style="text-align: center; font-size: 0.9rem; color: #888; margin-bottom: 15px;">' + Math.floor(reportingPct) + '% Reporting</div>';
+        
+        // Vote bar
+        html += '<div style="height: 40px; background: #333; border-radius: 4px; display: flex; overflow: hidden; margin-bottom: 15px;">';
+        html += '<div style="width: ' + demPct + '%; background: #00AEF3; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">' + (demPct > 10 ? demPct.toFixed(1) + '%' : '') + '</div>';
+        html += '<div style="width: ' + repPct + '%; background: #E81B23; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">' + (repPct > 10 ? repPct.toFixed(1) + '%' : '') + '</div>';
+        html += '</div>';
+        
+        // Vote counts
+        html += '<div style="background: #252525; padding: 20px; border-radius: 6px;">';
+        html += '<div style="display: flex; justify-content: space-between; margin-bottom: 15px;">';
+        html += '<div>';
+        html += '<div style="color: #00AEF3; font-weight: bold; font-size: 1.3rem;">' + demVotes.toLocaleString() + '</div>';
+        html += '<div style="color: #888; font-size: 0.9rem;">Democrat</div>';
+        html += '</div>';
+        html += '<div style="text-align: right;">';
+        html += '<div style="color: #E81B23; font-weight: bold; font-size: 1.3rem;">' + repVotes.toLocaleString() + '</div>';
+        html += '<div style="color: #888; font-size: 0.9rem;">Republican</div>';
+        html += '</div>';
+        html += '</div>';
+        
+        // Margin
+        var marginColor = margin > 0 ? '#00AEF3' : '#E81B23';
+        var marginText = (margin > 0 ? 'D+' : 'R+') + Math.abs(margin).toFixed(1) + '%';
+        html += '<div style="text-align: center; padding-top: 15px; border-top: 1px solid #444;">';
+        html += '<div style="color: ' + marginColor + '; font-weight: bold; font-size: 1.5rem;">' + marginText + '</div>';
+        html += '<div style="color: #888; font-size: 0.9rem;">Margin</div>';
+        html += '</div>';
+        html += '</div>';
+        
+        // County info
+        html += '<div style="background: #252525; padding: 15px; border-radius: 6px; margin-top: 15px;">';
+        html += '<div style="color: #888; font-size: 0.9rem;">Population: ' + (county.p || 0).toLocaleString() + '</div>';
+        html += '<div style="color: #888; font-size: 0.9rem;">Type: ' + (county.t || 'Unknown') + '</div>';
+        html += '</div>';
+        
+        html += '</div>';
+        
+        overlay.innerHTML = html;
+        overlay.style.display = 'flex';
+    },
+    
+    closeCountyDetail: function() {
+        var overlay = document.getElementById('county-detail-overlay');
         if (overlay) {
             overlay.style.display = 'none';
         }

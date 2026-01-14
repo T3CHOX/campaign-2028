@@ -358,7 +358,9 @@ var Counties = {
         var totalRepVotes = 0;
         
         for (var fips in this.countyData) {
-            if (fips.substring(0, 2) === stateFips) {
+            // Normalize FIPS for comparison
+            var normalizedFips = this.normalizeFips(fips);
+            if (normalizedFips.substring(0, 2) === stateFips) {
                 var county = this.countyData[fips];
                 if (county.v && county.turnout) {
                     // Use correct turnout for each party
@@ -622,7 +624,9 @@ var Counties = {
         
         for (var fips in this.countyData) {
             var county = this.countyData[fips];
-            var stateFips = fips.substring(0, 2);
+            // Normalize FIPS for comparison
+            var normalizedFips = this.normalizeFips(fips);
+            var stateFips = normalizedFips.substring(0, 2);
             
             // Find which state this belongs to
             var stateCode = null;
