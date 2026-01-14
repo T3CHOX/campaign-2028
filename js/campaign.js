@@ -70,12 +70,8 @@ var Campaign = {
     showTooltip: function(e, state) {
         var tooltip = document.getElementById('map-tooltip');
         var marginText = Math.abs(state.margin).toFixed(1);
-        var leaning;
-        if (Math.abs(state.margin) < 1) {
-            leaning = 'TOSS-UP';
-        } else {
-            leaning = (state.margin > 0 ? 'D+' : 'R+') + marginText;
-        }
+        // Always show exact margin, no "TOSS-UP" label
+        var leaning = (state.margin > 0 ? 'D+' : 'R+') + marginText;
         
         tooltip.innerHTML = 
             '<span class="tooltip-title">' + state.name + '</span>' +
@@ -285,7 +281,7 @@ var Campaign = {
         if (gameData.selectedParty === 'D') {
             s.margin += effect;
         } else if (gameData.selectedParty === 'R') {
-            s.margin -= effect;
+            s.margin += effect;  // Fixed: Republicans should ADD positive effect
         } else {
             s.margin += effect * 0.3;
         }

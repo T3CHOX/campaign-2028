@@ -210,6 +210,7 @@
                     <button class="time-btn" id="btn-2x" onclick="app.election.setSpeed(2)">2×</button>
                     <button class="time-btn" id="btn-5x" onclick="app.election.setSpeed(5)">5×</button>
                     <button class="time-btn" id="btn-10x" onclick="app.election.setSpeed(10)">10×</button>
+                    <button class="time-btn" id="btn-skip" onclick="app.election.skipToEnd()" style="background: #ffd700; color: #000; font-weight: bold;">⏭️ SKIP</button>
                 </div>
             </div>
             <div class="election-header-right">
@@ -334,7 +335,7 @@
             <div id="issues-modal-content">
                 <div class="issues-toggle">
                     <label>
-                        <input type="checkbox" id="show-third-party-toggle" onchange="app.renderIssuesPanel()">
+                        <input type="checkbox" id="show-third-party-toggle" checked onchange="app.renderIssuesPanel()">
                         Show Third-Party Positions
                     </label>
                 </div>

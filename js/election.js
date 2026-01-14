@@ -88,6 +88,11 @@ var Election = {
                     if (s.reportedPct > 99.5) {
                         s.reportedPct = 100;
                     }
+                    
+                    // Additional safeguard: After a very long time, force completion
+                    if (this.time > 26 && s.reportedPct < 100) {
+                        s.reportedPct = 100;
+                    }
 
                     var totalVotes = s.ev * 120000;
                     
@@ -464,6 +469,60 @@ var Election = {
         document.getElementById('mode-leader').classList.toggle('active', mode === 'leader');
         document.getElementById('mode-projected').classList.toggle('active', mode === 'projected');
         this.colorElectionMap();
+    },
+    
+    skipToEnd: function() {
+        // Instantly complete all vote counting for all states
+        for (var code in gameData.states) {
+            var s = gameData.states[code];
+            
+            // Force all states to 100% reporting
+            s.reportedPct = 100;
+            
+            // Calculate final vote totals
+            var totalVotes = s.ev * 120000;
+            var thirdPartyPct = 1.5 + (Math.random() * 1.5);
+            var demPct = 50 + s.margin + (Math.random() - 0.5) * 2;
+            var repPct = 100 - demPct - thirdPartyPct;
+            
+            if (repPct < 0) {
+                thirdPartyPct += repPct;
+                repPct = 0;
+            }
+            if (demPct < 0) {
+                thirdPartyPct += demPct;
+                demPct = 0;
+            }
+            
+            s.reportedVotes.D = Math.floor(totalVotes * (demPct / 100));
+            s.reportedVotes.R = Math.floor(totalVotes * (repPct / 100));
+            s.reportedVotes.T = Math.floor(totalVotes * (thirdPartyPct / 100));
+            
+            // Call the state if not already called
+            if (!s.called) {
+                s.called = true;
+                s.calledFor = s.reportedVotes.D > s.reportedVotes.R ? 'D' : 'R';
+                
+                if (s.calledFor === 'D') {
+                    this.demEV += s.ev;
+                } else {
+                    this.repEV += s.ev;
+                }
+            }
+        }
+        
+        // Advance time to end
+        this.time = 26;
+        
+        // Update display and show final results
+        this.updateDisplay();
+        this.colorElectionMap();
+        
+        // Mark all votes as counted and show results
+        if (!this.allVotesCounted) {
+            this.allVotesCounted = true;
+            this.showFinalResults();
+        }
     },
 
     openCountyElectionView: function(stateCode) {

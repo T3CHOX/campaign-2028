@@ -27,13 +27,14 @@ var Utils = {
     },
 
     getMarginColor: function(margin) {
-        // More dramatic shading with increased polarity
+        // Improved coloring with white at 0.0%
         if (margin > 25) return "#00264d"; // Very dark blue
         if (margin > 15) return "#003d7a"; // Darker blue
         if (margin > 10) return "#0055a6"; // Dark blue
         if (margin > 5) return "#0077d9"; // Medium blue
         if (margin > 2) return "#3399ff"; // Light blue
-        if (margin > 0) return "#66b3ff"; // Very light blue
+        if (margin > 0.5) return "#66b3ff"; // Very light blue
+        if (margin > -0.5) return "#ffffff"; // White (neutral/tied)
         if (margin > -2) return "#ff9999"; // Very light red
         if (margin > -5) return "#ff6666"; // Light red
         if (margin > -10) return "#ff3333"; // Medium red
