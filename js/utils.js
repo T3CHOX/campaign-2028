@@ -43,8 +43,14 @@ var Utils = {
     },
 
     formatTime: function(timeValue) {
-        var hours = Math.floor(timeValue);
-        var minutes = Math.floor((timeValue - hours) * 60);
+        // Handle time past midnight (24 hours)
+        var adjustedTime = timeValue;
+        if (timeValue >= 24) {
+            adjustedTime = timeValue - 24;
+        }
+        
+        var hours = Math.floor(adjustedTime);
+        var minutes = Math.floor((adjustedTime - hours) * 60);
         var ampm = hours >= 12 ? 'PM' : 'AM';
         var displayHours = hours > 12 ? hours - 12 : hours;
         if (displayHours === 0) displayHours = 12;
