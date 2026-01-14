@@ -2396,3 +2396,8 @@ body {
     box-shadow: 0 5px 20px rgba(242, 199, 92, 0.5);
 }
 
+
+.ev-fill-third {
+    background: linear-gradient(90deg, #F2C75C, #d4a42d);
+    z-index: 3;
+}

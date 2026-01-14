@@ -281,6 +281,9 @@ var Election = {
         var projEl = document.getElementById('elec-projection');
         if (s.called) {
             projEl.innerHTML = '<span class="proj-status ' + (s.calledFor === 'D' ? 'called-dem' : 'called-rep') + '">CALLED FOR ' + (s.calledFor === 'D' ? 'DEMOCRATS' : 'REPUBLICANS') + '</span>';
+        } else if (s.reportedPct >= 100) {
+            // At 100%, if not called yet (shouldn't happen), show too close to call
+            projEl.innerHTML = '<span class="proj-status">TOO CLOSE TO CALL</span>';
         } else if (s.reportedPct > 0) {
             projEl.innerHTML = '<span class="proj-status">TOO CLOSE TO CALL</span>';
         } else {
