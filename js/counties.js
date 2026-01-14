@@ -142,9 +142,18 @@ var Counties = {
         // Show county info in sidebar
         document.getElementById('sp-name').innerText = county.n || 'County';
         
-        // Show county-specific actions in sidebar
         // Mark that we're in county view mode
         gameData.inCountyView = true;
+        
+        // Add county-specific action buttons
+        var actionGrid = document.querySelector('.action-grid');
+        if (actionGrid) {
+            // Clear existing buttons and add county actions
+            actionGrid.innerHTML = 
+                '<button class="act-btn" onclick="app.countyRally()"><span>🎤</span><span>RALLY</span></button>' +
+                '<button class="act-btn" onclick="app.countySpeech()"><span>🎙️</span><span>SPEECH</span></button>' +
+                '<button class="act-btn" onclick="app.closeCountyView()"><span>🗺️</span><span>BACK TO MAP</span></button>';
+        }
     },
     
     // Rally in a specific county
@@ -275,19 +284,11 @@ var Counties = {
     
     // Get state FIPS prefix from state code
     getStateFipsPrefix: function(stateCode) {
-        var fipsMap = {
-            'AL': '01', 'AK': '02', 'AZ': '04', 'AR': '05', 'CA': '06',
-            'CO': '08', 'CT': '09', 'DE': '10', 'DC': '11', 'FL': '12',
-            'GA': '13', 'HI': '15', 'ID': '16', 'IL': '17', 'IN': '18',
-            'IA': '19', 'KS': '20', 'KY': '21', 'LA': '22', 'ME': '23',
-            'MD': '24', 'MA': '25', 'MI': '26', 'MN': '27', 'MS': '28',
-            'MO': '29', 'MT': '30', 'NE': '31', 'NV': '32', 'NH': '33',
-            'NJ': '34', 'NM': '35', 'NY': '36', 'NC': '37', 'ND': '38',
-            'OH': '39', 'OK': '40', 'OR': '41', 'PA': '42', 'RI': '44',
-            'SC': '45', 'SD': '46', 'TN': '47', 'TX': '48', 'UT': '49',
-            'VT': '50', 'VA': '51', 'WA': '53', 'WV': '54', 'WI': '55', 'WY': '56'
-        };
-        return fipsMap[stateCode] || '00';
+        // Use FIPS codes from STATES config
+        if (typeof STATES !== 'undefined' && STATES[stateCode] && STATES[stateCode].fips) {
+            return STATES[stateCode].fips;
+        }
+        return '00';
     },
     
     // Close county view
@@ -297,6 +298,17 @@ var Counties = {
         this.currentState = null;
         gameData.inCountyView = false;
         gameData.selectedCounty = null;
+        
+        // Restore state action buttons
+        var actionGrid = document.querySelector('.action-grid');
+        if (actionGrid) {
+            actionGrid.innerHTML = 
+                '<button class="act-btn" onclick="app.handleAction(\'fundraise\')"><span>💰</span><span>FUNDRAISE</span></button>' +
+                '<button class="act-btn" onclick="app.handleAction(\'ad\')"><span>📺</span><span>AD BLITZ</span></button>' +
+                '<button class="act-btn" onclick="app.openStateBio()"><span>📖</span><span>INTEL</span></button>' +
+                '<button class="act-btn" onclick="app.openCountyView()"><span>🗺️</span><span>BREAKDOWN</span></button>' +
+                '<button class="act-btn" onclick="app.openIssuesPanel()"><span>📊</span><span>ISSUES</span></button>';
+        }
     },
     
     // Get adjacent counties (simplified)

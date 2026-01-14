@@ -22,7 +22,7 @@ var Election = {
         for (var code in gameData.states) {
             var s = gameData.states[code];
             s.reportedPct = 0;
-            s.reportedVotes = { D: 0, R: 0 };
+            s.reportedVotes = { D: 0, R: 0, T: 0 };
             s.called = false;
             s.calledFor = null;
         }
@@ -59,11 +59,21 @@ var Election = {
                     s.reportedPct = Math.min(100, s.reportedPct + increment);
 
                     var totalVotes = s.ev * 120000;
+                    
+                    // Calculate realistic vote percentages including third parties
+                    var thirdPartyPct = 1.5 + (Math.random() * 1.5); // 1.5-3% for third parties
                     var demPct = 50 + s.margin + (Math.random() - 0.5) * 3;
-                    var repPct = 100 - demPct;
+                    var repPct = 100 - demPct - thirdPartyPct;
+                    
+                    // Adjust if negative
+                    if (repPct < 0) {
+                        thirdPartyPct += repPct;
+                        repPct = 0;
+                    }
 
                     s.reportedVotes.D = Math.floor(totalVotes * (demPct / 100) * (s.reportedPct / 100));
                     s.reportedVotes.R = Math.floor(totalVotes * (repPct / 100) * (s.reportedPct / 100));
+                    s.reportedVotes.T = Math.floor(totalVotes * (thirdPartyPct / 100) * (s.reportedPct / 100));
                 }
 
                 if (s.reportedPct >= 40 && !s.called) {
@@ -128,6 +138,13 @@ var Election = {
                             path.style.cursor = 'pointer';
                             (function(c) {
                                 path.onclick = function() { Election.selectState(c); };
+                                path.ondblclick = function(e) {
+                                    e.stopPropagation();
+                                    // Double-click to open county view during election
+                                    if (typeof Counties !== 'undefined') {
+                                        Election.openCountyElectionView(c);
+                                    }
+                                };
                             })(code);
                         }
                     }
@@ -243,5 +260,20 @@ var Election = {
         document.getElementById('mode-leader').classList.toggle('active', mode === 'leader');
         document.getElementById('mode-projected').classList.toggle('active', mode === 'projected');
         this.colorElectionMap();
+    },
+
+    openCountyElectionView: function(stateCode) {
+        // Store the current state for the county view
+        gameData.electionCountyViewState = stateCode;
+        
+        // Show alert for now - county election view would need full implementation
+        alert('County-level results for ' + gameData.states[stateCode].name + ' - Feature coming soon!');
+        
+        // In a full implementation, this would:
+        // 1. Load county map SVG
+        // 2. Color counties by reported results
+        // 3. Show county-level vote counts
+        // 4. Keep state sidebar visible
+        // 5. Add tooltips on county hover
     }
 };

@@ -32,5 +32,18 @@ function enhanceStateData() {
         s.fundraisingPotential = STATE_FUNDRAISING_POTENTIAL[code] || 1.0;
         s.fundraisingVisits = 0;
         s.counties = []; // Will be populated from county data
+        
+        // Get FIPS prefix and populate counties
+        if (typeof STATES !== 'undefined' && STATES[code] && STATES[code].fips) {
+            var fipsPrefix = STATES[code].fips;
+            if (typeof Counties !== 'undefined' && Counties.countyData) {
+                for (var fips in Counties.countyData) {
+                    if (fips.substring(0, 2) === fipsPrefix || 
+                        (fips.length === 4 && fips.substring(0, 1) === fipsPrefix.substring(1, 2))) {
+                        s.counties.push(fips);
+                    }
+                }
+            }
+        }
     }
 }
