@@ -169,8 +169,8 @@ var Election = {
         this.updateDisplay();
         this.colorElectionMap();
 
-        // Show winner overlay when someone reaches 270 and we haven't shown it yet
-        if ((this.demEV >= 270 || this.repEV >= 270) && !this.winnerShown) {
+        // Show winner overlay when someone reaches 270 and ALL votes are counted
+        if ((this.demEV >= 270 || this.repEV >= 270) && !this.winnerShown && allCounted) {
             this.showWinner();
         }
     },
