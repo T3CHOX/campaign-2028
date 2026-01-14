@@ -44,6 +44,12 @@ var Counties = {
         var wrapper = document.getElementById('county-map-container');
         wrapper.innerHTML = '<div class="loading-map">Loading county map...</div>';
         
+        var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
+        if (!stateFips) {
+            wrapper.innerHTML = '<div class="error-map">State FIPS code not found.</div>';
+            return;
+        }
+        
         var xhr = new XMLHttpRequest();
         xhr.open('GET', 'counties/uscountymap.svg', true);
         xhr.onreadystatechange = function() {
@@ -56,29 +62,50 @@ var Counties = {
                     svg.id = 'county-map-svg';
                     // Filter to show only counties for this state
                     var paths = svg.querySelectorAll('path');
+                    var countyCount = 0;
+                    
                     for (var i = 0; i < paths.length; i++) {
                         var path = paths[i];
-                        var fips = path.id;
+                        var pathId = path.id;
                         
-                        if (fips && fips.substring(0, 2) === stateCode.substring(0, 2)) {
-                            // This county belongs to the state
-                            path.style.cursor = 'pointer';
-                            path.style.display = 'block';
-                            (function(f) {
-                                path.onclick = function() { Counties.selectCounty(f); };
-                                path.onmousemove = function(e) { Counties.showCountyTooltip(e, f); };
-                                path.onmouseleave = function() { 
-                                    var tooltip = document.getElementById('map-tooltip');
-                                    if (tooltip) tooltip.style.display = 'none';
-                                };
-                            })(fips);
-                        } else {
+                        // County IDs in SVG are like "c01001" where 01 is state FIPS
+                        if (pathId && pathId.length >= 3 && pathId.charAt(0) === 'c') {
+                            var countyStateFips = pathId.substring(1, 3);
+                            var fips = pathId.substring(1); // Remove the 'c' prefix
+                            
+                            if (countyStateFips === stateFips) {
+                                // This county belongs to the state
+                                countyCount++;
+                                path.style.cursor = 'pointer';
+                                path.style.display = 'block';
+                                path.style.stroke = '#000';
+                                path.style.strokeWidth = '0.5';
+                                
+                                (function(f) {
+                                    path.onclick = function() { Counties.selectCounty(f); };
+                                    path.onmousemove = function(e) { Counties.showCountyTooltip(e, f); };
+                                    path.onmouseleave = function() { 
+                                        var tooltip = document.getElementById('map-tooltip');
+                                        if (tooltip) tooltip.style.display = 'none';
+                                    };
+                                })(fips);
+                            } else {
+                                path.style.display = 'none';
+                            }
+                        } else if (pathId && pathId !== 'counties' && pathId !== stateCode) {
+                            // Hide non-county paths
                             path.style.display = 'none';
                         }
                     }
+                    
                     wrapper.innerHTML = '';
                     wrapper.appendChild(svg);
-                    Counties.colorCountyMap();
+                    
+                    if (countyCount === 0) {
+                        wrapper.innerHTML = '<div class="error-map">No counties found for this state.</div>';
+                    } else {
+                        Counties.colorCountyMap();
+                    }
                 }
             } else if (xhr.readyState === 4) {
                 wrapper.innerHTML = '<div class="error-map">Failed to load county map.</div>';
@@ -91,12 +118,13 @@ var Counties = {
     colorCountyMap: function() {
         if (!this.currentState) return;
         
-        var stateFips = this.getStateFipsPrefix(this.currentState);
+        var stateFips = STATES[this.currentState] ? STATES[this.currentState].fips : null;
+        if (!stateFips) return;
         
         for (var fips in this.countyData) {
             if (fips.substring(0, 2) === stateFips) {
                 var county = this.countyData[fips];
-                var path = document.getElementById(fips);
+                var path = document.getElementById('c' + fips); // Add 'c' prefix for SVG ID
                 
                 if (path && county.v) {
                     // Calculate margin based on votes with correct turnout
@@ -207,7 +235,9 @@ var Counties = {
     
     // Update state-level margin from county data
     updateStateFromCounties: function(stateCode) {
-        var stateFips = this.getStateFipsPrefix(stateCode);
+        var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
+        if (!stateFips) return;
+        
         var totalDemVotes = 0;
         var totalRepVotes = 0;
         

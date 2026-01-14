@@ -17,7 +17,9 @@ function initGameData() {
             reportedVotes: { D: 0, R: 0 },
             called: false,
             calledFor: null,
-            fundraisingVisits: 0
+            fundraisingVisits: 0,
+            lastCampaignDate: null,
+            campaignActionsCount: 0
         };
     }
     
@@ -135,19 +137,29 @@ var app = {
                     var playerColor = gameData.selectedParty === 'D' ? 'dem' : (gameData.selectedParty === 'R' ? 'rep' : '');
                     issuesHtml += '<div class="issue-marker player ' + playerColor + '" style="left: ' + playerLeft + '%" title="Your position: ' + playerPos + '"></div>';
                     
-                    // Opponent markers
+                    // ALWAYS show Democrat and Republican positions
+                    var demPos = (gameData.demTicket.pres && gameData.demTicket.pres.issuePositions && gameData.demTicket.pres.issuePositions[issue.id]) || 0;
+                    var repPos = (gameData.repTicket.pres && gameData.repTicket.pres.issuePositions && gameData.repTicket.pres.issuePositions[issue.id]) || 0;
+                    
+                    // Show Democrat position (unless player is Democrat)
+                    if (gameData.selectedParty !== 'D') {
+                        var demLeft = ((demPos + 10) / 20) * 100;
+                        issuesHtml += '<div class="issue-marker dem" style="left: ' + demLeft + '%" title="Democrat: ' + demPos + '"></div>';
+                    }
+                    
+                    // Show Republican position (unless player is Republican)
+                    if (gameData.selectedParty !== 'R') {
+                        var repLeft = ((repPos + 10) / 20) * 100;
+                        issuesHtml += '<div class="issue-marker rep" style="left: ' + repLeft + '%" title="Republican: ' + repPos + '"></div>';
+                    }
+                    
+                    // Show OTHER third party candidates only when toggle is on
                     if (showThirdParty) {
-                        var demPos = (gameData.demTicket.pres && gameData.demTicket.pres.issuePositions && gameData.demTicket.pres.issuePositions[issue.id]) || 0;
-                        var repPos = (gameData.repTicket.pres && gameData.repTicket.pres.issuePositions && gameData.repTicket.pres.issuePositions[issue.id]) || 0;
+                        // If player is third party, show their position as player marker already
+                        // So we don't need to show it again here
                         
-                        if (gameData.selectedParty !== 'D') {
-                            var demLeft = ((demPos + 10) / 20) * 100;
-                            issuesHtml += '<div class="issue-marker dem" style="left: ' + demLeft + '%" title="Democrat: ' + demPos + '"></div>';
-                        }
-                        if (gameData.selectedParty !== 'R') {
-                            var repLeft = ((repPos + 10) / 20) * 100;
-                            issuesHtml += '<div class="issue-marker rep" style="left: ' + repLeft + '%" title="Republican: ' + repPos + '"></div>';
-                        }
+                        // For now, this is where we'd add other third party candidates
+                        // that are NOT the player, Democrat, or Republican
                     }
                     
                     issuesHtml += '</div>'; // close issue-scale
