@@ -105,6 +105,8 @@ var Counties = {
                         wrapper.innerHTML = '<div class="error-map">No counties found for this state.</div>';
                     } else {
                         Counties.colorCountyMap();
+                        // Center and scale the state's counties
+                        Counties.focusOnStateCounties(svg, stateFips);
                     }
                 }
             } else if (xhr.readyState === 4) {
@@ -112,6 +114,60 @@ var Counties = {
             }
         };
         xhr.send();
+    },
+    
+    // Focus on state counties by setting viewBox
+    focusOnStateCounties: function(svg, stateFips) {
+        // Get all county paths that belong to this state
+        var stateCountyPaths = [];
+        var paths = svg.querySelectorAll('path');
+        
+        for (var i = 0; i < paths.length; i++) {
+            var path = paths[i];
+            var pathId = path.id;
+            
+            // County IDs in SVG are like "c01001" where 01 is state FIPS
+            if (pathId && pathId.length >= 3 && pathId.charAt(0) === 'c') {
+                var countyStateFips = pathId.substring(1, 3);
+                if (countyStateFips === stateFips && path.style.display !== 'none') {
+                    stateCountyPaths.push(path);
+                }
+            }
+        }
+        
+        if (stateCountyPaths.length === 0) return;
+        
+        // Calculate union bounding box
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (var j = 0; j < stateCountyPaths.length; j++) {
+            var path = stateCountyPaths[j];
+            try {
+                var bb = path.getBBox();
+                minX = Math.min(minX, bb.x);
+                minY = Math.min(minY, bb.y);
+                maxX = Math.max(maxX, bb.x + bb.width);
+                maxY = Math.max(maxY, bb.y + bb.height);
+            } catch (e) {
+                // getBBox might fail on some paths, skip them
+                continue;
+            }
+        }
+        
+        // Check if we got valid bounds
+        if (minX === Infinity || minY === Infinity || maxX === -Infinity || maxY === -Infinity) {
+            return;
+        }
+        
+        // Add padding (5% of bbox)
+        var padX = (maxX - minX) * 0.05;
+        var padY = (maxY - minY) * 0.05;
+        minX -= padX;
+        minY -= padY;
+        maxX += padX;
+        maxY += padY;
+        
+        // Set viewBox to focus on selected state
+        svg.setAttribute('viewBox', minX + ' ' + minY + ' ' + (maxX - minX) + ' ' + (maxY - minY));
     },
     
     // Color county map based on margins
