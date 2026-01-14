@@ -421,7 +421,8 @@ var Counties = {
         // Determine proper suffix based on state
         var countyName = county.n || 'County';
         var suffix = 'County';
-        var stateFips = fips.substring(0, 2);
+        var normalizedFips = this.normalizeFips(fips);
+        var stateFips = normalizedFips.substring(0, 2);
         
         // Alaska uses "Borough", Louisiana uses "Parish"
         if (stateFips === '02') {  // Alaska FIPS code

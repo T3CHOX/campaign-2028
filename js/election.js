@@ -622,7 +622,8 @@ var Election = {
                     var leaderColor = leader === 'D' ? '#00AEF3' : '#E81B23';
                     var marginText = (cr.margin > 0 ? 'D+' : 'R+') + Math.abs(cr.margin).toFixed(1);
                     
-                    html += '<div style="padding: 8px; margin: 5px 0; background: #1a1a1a; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="Election.showCountyDetail(\'' + cr.fips + '\')">';
+                    // Use data attribute to avoid XSS risk with onclick
+                    html += '<div class="county-row" data-fips="' + cr.fips + '" style="padding: 8px; margin: 5px 0; background: #1a1a1a; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">';
                     html += '<span style="color: #ccc;">' + cr.name + '</span>';
                     html += '<div style="display: flex; gap: 15px; align-items: center;">';
                     html += '<span style="color: #666; font-size: 0.85rem;">' + Math.floor(cr.reportingPct) + '%</span>';
@@ -646,6 +647,15 @@ var Election = {
         
         overlay.innerHTML = html;
         overlay.style.display = 'flex';
+        
+        // Add event listeners to county rows after rendering
+        var countyRows = overlay.querySelectorAll('.county-row');
+        for (var i = 0; i < countyRows.length; i++) {
+            countyRows[i].addEventListener('click', function() {
+                var fips = this.getAttribute('data-fips');
+                Election.showCountyDetail(fips);
+            });
+        }
     },
     
     closeCountyElectionView: function() {
