@@ -479,6 +479,12 @@ var Counties = {
             return;
         }
         
+        // Check if CORE_ISSUES is defined
+        if (typeof CORE_ISSUES === 'undefined') {
+            Utils.showToast("Issue data not loaded!");
+            return;
+        }
+        
         // Build speech modal content
         var modal = document.getElementById('speech-modal');
         if (!modal) return;
@@ -528,6 +534,12 @@ var Counties = {
         }
         
         // Now affect interest groups based on issue alignment
+        if (typeof INTEREST_GROUPS === 'undefined') {
+            // Interest groups not defined, skip this part
+            Utils.addLog(message);
+            return;
+        }
+        
         for (var groupId in INTEREST_GROUPS) {
             var group = INTEREST_GROUPS[groupId];
             
@@ -592,6 +604,11 @@ var Counties = {
     propagateInterestGroupChange: function(groupId, candId, supportChange) {
         // Get the group's population percentage in each county (from STATE_DEMOGRAPHICS if available)
         // For now, use a simplified approach based on state demographics
+        
+        if (typeof STATE_DEMOGRAPHICS === 'undefined') {
+            // Demographics not defined, skip propagation
+            return;
+        }
         
         for (var fips in this.countyData) {
             var county = this.countyData[fips];

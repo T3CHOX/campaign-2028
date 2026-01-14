@@ -115,6 +115,11 @@ function initializeInterestGroupSupport() {
     });
     
     // For each interest group, calculate initial support for each candidate
+    if (typeof INTEREST_GROUPS === 'undefined') {
+        console.warn('INTEREST_GROUPS not defined, skipping initialization');
+        return;
+    }
+    
     for (var groupId in INTEREST_GROUPS) {
         var group = INTEREST_GROUPS[groupId];
         gameData.interestGroupSupport[groupId] = {};
@@ -138,7 +143,7 @@ function initializeInterestGroupSupport() {
             }
             
             // Apply candidate-specific modifiers
-            if (CANDIDATE_GROUP_MODIFIERS[cand.id] && CANDIDATE_GROUP_MODIFIERS[cand.id][groupId]) {
+            if (typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[cand.id] && CANDIDATE_GROUP_MODIFIERS[cand.id][groupId]) {
                 baseSupport += CANDIDATE_GROUP_MODIFIERS[cand.id][groupId];
             }
             
