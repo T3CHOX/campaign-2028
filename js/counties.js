@@ -170,6 +170,12 @@ var Counties = {
         svg.setAttribute('viewBox', minX + ' ' + minY + ' ' + (maxX - minX) + ' ' + (maxY - minY));
     },
     
+    // Normalize FIPS code to 5 digits with leading zeros
+    normalizeFips: function(fips) {
+        // Pad with leading zeros to make 5 digits
+        return ('00000' + fips).slice(-5);
+    },
+    
     // Color county map based on margins
     colorCountyMap: function() {
         if (!this.currentState) return;
@@ -178,9 +184,11 @@ var Counties = {
         if (!stateFips) return;
         
         for (var fips in this.countyData) {
-            if (fips.substring(0, 2) === stateFips) {
+            // Normalize FIPS to compare state prefix (pad to 5 digits)
+            var normalizedFips = this.normalizeFips(fips);
+            if (normalizedFips.substring(0, 2) === stateFips) {
                 var county = this.countyData[fips];
-                var path = document.getElementById('c' + fips); // Add 'c' prefix for SVG ID
+                var path = document.getElementById('c' + normalizedFips); // Add 'c' prefix for SVG ID
                 
                 if (path && county.v) {
                     // Calculate margin based on votes with correct turnout
@@ -282,10 +290,12 @@ var Counties = {
         var actionGrid = document.querySelector('.action-grid');
         if (actionGrid) {
             // Clear existing buttons and add county actions
+            // Top row: Back to Map and Rally
+            // Bottom row: Speech (full width)
             actionGrid.innerHTML = 
+                '<button class="act-btn" onclick="app.closeCountyView()"><span>🗺️</span><span>BACK TO MAP</span></button>' +
                 '<button class="act-btn" onclick="app.countyRally()"><span>🎤</span><span>RALLY</span></button>' +
-                '<button class="act-btn" onclick="app.countySpeech()"><span>🎙️</span><span>SPEECH</span></button>' +
-                '<button class="act-btn" onclick="app.closeCountyView()"><span>🗺️</span><span>BACK TO MAP</span></button>';
+                '<button class="act-btn" onclick="app.countySpeech()" style="grid-column: 1 / -1;"><span>🎙️</span><span>SPEECH</span></button>';
         }
     },
     
