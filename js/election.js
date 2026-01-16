@@ -676,10 +676,14 @@ var Election = {
                         
                         // County IDs in SVG are like "c01001" where 01 is state FIPS
                         if (pathId && pathId.length >= 3 && pathId.charAt(0) === 'c') {
-                            var countyStateFips = pathId.substring(1, 3);
                             var fips = pathId.substring(1); // Remove the 'c' prefix
+                            var countyStateFips = fips.length === 5 ? fips.substring(0, 2) : fips.substring(0, 1);
                             
-                            if (countyStateFips === stateFips && Counties.countyData[fips]) {
+                            // Check if this county belongs to the state (handle both 1 and 2 digit state FIPS)
+                            var matchesState = (countyStateFips === stateFips) || 
+                                              (stateFips.length === 2 && countyStateFips === stateFips.charAt(1) && fips.length === 4);
+                            
+                            if (matchesState && Counties.countyData[fips]) {
                                 countyCount++;
                                 stateCountyPaths.push(path);
                                 path.style.display = 'block';
