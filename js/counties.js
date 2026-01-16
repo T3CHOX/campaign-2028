@@ -21,6 +21,16 @@ var Counties = {
                     // Initialize turnout
                     c.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
                 }
+                
+                // Initialize state margins from county data to ensure consistency
+                // This prevents the bug where first campaign action causes large margin shifts
+                // Defensive checks ensure globals are loaded (this runs in async callback)
+                if (typeof gameData !== 'undefined' && gameData.states && typeof STATES !== 'undefined') {
+                    for (var code in gameData.states) {
+                        Counties.updateStateFromCounties(code);
+                    }
+                }
+                
                 if (callback) callback();
             }
         };
