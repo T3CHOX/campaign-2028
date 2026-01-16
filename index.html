@@ -95,6 +95,12 @@
         <div class="panel-container">
             <h2 class="section-title">SELECT YOUR OPPONENTS</h2>
             <p class="opponent-instructions" id="opponent-instructions">Select the opposing ticket by clicking on candidates.  Selected candidates will have a colored border.</p>
+            <div style="margin: 15px 0; padding: 15px; background: #2a2a2a; border-radius: 8px; text-align: center;">
+                <label style="font-size: 1.1rem; color: #ccc; cursor: pointer;">
+                    <input type="checkbox" id="third-parties-toggle" onchange="gameData.thirdPartiesEnabled = this.checked;" style="margin-right: 8px; width: 18px; height: 18px; cursor: pointer; vertical-align: middle;">
+                    Include Third Parties in Election
+                </label>
+            </div>
             <div id="opponent-selection-container"></div>
             <button class="start-btn" id="start-campaign-btn" style="margin-top: 30px; opacity: 0.5;" disabled onclick="app.startGame()">START CAMPAIGN &rarr;</button>
             <button class="back-btn" onclick="app.goToScreen('vp-screen')">&larr; BACK TO VP SELECTION</button>

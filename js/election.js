@@ -96,8 +96,13 @@ var Election = {
 
                     var totalVotes = s.ev * 120000;
                     
-                    // Calculate realistic vote percentages including third parties
-                    var thirdPartyPct = 1.5 + (Math.random() * 1.5); // 1.5-3% for third parties
+                    // Calculate realistic vote percentages with improved accuracy
+                    // Use the pre-election margin with +/- 2.5% margin of error
+                    var marginOfError = (Math.random() - 0.5) * 5.0; // +/- 2.5%
+                    var adjustedMargin = s.margin + marginOfError;
+                    
+                    // Calculate third party percentage
+                    var thirdPartyPct = gameData.thirdPartiesEnabled ? (1.5 + (Math.random() * 1.5)) : 1.5;
                     
                     // Implement "red mirage" - Republicans do better early, Democrats catch up later
                     var reportingFactor = s.reportedPct / 100;
@@ -112,8 +117,17 @@ var Election = {
                     }
                     // After 80%, no red mirage effect
                     
-                    var demPct = 50 + s.margin + redMirageEffect + (Math.random() - 0.5) * 3;
-                    var repPct = 100 - demPct - thirdPartyPct;
+                    // At 100%, use the adjusted margin precisely (no red mirage)
+                    var effectiveMargin = (reportingFactor >= 0.99) ? adjustedMargin : (adjustedMargin + redMirageEffect);
+                    
+                    var demPct = 50 + (effectiveMargin / 2);
+                    var repPct = 50 - (effectiveMargin / 2);
+                    
+                    // Normalize with third party
+                    var totalPct = demPct + repPct + thirdPartyPct;
+                    demPct = (demPct / totalPct) * 100;
+                    repPct = (repPct / totalPct) * 100;
+                    thirdPartyPct = (thirdPartyPct / totalPct) * 100;
                     
                     // Adjust if negative
                     if (repPct < 0) {
@@ -130,10 +144,13 @@ var Election = {
                     s.reportedVotes.T = Math.floor(totalVotes * (thirdPartyPct / 100) * (s.reportedPct / 100));
                 }
 
-                // Call state at 100% reporting OR if margin is clear enough earlier
+                // Call state logic with "Delay" for close calls
                 if (!s.called) {
                     var total = s.reportedVotes.D + s.reportedVotes.R;
                     var currentMargin = total > 0 ? ((s.reportedVotes.D - s.reportedVotes.R) / total) * 100 : 0;
+                    
+                    // Check if it's a close call (< 1.0% margin)
+                    var isCloseCall = Math.abs(s.margin) < 1.0;
                     
                     // MUST call at 100% reporting
                     if (s.reportedPct >= 99.9) {
@@ -149,8 +166,22 @@ var Election = {
                         this.addFeedItem(s.name + ' called for ' + (s.calledFor === 'D' ? 'Democrats' : 'Republicans') + ' (' + s.ev + ' EV)');
                         this.addRaceCall(code, s.calledFor);
                     }
-                    // Can call earlier if margin is overwhelming
-                    else if (s.reportedPct >= 40) {
+                    // Close calls: Don't call until at least 95% reporting
+                    else if (isCloseCall && s.reportedPct >= 95) {
+                        s.called = true;
+                        s.calledFor = currentMargin > 0 ?  'D' :  'R';
+
+                        if (s.calledFor === 'D') {
+                            this.demEV += s.ev;
+                        } else {
+                            this.repEV += s.ev;
+                        }
+
+                        this.addFeedItem(s.name + ' called for ' + (s.calledFor === 'D' ? 'Democrats' : 'Republicans') + ' (' + s.ev + ' EV)');
+                        this.addRaceCall(code, s.calledFor);
+                    }
+                    // Can call earlier if margin is overwhelming (not close)
+                    else if (!isCloseCall && s.reportedPct >= 40) {
                         var threshold = 100 - s.reportedPct;
                         
                         if (Math.abs(currentMargin) > threshold + 8) {

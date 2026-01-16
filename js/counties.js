@@ -350,41 +350,60 @@ var Counties = {
     },
     
     // Update state-level margin from county data
+    // Calculates state's total Democratic, Republican, and Third Party votes
+    // by summing votes from EVERY county assigned to that state (using FIPS code prefix)
     updateStateFromCounties: function(stateCode) {
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
         if (!stateFips) return;
         
         var totalDemVotes = 0;
         var totalRepVotes = 0;
+        var totalThirdPartyVotes = 0;
         
+        // Sum ALL votes from every county in this state
         for (var fips in this.countyData) {
             // Normalize FIPS for comparison
             var normalizedFips = this.normalizeFips(fips);
             if (normalizedFips.substring(0, 2) === stateFips) {
                 var county = this.countyData[fips];
-                if (county.v && county.turnout) {
+                if (county.v) {
+                    // Initialize turnout if not present
+                    if (!county.turnout) {
+                        county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+                    }
+                    
                     // Use correct turnout for each party
                     var demTurnout = gameData.selectedParty === 'D' ? (county.turnout.player || 1.0) : (county.turnout.demOpponent || 1.0);
                     var repTurnout = gameData.selectedParty === 'R' ? (county.turnout.player || 1.0) : (county.turnout.repOpponent || 1.0);
+                    var thirdPartyTurnout = county.turnout.thirdParty || 0.7;
                     
                     var demVotes = (county.v.D || 0) * demTurnout;
                     var repVotes = (county.v.R || 0) * repTurnout;
+                    
+                    // Include Third Party votes (G, L, and O - Other)
+                    var thirdVotes = ((county.v.G || 0) + (county.v.L || 0) + (county.v.O || 0)) * thirdPartyTurnout;
+                    
                     totalDemVotes += demVotes;
                     totalRepVotes += repVotes;
+                    totalThirdPartyVotes += thirdVotes;
                 }
             }
         }
         
-        // Calculate new margin
-        var totalVotes = totalDemVotes + totalRepVotes;
+        // Calculate new margin derived directly from this sum
+        var totalVotes = totalDemVotes + totalRepVotes + totalThirdPartyVotes;
         if (totalVotes > 0) {
             var demPct = (totalDemVotes / totalVotes) * 100;
             var repPct = (totalRepVotes / totalVotes) * 100;
+            var thirdPct = (totalThirdPartyVotes / totalVotes) * 100;
             var newMargin = demPct - repPct;
             
-            // Update state margin
+            // Update state data
             if (gameData.states[stateCode]) {
                 gameData.states[stateCode].margin = newMargin;
+                gameData.states[stateCode].demPct = demPct;
+                gameData.states[stateCode].repPct = repPct;
+                gameData.states[stateCode].thirdPct = thirdPct;
             }
         }
     },

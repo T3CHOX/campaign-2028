@@ -135,6 +135,7 @@ var gameData = {
     pacEndorsements: [],
     lockedIssues: {},
     currentPacOffer: null,
+    thirdPartiesEnabled: false,  // Toggle for including third parties in election calculations
     // Interest group support tracking
     interestGroupSupport: {},  // Will store support % for each candidate per group
     interestGroupChanges: {}   // Will store last turn's changes for display
