@@ -24,6 +24,7 @@ var Counties = {
                 
                 // Initialize state margins from county data to ensure consistency
                 // This prevents the bug where first campaign action causes large margin shifts
+                // Defensive checks ensure globals are loaded (this runs in async callback)
                 if (typeof gameData !== 'undefined' && gameData.states && typeof STATES !== 'undefined') {
                     for (var code in gameData.states) {
                         Counties.updateStateFromCounties(code);
