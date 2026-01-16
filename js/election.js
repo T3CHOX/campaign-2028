@@ -96,8 +96,13 @@ var Election = {
 
                     var totalVotes = s.ev * 120000;
                     
-                    // Calculate realistic vote percentages including third parties
-                    var thirdPartyPct = 1.5 + (Math.random() * 1.5); // 1.5-3% for third parties
+                    // Calculate realistic vote percentages with improved accuracy
+                    // Use the pre-election margin with +/- 2.5 percentage point margin of error
+                    var marginOfError = (Math.random() - 0.5) * 5.0; // +/- 2.5 percentage points
+                    var adjustedMargin = s.margin + marginOfError;
+                    
+                    // Calculate third party percentage
+                    var thirdPartyPct = gameData.thirdPartiesEnabled ? (1.5 + (Math.random() * 1.5)) : 1.5;
                     
                     // Implement "red mirage" - Republicans do better early, Democrats catch up later
                     var reportingFactor = s.reportedPct / 100;
@@ -112,8 +117,17 @@ var Election = {
                     }
                     // After 80%, no red mirage effect
                     
-                    var demPct = 50 + s.margin + redMirageEffect + (Math.random() - 0.5) * 3;
-                    var repPct = 100 - demPct - thirdPartyPct;
+                    // At 100%, use the adjusted margin precisely (no red mirage)
+                    var effectiveMargin = (reportingFactor >= 0.99) ? adjustedMargin : (adjustedMargin + redMirageEffect);
+                    
+                    var demPct = 50 + (effectiveMargin / 2);
+                    var repPct = 50 - (effectiveMargin / 2);
+                    
+                    // Normalize with third party
+                    var totalPct = demPct + repPct + thirdPartyPct;
+                    demPct = (demPct / totalPct) * 100;
+                    repPct = (repPct / totalPct) * 100;
+                    thirdPartyPct = (thirdPartyPct / totalPct) * 100;
                     
                     // Adjust if negative
                     if (repPct < 0) {
@@ -130,10 +144,13 @@ var Election = {
                     s.reportedVotes.T = Math.floor(totalVotes * (thirdPartyPct / 100) * (s.reportedPct / 100));
                 }
 
-                // Call state at 100% reporting OR if margin is clear enough earlier
+                // Call state logic with "Delay" for close calls
                 if (!s.called) {
                     var total = s.reportedVotes.D + s.reportedVotes.R;
                     var currentMargin = total > 0 ? ((s.reportedVotes.D - s.reportedVotes.R) / total) * 100 : 0;
+                    
+                    // Check if it's a close call (< 1.0% margin)
+                    var isCloseCall = Math.abs(s.margin) < 1.0;
                     
                     // MUST call at 100% reporting
                     if (s.reportedPct >= 99.9) {
@@ -149,8 +166,22 @@ var Election = {
                         this.addFeedItem(s.name + ' called for ' + (s.calledFor === 'D' ? 'Democrats' : 'Republicans') + ' (' + s.ev + ' EV)');
                         this.addRaceCall(code, s.calledFor);
                     }
-                    // Can call earlier if margin is overwhelming
-                    else if (s.reportedPct >= 40) {
+                    // Close calls: Don't call until at least 95% reporting
+                    else if (isCloseCall && s.reportedPct >= 95) {
+                        s.called = true;
+                        s.calledFor = currentMargin > 0 ?  'D' :  'R';
+
+                        if (s.calledFor === 'D') {
+                            this.demEV += s.ev;
+                        } else {
+                            this.repEV += s.ev;
+                        }
+
+                        this.addFeedItem(s.name + ' called for ' + (s.calledFor === 'D' ? 'Democrats' : 'Republicans') + ' (' + s.ev + ' EV)');
+                        this.addRaceCall(code, s.calledFor);
+                    }
+                    // Can call earlier if margin is overwhelming (not close)
+                    else if (!isCloseCall && s.reportedPct >= 40) {
                         var threshold = 100 - s.reportedPct;
                         
                         if (Math.abs(currentMargin) > threshold + 8) {
@@ -529,6 +560,7 @@ var Election = {
         // Store the current state for the county view
         gameData.electionCountyViewState = stateCode;
         var state = gameData.states[stateCode];
+        var self = this;
         
         // Create a modal overlay for county results
         var overlay = document.getElementById('county-election-overlay');
@@ -540,8 +572,8 @@ var Election = {
             document.body.appendChild(overlay);
         }
         
-        // Build county results content
-        var html = '<div style="background: #1e1e1e; border: 2px solid #ffd700; border-radius: 10px; padding: 30px; max-width: 90%; max-height: 90%; overflow-y: auto;">';
+        // Build county results content with SVG map
+        var html = '<div style="background: #1e1e1e; border: 2px solid #ffd700; border-radius: 10px; padding: 30px; max-width: 95%; max-height: 95%; overflow-y: auto;">';
         html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #444; padding-bottom: 15px;">';
         html += '<h2 style="margin: 0; color: #ffd700;">' + state.name + ' - COUNTY RESULTS</h2>';
         html += '<button onclick="Election.closeCountyElectionView()" style="background: #444; border: none; color: white; padding: 8px 20px; cursor: pointer; border-radius: 4px; font-weight: bold;">CLOSE</button>';
@@ -566,90 +598,214 @@ var Election = {
         html += '</div>';
         html += '</div>';
         
-        // County-by-county breakdown
-        html += '<div style="background: #252525; padding: 15px; border-radius: 6px;">';
-        html += '<h3 style="margin: 0 0 15px 0; color: #ccc;">County Breakdown</h3>';
-        
-        if (typeof Counties !== 'undefined' && Counties.countyData) {
-            var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
-            
-            if (stateFips) {
-                var countyResults = [];
-                
-                for (var fips in Counties.countyData) {
-                    // Normalize FIPS for comparison
-                    var normalizedFips = Counties.normalizeFips(fips);
-                    if (normalizedFips.substring(0, 2) === stateFips) {
-                        var county = Counties.countyData[fips];
-                        if (county.v) {
-                            // Use turnout data if available (same as colorCountyMap)
-                            var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
-                            var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
-                            
-                            var demVotes = (county.v.D || 0) * demTurnout;
-                            var repVotes = (county.v.R || 0) * repTurnout;
-                            var countyTotal = demVotes + repVotes;
-                            
-                            if (countyTotal > 0) {
-                                var countyDemPct = (demVotes / countyTotal) * 100;
-                                var countyRepPct = (repVotes / countyTotal) * 100;
-                                var margin = countyDemPct - countyRepPct;
-                                
-                                // County reporting follows state average
-                                var reportingPct = state.reportedPct;
-                                
-                                countyResults.push({
-                                    fips: fips,
-                                    name: county.n || 'County',
-                                    demPct: countyDemPct,
-                                    repPct: countyRepPct,
-                                    margin: margin,
-                                    totalVotes: countyTotal,
-                                    reportingPct: reportingPct
-                                });
-                            }
-                        }
-                    }
-                }
-                
-                // Sort by largest margin
-                countyResults.sort(function(a, b) { return Math.abs(b.margin) - Math.abs(a.margin); });
-                
-                // Display top counties
-                for (var i = 0; i < Math.min(15, countyResults.length); i++) {
-                    var cr = countyResults[i];
-                    var leader = cr.margin > 0 ? 'D' : 'R';
-                    var leaderColor = leader === 'D' ? '#00AEF3' : '#E81B23';
-                    var marginText = (cr.margin > 0 ? 'D+' : 'R+') + Math.abs(cr.margin).toFixed(1);
-                    
-                    // Use data attribute to avoid XSS risk with onclick
-                    html += '<div class="county-row" data-fips="' + cr.fips + '" style="padding: 8px; margin: 5px 0; background: #1a1a1a; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">';
-                    html += '<span style="color: #ccc;">' + cr.name + '</span>';
-                    html += '<div style="display: flex; gap: 15px; align-items: center;">';
-                    html += '<span style="color: #666; font-size: 0.85rem;">' + Math.floor(cr.reportingPct) + '%</span>';
-                    html += '<span style="color: ' + leaderColor + '; font-weight: bold;">' + marginText + '</span>';
-                    html += '</div>';
-                    html += '</div>';
-                }
-                
-                if (countyResults.length > 15) {
-                    html += '<div style="text-align: center; color: #666; margin-top: 10px; font-size: 0.9rem;">+ ' + (countyResults.length - 15) + ' more counties</div>';
-                }
-            } else {
-                html += '<div style="text-align: center; color: #666;">County data not available</div>';
-            }
-        } else {
-            html += '<div style="text-align: center; color: #666;">County data not available</div>';
-        }
-        
+        // Interactive County SVG Map
+        html += '<div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 20px;">';
+        html += '<h3 style="margin: 0 0 15px 0; color: #ccc;">Interactive County Map</h3>';
+        html += '<div id="county-election-map-wrapper" style="width: 100%; height: 500px; display: flex; justify-content: center; align-items: center; background: #1a1a1a; border-radius: 4px;">';
+        html += '<div style="color: #888;">Loading county map...</div>';
         html += '</div>';
+        html += '</div>';
+        
         html += '</div>';
         
         overlay.innerHTML = html;
         overlay.style.display = 'flex';
         
-        // Add event listeners to county rows after rendering
-        var countyRows = overlay.querySelectorAll('.county-row');
+        // Load county SVG map for the state
+        setTimeout(function() {
+            self.loadCountyElectionMap(stateCode);
+        }, 100);
+    },
+    
+    loadCountyElectionMap: function(stateCode) {
+        var self = this;
+        var wrapper = document.getElementById('county-election-map-wrapper');
+        if (!wrapper) return;
+        
+        var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
+        if (!stateFips) {
+            wrapper.innerHTML = '<div style="color: #888;">No county map available for this state</div>';
+            return;
+        }
+        
+        // Try to load state-specific county map
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'counties/maps/' + stateCode.toLowerCase() + '.svg', true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    var parser = new DOMParser();
+                    var svgDoc = parser.parseFromString(xhr.responseText, 'image/svg+xml');
+                    var svg = svgDoc.querySelector('svg');
+                    
+                    if (svg) {
+                        svg.id = 'county-election-map-svg';
+                        svg.style.width = '100%';
+                        svg.style.height = '100%';
+                        
+                        // Color counties based on reportedVotes
+                        var paths = svg.querySelectorAll('path');
+                        for (var i = 0; i < paths.length; i++) {
+                            var path = paths[i];
+                            var countyFips = path.id;
+                            
+                            if (countyFips && Counties.countyData[countyFips]) {
+                                self.colorCountyPath(path, countyFips, stateCode);
+                                
+                                // Add click handler
+                                path.style.cursor = 'pointer';
+                                path.style.stroke = '#333';
+                                path.style.strokeWidth = '1';
+                                
+                                (function(fips) {
+                                    path.onclick = function() {
+                                        Election.showCountyDetail(fips);
+                                    };
+                                })(countyFips);
+                            }
+                        }
+                        
+                        wrapper.innerHTML = '';
+                        wrapper.appendChild(svg);
+                        
+                        // Set up real-time updates
+                        self.countyMapUpdateInterval = setInterval(function() {
+                            if (!document.getElementById('county-election-map-svg')) {
+                                clearInterval(self.countyMapUpdateInterval);
+                                return;
+                            }
+                            self.updateCountyElectionMap(stateCode);
+                        }, 500);
+                    } else {
+                        wrapper.innerHTML = '<div style="color: #888;">County map could not be loaded</div>';
+                    }
+                } else {
+                    // Fallback: show list view if SVG not found
+                    wrapper.innerHTML = '<div style="color: #888;">County map not available - showing list view</div>';
+                    self.renderCountyListFallback(stateCode);
+                }
+            }
+        };
+        xhr.send();
+    },
+    
+    colorCountyPath: function(path, countyFips, stateCode) {
+        var state = gameData.states[stateCode];
+        var county = Counties.countyData[countyFips];
+        
+        if (!county || !county.v) {
+            path.style.fill = '#333333';
+            return;
+        }
+        
+        // Use turnout data
+        var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
+        var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
+        
+        // Calculate votes with state reporting percentage applied
+        var reportingFactor = (state.reportedPct || 0) / 100;
+        var demVotes = (county.v.D || 0) * demTurnout * reportingFactor;
+        var repVotes = (county.v.R || 0) * repTurnout * reportingFactor;
+        var countyTotal = demVotes + repVotes;
+        
+        if (countyTotal > 0) {
+            var countyDemPct = (demVotes / countyTotal) * 100;
+            var countyRepPct = (repVotes / countyTotal) * 100;
+            var margin = countyDemPct - countyRepPct;
+            
+            // Use Utils.getMarginColor to color the county
+            path.style.fill = Utils.getMarginColor(margin);
+        } else {
+            path.style.fill = '#333333';
+        }
+    },
+    
+    updateCountyElectionMap: function(stateCode) {
+        var svg = document.getElementById('county-election-map-svg');
+        if (!svg) return;
+        
+        var paths = svg.querySelectorAll('path');
+        for (var i = 0; i < paths.length; i++) {
+            var path = paths[i];
+            var countyFips = path.id;
+            
+            if (countyFips && Counties.countyData[countyFips]) {
+                this.colorCountyPath(path, countyFips, stateCode);
+            }
+        }
+    },
+    
+    renderCountyListFallback: function(stateCode) {
+        var state = gameData.states[stateCode];
+        var wrapper = document.getElementById('county-election-map-wrapper');
+        if (!wrapper) return;
+        
+        var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
+        if (!stateFips) return;
+        
+        var html = '<div style="width: 100%; max-height: 450px; overflow-y: auto; padding: 10px;">';
+        
+        if (typeof Counties !== 'undefined' && Counties.countyData) {
+            var countyResults = [];
+            
+            for (var fips in Counties.countyData) {
+                var normalizedFips = Counties.normalizeFips(fips);
+                if (normalizedFips.substring(0, 2) === stateFips) {
+                    var county = Counties.countyData[fips];
+                    if (county.v) {
+                        var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
+                        var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
+                        
+                        var demVotes = (county.v.D || 0) * demTurnout;
+                        var repVotes = (county.v.R || 0) * repTurnout;
+                        var countyTotal = demVotes + repVotes;
+                        
+                        if (countyTotal > 0) {
+                            var countyDemPct = (demVotes / countyTotal) * 100;
+                            var countyRepPct = (repVotes / countyTotal) * 100;
+                            var margin = countyDemPct - countyRepPct;
+                            
+                            countyResults.push({
+                                fips: fips,
+                                name: county.n || 'County',
+                                demPct: countyDemPct,
+                                repPct: countyRepPct,
+                                margin: margin,
+                                totalVotes: countyTotal,
+                                reportingPct: state.reportedPct
+                            });
+                        }
+                    }
+                }
+            }
+            
+            countyResults.sort(function(a, b) { return Math.abs(b.margin) - Math.abs(a.margin); });
+            
+            for (var i = 0; i < Math.min(20, countyResults.length); i++) {
+                var cr = countyResults[i];
+                var leader = cr.margin > 0 ? 'D' : 'R';
+                var leaderColor = leader === 'D' ? '#00AEF3' : '#E81B23';
+                var marginText = (cr.margin > 0 ? 'D+' : 'R+') + Math.abs(cr.margin).toFixed(1);
+                
+                html += '<div class="county-row" data-fips="' + cr.fips + '" style="padding: 8px; margin: 5px 0; background: #1a1a1a; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">';
+                html += '<span style="color: #ccc;">' + cr.name + '</span>';
+                html += '<div style="display: flex; gap: 15px; align-items: center;">';
+                html += '<span style="color: #666; font-size: 0.85rem;">' + Math.floor(cr.reportingPct) + '%</span>';
+                html += '<span style="color: ' + leaderColor + '; font-weight: bold;">' + marginText + '</span>';
+                html += '</div>';
+                html += '</div>';
+            }
+            
+            if (countyResults.length > 20) {
+                html += '<div style="text-align: center; color: #666; margin-top: 10px; font-size: 0.9rem;">+ ' + (countyResults.length - 20) + ' more counties</div>';
+            }
+        }
+        
+        html += '</div>';
+        wrapper.innerHTML = html;
+        
+        // Add event listeners
+        var countyRows = wrapper.querySelectorAll('.county-row');
         for (var i = 0; i < countyRows.length; i++) {
             countyRows[i].addEventListener('click', function() {
                 var fips = this.getAttribute('data-fips');
@@ -662,6 +818,11 @@ var Election = {
         var overlay = document.getElementById('county-election-overlay');
         if (overlay) {
             overlay.style.display = 'none';
+        }
+        // Clear the update interval
+        if (this.countyMapUpdateInterval) {
+            clearInterval(this.countyMapUpdateInterval);
+            this.countyMapUpdateInterval = null;
         }
     },
     

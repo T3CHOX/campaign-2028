@@ -417,6 +417,9 @@ var Campaign = {
         gameData.currentDate.setDate(gameData.currentDate.getDate() + 7);
         gameData.energy = gameData.maxEnergy;
         
+        // Process undecided voters
+        this.processUndecidedVoters();
+        
         // Random chance for PAC offer
         if (Math.random() < GAME_CONSTANTS.PAC_OFFER_CHANCE && typeof app.triggerPacOffer !== 'undefined') {
             setTimeout(function() {
@@ -436,6 +439,91 @@ var Campaign = {
         this.updateHUD();
         Utils.addLog("Week advanced - " + gameData.currentDate.toLocaleDateString());
         Utils.showToast("Week advanced!");
+    },
+    
+    processUndecidedVoters: function() {
+        if (typeof Counties === 'undefined' || !Counties.countyData) return;
+        
+        var isElectionDay = gameData.currentDate >= gameData.electionDay;
+        
+        for (var fips in Counties.countyData) {
+            var county = Counties.countyData[fips];
+            
+            if (!county.undecided || county.undecided <= 0) continue;
+            
+            var undecidedPool = county.undecided;
+            var reductionRate;
+            
+            if (isElectionDay) {
+                // On Election Day, distribute ALL remaining undecided 50/50
+                reductionRate = 1.0;
+            } else {
+                // Each week: reduce by 10-15%
+                reductionRate = 0.10 + Math.random() * 0.05;
+            }
+            
+            var decidingVoters = undecidedPool * reductionRate;
+            
+            if (isElectionDay) {
+                // Split 50/50 between D and R on Election Day
+                var demShare = decidingVoters * 0.5;
+                var repShare = decidingVoters * 0.5;
+                
+                county.v.D = (county.v.D || 0) + demShare;
+                county.v.R = (county.v.R || 0) + repShare;
+            } else {
+                // Get state code from FIPS prefix
+                var normalizedFips = Counties.normalizeFips(fips);
+                var stateFips = normalizedFips.substring(0, 2);
+                var stateCode = null;
+                
+                for (var code in STATES) {
+                    if (STATES[code].fips === stateFips) {
+                        stateCode = code;
+                        break;
+                    }
+                }
+                
+                if (stateCode && gameData.states[stateCode]) {
+                    var stateMargin = gameData.states[stateCode].margin;
+                    
+                    // Add random variance (+/- 5 percentage points)
+                    var variance = (Math.random() - 0.5) * 10;
+                    var adjustedMargin = stateMargin + variance;
+                    
+                    // Convert margin to percentage splits
+                    // Margin is D% - R%, we need to distribute based on this
+                    var demPct = 50 + (adjustedMargin / 2);
+                    var repPct = 50 - (adjustedMargin / 2);
+                    
+                    // Ensure valid percentages
+                    demPct = Math.max(0, Math.min(100, demPct));
+                    repPct = Math.max(0, Math.min(100, repPct));
+                    
+                    // If clamping changed the values, normalize to sum to 100
+                    var total = demPct + repPct;
+                    if (total !== 100) {
+                        demPct = (demPct / total) * 100;
+                        repPct = (repPct / total) * 100;
+                    }
+                    
+                    // Distribute deciding voters
+                    var demShare = decidingVoters * (demPct / 100);
+                    var repShare = decidingVoters * (repPct / 100);
+                    
+                    county.v.D = (county.v.D || 0) + demShare;
+                    county.v.R = (county.v.R || 0) + repShare;
+                }
+            }
+            
+            // Reduce undecided pool
+            county.undecided = Math.max(0, undecidedPool - decidingVoters);
+        }
+        
+        // Update all state margins after processing undecided voters
+        for (var code in gameData.states) {
+            Counties.updateStateFromCounties(code);
+        }
     },
 
     opponentTurn: function() {
