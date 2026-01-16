@@ -376,7 +376,7 @@ var Counties = {
             var normalizedFips = this.normalizeFips(fips);
             if (normalizedFips.substring(0, 2) === stateFips) {
                 var county = this.countyData[fips];
-                if (county.v) {
+                if (county.v && county.p) {
                     // Initialize turnout if not present
                     if (!county.turnout) {
                         county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
@@ -387,11 +387,13 @@ var Counties = {
                     var repTurnout = gameData.selectedParty === 'R' ? (county.turnout.player || 1.0) : (county.turnout.repOpponent || 1.0);
                     var thirdPartyTurnout = county.turnout.thirdParty || 0.7;
                     
-                    var demVotes = (county.v.D || 0) * demTurnout;
-                    var repVotes = (county.v.R || 0) * repTurnout;
+                    // FIX: county.v contains PERCENTAGES, not vote counts!
+                    // Must multiply by population to get actual vote counts
+                    var demVotes = (county.v.D || 0) * county.p / 100 * demTurnout;
+                    var repVotes = (county.v.R || 0) * county.p / 100 * repTurnout;
                     
                     // Include Third Party votes (G, L, and O - Other)
-                    var thirdVotes = ((county.v.G || 0) + (county.v.L || 0) + (county.v.O || 0)) * thirdPartyTurnout;
+                    var thirdVotes = ((county.v.G || 0) + (county.v.L || 0) + (county.v.O || 0)) * county.p / 100 * thirdPartyTurnout;
                     
                     totalDemVotes += demVotes;
                     totalRepVotes += repVotes;
