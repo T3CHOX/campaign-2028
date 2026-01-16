@@ -97,8 +97,8 @@ var Election = {
                     var totalVotes = s.ev * 120000;
                     
                     // Calculate realistic vote percentages with improved accuracy
-                    // Use the pre-election margin with +/- 2.5% margin of error
-                    var marginOfError = (Math.random() - 0.5) * 5.0; // +/- 2.5%
+                    // Use the pre-election margin with +/- 2.5 percentage point margin of error
+                    var marginOfError = (Math.random() - 0.5) * 5.0; // +/- 2.5 percentage points
                     var adjustedMargin = s.margin + marginOfError;
                     
                     // Calculate third party percentage

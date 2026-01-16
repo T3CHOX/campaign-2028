@@ -487,7 +487,7 @@ var Campaign = {
                 if (stateCode && gameData.states[stateCode]) {
                     var stateMargin = gameData.states[stateCode].margin;
                     
-                    // Add random variance (+/- 5 points)
+                    // Add random variance (+/- 5 percentage points)
                     var variance = (Math.random() - 0.5) * 10;
                     var adjustedMargin = stateMargin + variance;
                     
@@ -500,10 +500,12 @@ var Campaign = {
                     demPct = Math.max(0, Math.min(100, demPct));
                     repPct = Math.max(0, Math.min(100, repPct));
                     
-                    // Normalize to sum to 100
+                    // If clamping changed the values, normalize to sum to 100
                     var total = demPct + repPct;
-                    demPct = (demPct / total) * 100;
-                    repPct = (repPct / total) * 100;
+                    if (total !== 100) {
+                        demPct = (demPct / total) * 100;
+                        repPct = (repPct / total) * 100;
+                    }
                     
                     // Distribute deciding voters
                     var demShare = decidingVoters * (demPct / 100);
