@@ -24,6 +24,8 @@ var Campaign = {
         // Load county data first
         Counties.loadCountyData(function() {
             console.log('County data loaded');
+            // Update map colors after county data initializes state margins
+            Campaign.colorMap();
         });
         
         var xhr = new XMLHttpRequest();
