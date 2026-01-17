@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIPS Normalization Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+        }
+        .pass { color: green; }
+        .fail { color: red; }
+    </style>
+</head>
+<body>
+    <h1>FIPS Normalization Test</h1>
+    <div id="results"></div>
+
+    <script>
+        // Copy the normalizeFips function from counties.js
+        function normalizeFips(fips) {
+            if (!fips) return fips;
+            return String(parseInt(fips, 10));
+        }
+
+        // Test cases
+        const testCases = [
+            { input: "01001", expected: "1001", desc: "Alabama county" },
+            { input: "04013", expected: "4013", desc: "Arizona - Maricopa" },
+            { input: "04019", expected: "4019", desc: "Arizona - Pima" },
+            { input: "06037", expected: "6037", desc: "California - LA" },
+            { input: "10001", expected: "10001", desc: "Delaware county" },
+            { input: "1001", expected: "1001", desc: "Already normalized" },
+        ];
+
+        // Run tests
+        let resultsHtml = '<h2>normalizeFips() Tests</h2>';
+        let passCount = 0;
+        let failCount = 0;
+
+        testCases.forEach(test => {
+            const result = normalizeFips(test.input);
+            const passed = result === test.expected;
+            
+            if (passed) {
+                passCount++;
+                resultsHtml += `<div class="test-result pass">✓ ${test.desc}: "${test.input}" → "${result}"</div>`;
+            } else {
+                failCount++;
+                resultsHtml += `<div class="test-result fail">✗ ${test.desc}: "${test.input}" → "${result}" (expected: "${test.expected}")</div>`;
+            }
+        });
+
+        // Test padding for SVG IDs
+        resultsHtml += '<h2>Padding for SVG IDs</h2>';
+        resultsHtml += '<p>SVG IDs need 5-digit FIPS codes (e.g., "c04013")</p>';
+        
+        const paddingTests = ["1001", "4013", "10001", "6037"];
+        paddingTests.forEach(fips => {
+            const padded = fips.padStart(5, '0');
+            const svgId = 'c' + padded;
+            resultsHtml += `<div class="test-result">FIPS "${fips}" → SVG ID "${svgId}"</div>`;
+        });
+
+        // Display summary
+        resultsHtml = `<p><strong>Summary:</strong> ${passCount} passed, ${failCount} failed</p>` + resultsHtml;
+        document.getElementById('results').innerHTML = resultsHtml;
+
+        // Log to console
+        console.log(`Test Results: ${passCount}/${testCases.length} passed`);
+    </script>
+</body>
+</html>
