@@ -122,7 +122,7 @@ var Election = {
                                     var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
                                     var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
                                     
-                                    // Add margin of error (2-3%) - only calculated once at 100%
+                                    // Add margin of error (-3% to +3%) - only calculated once at 100%
                                     if (!county.marginOfError) {
                                         county.marginOfError = (Math.random() - 0.5) * 6; // -3% to +3%
                                     }

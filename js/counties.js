@@ -28,7 +28,7 @@ var Counties = {
                     };
                     
                     // Initialize undecided percentage (15% of population)
-                    c.undecided = c.undecided || 15.0;
+                    c.undecided = (c.undecided !== undefined) ? c.undecided : 15.0;
                     
                     // Apply third-party toggle logic
                     Counties.applyThirdPartyToggle(c);
