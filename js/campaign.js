@@ -227,17 +227,52 @@ var Campaign = {
                 return;
             }
             
-            // State-level rally
+            // State-level rally - now affects ALL counties in the state
             if (gameData.energy < 2) return Utils.showToast("Need 2 energy for rally!");
             if (gameData.funds < 1) return Utils.showToast("Need $1M for rally!");
-            effect = 1 + Math.random() * 2;
+            
             cost.energy = 2;
             cost.funds = 1;
             s.rallies = (s.rallies || 0) + 1;
             s.visited = true;
             s.lastCampaignDate = new Date(gameData.currentDate);
             s.campaignActionsCount = (s.campaignActionsCount || 0) + 1;
-            message = 'Rally in ' + s.name + '! +' + effect.toFixed(1) + ' points';
+            
+            // Apply rally boost to ALL counties in the state
+            if (typeof Counties !== 'undefined' && Counties.countyData) {
+                var stateFips = STATES[gameData.selectedState] ? STATES[gameData.selectedState].fips : null;
+                if (stateFips) {
+                    var totalBoost = 0;
+                    var countyCount = 0;
+                    
+                    for (var fips in Counties.countyData) {
+                        var normalizedFips = Counties.normalizeFips(fips);
+                        if (normalizedFips.substring(0, 2) === stateFips) {
+                            var county = Counties.countyData[fips];
+                            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+                            
+                            // Rally gives 3-8% turnout boost per county
+                            var countyRallyBoost = 0.03 + Math.random() * 0.05;
+                            totalBoost += countyRallyBoost;
+                            countyCount++;
+                            
+                            if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
+                                county.turnout.player = Math.min(1.3, (county.turnout.player || 1.0) + countyRallyBoost);
+                            } else {
+                                county.turnout.thirdParty = Math.min(1.3, (county.turnout.thirdParty || 0.7) + (countyRallyBoost * 0.5));
+                            }
+                        }
+                    }
+                    
+                    // Calculate average effect for display
+                    effect = countyCount > 0 ? (totalBoost / countyCount) * 100 : 2.0;
+                    
+                    // Update state margin from county data
+                    Counties.updateStateFromCounties(gameData.selectedState);
+                }
+            }
+            
+            message = 'Rally in ' + s.name + '! +' + effect.toFixed(1) + '% turnout boost';
         } else if (action === 'ad') {
             if (gameData.funds < 3) return Utils.showToast("Need $3M for ad blitz!");
             effect = 0.5 + Math.random() * 1.5;
@@ -254,7 +289,8 @@ var Campaign = {
                     var countyAdBoost = 0.005 + Math.random() * 0.005;
                     
                     for (var fips in Counties.countyData) {
-                        if (fips.substring(0, 2) === stateFips) {
+                        var normalizedFips = Counties.normalizeFips(fips);
+                        if (normalizedFips.substring(0, 2) === stateFips) {
                             var county = Counties.countyData[fips];
                             if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
                             
@@ -280,13 +316,8 @@ var Campaign = {
         gameData.energy -= cost.energy;
         gameData.funds -= cost.funds;
         
-        if (gameData.selectedParty === 'D') {
-            s.margin += effect;
-        } else if (gameData.selectedParty === 'R') {
-            s.margin += effect;  // Fixed: Republicans should ADD positive effect
-        } else {
-            s.margin += effect * 0.3;
-        }
+        // Note: Rally and Ad actions now update state margins from county data
+        // Only fundraise action doesn't affect counties, so no margin update needed
         
         Utils.addLog(message);
         this.updateHUD();
@@ -321,7 +352,7 @@ var Campaign = {
         var baseEffect = 0.5 + Math.random() * 1.0;
         var effect = baseEffect * (0.5 + alignment); // 0.5x to 1.5x multiplier
         
-        // Apply turnout boost (stored for turnout calculations)
+        // Apply turnout boost to counties based on issue alignment
         if (!s.turnoutBoosts) s.turnoutBoosts = {};
         s.turnoutBoosts[issueId] = (s.turnoutBoosts[issueId] || 0) + (alignment * 0.1);
         
@@ -333,12 +364,30 @@ var Campaign = {
         
         var issueName = CORE_ISSUES.find(function(i) { return i.id === issueId; }).name;
         
-        if (gameData.selectedParty === 'D') {
-            s.margin += effect;
-        } else if (gameData.selectedParty === 'R') {
-            s.margin -= effect;
-        } else {
-            s.margin += effect * 0.3;
+        // Apply speech effect to ALL counties in the state
+        if (typeof Counties !== 'undefined' && Counties.countyData) {
+            var stateFips = STATES[gameData.selectedState] ? STATES[gameData.selectedState].fips : null;
+            if (stateFips) {
+                for (var fips in Counties.countyData) {
+                    var normalizedFips = Counties.normalizeFips(fips);
+                    if (normalizedFips.substring(0, 2) === stateFips) {
+                        var county = Counties.countyData[fips];
+                        if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+                        
+                        // Speech gives smaller turnout boost (0.5-1.5% per county based on alignment)
+                        var countySpeechBoost = (effect / 100) * (0.5 + alignment * 0.5);
+                        
+                        if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
+                            county.turnout.player = Math.min(1.3, (county.turnout.player || 1.0) + countySpeechBoost);
+                        } else {
+                            county.turnout.thirdParty = Math.min(1.3, (county.turnout.thirdParty || 0.7) + (countySpeechBoost * 0.5));
+                        }
+                    }
+                }
+                
+                // Update state margin from county data
+                Counties.updateStateFromCounties(gameData.selectedState);
+            }
         }
         
         var alignmentText = alignment > 0.7 ? 'Great' : (alignment > 0.4 ? 'Good' : 'Modest');
