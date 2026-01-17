@@ -86,8 +86,25 @@ var Election = {
                             var county = Counties.countyData[fips];
                             
                             if (county.reportedPct < 100) {
-                                // Each county reports independently with slight randomness
-                                var increment = (Math.random() * 1.5 + 0.3) * this.speed * (s.countSpeed || 1.0);
+                                // Base reporting rate with randomness
+                                var baseIncrement = (Math.random() * 1.5 + 0.3) * this.speed * (s.countSpeed || 1.0);
+                                
+                                // CATCH-UP LOGIC: Force completion as time progresses
+                                var catchUpMultiplier = 1.0;
+                                if (this.time > 24) {
+                                    // After 6.5 hours (11:30 PM), accelerate slow counties
+                                    catchUpMultiplier = 1.5;
+                                }
+                                if (this.time > 25) {
+                                    // After 7.5 hours (12:30 AM), accelerate more
+                                    catchUpMultiplier = 3.0;
+                                }
+                                if (this.time > 26) {
+                                    // After 8.5 hours (1:30 AM), force completion
+                                    catchUpMultiplier = 10.0;
+                                }
+                                
+                                var increment = baseIncrement * catchUpMultiplier;
                                 county.reportedPct = Math.min(100, county.reportedPct + increment);
                                 
                                 // Force to 100% if very close
@@ -95,20 +112,31 @@ var Election = {
                                     county.reportedPct = 100;
                                 }
                                 
-                                // Force completion after very long time
-                                if (this.time > 26 && county.reportedPct < 100) {
+                                // GUARANTEE 100%: Force completion after extended time
+                                if (this.time > 27) {
                                     county.reportedPct = 100;
                                 }
                                 
-                                // Calculate county reported votes based on base votes and turnout
+                                // Calculate county reported votes with margin of error
                                 if (county.v) {
                                     var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
                                     var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
                                     
+                                    // Add margin of error (2-3%) - only calculated once at 100%
+                                    if (!county.marginOfError) {
+                                        county.marginOfError = (Math.random() - 0.5) * 6; // -3% to +3%
+                                    }
+                                    
                                     var reportingFactor = county.reportedPct / 100;
-                                    county.reportedVotes.D = Math.floor((county.v.D || 0) * demTurnout * reportingFactor);
-                                    county.reportedVotes.R = Math.floor((county.v.R || 0) * repTurnout * reportingFactor);
-                                    county.reportedVotes.T = 0; // Third party votes minimal at county level
+                                    var errorFactor = 1.0 + (county.marginOfError / 100);
+                                    
+                                    // Calculate undecided-adjusted percentages
+                                    var undecidedPct = county.undecided || 0;
+                                    var decidedMultiplier = (100 - undecidedPct) / 100;
+                                    
+                                    county.reportedVotes.D = Math.floor((county.v.D || 0) * county.p / 100 * decidedMultiplier * demTurnout * reportingFactor * errorFactor);
+                                    county.reportedVotes.R = Math.floor((county.v.R || 0) * county.p / 100 * decidedMultiplier * repTurnout * reportingFactor * errorFactor);
+                                    county.reportedVotes.T = 0; // Third party votes minimal at county level for simplicity
                                 }
                             }
                         }
@@ -143,6 +171,8 @@ var Election = {
                 var total = s.reportedVotes.D + s.reportedVotes.R;
                 var currentMargin = total > 0 ? ((s.reportedVotes.D - s.reportedVotes.R) / total) * 100 : 0;
                 
+                // Check if it's a VERY close call (< 0.5% margin per requirements)
+                var isVeryCloseCall = Math.abs(s.margin) < 0.5;
                 // Check if it's a close call (< 1.0% margin)
                 var isCloseCall = Math.abs(s.margin) < 1.0;
                 
@@ -160,8 +190,22 @@ var Election = {
                     this.addFeedItem(s.name + ' called for ' + (s.calledFor === 'D' ? 'Democrats' : 'Republicans') + ' (' + s.ev + ' EV)');
                     this.addRaceCall(code, s.calledFor);
                 }
-                // Close calls: Don't call until at least 95% reporting
-                else if (isCloseCall && s.reportedPct >= 95) {
+                // VERY close calls (< 0.5%): Don't call until at least 98% reporting
+                else if (isVeryCloseCall && s.reportedPct >= 98) {
+                    s.called = true;
+                    s.calledFor = currentMargin > 0 ?  'D' :  'R';
+
+                    if (s.calledFor === 'D') {
+                        this.demEV += s.ev;
+                    } else {
+                        this.repEV += s.ev;
+                    }
+
+                    this.addFeedItem(s.name + ' called for ' + (s.calledFor === 'D' ? 'Democrats' : 'Republicans') + ' (' + s.ev + ' EV) [EXTREMELY CLOSE]');
+                    this.addRaceCall(code, s.calledFor);
+                }
+                // Close calls (0.5-1.0%): Don't call until at least 95% reporting
+                else if (isCloseCall && !isVeryCloseCall && s.reportedPct >= 95) {
                     s.called = true;
                     s.calledFor = currentMargin > 0 ?  'D' :  'R';
 

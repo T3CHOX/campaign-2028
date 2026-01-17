@@ -3,13 +3,14 @@
    ============================================ */
 
 function initGameData() {
+    // Initialize states WITHOUT standalone margins - will be calculated from counties
     for (var code in STATES) {
         gameData.states[code] = {
             name: STATES[code].name,
             ev: STATES[code].ev,
-            lean: STATES[code].lean,
+            lean: STATES[code].lean, // Keep for reference but don't use for margin
             code: code,
-            margin: STATES[code].lean + (Math.random() - 0.5) * 10,
+            margin: 0, // Will be calculated from counties
             visited: false,
             adSpent: 0,
             rallies: 0,
@@ -61,10 +62,83 @@ function startGame() {
     // Initialize interest group support for all candidates
     initializeInterestGroupSupport();
     
+    // Apply candidate and VP buffs to county data BEFORE showing the map
+    applyCandidateBuffs();
+    
     Screens.goTo('game-screen');
     Campaign.initMap();
     Campaign.updateHUD();
     Utils.addLog("Campaign begins!  Good luck, " + gameData.candidate.name + "!");
+}
+
+// Apply candidate and VP buffs/debuffs to county data
+function applyCandidateBuffs() {
+    if (typeof Counties === 'undefined' || !Counties.countyData) {
+        console.warn('County data not loaded, skipping buff application');
+        return;
+    }
+    
+    // Apply buffs for all candidates based on their characteristics
+    // This modifies county vote percentages based on candidate appeal
+    
+    // Home State Advantage - VP gives 5-10% boost in their home state
+    if (gameData.vp && gameData.vp.state) {
+        var vpStateCode = gameData.vp.state;
+        var vpStateFips = STATES[vpStateCode] ? STATES[vpStateCode].fips : null;
+        
+        if (vpStateFips) {
+            for (var fips in Counties.countyData) {
+                var normalizedFips = Counties.normalizeFips(fips);
+                if (normalizedFips.substring(0, 2) === vpStateFips) {
+                    var county = Counties.countyData[fips];
+                    var boost = 5 + Math.random() * 5; // 5-10% boost
+                    
+                    if (gameData.selectedParty === 'D') {
+                        county.v.D = Math.min(100, county.v.D + boost);
+                        county.v.R = Math.max(0, county.v.R - boost / 2);
+                    } else if (gameData.selectedParty === 'R') {
+                        county.v.R = Math.min(100, county.v.R + boost);
+                        county.v.D = Math.max(0, county.v.D - boost / 2);
+                    }
+                }
+            }
+        }
+    }
+    
+    // Midwest Appeal (for candidates like Whitmer) - boost in Midwest states
+    if (gameData.candidate && gameData.candidate.buff === "Midwest Appeal") {
+        var midwestStates = ['MI', 'WI', 'MN', 'OH', 'IL', 'IN', 'IA', 'MO'];
+        for (var i = 0; i < midwestStates.length; i++) {
+            var stateCode = midwestStates[i];
+            var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
+            if (stateFips) {
+                for (var fips in Counties.countyData) {
+                    var normalizedFips = Counties.normalizeFips(fips);
+                    if (normalizedFips.substring(0, 2) === stateFips) {
+                        var county = Counties.countyData[fips];
+                        var boost = 2 + Math.random() * 3; // 2-5% boost
+                        
+                        if (gameData.selectedParty === 'D') {
+                            county.v.D = Math.min(100, county.v.D + boost);
+                            county.v.R = Math.max(0, county.v.R - boost / 2);
+                        } else if (gameData.selectedParty === 'R') {
+                            county.v.R = Math.min(100, county.v.R + boost);
+                            county.v.D = Math.max(0, county.v.D - boost / 2);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // After applying all buffs, calculate state margins from county data
+    for (var code in gameData.states) {
+        if (typeof Counties !== 'undefined') {
+            Counties.updateStateFromCounties(code);
+        }
+    }
+    
+    console.log('✓ Candidate buffs applied and state margins calculated from counties');
 }
 
 // Initialize interest group support percentages for all candidates

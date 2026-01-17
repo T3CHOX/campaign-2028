@@ -13,12 +13,27 @@ var Counties = {
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 Counties.countyData = JSON.parse(xhr.responseText);
-                // Reduce base votes slightly for early-game lower turnout
+                
+                // Initialize each county with undecided voters and proper baseline
                 for (var fips in Counties.countyData) {
                     var c = Counties.countyData[fips];
-                    if (c.v && c.v.D) c.v.D *= 0.9;
-                    if (c.v && c.v.R) c.v.R *= 0.9;
-                    // Initialize turnout
+                    
+                    // Store original values for reference
+                    c.originalV = {
+                        D: c.v.D,
+                        R: c.v.R,
+                        G: c.v.G || 0,
+                        L: c.v.L || 0,
+                        O: c.v.O || 0
+                    };
+                    
+                    // Initialize undecided percentage (15% of population)
+                    c.undecided = c.undecided || 15.0;
+                    
+                    // Apply third-party toggle logic
+                    Counties.applyThirdPartyToggle(c);
+                    
+                    // Initialize turnout multipliers
                     c.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
                 }
                 
@@ -31,10 +46,36 @@ var Counties = {
                     }
                 }
                 
+                console.log('✓ County data loaded with undecided voters initialized');
+                
                 if (callback) callback();
             }
         };
         xhr.send();
+    },
+    
+    // Apply third-party toggle - redistribute or include third-party votes
+    applyThirdPartyToggle: function(county) {
+        if (!county.v || !county.originalV) return;
+        
+        var thirdPartiesEnabled = gameData.thirdPartiesEnabled;
+        
+        if (thirdPartiesEnabled) {
+            // Use original third-party percentages
+            county.v.G = county.originalV.G;
+            county.v.L = county.originalV.L;
+            county.v.O = county.originalV.O;
+        } else {
+            // Split third-party votes 50/50 between D and R
+            var totalThird = (county.originalV.G || 0) + (county.originalV.L || 0) + (county.originalV.O || 0);
+            var halfThird = totalThird / 2;
+            
+            county.v.D = county.originalV.D + halfThird;
+            county.v.R = county.originalV.R + halfThird;
+            county.v.G = 0;
+            county.v.L = 0;
+            county.v.O = 0;
+        }
     },
     
     // Open county view for a state
@@ -382,18 +423,24 @@ var Counties = {
                         county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
                     }
                     
+                    // Calculate effective vote percentages (excluding undecided)
+                    var undecidedPct = county.undecided || 0;
+                    var decidedMultiplier = (100 - undecidedPct) / 100;
+                    
                     // Use correct turnout for each party
                     var demTurnout = gameData.selectedParty === 'D' ? (county.turnout.player || 1.0) : (county.turnout.demOpponent || 1.0);
                     var repTurnout = gameData.selectedParty === 'R' ? (county.turnout.player || 1.0) : (county.turnout.repOpponent || 1.0);
                     var thirdPartyTurnout = county.turnout.thirdParty || 0.7;
                     
-                    // FIX: county.v contains PERCENTAGES, not vote counts!
-                    // Must multiply by population to get actual vote counts
-                    var demVotes = (county.v.D || 0) * county.p / 100 * demTurnout;
-                    var repVotes = (county.v.R || 0) * county.p / 100 * repTurnout;
+                    // Calculate votes: percentage * population * decided_multiplier * turnout
+                    var demVotes = (county.v.D || 0) * county.p / 100 * decidedMultiplier * demTurnout;
+                    var repVotes = (county.v.R || 0) * county.p / 100 * decidedMultiplier * repTurnout;
                     
                     // Include Third Party votes (G, L, and O - Other)
-                    var thirdVotes = ((county.v.G || 0) + (county.v.L || 0) + (county.v.O || 0)) * county.p / 100 * thirdPartyTurnout;
+                    var thirdVotes = 0;
+                    if (gameData.thirdPartiesEnabled) {
+                        thirdVotes = ((county.v.G || 0) + (county.v.L || 0) + (county.v.O || 0)) * county.p / 100 * decidedMultiplier * thirdPartyTurnout;
+                    }
                     
                     totalDemVotes += demVotes;
                     totalRepVotes += repVotes;
@@ -403,12 +450,16 @@ var Counties = {
         }
         
         // Calculate new margin derived directly from this sum
+        // This is the "source of truth" for the map
         var totalVotes = totalDemVotes + totalRepVotes + totalThirdPartyVotes;
         if (totalVotes > 0) {
             var demPct = (totalDemVotes / totalVotes) * 100;
             var repPct = (totalRepVotes / totalVotes) * 100;
             var thirdPct = (totalThirdPartyVotes / totalVotes) * 100;
-            var newMargin = demPct - repPct;
+            
+            // State margin formula: (Total Dem - Total Rep) / Total Major Party Votes
+            var majorPartyVotes = totalDemVotes + totalRepVotes;
+            var newMargin = majorPartyVotes > 0 ? ((totalDemVotes - totalRepVotes) / majorPartyVotes) * 100 : 0;
             
             // Update state data
             if (gameData.states[stateCode]) {
@@ -416,6 +467,7 @@ var Counties = {
                 gameData.states[stateCode].demPct = demPct;
                 gameData.states[stateCode].repPct = repPct;
                 gameData.states[stateCode].thirdPct = thirdPct;
+                gameData.states[stateCode].totalVotes = totalVotes;
             }
         }
     },
