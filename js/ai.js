@@ -94,19 +94,34 @@ var OpponentAI = {
         var s = gameData.states[action.state];
         if (!s) return;
         
-        var effect = 0.5 + Math.random() * 1.5;
-        
         if (action.type === 'rally') {
-            // Rally effect
-            if (party === 'D') {
-                s.margin += effect;
-            } else if (party === 'R') {
-                s.margin -= effect;
-            } else {
-                // Third party effect is minimal
-                effect *= 0.15;
-                if (Math.random() < 0.5) s.margin += effect;
-                else s.margin -= effect;
+            // Rally effect - apply to all counties in the state
+            if (typeof Counties !== 'undefined' && Counties.countyData) {
+                var stateFips = STATES[action.state] ? STATES[action.state].fips : null;
+                if (stateFips) {
+                    for (var fips in Counties.countyData) {
+                        var normalizedFips = Counties.normalizeFips(fips);
+                        if (normalizedFips.substring(0, 2) === stateFips) {
+                            var county = Counties.countyData[fips];
+                            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+                            
+                            // AI rally gives 3-8% turnout boost per county
+                            var countyRallyBoost = 0.03 + Math.random() * 0.05;
+                            
+                            if (party === 'D') {
+                                county.turnout.demOpponent = Math.min(1.3, (county.turnout.demOpponent || 1.0) + countyRallyBoost);
+                            } else if (party === 'R') {
+                                county.turnout.repOpponent = Math.min(1.3, (county.turnout.repOpponent || 1.0) + countyRallyBoost);
+                            } else {
+                                // Third party effect is minimal
+                                county.turnout.thirdParty = Math.min(1.3, (county.turnout.thirdParty || 0.7) + (countyRallyBoost * 0.15));
+                            }
+                        }
+                    }
+                    
+                    // Update state margin from county data
+                    Counties.updateStateFromCounties(action.state);
+                }
             }
             
             // Log the action
@@ -115,11 +130,30 @@ var OpponentAI = {
                 Utils.addLog('OPPONENT UPDATE: ' + ticketPres.name + ' held rally in ' + s.name);
             }
         } else if (action.type === 'ad') {
-            // Ad blitz effect
-            if (party === 'D') {
-                s.margin += effect;
-            } else if (party === 'R') {
-                s.margin -= effect;
+            // Ad blitz effect - apply to all counties in the state
+            if (typeof Counties !== 'undefined' && Counties.countyData) {
+                var stateFips = STATES[action.state] ? STATES[action.state].fips : null;
+                if (stateFips) {
+                    for (var fips in Counties.countyData) {
+                        var normalizedFips = Counties.normalizeFips(fips);
+                        if (normalizedFips.substring(0, 2) === stateFips) {
+                            var county = Counties.countyData[fips];
+                            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+                            
+                            // AI ad blitz gives 0.5-1% turnout boost per county
+                            var countyAdBoost = 0.005 + Math.random() * 0.005;
+                            
+                            if (party === 'D') {
+                                county.turnout.demOpponent = Math.min(1.3, (county.turnout.demOpponent || 1.0) + countyAdBoost);
+                            } else if (party === 'R') {
+                                county.turnout.repOpponent = Math.min(1.3, (county.turnout.repOpponent || 1.0) + countyAdBoost);
+                            }
+                        }
+                    }
+                    
+                    // Update state margin from county data
+                    Counties.updateStateFromCounties(action.state);
+                }
             }
             
             var ticketPres = party === 'D' ? gameData.demTicket.pres : gameData.repTicket.pres;
