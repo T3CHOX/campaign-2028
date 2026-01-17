@@ -6,6 +6,14 @@ var Counties = {
     currentState: null,
     countyData: {},
     
+    // Normalize FIPS code by stripping leading zeros
+    // Ensures SVG FIPS codes (e.g., "04013") match JSON keys (e.g., "4013")
+    normalizeFips: function(fips) {
+        if (!fips) return fips;
+        // Convert to string, parse as int, then back to string to remove leading zeros
+        return String(parseInt(fips, 10));
+    },
+    
     // Load county data from JSON
     loadCountyData: function(callback) {
         var xhr = new XMLHttpRequest();
@@ -235,11 +243,15 @@ var Counties = {
         if (!stateFips) return;
         
         for (var fips in this.countyData) {
-            // Normalize FIPS to compare state prefix (pad to 5 digits)
-            var normalizedFips = this.normalizeFips(fips);
-            if (normalizedFips.substring(0, 2) === stateFips) {
+            // Check if this county belongs to the current state
+            var countyStateFips = fips.length >= 2 ? (fips.length === 4 ? '0' + fips.substring(0, 1) : fips.substring(0, 2)) : null;
+            
+            if (countyStateFips === stateFips) {
                 var county = this.countyData[fips];
-                var path = document.getElementById('c' + normalizedFips); // Add 'c' prefix for SVG ID
+                
+                // Pad FIPS to 5 digits for SVG ID lookup (e.g., "4013" -> "04013")
+                var paddedFips = fips.padStart(5, '0');
+                var path = document.getElementById('c' + paddedFips);
                 
                 if (path && county.v) {
                     // Calculate margin based on votes with correct turnout
@@ -276,11 +288,13 @@ var Counties = {
     
     // Select a county
     selectCounty: function(fips) {
-        var county = this.countyData[fips];
+        // Normalize FIPS to match JSON keys (strip leading zeros)
+        var normalizedFips = this.normalizeFips(fips);
+        var county = this.countyData[normalizedFips];
         if (!county) return;
         
-        // Store selected county
-        gameData.selectedCounty = fips;
+        // Store selected county (use normalized FIPS)
+        gameData.selectedCounty = normalizedFips;
         
         // Show county info in sidebar
         document.getElementById('sp-name').innerText = county.n || 'County';
@@ -352,7 +366,9 @@ var Counties = {
     
     // Rally in a specific county
     rallyInCounty: function(fips) {
-        if (!fips || !this.countyData[fips]) return;
+        // Normalize FIPS to match JSON keys (strip leading zeros)
+        var normalizedFips = this.normalizeFips(fips);
+        if (!normalizedFips || !this.countyData[normalizedFips]) return;
         
         if (gameData.energy < 1) {
             Utils.showToast("Not enough energy!");
@@ -365,7 +381,7 @@ var Counties = {
         
         Campaign.saveState();
         
-        var county = this.countyData[fips];
+        var county = this.countyData[normalizedFips];
         
         // Apply turnout boost to this county - more realistic values (3-8% boost)
         var turnoutBoost = 0.03 + Math.random() * 0.05; // 3-8% boost
@@ -474,7 +490,9 @@ var Counties = {
     
     // Show county tooltip
     showCountyTooltip: function(e, fips) {
-        var county = this.countyData[fips];
+        // Normalize FIPS to match JSON keys (strip leading zeros)
+        var normalizedFips = this.normalizeFips(fips);
+        var county = this.countyData[normalizedFips];
         if (!county) return;
         
         var tooltip = document.getElementById('map-tooltip');
@@ -566,7 +584,9 @@ var Counties = {
     
     // Open county speech modal
     openCountySpeechModal: function(fips) {
-        var county = this.countyData[fips];
+        // Normalize FIPS to match JSON keys (strip leading zeros)
+        var normalizedFips = this.normalizeFips(fips);
+        var county = this.countyData[normalizedFips];
         if (!county) return;
         
         // Check energy
@@ -604,7 +624,9 @@ var Counties = {
     
     // Handle county speech on an issue
     handleCountySpeech: function(fips, issueId) {
-        var county = this.countyData[fips];
+        // Normalize FIPS to match JSON keys (strip leading zeros)
+        var normalizedFips = this.normalizeFips(fips);
+        var county = this.countyData[normalizedFips];
         if (!county || gameData.energy < 1) return;
         
         Campaign.saveState();

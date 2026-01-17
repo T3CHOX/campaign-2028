@@ -38,8 +38,9 @@ function enhanceStateData() {
             var fipsPrefix = STATES[code].fips;
             if (typeof Counties !== 'undefined' && Counties.countyData) {
                 for (var fips in Counties.countyData) {
-                    if (fips.substring(0, 2) === fipsPrefix || 
-                        (fips.length === 4 && fips.substring(0, 1) === fipsPrefix.substring(1, 2))) {
+                    // Pad FIPS to 5 digits for comparison (e.g., "4013" -> "04013")
+                    var paddedFips = fips.padStart(5, '0');
+                    if (paddedFips.substring(0, 2) === fipsPrefix) {
                         s.counties.push(fips);
                     }
                 }
