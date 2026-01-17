@@ -141,6 +141,30 @@ function applyCandidateBuffs() {
     console.log('✓ Candidate buffs applied and state margins calculated from counties');
 }
 
+// Handle third-party toggle change
+function toggleThirdParties(enabled) {
+    gameData.thirdPartiesEnabled = enabled;
+    
+    // Reapply third-party toggle to all counties
+    if (typeof Counties !== 'undefined' && Counties.countyData) {
+        for (var fips in Counties.countyData) {
+            Counties.applyThirdPartyToggle(Counties.countyData[fips]);
+        }
+        
+        // Recalculate all state margins
+        for (var code in gameData.states) {
+            Counties.updateStateFromCounties(code);
+        }
+        
+        // Update display if in game
+        if (typeof Campaign !== 'undefined' && Campaign.colorMap) {
+            Campaign.colorMap();
+        }
+        
+        console.log('✓ Third-party toggle updated: ' + (enabled ? 'ENABLED' : 'DISABLED'));
+    }
+}
+
 // Initialize interest group support percentages for all candidates
 function initializeInterestGroupSupport() {
     gameData.interestGroupSupport = {};
