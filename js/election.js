@@ -81,7 +81,6 @@ var Election = {
                     
                     // Update each county in this state
                     for (var fips in Counties.countyData) {
-                        var normalizedFips = Counties.normalizeFips(fips);
                         var paddedFips = fips.padStart(5, '0');
                         if (paddedFips.substring(0, 2) === stateFips) {
                             var county = Counties.countyData[fips];
@@ -286,7 +285,6 @@ var Election = {
         var countyCount = 0;
         
         for (var fips in Counties.countyData) {
-            var normalizedFips = Counties.normalizeFips(fips);
             var paddedFips = fips.padStart(5, '0');
             if (paddedFips.substring(0, 2) === stateFips) {
                 var county = Counties.countyData[fips];
@@ -875,7 +873,6 @@ var Election = {
             var countyResults = [];
             
             for (var fips in Counties.countyData) {
-                var normalizedFips = Counties.normalizeFips(fips);
                 var paddedFips = fips.padStart(5, '0');
                 if (paddedFips.substring(0, 2) === stateFips) {
                     var county = Counties.countyData[fips];

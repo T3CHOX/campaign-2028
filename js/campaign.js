@@ -246,7 +246,6 @@ var Campaign = {
                     var countyCount = 0;
                     
                     for (var fips in Counties.countyData) {
-                        var normalizedFips = Counties.normalizeFips(fips);
                         var paddedFips = fips.padStart(5, '0');
                         if (paddedFips.substring(0, 2) === stateFips) {
                             var county = Counties.countyData[fips];
@@ -290,7 +289,6 @@ var Campaign = {
                     var countyAdBoost = 0.005 + Math.random() * 0.005;
                     
                     for (var fips in Counties.countyData) {
-                        var normalizedFips = Counties.normalizeFips(fips);
                         var paddedFips = fips.padStart(5, '0');
                         if (paddedFips.substring(0, 2) === stateFips) {
                             var county = Counties.countyData[fips];
@@ -371,7 +369,6 @@ var Campaign = {
             var stateFips = STATES[gameData.selectedState] ? STATES[gameData.selectedState].fips : null;
             if (stateFips) {
                 for (var fips in Counties.countyData) {
-                    var normalizedFips = Counties.normalizeFips(fips);
                     var paddedFips = fips.padStart(5, '0');
                     if (paddedFips.substring(0, 2) === stateFips) {
                         var county = Counties.countyData[fips];

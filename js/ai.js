@@ -100,7 +100,6 @@ var OpponentAI = {
                 var stateFips = STATES[action.state] ? STATES[action.state].fips : null;
                 if (stateFips) {
                     for (var fips in Counties.countyData) {
-                        var normalizedFips = Counties.normalizeFips(fips);
                         var paddedFips = fips.padStart(5, '0');
                         if (paddedFips.substring(0, 2) === stateFips) {
                             var county = Counties.countyData[fips];
@@ -136,7 +135,6 @@ var OpponentAI = {
                 var stateFips = STATES[action.state] ? STATES[action.state].fips : null;
                 if (stateFips) {
                     for (var fips in Counties.countyData) {
-                        var normalizedFips = Counties.normalizeFips(fips);
                         var paddedFips = fips.padStart(5, '0');
                         if (paddedFips.substring(0, 2) === stateFips) {
                             var county = Counties.countyData[fips];
