@@ -88,8 +88,8 @@ function applyCandidateBuffs() {
         
         if (vpStateFips) {
             for (var fips in Counties.countyData) {
-                var normalizedFips = Counties.normalizeFips(fips);
-                if (normalizedFips.substring(0, 2) === vpStateFips) {
+                var paddedFips = fips.padStart(5, '0');
+                if (paddedFips.substring(0, 2) === vpStateFips) {
                     var county = Counties.countyData[fips];
                     var boost = 5 + Math.random() * 5; // 5-10% boost
                     
@@ -113,8 +113,8 @@ function applyCandidateBuffs() {
             var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
             if (stateFips) {
                 for (var fips in Counties.countyData) {
-                    var normalizedFips = Counties.normalizeFips(fips);
-                    if (normalizedFips.substring(0, 2) === stateFips) {
+                    var paddedFips = fips.padStart(5, '0');
+                    if (paddedFips.substring(0, 2) === stateFips) {
                         var county = Counties.countyData[fips];
                         var boost = 2 + Math.random() * 3; // 2-5% boost
                         
@@ -223,37 +223,67 @@ function initializeInterestGroupSupport() {
         gameData.interestGroupSupport[groupId] = {};
         gameData.interestGroupChanges[groupId] = {};
         
-        var totalSupport = 0;
-        var supportValues = [];
-        
-        // Calculate base support for each candidate
-        for (var i = 0; i < allCandidates.length; i++) {
-            var cand = allCandidates[i];
-            var baseSupport = 25; // Start with equal base
+        // Check if group has explicit support percentages
+        if (group.support) {
+            // Use explicit support percentages
+            var totalSupport = 0;
+            var supportValues = [];
             
-            // Apply group baseline lean (convert to support)
-            if (cand.party === 'D') {
-                baseSupport += Math.max(-group.baseline * 3, 0);
-            } else if (cand.party === 'R') {
-                baseSupport += Math.max(group.baseline * 3, 0);
-            } else {
-                baseSupport = baseSupport * 0.3; // Third parties get much less support
+            for (var i = 0; i < allCandidates.length; i++) {
+                var cand = allCandidates[i];
+                var baseSupport = group.support[cand.party] || 0;
+                
+                // Apply candidate-specific modifiers
+                if (typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[cand.id] && CANDIDATE_GROUP_MODIFIERS[cand.id][groupId]) {
+                    baseSupport += CANDIDATE_GROUP_MODIFIERS[cand.id][groupId] * 0.1; // Scale down modifiers
+                }
+                
+                supportValues.push({ candId: cand.id, support: Math.max(baseSupport, 0) });
+                totalSupport += Math.max(baseSupport, 0);
             }
             
-            // Apply candidate-specific modifiers
-            if (typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[cand.id] && CANDIDATE_GROUP_MODIFIERS[cand.id][groupId]) {
-                baseSupport += CANDIDATE_GROUP_MODIFIERS[cand.id][groupId];
+            // Normalize to 100% (in case modifiers changed the total)
+            if (totalSupport > 0) {
+                for (var j = 0; j < supportValues.length; j++) {
+                    var pct = (supportValues[j].support / totalSupport) * 100;
+                    gameData.interestGroupSupport[groupId][supportValues[j].candId] = pct;
+                    gameData.interestGroupChanges[groupId][supportValues[j].candId] = 0;
+                }
+            }
+        } else {
+            // Use baseline calculation for groups without explicit support
+            var totalSupport = 0;
+            var supportValues = [];
+            
+            // Calculate base support for each candidate
+            for (var i = 0; i < allCandidates.length; i++) {
+                var cand = allCandidates[i];
+                var baseSupport = 25; // Start with equal base
+                
+                // Apply group baseline lean (convert to support)
+                if (cand.party === 'D') {
+                    baseSupport += Math.max(-group.baseline * 3, 0);
+                } else if (cand.party === 'R') {
+                    baseSupport += Math.max(group.baseline * 3, 0);
+                } else {
+                    baseSupport = baseSupport * 0.3; // Third parties get much less support
+                }
+                
+                // Apply candidate-specific modifiers
+                if (typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[cand.id] && CANDIDATE_GROUP_MODIFIERS[cand.id][groupId]) {
+                    baseSupport += CANDIDATE_GROUP_MODIFIERS[cand.id][groupId];
+                }
+                
+                supportValues.push({ candId: cand.id, support: Math.max(baseSupport, 0.1) });
+                totalSupport += Math.max(baseSupport, 0.1);
             }
             
-            supportValues.push({ candId: cand.id, support: Math.max(baseSupport, 0.1) });
-            totalSupport += Math.max(baseSupport, 0.1);
-        }
-        
-        // Normalize to 100%
-        for (var j = 0; j < supportValues.length; j++) {
-            var pct = (supportValues[j].support / totalSupport) * 100;
-            gameData.interestGroupSupport[groupId][supportValues[j].candId] = pct;
-            gameData.interestGroupChanges[groupId][supportValues[j].candId] = 0; // No change initially
+            // Normalize to 100%
+            for (var j = 0; j < supportValues.length; j++) {
+                var pct = (supportValues[j].support / totalSupport) * 100;
+                gameData.interestGroupSupport[groupId][supportValues[j].candId] = pct;
+                gameData.interestGroupChanges[groupId][supportValues[j].candId] = 0; // No change initially
+            }
         }
     }
 }

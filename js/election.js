@@ -81,8 +81,8 @@ var Election = {
                     
                     // Update each county in this state
                     for (var fips in Counties.countyData) {
-                        var normalizedFips = Counties.normalizeFips(fips);
-                        if (normalizedFips.substring(0, 2) === stateFips) {
+                        var paddedFips = fips.padStart(5, '0');
+                        if (paddedFips.substring(0, 2) === stateFips) {
                             var county = Counties.countyData[fips];
                             
                             if (county.reportedPct < 100) {
@@ -285,8 +285,8 @@ var Election = {
         var countyCount = 0;
         
         for (var fips in Counties.countyData) {
-            var normalizedFips = Counties.normalizeFips(fips);
-            if (normalizedFips.substring(0, 2) === stateFips) {
+            var paddedFips = fips.padStart(5, '0');
+            if (paddedFips.substring(0, 2) === stateFips) {
                 var county = Counties.countyData[fips];
                 totalDem += county.reportedVotes.D || 0;
                 totalRep += county.reportedVotes.R || 0;
@@ -873,8 +873,8 @@ var Election = {
             var countyResults = [];
             
             for (var fips in Counties.countyData) {
-                var normalizedFips = Counties.normalizeFips(fips);
-                if (normalizedFips.substring(0, 2) === stateFips) {
+                var paddedFips = fips.padStart(5, '0');
+                if (paddedFips.substring(0, 2) === stateFips) {
                     var county = Counties.countyData[fips];
                     if (county.v) {
                         var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);

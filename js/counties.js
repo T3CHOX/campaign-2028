@@ -244,7 +244,9 @@ var Counties = {
         
         for (var fips in this.countyData) {
             // Check if this county belongs to the current state
-            var countyStateFips = fips.length >= 2 ? (fips.length === 4 ? '0' + fips.substring(0, 1) : fips.substring(0, 2)) : null;
+            // Pad FIPS to 5 digits and extract state FIPS (first 2 digits)
+            var paddedFipsForCheck = fips.padStart(5, '0');
+            var countyStateFips = paddedFipsForCheck.substring(0, 2);
             
             if (countyStateFips === stateFips) {
                 var county = this.countyData[fips];
@@ -429,9 +431,10 @@ var Counties = {
         
         // Sum ALL votes from every county in this state
         for (var fips in this.countyData) {
-            // Normalize FIPS for comparison
-            var normalizedFips = this.normalizeFips(fips);
-            if (normalizedFips.substring(0, 2) === stateFips) {
+            // Pad FIPS to 5 digits and extract state FIPS (first 2 digits)
+            var paddedFips = fips.padStart(5, '0');
+            var countyStateFips = paddedFips.substring(0, 2);
+            if (countyStateFips === stateFips) {
                 var county = this.countyData[fips];
                 if (county.v && county.p) {
                     // Initialize turnout if not present
