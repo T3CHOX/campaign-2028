@@ -12,54 +12,62 @@ const INTEREST_GROUPS = {
         priorities: ['economy', 'taxation', 'immigration']
     },
     black: {
-        name: 'Black Voters',
+        name: 'African American',
         category: 'Racial/Ethnic',
         baseline: -7, // Strong D lean
-        priorities: ['criminal', 'healthcare', 'economy']
+        priorities: ['criminal', 'healthcare', 'economy'],
+        support: { R: 17, D: 81, L: 1, G: 1 }
     },
     hispanic: {
-        name: 'Hispanic/Latino Voters',
+        name: 'Hispanic/Latino',
         category: 'Racial/Ethnic',
         baseline: -3, // Moderate D lean
-        priorities: ['immigration', 'economy', 'healthcare']
+        priorities: ['immigration', 'economy', 'healthcare'],
+        support: { R: 48, D: 50, L: 1, G: 1 }
     },
     asian: {
-        name: 'Asian Voters',
+        name: 'Asian American',
         category: 'Racial/Ethnic',
         baseline: -2, // Slight D lean
-        priorities: ['economy', 'healthcare', 'immigration']
+        priorities: ['economy', 'healthcare', 'immigration'],
+        support: { R: 40, D: 58, L: 1, G: 1 }
     },
     native: {
-        name: 'Native American Voters',
+        name: 'Native American',
         category: 'Racial/Ethnic',
         baseline: -4, // Moderate D lean
-        priorities: ['healthcare', 'environment', 'economy']
+        priorities: ['healthcare', 'environment', 'economy'],
+        support: { R: 40, D: 57, L: 2, G: 1 }
     },
     
     // Religious
     evangelical: {
-        name: 'Evangelical Christians',
+        name: 'Evangelical',
         category: 'Religious',
         baseline: 6, // Strong R lean
-        priorities: ['abortion', 'lgbtq', 'religious_freedom']
+        priorities: ['abortion', 'lgbtq', 'religious_freedom'],
+        support: { R: 81, D: 17, L: 1, G: 1 }
     },
     catholic: {
-        name: 'Catholic Voters',
+        name: 'Catholic',
         category: 'Religious',
         baseline: 1, // Slight R lean
-        priorities: ['abortion', 'immigration', 'healthcare']
+        priorities: ['abortion', 'immigration', 'healthcare'],
+        support: { R: 53, D: 45, L: 1, G: 1 }
     },
     jewish: {
-        name: 'Jewish Voters',
+        name: 'Jewish',
         category: 'Religious',
         baseline: -3, // Moderate D lean
-        priorities: ['israel', 'criminal', 'healthcare']
+        priorities: ['israel', 'criminal', 'healthcare'],
+        support: { R: 29, D: 68, L: 1, G: 2 }
     },
     muslim: {
-        name: 'Muslim Voters',
+        name: 'Muslim',
         category: 'Religious',
         baseline: -5, // Strong D lean
-        priorities: ['foreign', 'immigration', 'civil_rights']
+        priorities: ['foreign', 'immigration', 'civil_rights'],
+        support: { R: 32, D: 58, L: 2, G: 8 }
     },
     secular: {
         name: 'Secular/None',
@@ -88,10 +96,11 @@ const INTEREST_GROUPS = {
         priorities: ['taxation', 'economy', 'govspend']
     },
     union: {
-        name: 'Union Members',
+        name: 'Union Workers',
         category: 'Occupational',
         baseline: -4, // Moderate D lean
-        priorities: ['labor', 'economy', 'healthcare']
+        priorities: ['labor', 'economy', 'healthcare'],
+        support: { R: 50, D: 49, L: 1, G: 0 }
     },
     tech: {
         name: 'Tech Workers',
@@ -117,7 +126,8 @@ const INTEREST_GROUPS = {
         name: 'College Educated',
         category: 'Demographic',
         baseline: -2, // Slight D lean
-        priorities: ['economy', 'climate', 'healthcare']
+        priorities: ['economy', 'climate', 'healthcare'],
+        support: { R: 42, D: 56, L: 1, G: 1 }
     },
     noncollege: {
         name: 'Non-College',
@@ -132,16 +142,18 @@ const INTEREST_GROUPS = {
         priorities: ['economy', 'healthcare', 'education']
     },
     urban: {
-        name: 'Urban Voters',
+        name: 'Urban',
         category: 'Demographic',
         baseline: -5, // Strong D lean
-        priorities: ['climate', 'healthcare', 'criminal']
+        priorities: ['climate', 'healthcare', 'criminal'],
+        support: { R: 33, D: 63, L: 1, G: 3 }
     },
     rural: {
-        name: 'Rural Voters',
+        name: 'Rural',
         category: 'Demographic',
         baseline: 5, // Strong R lean
-        priorities: ['economy', 'guns', 'trade']
+        priorities: ['economy', 'guns', 'trade'],
+        support: { R: 70, D: 28, L: 2, G: 0 }
     },
     youth: {
         name: 'Youth (18-29)',
@@ -156,18 +168,47 @@ const INTEREST_GROUPS = {
         priorities: ['healthcare', 'social_security', 'economy']
     },
     
-    // Orientation
+    // Political Orientation
+    progressives: {
+        name: 'Progressives',
+        category: 'Political',
+        baseline: -8, // Very Strong D lean
+        priorities: ['climate', 'healthcare', 'inequality'],
+        support: { R: 4, D: 86, L: 0, G: 10 }
+    },
+    libertarians: {
+        name: 'Libertarians',
+        category: 'Political',
+        baseline: 5, // Moderate R lean
+        priorities: ['freedom', 'taxation', 'govspend'],
+        support: { R: 70, D: 8, L: 22, G: 0 }
+    },
+    maga: {
+        name: 'MAGA',
+        category: 'Political',
+        baseline: 9, // Extreme R lean
+        priorities: ['immigration', 'trade', 'nationalism'],
+        support: { R: 99, D: 0, L: 1, G: 0 }
+    },
+    centrists: {
+        name: 'Centrists',
+        category: 'Political',
+        baseline: 0, // Neutral
+        priorities: ['economy', 'bipartisanship', 'pragmatism'],
+        support: { R: 50, D: 47, L: 2, G: 1 }
+    },
+    
+    // Gender/Orientation
     lgbtq_community: {
         name: 'LGBTQ+ Community',
-        category: 'Orientation',
+        category: 'Gender/Orientation',
         baseline: -6, // Strong D lean
         priorities: ['lgbtq', 'healthcare', 'civil_rights']
     },
     
-    // Women specific
     women: {
         name: 'Women Voters',
-        category: 'Gender',
+        category: 'Gender/Orientation',
         baseline: -2, // Slight D lean
         priorities: ['healthcare', 'abortion', 'economy']
     }
