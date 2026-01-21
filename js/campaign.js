@@ -247,7 +247,8 @@ var Campaign = {
                     
                     for (var fips in Counties.countyData) {
                         var normalizedFips = Counties.normalizeFips(fips);
-                        if (normalizedFips.substring(0, 2) === stateFips) {
+                        var paddedFips = fips.padStart(5, '0');
+                        if (paddedFips.substring(0, 2) === stateFips) {
                             var county = Counties.countyData[fips];
                             if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
                             
@@ -290,7 +291,8 @@ var Campaign = {
                     
                     for (var fips in Counties.countyData) {
                         var normalizedFips = Counties.normalizeFips(fips);
-                        if (normalizedFips.substring(0, 2) === stateFips) {
+                        var paddedFips = fips.padStart(5, '0');
+                        if (paddedFips.substring(0, 2) === stateFips) {
                             var county = Counties.countyData[fips];
                             if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
                             
@@ -370,7 +372,8 @@ var Campaign = {
             if (stateFips) {
                 for (var fips in Counties.countyData) {
                     var normalizedFips = Counties.normalizeFips(fips);
-                    if (normalizedFips.substring(0, 2) === stateFips) {
+                    var paddedFips = fips.padStart(5, '0');
+                    if (paddedFips.substring(0, 2) === stateFips) {
                         var county = Counties.countyData[fips];
                         if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
                         

@@ -89,7 +89,8 @@ function applyCandidateBuffs() {
         if (vpStateFips) {
             for (var fips in Counties.countyData) {
                 var normalizedFips = Counties.normalizeFips(fips);
-                if (normalizedFips.substring(0, 2) === vpStateFips) {
+                var paddedFips = fips.padStart(5, '0');
+                if (paddedFips.substring(0, 2) === vpStateFips) {
                     var county = Counties.countyData[fips];
                     var boost = 5 + Math.random() * 5; // 5-10% boost
                     
@@ -114,7 +115,8 @@ function applyCandidateBuffs() {
             if (stateFips) {
                 for (var fips in Counties.countyData) {
                     var normalizedFips = Counties.normalizeFips(fips);
-                    if (normalizedFips.substring(0, 2) === stateFips) {
+                    var paddedFips = fips.padStart(5, '0');
+                    if (paddedFips.substring(0, 2) === stateFips) {
                         var county = Counties.countyData[fips];
                         var boost = 2 + Math.random() * 3; // 2-5% boost
                         
