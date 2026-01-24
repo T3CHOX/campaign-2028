@@ -6,12 +6,12 @@ var Counties = {
     currentState: null,
     countyData: {},
     
-    // Normalize FIPS code by stripping leading zeros
-    // Ensures SVG FIPS codes (e.g., "04013") match JSON keys (e.g., "4013")
+    // Normalize FIPS code by ensuring it's a 5-digit string with leading zeros
+    // Ensures consistent FIPS format (e.g., "04013", "01001")
     normalizeFips: function(fips) {
         if (!fips) return fips;
-        // Convert to string, parse as int, then back to string to remove leading zeros
-        return String(parseInt(fips, 10));
+        // Convert to string and pad to 5 digits with leading zeros
+        return String(fips).padStart(5, '0');
     },
     
     // Load county data from JSON
