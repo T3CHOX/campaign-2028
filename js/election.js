@@ -732,7 +732,7 @@ var Election = {
                                 stateCountyPaths.push(path);
                                 path.style.display = 'block';
                                 path.style.cursor = 'pointer';
-                                path.style.stroke = '#333';
+                                path.style.stroke = '#ffffff';
                                 path.style.strokeWidth = '1';
                                 
                                 // Color based on reported votes
