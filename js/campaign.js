@@ -275,16 +275,6 @@ var Campaign = {
             return;
         }
     },
-        
-        // Note: Rally and Ad actions now update state margins from county data
-        // Only fundraise action doesn't affect counties, so no margin update needed
-        
-        Utils.addLog(message);
-        this.updateHUD();
-        this.colorMap();
-        this.clickState(gameData.selectedState);
-        Utils.showToast(message);
-    },
 
     handleSpeech: function(issueId, intensity) {
         if (!gameData.selectedState) return;
@@ -432,6 +422,12 @@ var Campaign = {
         }
         
         this.updateHUD();
+        
+        // Update queued ads display to show the queue is cleared
+        if (typeof app !== 'undefined' && app.updateQueuedAdsDisplay) {
+            app.updateQueuedAdsDisplay();
+        }
+        
         Utils.addLog("Week advanced - " + gameData.currentDate.toLocaleDateString());
         Utils.showToast("Week advanced!");
     },
