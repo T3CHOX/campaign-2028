@@ -138,5 +138,42 @@ var gameData = {
     thirdPartiesEnabled: false,  // Toggle for including third parties in election calculations
     // Interest group support tracking
     interestGroupSupport: {},  // Will store support % for each candidate per group
-    interestGroupChanges: {}   // Will store last turn's changes for display
+    interestGroupChanges: {},   // Will store last turn's changes for display
+    // Pending campaign actions queue (applied on turn submission)
+    pendingActions: [],  // Array of {type, state, countyId, issueId, intensity, cost}
+    turnPressure: {}     // Track cumulative pressure per state+issue for diminishing returns
+};
+
+// ==== CAMPAIGN PERSUASION TUNING CONSTANTS ====
+// All balanceable parameters in one place
+var PERSUASION_CONSTANTS = {
+    // Base persuasion strength per intensity level
+    BASE_PERSUASION_AD: 0.02,           // Base margin shift per ad intensity point
+    BASE_PERSUASION_SPEECH: 0.015,      // Base margin shift per speech intensity point
+    BASE_PERSUASION_RALLY: 0.01,        // Base margin shift per rally (kept for compatibility)
+    
+    // Speech localized multiplier (county where speech occurs)
+    SPEECH_LOCAL_MULTIPLIER: 2.5,       // 2.5x effect in the specific county
+    
+    // Diminishing returns
+    PRESSURE_SCALAR: 0.15,              // Higher = faster diminishing returns
+    
+    // Interest group relationship (if implemented)
+    RELATIONSHIP_SCALE: 0.05,           // How much each action affects group relationship
+    RELATIONSHIP_DIVISOR: 20,           // Relationship score impact on effectiveness
+    
+    // Turnout effects (preserved from existing system)
+    AD_TURNOUT_BOOST: 0.005,            // Small turnout boost per ad
+    SPEECH_TURNOUT_BOOST: 0.01,         // Moderate turnout boost per speech
+    RALLY_TURNOUT_BOOST: 0.05,          // Large turnout boost per rally
+    
+    // Cost structure
+    AD_BASE_COST: 3.0,                  // Base cost in millions
+    SPEECH_BASE_COST: 0.5,              // Base cost in millions
+    RALLY_COST: 1.0,                    // Rally cost
+    
+    // Energy costs
+    AD_ENERGY_COST: 0,                  // Ads don't require candidate presence
+    SPEECH_ENERGY_COST: 1,              // Speeches require candidate
+    RALLY_ENERGY_COST: 2                // Rallies require significant energy
 };

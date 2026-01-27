@@ -176,12 +176,39 @@
                         <h4>CAMPAIGN STRATEGY</h4>
                         <div class="action-grid">
                             <button class="act-btn" onclick="app.handleAction('fundraise')"><span>💰</span><span>FUNDRAISE</span></button>
-                            <button class="act-btn" onclick="app.handleAction('ad')"><span>📺</span><span>AD BLITZ</span></button>
+                            <button class="act-btn" onclick="app.handleAction('rally')"><span>📣</span><span>RALLY</span></button>
                             <button class="act-btn" onclick="app.openStateBio()"><span>📖</span><span>INTEL</span></button>
                             <button class="act-btn" onclick="app.openCountyView()"><span>🗺️</span><span>BREAKDOWN</span></button>
                             <button class="act-btn" onclick="app.openIssuesPanel()"><span>📊</span><span>ISSUES</span></button>
+                            <button class="act-btn" onclick="app.handleAction('speech')"><span>🎙️</span><span>SPEECH</span></button>
                         </div>
                     </div>
+                    
+                    <!-- Ad Campaign Tile (Bottom, Spans 2 columns) -->
+                    <div class="ad-campaign-tile">
+                        <h4>📺 AD CAMPAIGN</h4>
+                        <div class="ad-controls">
+                            <div class="control-group">
+                                <label>Issue:</label>
+                                <select id="ad-issue-select" class="issue-dropdown">
+                                    <option value="">Select Issue...</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label>Intensity:</label>
+                                <select id="ad-intensity-select" class="intensity-dropdown">
+                                    <option value="1">Light ($3M)</option>
+                                    <option value="2">Medium ($6M)</option>
+                                    <option value="3">Heavy ($9M)</option>
+                                </select>
+                            </div>
+                            <button class="queue-ad-btn" onclick="app.queueAd()">QUEUE AD</button>
+                        </div>
+                        <div class="queued-ads-display" id="queued-ads-display">
+                            <small>No ads queued this turn</small>
+                        </div>
+                    </div>
+                    
                     <div class="issues-list"><h4>TOP ISSUES</h4><div id="sp-issues-list"></div></div>
                 </div>
                 <div id="empty-msg">
@@ -382,7 +409,17 @@
                 <button class="modal-close-btn" onclick="app.closeSpeechModal()">×</button>
             </div>
             <div id="speech-content">
-                <p style="margin-bottom: 20px; color: #ccc;">Select an issue to focus your campaign speech on. Your alignment with the state's position affects turnout.</p>
+                <p style="margin-bottom: 15px; color: #ccc;">Select an issue to focus your campaign speech on. Your alignment with the state's position affects effectiveness.</p>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px;">INTENSITY:</label>
+                    <select id="speech-intensity-select" class="intensity-dropdown" style="width: 100%;">
+                        <option value="1">Light ($0.5M, 1 Energy)</option>
+                        <option value="2">Medium ($1.0M, 1 Energy)</option>
+                        <option value="3">Heavy ($1.5M, 1 Energy)</option>
+                    </select>
+                </div>
+                
                 <div id="speech-issues-list"></div>
             </div>
         </div>
@@ -434,6 +471,7 @@
 <script src="js/states.js"></script>
 <script src="js/turnout.js"></script>
 <script src="js/counties.js"></script>
+<script src="js/persuasion.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/screens.js"></script>
