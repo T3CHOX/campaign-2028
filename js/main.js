@@ -508,6 +508,78 @@ var app = {
     closeSpeechModal: function() {
         document.getElementById('speech-modal').classList.add('hidden');
     },
+    
+    // Queue an ad action
+    queueAd: function() {
+        if (!gameData.selectedState) {
+            Utils.showToast("Select a state first!");
+            return;
+        }
+        
+        var issueSelect = document.getElementById('ad-issue-select');
+        var intensitySelect = document.getElementById('ad-intensity-select');
+        
+        var issueId = issueSelect.value;
+        var intensity = parseInt(intensitySelect.value);
+        
+        if (!issueId) {
+            Utils.showToast("Please select an issue!");
+            return;
+        }
+        
+        var cost = intensity * PERSUASION_CONSTANTS.AD_BASE_COST;
+        
+        var action = {
+            type: 'AD',
+            state: gameData.selectedState,
+            issueId: issueId,
+            intensity: intensity,
+            cost: {
+                funds: cost,
+                energy: PERSUASION_CONSTANTS.AD_ENERGY_COST
+            }
+        };
+        
+        if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(action)) {
+            var issue = CORE_ISSUES.find(function(i) { return i.id === issueId; });
+            var issueName = issue ? issue.name : issueId;
+            Utils.showToast("Ad queued: " + issueName + " (Intensity: " + intensity + ")");
+            Utils.addLog("Queued ad on " + issueName + " in " + gameData.states[gameData.selectedState].name);
+            this.updateQueuedAdsDisplay();
+        }
+    },
+    
+    // Update queued ads display
+    updateQueuedAdsDisplay: function() {
+        var display = document.getElementById('queued-ads-display');
+        if (!display) return;
+        
+        if (gameData.pendingActions && gameData.pendingActions.length > 0) {
+            var summary = Persuasion.getPendingActionsSummary();
+            display.innerHTML = '<small>' + summary + '</small>';
+            display.classList.add('has-queued');
+        } else {
+            display.innerHTML = '<small>No ads queued this turn</small>';
+            display.classList.remove('has-queued');
+        }
+    },
+    
+    // Initialize ad issue dropdown
+    initAdIssueDropdown: function() {
+        var select = document.getElementById('ad-issue-select');
+        if (!select) return;
+        
+        select.innerHTML = '<option value="">Select Issue...</option>';
+        
+        for (var i = 0; i < CORE_ISSUES.length; i++) {
+            var issue = CORE_ISSUES[i];
+            var option = document.createElement('option');
+            option.value = issue.id;
+            option.textContent = issue.name;
+            select.appendChild(option);
+        }
+    },
+    
     // PAC Endorsement System
     triggerPacOffer: function() {
         if (typeof PACS === 'undefined') return;

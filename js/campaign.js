@@ -135,6 +135,16 @@ var Campaign = {
         for (var j = 0; j < shuffled.length; j++) {
             issuesList.innerHTML += '<span class="issue-tag">' + shuffled[j].name + '</span>';
         }
+        
+        // Initialize ad issue dropdown
+        if (typeof app !== 'undefined' && app.initAdIssueDropdown) {
+            app.initAdIssueDropdown();
+        }
+        
+        // Update queued ads display
+        if (typeof app !== 'undefined' && app.updateQueuedAdsDisplay) {
+            app.updateQueuedAdsDisplay();
+        }
     },
 
     colorMap: function() {
@@ -186,11 +196,9 @@ var Campaign = {
         }
         
         var s = gameData.states[gameData.selectedState];
-        var cost = { energy: 1, funds: 0 };
-        var effect = 0;
-        var message = '';
         
         if (action === 'fundraise') {
+            // Fundraising applies immediately (not queued)
             if (gameData.energy < 1) return Utils.showToast("Not enough energy!");
             
             // Advanced fundraising formula
@@ -218,103 +226,55 @@ var Campaign = {
             
             gameData.funds += raised;
             s.fundraisingVisits = (s.fundraisingVisits || 0) + 1;
-            message = 'Raised $' + raised.toFixed(1) + 'M in ' + s.name;
-            cost.energy = 1;
+            gameData.energy -= 1;
+            
+            var message = 'Raised $' + raised.toFixed(1) + 'M in ' + s.name;
+            Utils.addLog(message);
+            this.updateHUD();
+            this.clickState(gameData.selectedState);
+            Utils.showToast(message);
+            
         } else if (action === 'rally') {
-            // Check if we're in county view
-            if (gameData.inCountyView && gameData.selectedCounty) {
-                Counties.rallyInCounty(gameData.selectedCounty);
-                return;
+            // Queue rally action
+            if (gameData.energy < PERSUASION_CONSTANTS.RALLY_ENERGY_COST) {
+                return Utils.showToast("Need " + PERSUASION_CONSTANTS.RALLY_ENERGY_COST + " energy for rally!");
+            }
+            if (gameData.funds < PERSUASION_CONSTANTS.RALLY_COST) {
+                return Utils.showToast("Need $" + PERSUASION_CONSTANTS.RALLY_COST + "M for rally!");
             }
             
-            // State-level rally - now affects ALL counties in the state
-            if (gameData.energy < 2) return Utils.showToast("Need 2 energy for rally!");
-            if (gameData.funds < 1) return Utils.showToast("Need $1M for rally!");
+            var rallyAction = {
+                type: 'RALLY',
+                state: gameData.selectedState,
+                cost: {
+                    funds: PERSUASION_CONSTANTS.RALLY_COST,
+                    energy: PERSUASION_CONSTANTS.RALLY_ENERGY_COST
+                }
+            };
             
-            cost.energy = 2;
-            cost.funds = 1;
-            s.rallies = (s.rallies || 0) + 1;
-            s.visited = true;
-            s.lastCampaignDate = new Date(gameData.currentDate);
-            s.campaignActionsCount = (s.campaignActionsCount || 0) + 1;
-            
-            // Apply rally boost to ALL counties in the state
-            if (typeof Counties !== 'undefined' && Counties.countyData) {
-                var stateFips = STATES[gameData.selectedState] ? STATES[gameData.selectedState].fips : null;
-                if (stateFips) {
-                    var totalBoost = 0;
-                    var countyCount = 0;
-                    
-                    for (var fips in Counties.countyData) {
-                        var paddedFips = fips.padStart(5, '0');
-                        if (paddedFips.substring(0, 2) === stateFips) {
-                            var county = Counties.countyData[fips];
-                            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
-                            
-                            // Rally gives 3-8% turnout boost per county
-                            var countyRallyBoost = 0.03 + Math.random() * 0.05;
-                            totalBoost += countyRallyBoost;
-                            countyCount++;
-                            
-                            if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
-                                county.turnout.player = Math.min(1.3, (county.turnout.player || 1.0) + countyRallyBoost);
-                            } else {
-                                county.turnout.thirdParty = Math.min(1.3, (county.turnout.thirdParty || 0.7) + (countyRallyBoost * 0.5));
-                            }
-                        }
-                    }
-                    
-                    // Calculate average effect for display
-                    effect = countyCount > 0 ? (totalBoost / countyCount) * 100 : 2.0;
-                    
-                    // Update state margin from county data
-                    Counties.updateStateFromCounties(gameData.selectedState);
+            if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(rallyAction)) {
+                s.rallies = (s.rallies || 0) + 1;
+                s.visited = true;
+                s.lastCampaignDate = new Date(gameData.currentDate);
+                s.campaignActionsCount = (s.campaignActionsCount || 0) + 1;
+                
+                Utils.showToast("Rally queued in " + s.name);
+                Utils.addLog("Queued rally in " + s.name);
+                
+                this.updateHUD();
+                this.clickState(gameData.selectedState);
+                
+                if (typeof app !== 'undefined' && app.updateQueuedAdsDisplay) {
+                    app.updateQueuedAdsDisplay();
                 }
             }
             
-            message = 'Rally in ' + s.name + '! +' + effect.toFixed(1) + '% turnout boost';
-        } else if (action === 'ad') {
-            if (gameData.funds < 3) return Utils.showToast("Need $3M for ad blitz!");
-            effect = 0.5 + Math.random() * 1.5;
-            cost.funds = 3;
-            cost.energy = 0;
-            s.adSpent = (s.adSpent || 0) + 3;
-            message = 'Ad blitz in ' + s.name + '! +' + effect.toFixed(1) + ' points';
-            
-            // Spread ad impact evenly across all counties in the state
-            if (typeof Counties !== 'undefined' && Counties.countyData) {
-                var stateFips = STATES[gameData.selectedState] ? STATES[gameData.selectedState].fips : null;
-                if (stateFips) {
-                    // Small boost to turnout in all counties (0.5-1% per county)
-                    var countyAdBoost = 0.005 + Math.random() * 0.005;
-                    
-                    for (var fips in Counties.countyData) {
-                        var paddedFips = fips.padStart(5, '0');
-                        if (paddedFips.substring(0, 2) === stateFips) {
-                            var county = Counties.countyData[fips];
-                            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
-                            
-                            if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
-                                county.turnout.player = Math.min(1.3, (county.turnout.player || 1.0) + countyAdBoost);
-                            } else {
-                                county.turnout.thirdParty = Math.min(1.3, (county.turnout.thirdParty || 0.7) + (countyAdBoost * 0.5));
-                            }
-                        }
-                    }
-                    
-                    // Update state margin from county data
-                    Counties.updateStateFromCounties(gameData.selectedState);
-                }
-            }
         } else if (action === 'speech') {
             // Open speech modal to select issue
             app.openSpeechModal();
             return;
         }
-        
-        this.saveState();
-        gameData.energy -= cost.energy;
-        gameData.funds -= cost.funds;
+    },
         
         // Note: Rally and Ad actions now update state margins from county data
         // Only fundraise action doesn't affect counties, so no margin update needed
@@ -326,78 +286,56 @@ var Campaign = {
         Utils.showToast(message);
     },
 
-    handleSpeech: function(issueId) {
+    handleSpeech: function(issueId, intensity) {
         if (!gameData.selectedState) return;
         
         var s = gameData.states[gameData.selectedState];
-        if (gameData.energy < 1) {
+        
+        // Default intensity to 1 if not provided
+        if (!intensity) intensity = 1;
+        
+        var cost = intensity * PERSUASION_CONSTANTS.SPEECH_BASE_COST;
+        var energyCost = PERSUASION_CONSTANTS.SPEECH_ENERGY_COST;
+        
+        if (gameData.energy < energyCost) {
             Utils.showToast("Not enough energy!");
             return;
         }
-        if (gameData.funds < 0.5) {
-            Utils.showToast("Need $0.5M for campaign speech!");
+        if (gameData.funds < cost) {
+            Utils.showToast("Need $" + cost.toFixed(1) + "M for campaign speech!");
             return;
         }
         
-        this.saveState();
+        // Queue the speech action (statewide, no specific county)
+        var speechAction = {
+            type: 'SPEECH',
+            state: gameData.selectedState,
+            countyId: null,  // Statewide speech from modal
+            issueId: issueId,
+            intensity: intensity,
+            cost: {
+                funds: cost,
+                energy: energyCost
+            }
+        };
         
-        // Get positions
-        var statePos = (STATE_ISSUE_POSITIONS[gameData.selectedState] && STATE_ISSUE_POSITIONS[gameData.selectedState][issueId]) || 0;
-        var candidatePos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[issueId]) || 0;
-        
-        // Calculate alignment (how close candidate is to state position)
-        var alignment = 1 - (Math.abs(statePos - candidatePos) / 20); // 0 to 1
-        
-        // Base effect modified by alignment
-        var baseEffect = 0.5 + Math.random() * 1.0;
-        var effect = baseEffect * (0.5 + alignment); // 0.5x to 1.5x multiplier
-        
-        // Apply turnout boost to counties based on issue alignment
-        if (!s.turnoutBoosts) s.turnoutBoosts = {};
-        s.turnoutBoosts[issueId] = (s.turnoutBoosts[issueId] || 0) + (alignment * 0.1);
-        
-        s.lastCampaignDate = new Date(gameData.currentDate);
-        s.campaignActionsCount = (s.campaignActionsCount || 0) + 1;
-        
-        gameData.energy -= 1;
-        gameData.funds -= 0.5;
-        
-        var issueName = CORE_ISSUES.find(function(i) { return i.id === issueId; }).name;
-        
-        // Apply speech effect to ALL counties in the state
-        if (typeof Counties !== 'undefined' && Counties.countyData) {
-            var stateFips = STATES[gameData.selectedState] ? STATES[gameData.selectedState].fips : null;
-            if (stateFips) {
-                for (var fips in Counties.countyData) {
-                    var paddedFips = fips.padStart(5, '0');
-                    if (paddedFips.substring(0, 2) === stateFips) {
-                        var county = Counties.countyData[fips];
-                        if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
-                        
-                        // Speech gives smaller turnout boost (0.5-1.5% per county based on alignment)
-                        var countySpeechBoost = (effect / 100) * (0.5 + alignment * 0.5);
-                        
-                        if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
-                            county.turnout.player = Math.min(1.3, (county.turnout.player || 1.0) + countySpeechBoost);
-                        } else {
-                            county.turnout.thirdParty = Math.min(1.3, (county.turnout.thirdParty || 0.7) + (countySpeechBoost * 0.5));
-                        }
-                    }
-                }
-                
-                // Update state margin from county data
-                Counties.updateStateFromCounties(gameData.selectedState);
+        if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(speechAction)) {
+            s.lastCampaignDate = new Date(gameData.currentDate);
+            s.campaignActionsCount = (s.campaignActionsCount || 0) + 1;
+            
+            var issue = CORE_ISSUES.find(function(i) { return i.id === issueId; });
+            var issueName = issue ? issue.name : issueId;
+            
+            Utils.showToast("Speech queued: " + issueName);
+            Utils.addLog("Queued speech on " + issueName + " in " + s.name);
+            
+            this.updateHUD();
+            this.clickState(gameData.selectedState);
+            
+            if (typeof app !== 'undefined' && app.updateQueuedAdsDisplay) {
+                app.updateQueuedAdsDisplay();
             }
         }
-        
-        var alignmentText = alignment > 0.7 ? 'Great' : (alignment > 0.4 ? 'Good' : 'Modest');
-        var message = 'Speech on ' + issueName + ' in ' + s.name + '! ' + alignmentText + ' alignment. +' + effect.toFixed(1);
-        
-        Utils.addLog(message);
-        this.updateHUD();
-        this.colorMap();
-        this.clickState(gameData.selectedState);
-        Utils.showToast(message);
         
         app.closeSpeechModal();
     },
@@ -465,6 +403,12 @@ var Campaign = {
 
     nextWeek: function() {
         this.saveState();
+        
+        // Apply all queued campaign actions BEFORE advancing the turn
+        if (typeof Persuasion !== 'undefined') {
+            Persuasion.applyQueuedActions();
+        }
+        
         gameData.currentDate.setDate(gameData.currentDate.getDate() + 7);
         gameData.energy = gameData.maxEnergy;
         
