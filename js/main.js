@@ -496,7 +496,7 @@ var app = {
                 alignmentClass = 'poor';
             }
             
-            issuesHtml += '<button class="speech-issue-btn" onclick="Campaign.handleSpeech(\'' + issue.id + '\')">';
+            issuesHtml += '<button class="speech-issue-btn" onclick="app.handleSpeechWithIntensity(\'' + issue.id + '\')">';
             issuesHtml += issue.name;
             issuesHtml += '<span class="issue-alignment ' + alignmentClass + '">' + alignmentText + '</span>';
             issuesHtml += '</button>';
@@ -505,6 +505,13 @@ var app = {
         document.getElementById('speech-issues-list').innerHTML = issuesHtml;
         document.getElementById('speech-modal').classList.remove('hidden');
     },
+    
+    handleSpeechWithIntensity: function(issueId) {
+        var intensitySelect = document.getElementById('speech-intensity-select');
+        var intensity = parseInt(intensitySelect.value) || 1;
+        Campaign.handleSpeech(issueId, intensity);
+    },
+    
     closeSpeechModal: function() {
         document.getElementById('speech-modal').classList.add('hidden');
     },

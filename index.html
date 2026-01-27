@@ -409,7 +409,17 @@
                 <button class="modal-close-btn" onclick="app.closeSpeechModal()">×</button>
             </div>
             <div id="speech-content">
-                <p style="margin-bottom: 20px; color: #ccc;">Select an issue to focus your campaign speech on. Your alignment with the state's position affects turnout.</p>
+                <p style="margin-bottom: 15px; color: #ccc;">Select an issue to focus your campaign speech on. Your alignment with the state's position affects effectiveness.</p>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px;">INTENSITY:</label>
+                    <select id="speech-intensity-select" class="intensity-dropdown" style="width: 100%;">
+                        <option value="1">Light ($0.5M, 1 Energy)</option>
+                        <option value="2">Medium ($1.0M, 1 Energy)</option>
+                        <option value="3">Heavy ($1.5M, 1 Energy)</option>
+                    </select>
+                </div>
+                
                 <div id="speech-issues-list"></div>
             </div>
         </div>
