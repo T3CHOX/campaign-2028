@@ -23,36 +23,6 @@ const ISSUES = [
     { id: 'crime', name: 'Crime' }
 ];
 
-const CANDIDATES = [
-    { id: "harris", name: "Kamala Harris", party: "D", funds: 60, img: "images/harris.jpg", stamina: 8, desc: "The incumbent Vice President.", buff: "Incumbency" },
-    { id: "newsom", name: "Gavin Newsom", party: "D", funds: 75, img: "images/newsom.jpg", stamina: 9, desc: "California Governor.", buff: "War Chest" },
-    { id: "whitmer", name: "Gretchen Whitmer", party: "D", funds: 55, img: "images/whitmer.jpg", stamina: 8, desc: "Michigan Governor.", buff: "Midwest Appeal" },
-    { id: "buttigieg", name: "Pete Buttigieg", party: "D", funds: 50, img: "images/buttigieg.jpg", stamina: 8, desc: "Transportation Secretary.", buff: "Media Savvy" },
-    { id: "aoc", name: "Alexandria Ocasio-Cortez", party:  "D", funds:  45, img: "images/aoc.jpg", stamina: 10, desc: "Progressive firebrand.", buff: "Youth Vote" },
-    { id: "desantis", name: "Ron DeSantis", party: "R", funds: 65, img: "images/desantis.jpg", stamina: 9, desc: "Florida Governor.", buff: "Base Turnout" },
-    { id: "vance", name: "JD Vance", party: "R", funds: 50, img: "images/vance.jpg", stamina: 8, desc: "Ohio Senator.", buff: "Populism" },
-    { id: "ramaswamy", name:  "Vivek Ramaswamy", party: "R", funds: 70, img: "images/ramaswamy.jpg", stamina: 10, desc: "Biotech entrepreneur.", buff: "Outsider Energy" },
-    { id: "haley", name: "Nikki Haley", party: "R", funds: 55, img: "images/haley.jpg", stamina: 8, desc: "Former UN Ambassador.", buff: "Suburban Appeal" },
-    { id: "yang", name: "Andrew Yang", party: "F", funds: 35, img: "images/yang.jpg", stamina: 8, desc: "Forward Party founder.", buff: "UBI Movement", debuff: "Third Party Penalty" },
-    { id: "stein", name: "Jill Stein", party: "G", funds: 8, img: "images/scenario.jpg", stamina: 6, desc: "Green Party candidate.", buff: "Environmental Base", debuff: "Severe Third Party Penalty" },
-    { id: "oliver", name: "Chase Oliver", party: "L", funds: 10, img: "images/scenario.jpg", stamina: 7, desc: "Libertarian activist.", buff: "Liberty Movement", debuff: "Severe Third Party Penalty" }
-];
-
-const VPS = [
-    { id: "shapiro", name: "Josh Shapiro", party: "D", state: "PA", img: "images/shapiro.jpg", desc: "Governor of Pennsylvania." },
-    { id: "kelly", name: "Mark Kelly", party: "D", state: "AZ", img: "images/kelly.jpg", desc: "Senator from Arizona." },
-    { id: "warnock", name: "Raphael Warnock", party: "D", state: "GA", img: "images/warnock.jpg", desc: "Senator from Georgia." },
-    { id: "pritzker", name: "JB Pritzker", party: "D", state: "IL", img: "images/pritzker.jpg", desc: "Governor of Illinois." },
-    { id: "rubio", name: "Marco Rubio", party: "R", state: "FL", img: "images/rubio.jpg", desc: "Senator from Florida." },
-    { id: "scott_tim", name: "Tim Scott", party: "R", state: "SC", img: "images/scott.jpg", desc: "Senator from South Carolina." },
-    { id: "stefanik", name:  "Elise Stefanik", party: "R", state: "NY", img: "images/stefanik.jpg", desc: "Congresswoman from New York." },
-    { id: "noem", name: "Kristi Noem", party: "R", state: "SD", img: "images/noem.jpg", desc: "Governor of South Dakota." },
-    { id: "whitman", name: "Christine Todd Whitman", party: "F", state: "NJ", img: "images/scenario.jpg", desc: "Former NJ Governor." },
-    { id: "gabbard", name: "Tulsi Gabbard", party: "F", state: "HI", img: "images/scenario.jpg", desc: "Former Congresswoman." },
-    { id: "ware", name: "Butch Ware", party: "G", state: "CA", img: "images/scenario.jpg", desc: "Academic and activist." },
-    { id: "termaat", name: "Mike ter Maat", party: "L", state: "FL", img: "images/scenario.jpg", desc: "Libertarian economist." }
-];
-
 const STATES = {
     "AL": { name: "Alabama", ev: 9, lean: -20, fips: "01" },
     "AK": { name: "Alaska", ev: 3, lean: -15, fips: "02" },
