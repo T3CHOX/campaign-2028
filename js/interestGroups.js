@@ -214,39 +214,7 @@ const INTEREST_GROUPS = {
     }
 };
 
-// Candidate/VP group modifiers (% adjustment to group support)
-const CANDIDATE_GROUP_MODIFIERS = {
-    harris: {
-        black: 15, women: 10, urban: 8, college: 5, asian: 5
-    },
-    newsom: {
-        college: 8, urban: 6, tech: 10, secular: 6
-    },
-    whitmer: {
-        women: 8, suburban: 6, union: 8, noncollege: 4
-    },
-    buttigieg: {
-        lgbtq_community: 12, college: 6, urban: 5, youth: 5
-    },
-    aoc: {
-        youth: 15, hispanic: 10, urban: 8, women: 6
-    },
-    desantis: {
-        evangelical: 12, rural: 8, seniors: 6, noncollege: 5
-    },
-    vance: {
-        rural: 10, noncollege: 8, bluecollar: 8, evangelical: 5
-    },
-    ramaswamy: {
-        asian: 10, college: -5, suburban: 5, tech: 8
-    },
-    haley: {
-        women: 8, suburban: 8, college: 6, military: 5
-    },
-    yang: {
-        tech: 12, asian: 10, youth: 8, college: 6
-    }
-};
+// Candidate/VP group modifiers are defined in candidates.js (CANDIDATE_GROUP_MODIFIERS)
 
 // PAC definitions
 const PACS = {
