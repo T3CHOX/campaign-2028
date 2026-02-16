@@ -28,14 +28,14 @@ var Election = {
             for (var fips in Counties.countyData) {
                 var county = Counties.countyData[fips];
                 county.reportedPct = 0;
-                county.reportedVotes = { D: 0, R: 0, T: 0 };
+                county.reportedVotes = { D: 0, R: 0, G: 0, L: 0 };
             }
         }
 
         for (var code in gameData.states) {
             var s = gameData.states[code];
             s.reportedPct = 0;
-            s.reportedVotes = { D: 0, R: 0, T: 0 };
+            s.reportedVotes = { D: 0, R: 0, G: 0, L: 0 };
             s.called = false;
             s.calledFor = null;
             s.countSpeed = 1.0; // Normal speed for most states
@@ -136,7 +136,17 @@ var Election = {
                                     
                                     county.reportedVotes.D = Math.floor((county.v.D || 0) * county.p / 100 * decidedMultiplier * demTurnout * reportingFactor * errorFactor);
                                     county.reportedVotes.R = Math.floor((county.v.R || 0) * county.p / 100 * decidedMultiplier * repTurnout * reportingFactor * errorFactor);
-                                    county.reportedVotes.T = 0; // Third party votes minimal at county level for simplicity
+                                    
+                                    // Calculate third party votes when enabled
+                                    if (gameData.thirdPartiesEnabled) {
+                                        var greenTurnout = gameData.selectedParty === 'G' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
+                                        var libTurnout = gameData.selectedParty === 'L' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
+                                        county.reportedVotes.G = Math.floor((county.v.G || 0) * county.p / 100 * decidedMultiplier * greenTurnout * reportingFactor * errorFactor);
+                                        county.reportedVotes.L = Math.floor((county.v.L || 0) * county.p / 100 * decidedMultiplier * libTurnout * reportingFactor * errorFactor);
+                                    } else {
+                                        county.reportedVotes.G = 0;
+                                        county.reportedVotes.L = 0;
+                                    }
                                 }
                             }
                         }
@@ -168,7 +178,7 @@ var Election = {
             var s = gameData.states[code];
             
             if (!s.called && s.reportedPct > 0) {
-                var total = s.reportedVotes.D + s.reportedVotes.R;
+                var total = s.reportedVotes.D + s.reportedVotes.R + (s.reportedVotes.G || 0) + (s.reportedVotes.L || 0);
                 var currentMargin = total > 0 ? ((s.reportedVotes.D - s.reportedVotes.R) / total) * 100 : 0;
                 
                 // Check if it's a VERY close call (< 0.5% margin per requirements)
@@ -179,43 +189,28 @@ var Election = {
                 // MUST call at 100% reporting
                 if (s.reportedPct >= 99.9) {
                     s.called = true;
-                    s.calledFor = s.reportedVotes.D > s.reportedVotes.R ? 'D' : 'R';
-                    
-                    if (s.calledFor === 'D') {
-                        this.demEV += s.ev;
-                    } else {
-                        this.repEV += s.ev;
-                    }
+                    s.calledFor = this.getStateWinner(s);
 
-                    this.addFeedItem(s.name + ' called for ' + (s.calledFor === 'D' ? 'Democrats' : 'Republicans') + ' (' + s.ev + ' EV)');
+                    this.awardEV(s);
+                    this.addFeedItem(s.name + ' called for ' + this.getPartyLabel(s.calledFor) + ' (' + s.ev + ' EV)');
                     this.addRaceCall(code, s.calledFor);
                 }
                 // VERY close calls (< 0.5%): Don't call until at least 98% reporting
                 else if (isVeryCloseCall && s.reportedPct >= 98) {
                     s.called = true;
-                    s.calledFor = currentMargin > 0 ?  'D' :  'R';
+                    s.calledFor = this.getStateWinner(s);
 
-                    if (s.calledFor === 'D') {
-                        this.demEV += s.ev;
-                    } else {
-                        this.repEV += s.ev;
-                    }
-
-                    this.addFeedItem(s.name + ' called for ' + (s.calledFor === 'D' ? 'Democrats' : 'Republicans') + ' (' + s.ev + ' EV) [EXTREMELY CLOSE]');
+                    this.awardEV(s);
+                    this.addFeedItem(s.name + ' called for ' + this.getPartyLabel(s.calledFor) + ' (' + s.ev + ' EV) [EXTREMELY CLOSE]');
                     this.addRaceCall(code, s.calledFor);
                 }
                 // Close calls (0.5-1.0%): Don't call until at least 95% reporting
                 else if (isCloseCall && !isVeryCloseCall && s.reportedPct >= 95) {
                     s.called = true;
-                    s.calledFor = currentMargin > 0 ?  'D' :  'R';
+                    s.calledFor = this.getStateWinner(s);
 
-                    if (s.calledFor === 'D') {
-                        this.demEV += s.ev;
-                    } else {
-                        this.repEV += s.ev;
-                    }
-
-                    this.addFeedItem(s.name + ' called for ' + (s.calledFor === 'D' ? 'Democrats' : 'Republicans') + ' (' + s.ev + ' EV)');
+                    this.awardEV(s);
+                    this.addFeedItem(s.name + ' called for ' + this.getPartyLabel(s.calledFor) + ' (' + s.ev + ' EV)');
                     this.addRaceCall(code, s.calledFor);
                 }
                 // Can call earlier if margin is overwhelming (not close)
@@ -224,15 +219,10 @@ var Election = {
                     
                     if (Math.abs(currentMargin) > threshold + 8) {
                         s.called = true;
-                        s.calledFor = currentMargin > 0 ?  'D' :  'R';
+                        s.calledFor = this.getStateWinner(s);
 
-                        if (s.calledFor === 'D') {
-                            this.demEV += s.ev;
-                        } else {
-                            this.repEV += s.ev;
-                        }
-
-                        this.addFeedItem(s.name + ' called for ' + (s.calledFor === 'D' ? 'Democrats' : 'Republicans') + ' (' + s.ev + ' EV)');
+                        this.awardEV(s);
+                        this.addFeedItem(s.name + ' called for ' + this.getPartyLabel(s.calledFor) + ' (' + s.ev + ' EV)');
                         this.addRaceCall(code, s.calledFor);
                     }
                 }
@@ -252,6 +242,17 @@ var Election = {
         document.getElementById('election-time').innerText = Utils.formatTime(this.time);
         document.getElementById('elec-dem-ev').innerText = this.demEV;
         document.getElementById('elec-rep-ev').innerText = this.repEV;
+
+        // Show third party EV count if applicable
+        var thirdEvEl = document.getElementById('elec-third-ev');
+        if (thirdEvEl) {
+            if (gameData.thirdPartiesEnabled && this.thirdPartyEV > 0) {
+                thirdEvEl.innerText = this.thirdPartyEV;
+                thirdEvEl.parentElement.classList.remove('hidden');
+            } else {
+                thirdEvEl.parentElement.classList.add('hidden');
+            }
+        }
 
         // Calculate bar widths - 269 is the exact middle (50%)
         // Each EV = (1/538) * 100% of the total width
@@ -280,7 +281,8 @@ var Election = {
         
         var totalDem = 0;
         var totalRep = 0;
-        var totalT = 0;
+        var totalG = 0;
+        var totalL = 0;
         var totalReportedPct = 0;
         var countyCount = 0;
         
@@ -290,7 +292,8 @@ var Election = {
                 var county = Counties.countyData[fips];
                 totalDem += county.reportedVotes.D || 0;
                 totalRep += county.reportedVotes.R || 0;
-                totalT += county.reportedVotes.T || 0;
+                totalG += county.reportedVotes.G || 0;
+                totalL += county.reportedVotes.L || 0;
                 totalReportedPct += county.reportedPct || 0;
                 countyCount++;
             }
@@ -298,10 +301,48 @@ var Election = {
         
         state.reportedVotes.D = totalDem;
         state.reportedVotes.R = totalRep;
-        state.reportedVotes.T = totalT;
+        state.reportedVotes.G = totalG;
+        state.reportedVotes.L = totalL;
         
         // State reporting percentage is average of county reporting percentages
         state.reportedPct = countyCount > 0 ? totalReportedPct / countyCount : 0;
+    },
+
+    // Determine which party won a state based on reported votes (plurality)
+    getStateWinner: function(state) {
+        var votes = [
+            { party: 'D', count: state.reportedVotes.D || 0 },
+            { party: 'R', count: state.reportedVotes.R || 0 }
+        ];
+        if (gameData.thirdPartiesEnabled) {
+            votes.push({ party: 'G', count: state.reportedVotes.G || 0 });
+            votes.push({ party: 'L', count: state.reportedVotes.L || 0 });
+        }
+        votes.sort(function(a, b) { return b.count - a.count; });
+        return votes[0].party;
+    },
+
+    // Award electoral votes to the winning party
+    awardEV: function(state) {
+        if (state.calledFor === 'D') {
+            this.demEV += state.ev;
+        } else if (state.calledFor === 'R') {
+            this.repEV += state.ev;
+        } else {
+            this.thirdPartyEV += state.ev;
+        }
+    },
+
+    // Get display label for a party code
+    getPartyLabel: function(partyCode) {
+        var labels = { D: 'Democrats', R: 'Republicans', G: 'Green Party', L: 'Libertarian Party' };
+        return labels[partyCode] || partyCode;
+    },
+
+    // Get color for a party code
+    getPartyColor: function(partyCode) {
+        if (PARTIES[partyCode]) return PARTIES[partyCode].color;
+        return '#888888';
     },
 
     loadElectionMap: function() {
@@ -352,7 +393,7 @@ var Election = {
             if (path) {
                 if (this.mapMode === 'projected') {
                     if (s.called) {
-                        path.style.fill = s.calledFor === 'D' ?  '#00AEF3' : '#E81B23';
+                        path.style.fill = this.getPartyColor(s.calledFor);
                     } else {
                         path.style.fill = '#444444';
                     }
@@ -377,9 +418,13 @@ var Election = {
         document.getElementById('elec-state-ev').innerText = s.ev + ' EV';
         document.getElementById('elec-pct-reporting').innerText = Math.floor(s.reportedPct) + '%';
 
-        var total = s.reportedVotes.D + s.reportedVotes.R;
+        var greenVotes = s.reportedVotes.G || 0;
+        var libVotes = s.reportedVotes.L || 0;
+        var total = s.reportedVotes.D + s.reportedVotes.R + greenVotes + libVotes;
         var demPct = total > 0 ?  (s.reportedVotes.D / total) * 100 : 50;
         var repPct = total > 0 ? (s.reportedVotes.R / total) * 100 : 50;
+        var greenPct = total > 0 ? (greenVotes / total) * 100 : 0;
+        var libPct = total > 0 ? (libVotes / total) * 100 : 0;
 
         document.getElementById('elec-state-bar-dem').style.width = demPct + '%';
         document.getElementById('elec-state-bar-rep').style.width = repPct + '%';
@@ -388,11 +433,25 @@ var Election = {
         document.getElementById('elec-state-dem-pct').innerText = demPct.toFixed(1) + '%';
         document.getElementById('elec-state-rep-pct').innerText = repPct.toFixed(1) + '%';
 
+        // Show third party votes if enabled
+        var thirdPartyRow = document.getElementById('elec-state-third-row');
+        if (thirdPartyRow) {
+            if (gameData.thirdPartiesEnabled && (greenVotes > 0 || libVotes > 0)) {
+                thirdPartyRow.classList.remove('hidden');
+                document.getElementById('elec-state-green-votes').innerText = greenVotes.toLocaleString();
+                document.getElementById('elec-state-green-pct').innerText = greenPct.toFixed(1) + '%';
+                document.getElementById('elec-state-lib-votes').innerText = libVotes.toLocaleString();
+                document.getElementById('elec-state-lib-pct').innerText = libPct.toFixed(1) + '%';
+            } else {
+                thirdPartyRow.classList.add('hidden');
+            }
+        }
+
         var projEl = document.getElementById('elec-projection');
         if (s.called) {
-            projEl.innerHTML = '<span class="proj-status ' + (s.calledFor === 'D' ? 'called-dem' : 'called-rep') + '">CALLED FOR ' + (s.calledFor === 'D' ? 'DEMOCRATS' : 'REPUBLICANS') + '</span>';
+            var calledClass = s.calledFor === 'D' ? 'called-dem' : (s.calledFor === 'R' ? 'called-rep' : 'called-third');
+            projEl.innerHTML = '<span class="proj-status ' + calledClass + '">CALLED FOR ' + this.getPartyLabel(s.calledFor).toUpperCase() + '</span>';
         } else if (s.reportedPct >= 100) {
-            // At 100%, if not called yet (shouldn't happen), show too close to call
             projEl.innerHTML = '<span class="proj-status">TOO CLOSE TO CALL</span>';
         } else if (s.reportedPct > 0) {
             projEl.innerHTML = '<span class="proj-status">TOO CLOSE TO CALL</span>';
@@ -412,14 +471,22 @@ var Election = {
     addRaceCall:  function(code, party) {
         var container = document.getElementById('race-calls-content');
         var chip = document.createElement('span');
-        chip.className = 'race-call-chip ' + (party === 'D' ? 'dem' : 'rep');
+        var chipClass = party === 'D' ? 'dem' : (party === 'R' ? 'rep' : 'third');
+        chip.className = 'race-call-chip ' + chipClass;
+        if (party !== 'D' && party !== 'R') {
+            chip.style.background = this.getPartyColor(party);
+        }
         chip.innerText = code;
         container.appendChild(chip);
     },
 
     showWinner: function() {
         this.winnerShown = true;
-        var winner = this.demEV >= 270 ?  'D' : 'R';
+        var winner;
+        if (this.demEV >= 270) winner = 'D';
+        else if (this.repEV >= 270) winner = 'R';
+        else return; // No winner yet (e.g., third party splitting EVs)
+        
         var cand = winner === 'D' ? gameData.demTicket.pres : gameData.repTicket.pres;
 
         document.getElementById('winner-img').src = cand ?  cand.img :  'images/scenario.jpg';
@@ -434,18 +501,25 @@ var Election = {
         var winner, loser, winnerEV, loserEV;
         var isPlayerWinner = false;
         
-        if (this.demEV > this.repEV) {
+        if (this.demEV > this.repEV && this.demEV > this.thirdPartyEV) {
             winner = gameData.demTicket;
             loser = gameData.repTicket;
             winnerEV = this.demEV;
             loserEV = this.repEV;
             if (gameData.selectedParty === 'D') isPlayerWinner = true;
-        } else {
+        } else if (this.repEV > this.demEV && this.repEV > this.thirdPartyEV) {
             winner = gameData.repTicket;
             loser = gameData.demTicket;
             winnerEV = this.repEV;
             loserEV = this.demEV;
             if (gameData.selectedParty === 'R') isPlayerWinner = true;
+        } else {
+            // Third party or tie scenario - third party has most EVs
+            winner = { pres: gameData.candidate, vp: gameData.vp };
+            loser = this.demEV >= this.repEV ? gameData.repTicket : gameData.demTicket;
+            winnerEV = this.thirdPartyEV;
+            loserEV = Math.max(this.demEV, this.repEV);
+            if (Utils.isThirdParty(gameData.selectedParty)) isPlayerWinner = true;
         }
         
         // Build the final results overlay
@@ -490,6 +564,14 @@ var Election = {
         resultsHTML += '</div>';
         resultsHTML += '<div class="ticket-ev">' + loserEV + ' Electoral Votes</div>';
         resultsHTML += '</div>';
+        
+        // Third party results (if enabled and have EVs)
+        if (gameData.thirdPartiesEnabled && this.thirdPartyEV > 0) {
+            resultsHTML += '<div class="result-ticket" style="border-color: #198754;">';
+            resultsHTML += '<div class="ticket-header">THIRD PARTIES</div>';
+            resultsHTML += '<div class="ticket-ev">' + this.thirdPartyEV + ' Electoral Votes</div>';
+            resultsHTML += '</div>';
+        }
         
         // Campaign summary
         resultsHTML += '<div class="campaign-summary">';
@@ -585,7 +667,16 @@ var Election = {
                     
                     county.reportedVotes.D = Math.floor((county.v.D || 0) * demTurnout);
                     county.reportedVotes.R = Math.floor((county.v.R || 0) * repTurnout);
-                    county.reportedVotes.T = 0;
+                    
+                    if (gameData.thirdPartiesEnabled) {
+                        var greenTurnout = gameData.selectedParty === 'G' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
+                        var libTurnout = gameData.selectedParty === 'L' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
+                        county.reportedVotes.G = Math.floor((county.v.G || 0) * greenTurnout);
+                        county.reportedVotes.L = Math.floor((county.v.L || 0) * libTurnout);
+                    } else {
+                        county.reportedVotes.G = 0;
+                        county.reportedVotes.L = 0;
+                    }
                 }
             }
         }
@@ -599,13 +690,8 @@ var Election = {
             // Call the state if not already called
             if (!s.called) {
                 s.called = true;
-                s.calledFor = s.reportedVotes.D > s.reportedVotes.R ? 'D' : 'R';
-                
-                if (s.calledFor === 'D') {
-                    this.demEV += s.ev;
-                } else {
-                    this.repEV += s.ev;
-                }
+                s.calledFor = this.getStateWinner(s);
+                this.awardEV(s);
             }
         }
         
@@ -650,17 +736,29 @@ var Election = {
         html += '<div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 20px;">';
         html += '<div style="text-align: center; font-size: 0.9rem; color: #888; margin-bottom: 10px;">' + Math.floor(state.reportedPct) + '% Reporting</div>';
         
-        var total = state.reportedVotes.D + state.reportedVotes.R;
+        var greenVotes = state.reportedVotes.G || 0;
+        var libVotes = state.reportedVotes.L || 0;
+        var total = state.reportedVotes.D + state.reportedVotes.R + greenVotes + libVotes;
         var demPct = total > 0 ? (state.reportedVotes.D / total) * 100 : 50;
         var repPct = total > 0 ? (state.reportedVotes.R / total) * 100 : 50;
+        var greenPct = total > 0 ? (greenVotes / total) * 100 : 0;
+        var libPct = total > 0 ? (libVotes / total) * 100 : 0;
         
         html += '<div style="height: 30px; background: #333; border-radius: 4px; display: flex; overflow: hidden; margin-bottom: 10px;">';
         html += '<div style="width: ' + demPct + '%; background: #00AEF3;"></div>';
         html += '<div style="width: ' + repPct + '%; background: #E81B23;"></div>';
+        if (gameData.thirdPartiesEnabled && (greenPct > 0 || libPct > 0)) {
+            html += '<div style="width: ' + greenPct + '%; background: #198754;"></div>';
+            html += '<div style="width: ' + libPct + '%; background: #fd7e14;"></div>';
+        }
         html += '</div>';
         
         html += '<div style="display: flex; justify-content: space-between; font-size: 1.1rem;">';
         html += '<span style="color: #00AEF3; font-weight: bold;">' + demPct.toFixed(1) + '%</span>';
+        if (gameData.thirdPartiesEnabled && (greenPct > 0 || libPct > 0)) {
+            html += '<span style="color: #198754; font-weight: bold;">' + greenPct.toFixed(1) + '%</span>';
+            html += '<span style="color: #fd7e14; font-weight: bold;">' + libPct.toFixed(1) + '%</span>';
+        }
         html += '<span style="color: #E81B23; font-weight: bold;">' + repPct.toFixed(1) + '%</span>';
         html += '</div>';
         html += '</div>';
@@ -970,10 +1068,14 @@ var Election = {
         // Use county's own reported votes
         var demVotes = county.reportedVotes.D || 0;
         var repVotes = county.reportedVotes.R || 0;
-        var totalVotes = demVotes + repVotes;
+        var greenVotes = county.reportedVotes.G || 0;
+        var libVotes = county.reportedVotes.L || 0;
+        var totalVotes = demVotes + repVotes + greenVotes + libVotes;
         
         var demPct = totalVotes > 0 ? (demVotes / totalVotes) * 100 : 50;
         var repPct = totalVotes > 0 ? (repVotes / totalVotes) * 100 : 50;
+        var greenPct = totalVotes > 0 ? (greenVotes / totalVotes) * 100 : 0;
+        var libPct = totalVotes > 0 ? (libVotes / totalVotes) * 100 : 0;
         var margin = demPct - repPct;
         
         var html = '<div style="background: #1e1e1e; border: 2px solid #ffd700; border-radius: 10px; padding: 30px; max-width: 600px; width: 100%;">';
@@ -989,6 +1091,10 @@ var Election = {
         html += '<div style="height: 40px; background: #333; border-radius: 4px; display: flex; overflow: hidden; margin-bottom: 15px;">';
         html += '<div style="width: ' + demPct + '%; background: #00AEF3; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">' + (demPct > 10 ? demPct.toFixed(1) + '%' : '') + '</div>';
         html += '<div style="width: ' + repPct + '%; background: #E81B23; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">' + (repPct > 10 ? repPct.toFixed(1) + '%' : '') + '</div>';
+        if (gameData.thirdPartiesEnabled && (greenPct > 0 || libPct > 0)) {
+            html += '<div style="width: ' + greenPct + '%; background: #198754; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">' + (greenPct > 5 ? greenPct.toFixed(1) + '%' : '') + '</div>';
+            html += '<div style="width: ' + libPct + '%; background: #fd7e14; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">' + (libPct > 5 ? libPct.toFixed(1) + '%' : '') + '</div>';
+        }
         html += '</div>';
         
         // Vote counts
@@ -1003,6 +1109,20 @@ var Election = {
         html += '<div style="color: #888; font-size: 0.9rem;">Republican</div>';
         html += '</div>';
         html += '</div>';
+        
+        // Third party vote counts
+        if (gameData.thirdPartiesEnabled && (greenVotes > 0 || libVotes > 0)) {
+            html += '<div style="display: flex; justify-content: space-between; margin-bottom: 15px; padding-top: 10px; border-top: 1px solid #333;">';
+            html += '<div>';
+            html += '<div style="color: #198754; font-weight: bold; font-size: 1.1rem;">' + greenVotes.toLocaleString() + '</div>';
+            html += '<div style="color: #888; font-size: 0.9rem;">Green (' + greenPct.toFixed(1) + '%)</div>';
+            html += '</div>';
+            html += '<div style="text-align: right;">';
+            html += '<div style="color: #fd7e14; font-weight: bold; font-size: 1.1rem;">' + libVotes.toLocaleString() + '</div>';
+            html += '<div style="color: #888; font-size: 0.9rem;">Libertarian (' + libPct.toFixed(1) + '%)</div>';
+            html += '</div>';
+            html += '</div>';
+        }
         
         // Margin
         var marginColor = margin > 0 ? '#00AEF3' : '#E81B23';

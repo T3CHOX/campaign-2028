@@ -15,7 +15,7 @@ function initGameData() {
             adSpent: 0,
             rallies: 0,
             reportedPct: 0,
-            reportedVotes: { D: 0, R: 0 },
+            reportedVotes: { D: 0, R: 0, G: 0, L: 0 },
             called: false,
             calledFor: null,
             fundraisingVisits: 0,
