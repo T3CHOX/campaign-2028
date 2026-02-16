@@ -482,45 +482,55 @@ var Election = {
 
     showWinner: function() {
         this.winnerShown = true;
-        var winner;
-        if (this.demEV >= 270) winner = 'D';
-        else if (this.repEV >= 270) winner = 'R';
-        else return; // No winner yet (e.g., third party splitting EVs)
-        
-        var cand = winner === 'D' ? gameData.demTicket.pres : gameData.repTicket.pres;
+        // Determine winner by plurality of electoral votes
+        var evTotals = [
+            { party: 'D', ev: this.demEV },
+            { party: 'R', ev: this.repEV }
+        ];
+        if (gameData.thirdPartiesEnabled) {
+            evTotals.push({ party: 'T', ev: this.thirdPartyEV });
+        }
+        evTotals.sort(function(a, b) { return b.ev - a.ev; });
+        var winner = evTotals[0].party;
 
-        document.getElementById('winner-img').src = cand ?  cand.img :  'images/scenario.jpg';
-        document.getElementById('winner-name').innerText = cand ? cand.name : (winner === 'D' ? 'Democrat' : 'Republican');
-        document.getElementById('winner-party').innerText = winner === 'D' ?  'DEMOCRATIC PARTY' : 'REPUBLICAN PARTY';
-        document.getElementById('winner-ev-count').innerText = winner === 'D' ? this.demEV :  this.repEV;
+        var cand, partyLabel, evCount;
+        if (winner === 'D') {
+            cand = gameData.demTicket.pres;
+            partyLabel = 'DEMOCRATIC PARTY';
+            evCount = this.demEV;
+        } else if (winner === 'R') {
+            cand = gameData.repTicket.pres;
+            partyLabel = 'REPUBLICAN PARTY';
+            evCount = this.repEV;
+        } else {
+            cand = gameData.candidate;
+            partyLabel = PARTIES[gameData.selectedParty] ? PARTIES[gameData.selectedParty].name.toUpperCase() : 'THIRD PARTY';
+            evCount = this.thirdPartyEV;
+        }
+
+        document.getElementById('winner-img').src = cand ? cand.img : 'images/scenario.jpg';
+        document.getElementById('winner-name').innerText = cand ? cand.name : this.getPartyLabel(winner);
+        document.getElementById('winner-party').innerText = partyLabel;
+        document.getElementById('winner-ev-count').innerText = evCount;
         document.getElementById('winner-overlay').classList.remove('hidden');
     },
 
     showFinalResults: function() {
-        // Determine winner
-        var winner, loser, winnerEV, loserEV;
-        var isPlayerWinner = false;
-        
-        if (this.demEV > this.repEV && this.demEV > this.thirdPartyEV) {
-            winner = gameData.demTicket;
-            loser = gameData.repTicket;
-            winnerEV = this.demEV;
-            loserEV = this.repEV;
-            if (gameData.selectedParty === 'D') isPlayerWinner = true;
-        } else if (this.repEV > this.demEV && this.repEV > this.thirdPartyEV) {
-            winner = gameData.repTicket;
-            loser = gameData.demTicket;
-            winnerEV = this.repEV;
-            loserEV = this.demEV;
-            if (gameData.selectedParty === 'R') isPlayerWinner = true;
-        } else {
-            // Third party or tie scenario - third party has most EVs
-            winner = { pres: gameData.candidate, vp: gameData.vp };
-            loser = this.demEV >= this.repEV ? gameData.repTicket : gameData.demTicket;
-            winnerEV = this.thirdPartyEV;
-            loserEV = Math.max(this.demEV, this.repEV);
-            if (Utils.isThirdParty(gameData.selectedParty)) isPlayerWinner = true;
+        // Determine winner and runner-up by EV count
+        var tickets = [
+            { ticket: gameData.demTicket, party: 'D', ev: this.demEV },
+            { ticket: gameData.repTicket, party: 'R', ev: this.repEV }
+        ];
+        if (gameData.thirdPartiesEnabled && this.thirdPartyEV > 0) {
+            tickets.push({ ticket: { pres: gameData.candidate, vp: gameData.vp }, party: gameData.selectedParty, ev: this.thirdPartyEV });
         }
+        tickets.sort(function(a, b) { return b.ev - a.ev; });
+        
+        var winner = tickets[0].ticket;
+        var winnerEV = tickets[0].ev;
+        var loser = tickets[1].ticket;
+        var loserEV = tickets[1].ev;
+        var isPlayerWinner = tickets[0].party === gameData.selectedParty;
         
         // Build the final results overlay
         var resultsHTML = '<div class="final-results-content">';
@@ -567,7 +577,8 @@ var Election = {
         
         // Third party results (if enabled and have EVs)
         if (gameData.thirdPartiesEnabled && this.thirdPartyEV > 0) {
-            resultsHTML += '<div class="result-ticket" style="border-color: #198754;">';
+            var thirdColor = this.getPartyColor(gameData.selectedParty);
+            resultsHTML += '<div class="result-ticket" style="border-color: ' + thirdColor + ';">';
             resultsHTML += '<div class="ticket-header">THIRD PARTIES</div>';
             resultsHTML += '<div class="ticket-ev">' + this.thirdPartyEV + ' Electoral Votes</div>';
             resultsHTML += '</div>';
