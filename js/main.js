@@ -291,6 +291,14 @@ function initializeInterestGroupSupport() {
 var app = {
     goToScreen: function(id) { Screens.goTo(id); },
     selParty: function(code) { Screens.selectParty(code); },
+    setThirdParties: function(enabled) {
+        gameData.thirdPartiesEnabled = enabled;
+        var panels = document.querySelectorAll('.party-panel-minor');
+        for (var i = 0; i < panels.length; i++) {
+            panels[i].style.opacity = enabled ? '1' : '0.4';
+            panels[i].style.pointerEvents = enabled ? '' : 'none';
+        }
+    },
     selCandidate: function(id) { Screens.selectCandidate(id); },
     selVP: function(id) { Screens.selectVP(id); },
     startGame: function() { startGame(); },

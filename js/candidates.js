@@ -3,18 +3,21 @@
    ============================================ */
 
 const CANDIDATES = [
-    { id: "harris", name: "Kamala Harris", party: "D", funds: 60, img: "images/harris.jpg", stamina: 8, desc: "The incumbent Vice President.", buff: "Incumbency" },
-    { id: "newsom", name: "Gavin Newsom", party: "D", funds: 75, img: "images/newsom.jpg", stamina: 9, desc: "California Governor.", buff: "War Chest" },
-    { id: "whitmer", name: "Gretchen Whitmer", party: "D", funds: 55, img: "images/whitmer.jpg", stamina: 8, desc: "Michigan Governor.", buff: "Midwest Appeal" },
-    { id: "buttigieg", name: "Pete Buttigieg", party: "D", funds: 50, img: "images/buttigieg.jpg", stamina: 8, desc: "Transportation Secretary.", buff: "Media Savvy" },
-    { id: "aoc", name: "Alexandria Ocasio-Cortez", party:  "D", funds:  45, img: "images/aoc.jpg", stamina: 10, desc: "Progressive firebrand.", buff: "Youth Vote" },
-    { id: "desantis", name: "Ron DeSantis", party: "R", funds: 65, img: "images/desantis.jpg", stamina: 9, desc: "Florida Governor.", buff: "Base Turnout" },
-    { id: "vance", name: "JD Vance", party: "R", funds: 50, img: "images/vance.jpg", stamina: 8, desc: "Ohio Senator.", buff: "Populism" },
-    { id: "ramaswamy", name:  "Vivek Ramaswamy", party: "R", funds: 70, img: "images/ramaswamy.jpg", stamina: 10, desc: "Biotech entrepreneur.", buff: "Outsider Energy" },
-    { id: "haley", name: "Nikki Haley", party: "R", funds: 55, img: "images/haley.jpg", stamina: 8, desc: "Former UN Ambassador.", buff: "Suburban Appeal" },
-    { id: "yang", name: "Andrew Yang", party: "F", funds: 35, img: "images/yang.jpg", stamina: 8, desc: "Forward Party founder.", buff: "UBI Movement", debuff: "Third Party Penalty" },
-    { id: "stein", name: "Jill Stein", party: "G", funds: 8, img: "images/scenario.jpg", stamina: 6, desc: "Green Party candidate.", buff: "Environmental Base", debuff: "Severe Third Party Penalty" },
-    { id: "oliver", name: "Chase Oliver", party: "L", funds: 10, img: "images/scenario.jpg", stamina: 7, desc: "Libertarian activist.", buff: "Liberty Movement", debuff: "Severe Third Party Penalty" }
+    { id: "harris", name: "Kamala Harris", party: "D", homeState: "CA", funds: 60, img: "images/harris.jpg", stamina: 8, desc: "The incumbent Vice President.", buff: "Incumbency", groupBoosts: { black: 15, women: 10, urban: 8, college: 5, asian: 5 }, groupDebuffs: { rural: -4, evangelical: -8 } },
+    { id: "newsom", name: "Gavin Newsom", party: "D", homeState: "CA", funds: 75, img: "images/newsom.jpg", stamina: 9, desc: "California Governor.", buff: "War Chest", groupBoosts: { college: 8, urban: 6, tech: 10, secular: 6 }, groupDebuffs: { rural: -6, evangelical: -10, bluecollar: -4 } },
+    { id: "whitmer", name: "Gretchen Whitmer", party: "D", homeState: "MI", funds: 55, img: "images/whitmer.jpg", stamina: 8, desc: "Michigan Governor.", buff: "Midwest Appeal", groupBoosts: { women: 8, suburban: 6, union: 8, noncollege: 4 }, groupDebuffs: { evangelical: -5, rural: -3 } },
+    { id: "buttigieg", name: "Pete Buttigieg", party: "D", homeState: "IN", funds: 50, img: "images/buttigieg.jpg", stamina: 8, desc: "Transportation Secretary.", buff: "Media Savvy", groupBoosts: { lgbtq_community: 12, college: 6, urban: 5, youth: 5 }, groupDebuffs: { evangelical: -10, rural: -5 } },
+    { id: "aoc", name: "Alexandria Ocasio-Cortez", party: "D", homeState: "NY", funds: 45, img: "images/aoc.jpg", stamina: 10, desc: "Progressive firebrand.", buff: "Youth Vote", groupBoosts: { youth: 15, hispanic: 10, urban: 8, women: 6 }, groupDebuffs: { suburban: -8, rural: -12, seniors: -6 } },
+    { id: "desantis", name: "Ron DeSantis", party: "R", homeState: "FL", funds: 65, img: "images/desantis.jpg", stamina: 9, desc: "Florida Governor.", buff: "Base Turnout", groupBoosts: { evangelical: 12, rural: 8, seniors: 6, noncollege: 5 }, groupDebuffs: { lgbtq_community: -15, urban: -8, black: -6 } },
+    { id: "vance", name: "JD Vance", party: "R", homeState: "OH", funds: 50, img: "images/vance.jpg", stamina: 8, desc: "Ohio Senator.", buff: "Populism", groupBoosts: { rural: 10, noncollege: 8, bluecollar: 8, evangelical: 5 }, groupDebuffs: { college: -6, urban: -7 } },
+    { id: "ramaswamy", name: "Vivek Ramaswamy", party: "R", homeState: "OH", funds: 70, img: "images/ramaswamy.jpg", stamina: 10, desc: "Biotech entrepreneur.", buff: "Outsider Energy", groupBoosts: { asian: 10, suburban: 5, tech: 8 }, groupDebuffs: { college: -5, union: -6 } },
+    { id: "haley", name: "Nikki Haley", party: "R", homeState: "SC", funds: 55, img: "images/haley.jpg", stamina: 8, desc: "Former UN Ambassador.", buff: "Suburban Appeal", groupBoosts: { women: 8, suburban: 8, college: 6, military: 5 }, groupDebuffs: { rural: -3 } },
+    { id: "yang", name: "Andrew Yang", party: "F", homeState: "NY", funds: 35, img: "images/yang.jpg", stamina: 8, desc: "Forward Party founder.", buff: "UBI Movement", debuff: "Third Party Penalty", groupBoosts: { tech: 12, asian: 10, youth: 8, college: 6 }, groupDebuffs: { rural: -8, evangelical: -5 } },
+    { id: "stein", name: "Jill Stein", party: "G", homeState: "MA", funds: 8, img: "images/scenario.jpg", stamina: 6, desc: "Green Party candidate.", buff: "Environmental Base", debuff: "Severe Third Party Penalty", groupBoosts: { secular: 12, youth: 8, urban: 6 }, groupDebuffs: { bluecollar: -5, rural: -10 } },
+    { id: "oliver", name: "Chase Oliver", party: "L", homeState: "GA", funds: 10, img: "images/scenario.jpg", stamina: 7, desc: "Libertarian activist.", buff: "Liberty Movement", debuff: "Severe Third Party Penalty", groupBoosts: { smallbusiness: 10, college: 5, tech: 6 }, groupDebuffs: { union: -10, black: -5 } },
+    { id: "manchin", name: "Joe Manchin", party: "O", homeState: "WV", funds: 30, img: "images/scenario.jpg", stamina: 7, desc: "Former West Virginia Senator. Centrist Democrat turned Independent.", buff: "Bipartisan Appeal", debuff: "Outsider Penalty", groupBoosts: { bluecollar: 8, rural: 6, catholic: 5 }, groupDebuffs: { urban: -5, youth: -4 } },
+    { id: "kennedy_rfk", name: "Robert F. Kennedy Jr.", party: "O", homeState: "NY", funds: 25, img: "images/scenario.jpg", stamina: 6, desc: "Independent candidate and political dynasty scion.", buff: "Name Recognition", debuff: "Outsider Penalty", groupBoosts: { youth: 5, rural: 4 }, groupDebuffs: { mainstream: -6, college: -4 } },
+    { id: "bloomberg", name: "Michael Bloomberg", party: "O", homeState: "NY", funds: 200, img: "images/scenario.jpg", stamina: 7, desc: "Former New York City Mayor and billionaire businessman.", buff: "Unlimited Funds", debuff: "Outsider Penalty", groupBoosts: { whitecollar: 10, urban: 8, college: 7 }, groupDebuffs: { rural: -8, bluecollar: -6 } }
 ];
 
 const VPS = [
@@ -29,7 +32,8 @@ const VPS = [
     { id: "whitman", name: "Christine Todd Whitman", party: "F", state: "NJ", img: "images/scenario.jpg", desc: "Former NJ Governor." },
     { id: "gabbard", name: "Tulsi Gabbard", party: "F", state: "HI", img: "images/scenario.jpg", desc: "Former Congresswoman." },
     { id: "ware", name: "Butch Ware", party: "G", state: "CA", img: "images/scenario.jpg", desc: "Academic and activist." },
-    { id: "termaat", name: "Mike ter Maat", party: "L", state: "FL", img: "images/scenario.jpg", desc: "Libertarian economist." }
+    { id: "kinzinger", name: "Adam Kinzinger", party: "O", state: "IL", img: "images/scenario.jpg", desc: "Former Republican Congressman, anti-Trump conservative." },
+    { id: "west_cornel", name: "Cornel West", party: "O", state: "MA", img: "images/scenario.jpg", desc: "Academic, activist, and political philosopher." }
 ];
 
 // Candidate issue positions (-10 = far left, +10 = far right)

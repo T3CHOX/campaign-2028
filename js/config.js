@@ -3,11 +3,12 @@
    ============================================ */
 
 const PARTIES = {
-    D: { name: "Democratic Party", shortName: "Democrat", color: "#00AEF3" },
-    R:  { name: "Republican Party", shortName:  "Republican", color:  "#E81B23" },
-    F: { name: "Forward Party", shortName: "Forward", color: "#F2C75C" },
-    G: { name: "Green Party", shortName:  "Green", color:  "#198754" },
-    L: { name: "Libertarian Party", shortName: "Libertarian", color:  "#fd7e14" }
+    D: { name: "Democratic Party", shortName: "Democrat", color: "#00AEF3", desc: "The Democratic Party stands as the center-left pillar of American politics. Rooted in the New Deal tradition and evolved through the Civil Rights era, today's Democrats champion expanded healthcare access, climate action, social equity, and robust worker protections. The party draws strength from a diverse coalition of urban professionals, minority communities, labor unions, and younger voters who believe government can be a force for positive change." },
+    R: { name: "Republican Party", shortName: "Republican", color: "#E81B23", desc: "The Republican Party, shaped by Reaganism and the MAGA movement, stands as the voice of conservative America. Republicans champion free markets, lower taxes, strong national defense, traditional values, and border security. The party's base spans rural communities, evangelical Christians, small business owners, and working-class voters who distrust big government and embrace American exceptionalism." },
+    F: { name: "Forward Party", shortName: "Forward", color: "#F2C75C", desc: "The Forward Party represents a new wave of centrist, reform-minded politics. Founded on the principles of electoral reform, ranked-choice voting, and cross-partisan problem solving, Forward seeks to break the two-party stranglehold on American democracy. Drawing from both sides of the aisle, Forward candidates reject ideological extremism in favor of pragmatic, data-driven governance." },
+    G: { name: "Green Party", shortName: "Green", color: "#198754", desc: "The Green Party stands at the radical intersection of environmentalism and social justice. Greens advocate for a Green New Deal, universal healthcare, criminal justice reform, and a complete overhaul of America's fossil fuel economy. While operating on the political margins, the Greens serve as the conscience of the left, pushing the envelope on climate policy and corporate accountability." },
+    L: { name: "Libertarian Party", shortName: "Libertarian", color: "#fd7e14", desc: "The Libertarian Party is America's third-largest political party, committed to maximizing individual liberty and minimizing government interference. Libertarians support free markets, civil liberties, non-interventionism abroad, and personal freedom on all social issues. Their philosophy of 'fiscally conservative, socially liberal' draws supporters disenchanted with both major parties' appetite for government power." },
+    O: { name: "Independent/Other", shortName: "Independent", color: "#9B59B6", desc: "Running as an Independent represents the ultimate political outsider campaign. Unbound by party orthodoxy, an Independent candidate must build a coalition from scratch, appealing across traditional party lines. Independents face enormous structural barriers—ballot access, debate exclusion, media skepticism—but in a polarized era, a credible Independent can reshape the national conversation and, in rare circumstances, win it all." }
 };
 
 const ISSUES = [
@@ -105,7 +106,7 @@ var gameData = {
     pacEndorsements: [],
     lockedIssues: {},
     currentPacOffer: null,
-    thirdPartiesEnabled: false,  // Toggle for including third parties in election calculations
+    thirdPartiesEnabled: true,  // Toggle for including third parties in election calculations
     // Interest group support tracking
     interestGroupSupport: {},  // Will store support % for each candidate per group
     interestGroupChanges: {},   // Will store last turn's changes for display
