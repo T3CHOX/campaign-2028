@@ -163,27 +163,27 @@ var Screens = {
         if (c.groupBoosts) {
             var boostKeys = Object.keys(c.groupBoosts).slice(0, 3);
             if (boostKeys.length > 0) {
-                groupBoostsText = '<div class="tile-groups">\uD83D\uDC65 ' + boostKeys.map(function(k) { return k + ' +' + c.groupBoosts[k]; }).join(', ') + '</div>';
+                groupBoostsText = '<div class="tile-groups">👥 ' + boostKeys.map(function(k) { return k + ' +' + c.groupBoosts[k]; }).join(', ') + '</div>';
             }
         }
         var groupDebuffsText = '';
         if (c.groupDebuffs) {
             var debuffKeys = Object.keys(c.groupDebuffs).slice(0, 2);
             if (debuffKeys.length > 0) {
-                groupDebuffsText = '<div class="tile-groups" style="color:#f44336;">\u26A0 ' + debuffKeys.map(function(k) { return k + ' ' + c.groupDebuffs[k]; }).join(', ') + '</div>';
+                groupDebuffsText = '<div class="tile-groups" style="color:#f44336;">⚠ ' + debuffKeys.map(function(k) { return k + ' ' + c.groupDebuffs[k]; }).join(', ') + '</div>';
             }
         }
         return '<div class="candidate-tile' + (selected ? ' selected' : '') + '" data-id="' + c.id + '" data-type="pres" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + c.party + '\', \'pres\')">' +
             '<img class="candidate-tile-img" src="' + c.img + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + c.name + '">' +
             '<div class="candidate-tile-body">' +
                 '<div class="candidate-tile-name">' + c.name + '</div>' +
-                '<div class="candidate-tile-state">\uD83C\uDFE0 ' + (c.homeState || c.party) + '</div>' +
+                '<div class="candidate-tile-state">🏠 ' + (c.homeState || c.party) + '</div>' +
                 '<div class="candidate-tile-desc">' + (c.desc || '') + '</div>' +
                 '<div class="candidate-tile-stats">' +
                     '<div class="tile-stat-row"><span class="tile-stat-label">Funds:</span><span class="tile-stat-val">$' + (c.funds || 0) + 'M</span></div>' +
                     '<div class="tile-stat-row"><span class="tile-stat-label">Stamina:</span><div class="stamina-pips">' + staminaPips + '</div></div>' +
-                    (c.buff ? '<div class="tile-buff">\u2746 ' + c.buff + '</div>' : '') +
-                    (c.debuff ? '<div class="tile-debuff">\u26A0 ' + c.debuff + '</div>' : '') +
+                    (c.buff ? '<div class="tile-buff">✦ ' + c.buff + '</div>' : '') +
+                    (c.debuff ? '<div class="tile-debuff">⚠ ' + c.debuff + '</div>' : '') +
                 '</div>' +
                 groupBoostsText +
                 groupDebuffsText +
@@ -196,7 +196,7 @@ var Screens = {
             '<img class="candidate-tile-img" src="' + v.img + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + v.name + '">' +
             '<div class="candidate-tile-body">' +
                 '<div class="candidate-tile-name">' + v.name + '</div>' +
-                '<div class="candidate-tile-state">\uD83C\uDFE0 ' + v.state + '</div>' +
+                '<div class="candidate-tile-state">🏠 ' + v.state + '</div>' +
                 '<div class="candidate-tile-desc">' + (v.desc || '') + '</div>' +
             '</div>' +
         '</div>';

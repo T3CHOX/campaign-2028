@@ -96,6 +96,7 @@ var gameData = {
     vp: null,
     demTicket: { pres: null, vp: null },
     repTicket: { pres:  null, vp:  null },
+    thirdTickets: {},  // Keyed by party code (F, G, L, O)
     funds: 50,
     energy: 8,
     maxEnergy: 8,
