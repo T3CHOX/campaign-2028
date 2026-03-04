@@ -15,7 +15,7 @@ function initGameData() {
             adSpent: 0,
             rallies: 0,
             reportedPct: 0,
-            reportedVotes: { D: 0, R: 0, G: 0, L: 0 },
+            reportedVotes: { D: 0, R: 0, G: 0, L: 0, F: 0, O: 0 },
             called: false,
             calledFor: null,
             fundraisingVisits: 0,
@@ -34,25 +34,27 @@ function initGameData() {
 
 function startGame() {
     var isThirdParty = Utils.isThirdParty(gameData.selectedParty);
-    
-    if (isThirdParty) {
-        if (!gameData.demTicket.pres || !gameData.demTicket.vp || 
-            !gameData.repTicket.pres || !gameData.repTicket.vp) {
-            Utils.showToast("Please select both Democratic and Republican tickets");
-            return;
-        }
-    } else if (gameData.selectedParty === 'D') {
-        if (!gameData.repTicket.pres || !gameData.repTicket.vp) {
-            Utils.showToast("Please select the Republican ticket");
-            return;
-        }
-    } else if (gameData.selectedParty === 'R') {
-        if (!gameData.demTicket.pres || !gameData.demTicket.vp) {
-            Utils.showToast("Please select the Democratic ticket");
-            return;
-        }
+
+    // Validate player ticket is chosen
+    if (!gameData.candidate) {
+        Utils.showToast("Please select a presidential candidate first");
+        return;
     }
-    
+    if (!gameData.vp) {
+        Utils.showToast("Please select a running mate first");
+        return;
+    }
+
+    // Validate opponent tickets always need D and R set
+    if (!gameData.demTicket.pres || !gameData.demTicket.vp) {
+        Utils.showToast("Democratic ticket not fully selected");
+        return;
+    }
+    if (!gameData.repTicket.pres || !gameData.repTicket.vp) {
+        Utils.showToast("Republican ticket not fully selected");
+        return;
+    }
+
     if (isThirdParty) {
         gameData.funds = Math.floor(gameData.funds * 0.5);
         gameData.maxEnergy = Math.max(4, gameData.maxEnergy - 2);
@@ -200,17 +202,24 @@ function initializeInterestGroupSupport() {
         });
     }
     
-    // Always include Jill Stein (Green) and Chase Oliver (Libertarian) as third parties
-    allCandidates.push({
-        id: 'stein',
-        name: 'Jill Stein',
-        party: 'G'
-    });
-    allCandidates.push({
-        id: 'oliver',
-        name: 'Chase Oliver',
-        party: 'L'
-    });
+    // Include third party tickets from the selection flow (if third parties enabled)
+    if (gameData.thirdPartiesEnabled && gameData.thirdTickets) {
+        var thirdPartyCodes = ['F', 'G', 'L', 'O'];
+        for (var tp = 0; tp < thirdPartyCodes.length; tp++) {
+            var tpCode = thirdPartyCodes[tp];
+            if (gameData.selectedParty !== tpCode && gameData.thirdTickets[tpCode] && gameData.thirdTickets[tpCode].pres) {
+                allCandidates.push({
+                    id: gameData.thirdTickets[tpCode].pres.id,
+                    name: gameData.thirdTickets[tpCode].pres.name,
+                    party: tpCode
+                });
+            }
+        }
+    } else if (gameData.thirdPartiesEnabled) {
+        // Fallback: include default Stein and Oliver if no third tickets selected
+        allCandidates.push({ id: 'stein', name: 'Jill Stein', party: 'G' });
+        allCandidates.push({ id: 'oliver', name: 'Chase Oliver', party: 'L' });
+    }
     
     // For each interest group, calculate initial support for each candidate
     if (typeof INTEREST_GROUPS === 'undefined') {
@@ -291,6 +300,14 @@ function initializeInterestGroupSupport() {
 var app = {
     goToScreen: function(id) { Screens.goTo(id); },
     selParty: function(code) { Screens.selectParty(code); },
+    setThirdParties: function(enabled) {
+        gameData.thirdPartiesEnabled = enabled;
+        var panels = document.querySelectorAll('.party-panel-minor');
+        for (var i = 0; i < panels.length; i++) {
+            panels[i].style.opacity = enabled ? '1' : '0.4';
+            panels[i].style.pointerEvents = enabled ? '' : 'none';
+        }
+    },
     selCandidate: function(id) { Screens.selectCandidate(id); },
     selVP: function(id) { Screens.selectVP(id); },
     startGame: function() { startGame(); },

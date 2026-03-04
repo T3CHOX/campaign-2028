@@ -22,88 +22,91 @@
         <header class="news-header">
             <div class="logo">DECISION <span class="red-text">2028</span></div>
         </header>
-        <div class="panel-container">
+        <div class="party-select-container">
             <h2 class="section-title">SELECT YOUR PARTY</h2>
-            <div class="party-grid">
-                <div class="major-parties">
-                    <div class="card card-party card-major" onclick="app.selParty('D')" style="border-top:  5px solid #00AEF3;">
-                        <div class="party-overlay">
-                            <h3>Democratic Party</h3>
-                            <p class="party-desc">The center-left party focused on social equality and progressive policies.</p>
-                        </div>
+            <div class="party-panels-row" id="party-panels-row">
+                <!-- Democratic Party Panel -->
+                <div class="party-panel" data-party="D" onclick="app.selParty('D')" style="--party-color: #00AEF3;">
+                    <div class="party-panel-img-wrap">
+                        <img src="images/party-dem.png" onerror="this.style.display='none'" alt="Democratic Party">
                     </div>
-                    <div class="card card-party card-major" onclick="app.selParty('R')" style="border-top: 5px solid #E81B23;">
-                        <div class="party-overlay">
-                            <h3>Republican Party</h3>
-                            <p class="party-desc">The center-right party focused on traditional values and limited government.</p>
-                        </div>
+                    <div class="party-panel-overlay">
+                        <div class="party-panel-name">Democratic Party</div>
+                        <div class="party-panel-desc">The center-left party focused on social equality and progressive policies.</div>
                     </div>
                 </div>
-                <div class="minor-parties">
-                    <div class="card card-party card-minor" onclick="app.selParty('F')" style="border-top: 4px solid #F2C75C;">
-                        <div class="party-overlay">
-                            <h3>Forward Party</h3>
-                            <p class="party-desc party-desc-minor">A centrist third party focused on electoral reform. </p>
-                            <span class="debuff-tag">HARD MODE</span>
-                        </div>
+                <!-- Republican Party Panel -->
+                <div class="party-panel" data-party="R" onclick="app.selParty('R')" style="--party-color: #E81B23;">
+                    <div class="party-panel-img-wrap">
+                        <img src="images/party-rep.png" onerror="this.style.display='none'" alt="Republican Party">
                     </div>
-                    <div class="card card-party card-minor" onclick="app.selParty('G')" style="border-top: 4px solid #198754;">
-                        <div class="party-overlay">
-                            <h3>Green Party</h3>
-                            <p class="party-desc party-desc-minor">Environmental and social justice focused. </p>
-                            <span class="debuff-tag">HARD MODE</span>
-                        </div>
+                    <div class="party-panel-overlay">
+                        <div class="party-panel-name">Republican Party</div>
+                        <div class="party-panel-desc">The center-right party focused on traditional values and limited government.</div>
                     </div>
-                    <div class="card card-party card-minor" onclick="app.selParty('L')" style="border-top: 4px solid #fd7e14;">
-                        <div class="party-overlay">
-                            <h3>Libertarian Party</h3>
-                            <p class="party-desc party-desc-minor">Minimal government, maximum freedom.</p>
-                            <span class="debuff-tag">HARD MODE</span>
-                        </div>
+                </div>
+                <!-- Forward Party Panel -->
+                <div class="party-panel party-panel-minor" data-party="F" onclick="app.selParty('F')" style="--party-color: #F2C75C;" id="panel-F">
+                    <div class="party-panel-img-wrap">
+                        <img src="images/party-fwd.png" onerror="this.style.display='none'" alt="Forward Party">
+                    </div>
+                    <div class="party-panel-overlay">
+                        <div class="party-panel-name">Forward Party</div>
+                        <div class="party-panel-desc">A centrist third party focused on electoral reform.</div>
+                        <span class="hard-mode-tag">HARD MODE</span>
+                    </div>
+                </div>
+                <!-- Green Party Panel -->
+                <div class="party-panel party-panel-minor" data-party="G" onclick="app.selParty('G')" style="--party-color: #198754;" id="panel-G">
+                    <div class="party-panel-img-wrap">
+                        <img src="images/party-grn.png" onerror="this.style.display='none'" alt="Green Party">
+                    </div>
+                    <div class="party-panel-overlay">
+                        <div class="party-panel-name">Green Party</div>
+                        <div class="party-panel-desc">Environmental and social justice focused.</div>
+                        <span class="hard-mode-tag">HARD MODE</span>
+                    </div>
+                </div>
+                <!-- Libertarian Party Panel -->
+                <div class="party-panel party-panel-minor" data-party="L" onclick="app.selParty('L')" style="--party-color: #fd7e14;" id="panel-L">
+                    <div class="party-panel-img-wrap">
+                        <img src="images/party-lib.png" onerror="this.style.display='none'" alt="Libertarian Party">
+                    </div>
+                    <div class="party-panel-overlay">
+                        <div class="party-panel-name">Libertarian Party</div>
+                        <div class="party-panel-desc">Minimal government, maximum freedom.</div>
+                        <span class="hard-mode-tag">HARD MODE</span>
+                    </div>
+                </div>
+                <!-- Other/Independent Panel -->
+                <div class="party-panel party-panel-minor" data-party="O" onclick="app.selParty('O')" style="--party-color: #9B59B6;" id="panel-O">
+                    <div class="party-panel-img-wrap">
+                        <img src="images/party-oth.png" onerror="this.style.display='none'" alt="Independent">
+                    </div>
+                    <div class="party-panel-overlay">
+                        <div class="party-panel-name">Independent</div>
+                        <div class="party-panel-desc">Run outside the two-party system.</div>
+                        <span class="hard-mode-tag">EXTREME</span>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <section id="candidate-screen" class="screen">
-        <header class="news-header">
-            <div class="logo">DECISION <span class="red-text">2028</span></div>
-        </header>
-        <div class="panel-container">
-            <h2 class="section-title">SELECT PRESIDENTIAL NOMINEE</h2>
-            <div class="cards-row" id="candidate-cards"></div>
-            <button class="back-btn" onclick="app.goToScreen('party-screen')">&larr; BACK TO PARTIES</button>
-        </div>
-    </section>
-
-    <section id="vp-screen" class="screen">
-        <header class="news-header">
-            <div class="logo">DECISION <span class="red-text">2028</span></div>
-        </header>
-        <div class="panel-container">
-            <h2 class="section-title">SELECT RUNNING MATE</h2>
-            <div class="cards-row" id="vp-cards"></div>
-            <button class="back-btn" onclick="app.goToScreen('candidate-screen')">&larr; BACK TO CANDIDATES</button>
-        </div>
-    </section>
-
-    <section id="opponent-screen" class="screen">
-        <header class="news-header">
-            <div class="logo">DECISION <span class="red-text">2028</span></div>
-        </header>
-        <div class="panel-container">
-            <h2 class="section-title">SELECT YOUR OPPONENTS</h2>
-            <p class="opponent-instructions" id="opponent-instructions">Select the opposing ticket by clicking on candidates.  Selected candidates will have a colored border.</p>
-            <div style="margin: 15px 0; padding: 15px; background: #2a2a2a; border-radius: 8px; text-align: center;">
-                <label style="font-size: 1.1rem; color: #ccc; cursor: pointer;">
-                    <input type="checkbox" id="third-parties-toggle" onchange="toggleThirdParties(this.checked);" style="margin-right: 8px; width: 18px; height: 18px; cursor: pointer; vertical-align: middle;">
+            <div class="third-party-toggle-bar">
+                <label class="toggle-label">
+                    <input type="checkbox" id="include-third-parties-check" checked onchange="app.setThirdParties(this.checked)">
+                    <span class="toggle-custom"></span>
                     Include Third Parties in Election
                 </label>
             </div>
-            <div id="opponent-selection-container"></div>
-            <button class="start-btn" id="start-campaign-btn" style="margin-top: 30px; opacity: 0.5;" disabled onclick="app.startGame()">START CAMPAIGN &rarr;</button>
-            <button class="back-btn" onclick="app.goToScreen('vp-screen')">&larr; BACK TO VP SELECTION</button>
+        </div>
+    </section>
+
+    <section id="party-page-screen" class="screen">
+        <header class="news-header">
+            <div class="logo">DECISION <span class="red-text">2028</span></div>
+            <div class="party-page-header-info" id="pp-header-info"></div>
+        </header>
+        <div class="party-page-body" id="party-page-body">
+            <!-- Dynamically populated -->
         </div>
     </section>
 
