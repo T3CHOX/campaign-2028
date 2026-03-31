@@ -116,7 +116,11 @@ var Screens = {
                        c.id !== selectedPresId &&
                        !partyVPs.some(function(v) { return v.id === c.id; });
             });
-            var allVPOptions = partyVPs.concat(extraVPCands);
+            // Deduplicate by name: VPS entries take priority over same-name CANDIDATES entries
+            var seenVPNames = {};
+            for (var pi = 0; pi < partyVPs.length; pi++) { seenVPNames[partyVPs[pi].name] = true; }
+            var dedupedExtras = extraVPCands.filter(function(c) { return !seenVPNames[c.name]; });
+            var allVPOptions = partyVPs.concat(dedupedExtras);
             if (allVPOptions.length === 0) {
                 tilesHTML += '<div class="no-candidates-msg">No running mate options registered for this party.</div>';
             }

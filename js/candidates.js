@@ -85,6 +85,30 @@ const CANDIDATES = [
         groupBoosts: { youth: 12, college: 8, secular: 10, independent: 8 },
         groupDebuffs: { seniors: -5, rural: -6, evangelical: -8 }
     },
+    {
+        id: "beshear", name: "Andy Beshear", party: "D", homeState: "KY",
+        funds: 45, img: "images/scenario.jpg", stamina: 8,
+        desc: "Kentucky Governor. Won 3 straight statewide races in a Trump+30 state — most electable Dem.",
+        buff: "Red State Crossover", debuff: null,
+        groupBoosts: { rural: 6, noncollege: 5, suburban: 7, independent: 8, catholic: 5 },
+        groupDebuffs: { progressive: -6, youth: -3 }
+    },
+    {
+        id: "booker", name: "Cory Booker", party: "D", homeState: "NJ",
+        funds: 40, img: "images/scenario.jpg", stamina: 9,
+        desc: "New Jersey Senator. Set a record-length Senate floor speech in protest of Trump in 2025.",
+        buff: "National Spotlight", debuff: null,
+        groupBoosts: { black: 12, urban: 8, youth: 6, college: 5 },
+        groupDebuffs: { rural: -5, noncollege: -4, evangelical: -4 }
+    },
+    {
+        id: "shapiro", name: "Josh Shapiro", party: "D", homeState: "PA",
+        funds: 55, img: "images/shapiro.jpg", stamina: 8,
+        desc: "Pennsylvania Governor. Won by 15 points in a Trump state — viewed as a top 2028 contender.",
+        buff: "Battleground Governor", debuff: null,
+        groupBoosts: { jewish: 8, suburban: 7, college: 6, independent: 6 },
+        groupDebuffs: { progressive: -5, youth: -3 }
+    },
 
     /* ===== REPUBLICAN PARTY ===== */
     {
@@ -166,6 +190,14 @@ const CANDIDATES = [
         buff: "Media Platform", debuff: "Untested Candidate",
         groupBoosts: { rural: 10, noncollege: 8, maga: 10, evangelical: 5 },
         groupDebuffs: { college: -8, urban: -10, independent: -8, suburban: -6 }
+    },
+    {
+        id: "rubio", name: "Marco Rubio", party: "R", homeState: "FL",
+        funds: 65, img: "images/rubio.jpg", stamina: 8,
+        desc: "Secretary of State (2025–present). After a prominent role in the 2026 Iran crisis, speculation he will run surged.",
+        buff: "Foreign Policy Record", debuff: null,
+        groupBoosts: { hispanic: 14, cuban: 20, catholic: 8, suburban: 5, florida: 10 },
+        groupDebuffs: { maga: -4, rural: -2 }
     },
 
     /* ===== GREEN PARTY ===== */
