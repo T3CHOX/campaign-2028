@@ -107,14 +107,21 @@ var Screens = {
                 tilesHTML += this._buildCandidateTile(partyCands[i], color, false);
             }
         } else {
-            // VP phase
+            // VP phase — show dedicated VPs plus same-party candidates as flexible running-mate options
             var selectedPresId = this._getSelectedPresForParty(partyCode);
             var partyVPs = VPS.filter(function(v) { return v.party === partyCode && v.id !== selectedPresId; });
-            if (partyVPs.length === 0) {
-                tilesHTML += '<div class="no-candidates-msg">No VP candidates registered for this party.</div>';
+            // Also allow same-party presidential candidates (who weren't selected as pres) to be VP options
+            var extraVPCands = CANDIDATES.filter(function(c) {
+                return c.party === partyCode &&
+                       c.id !== selectedPresId &&
+                       !partyVPs.some(function(v) { return v.id === c.id; });
+            });
+            var allVPOptions = partyVPs.concat(extraVPCands);
+            if (allVPOptions.length === 0) {
+                tilesHTML += '<div class="no-candidates-msg">No running mate options registered for this party.</div>';
             }
-            for (var j = 0; j < partyVPs.length; j++) {
-                tilesHTML += this._buildVpTile(partyVPs[j], color);
+            for (var j = 0; j < allVPOptions.length; j++) {
+                tilesHTML += this._buildVpTile(allVPOptions[j], color);
             }
         }
         tilesHTML += '</div>';
@@ -221,16 +228,16 @@ var Screens = {
             }
         }
         return '<div class="candidate-tile" data-id="' + v.id + '" data-type="vp" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + v.party + '\', \'vp\')">' +
-            '<img class="candidate-tile-img" src="' + v.img + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + v.name + '">' +
+            '<img class="candidate-tile-img" src="' + (v.img || 'images/scenario.jpg') + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + v.name + '">' +
             '<div class="candidate-tile-collapsed">' +
                 '<div class="candidate-tile-name">' + v.name + '</div>' +
                 '<div class="candidate-tile-position">' + (v.desc || '') + '</div>' +
-                '<div class="candidate-tile-state">🏠 ' + v.state + '</div>' +
+                '<div class="candidate-tile-state">🏠 ' + (v.state || v.homeState || '') + '</div>' +
             '</div>' +
             '<div class="candidate-tile-expanded">' +
                 '<div class="candidate-tile-name">' + v.name + '</div>' +
                 '<div class="candidate-tile-position">' + (v.desc || '') + '</div>' +
-                '<div class="candidate-tile-state">🏠 ' + v.state + '</div>' +
+                '<div class="candidate-tile-state">🏠 ' + (v.state || v.homeState || '') + '</div>' +
                 groupBoostsText +
                 groupDebuffsText +
             '</div>' +

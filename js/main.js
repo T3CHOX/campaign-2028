@@ -118,8 +118,9 @@ function applyCandidateBuffs() {
         var vp = ticket.vp;
         
         // --- VP Home State Advantage (5-10% boost) ---
-        if (vp && vp.state) {
-            var vpStateFips = STATES[vp.state] ? STATES[vp.state].fips : null;
+        if (vp && (vp.state || vp.homeState)) {
+            var vpHomeState = vp.state || vp.homeState;
+            var vpStateFips = STATES[vpHomeState] ? STATES[vpHomeState].fips : null;
             if (vpStateFips) {
                 for (var fips in Counties.countyData) {
                     var paddedFips = fips.padStart(5, '0');
