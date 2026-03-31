@@ -28,14 +28,14 @@ var Election = {
             for (var fips in Counties.countyData) {
                 var county = Counties.countyData[fips];
                 county.reportedPct = 0;
-                county.reportedVotes = { D: 0, R: 0, G: 0, L: 0, F: 0, O: 0 };
+                county.reportedVotes = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
             }
         }
 
         for (var code in gameData.states) {
             var s = gameData.states[code];
             s.reportedPct = 0;
-            s.reportedVotes = { D: 0, R: 0, G: 0, L: 0, F: 0, O: 0 };
+            s.reportedVotes = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
             s.called = false;
             s.calledFor = null;
             s.countSpeed = 1.0; // Normal speed for most states
@@ -144,17 +144,17 @@ var Election = {
                                     if (gameData.thirdPartiesEnabled) {
                                         var greenTurnout = gameData.selectedParty === 'G' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
                                         var libTurnout = gameData.selectedParty === 'L' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
-                                        var fwdTurnout = gameData.selectedParty === 'F' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
-                                        var othTurnout = gameData.selectedParty === 'O' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.6);
+                                        var pslTurnout = gameData.selectedParty === 'PSL' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
+                                        var indTurnout = gameData.selectedParty === 'I' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.6);
                                         county.reportedVotes.G = Math.floor((adjVotes.G || 0) * county.p / 100 * decidedMultiplier * greenTurnout * reportingFactor * errorFactor);
                                         county.reportedVotes.L = Math.floor((adjVotes.L || 0) * county.p / 100 * decidedMultiplier * libTurnout * reportingFactor * errorFactor);
-                                        county.reportedVotes.F = Math.floor((adjVotes.F || 0) * county.p / 100 * decidedMultiplier * fwdTurnout * reportingFactor * errorFactor);
-                                        county.reportedVotes.O = Math.floor((adjVotes.O || 0) * county.p / 100 * decidedMultiplier * othTurnout * reportingFactor * errorFactor);
+                                        county.reportedVotes.PSL = Math.floor((adjVotes.PSL || 0) * county.p / 100 * decidedMultiplier * pslTurnout * reportingFactor * errorFactor);
+                                        county.reportedVotes.I = Math.floor((adjVotes.I || 0) * county.p / 100 * decidedMultiplier * indTurnout * reportingFactor * errorFactor);
                                     } else {
                                         county.reportedVotes.G = 0;
                                         county.reportedVotes.L = 0;
-                                        county.reportedVotes.F = 0;
-                                        county.reportedVotes.O = 0;
+                                        county.reportedVotes.PSL = 0;
+                                        county.reportedVotes.I = 0;
                                     }
                                 }
                             }
@@ -292,8 +292,8 @@ var Election = {
         var totalRep = 0;
         var totalG = 0;
         var totalL = 0;
-        var totalF = 0;
-        var totalO = 0;
+        var totalPSL = 0;
+        var totalI = 0;
         var totalReportedPct = 0;
         var countyCount = 0;
         
@@ -305,8 +305,8 @@ var Election = {
                 totalRep += county.reportedVotes.R || 0;
                 totalG += county.reportedVotes.G || 0;
                 totalL += county.reportedVotes.L || 0;
-                totalF += county.reportedVotes.F || 0;
-                totalO += county.reportedVotes.O || 0;
+                totalPSL += county.reportedVotes.PSL || 0;
+                totalI += county.reportedVotes.I || 0;
                 totalReportedPct += county.reportedPct || 0;
                 countyCount++;
             }
@@ -316,8 +316,8 @@ var Election = {
         state.reportedVotes.R = totalRep;
         state.reportedVotes.G = totalG;
         state.reportedVotes.L = totalL;
-        state.reportedVotes.F = totalF;
-        state.reportedVotes.O = totalO;
+        state.reportedVotes.PSL = totalPSL;
+        state.reportedVotes.I = totalI;
         
         // State reporting percentage is average of county reporting percentages
         state.reportedPct = countyCount > 0 ? totalReportedPct / countyCount : 0;
@@ -332,8 +332,8 @@ var Election = {
         if (gameData.thirdPartiesEnabled) {
             votes.push({ party: 'G', count: state.reportedVotes.G || 0 });
             votes.push({ party: 'L', count: state.reportedVotes.L || 0 });
-            votes.push({ party: 'F', count: state.reportedVotes.F || 0 });
-            votes.push({ party: 'O', count: state.reportedVotes.O || 0 });
+            votes.push({ party: 'PSL', count: state.reportedVotes.PSL || 0 });
+            votes.push({ party: 'I', count: state.reportedVotes.I || 0 });
         }
         votes.sort(function(a, b) { return b.count - a.count; });
         return votes[0].party;
@@ -359,20 +359,20 @@ var Election = {
             R: county.v.R || 0,
             G: county.v.G || 0,
             L: county.v.L || 0,
-            F: county.v.F || 0,
-            O: county.v.O || 0
+            PSL: county.v.PSL || 0,
+            I: county.v.I || 0
         };
 
         if (!gameData.thirdPartiesEnabled) {
             // When third parties off, collapse all 3rd party votes into D/R proportionally
             var majorTotal = base.D + base.R;
             if (majorTotal > 0) {
-                var thirdTotal = base.G + base.L + base.F + base.O;
+                var thirdTotal = base.G + base.L + base.PSL + base.I;
                 var dRatio = base.D / majorTotal;
                 base.D += thirdTotal * dRatio;
                 base.R += thirdTotal * (1 - dRatio);
             }
-            base.G = 0; base.L = 0; base.F = 0; base.O = 0;
+            base.G = 0; base.L = 0; base.PSL = 0; base.I = 0;
             return base;
         }
 
@@ -387,7 +387,7 @@ var Election = {
         if (gameData.demTicket && gameData.demTicket.pres) candForParty['D'] = gameData.demTicket.pres.id;
         if (gameData.repTicket && gameData.repTicket.pres) candForParty['R'] = gameData.repTicket.pres.id;
         if (gameData.thirdTickets) {
-            var tpCodes = ['F', 'G', 'L', 'O'];
+            var tpCodes = ['PSL', 'G', 'L', 'I'];
             for (var ti = 0; ti < tpCodes.length; ti++) {
                 if (gameData.thirdTickets[tpCodes[ti]] && gameData.thirdTickets[tpCodes[ti]].pres) {
                     candForParty[tpCodes[ti]] = gameData.thirdTickets[tpCodes[ti]].pres.id;
@@ -398,8 +398,8 @@ var Election = {
         // Calculate weighted support deltas from interest groups
         // Each interest group has a county-specific weight (approx uniform here)
         var groupCount = 0;
-        var deltas = { D: 0, R: 0, G: 0, L: 0, F: 0, O: 0 };
-        var parties = ['D', 'R', 'G', 'L', 'F', 'O'];
+        var deltas = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+        var parties = ['D', 'R', 'G', 'L', 'PSL', 'I'];
 
         for (var groupId in gameData.interestGroupSupport) {
             var groupSupport = gameData.interestGroupSupport[groupId];
@@ -419,7 +419,7 @@ var Election = {
 
         if (groupCount > 0) {
             // Apply averaged deltas, clamped to avoid negatives
-            var totalVS = base.D + base.R + base.G + base.L + base.F + base.O;
+            var totalVS = base.D + base.R + base.G + base.L + base.PSL + base.I;
             if (totalVS > 0) {
                 for (var pj = 0; pj < parties.length; pj++) {
                     var pp = parties[pj];
@@ -442,7 +442,7 @@ var Election = {
 
     // Get display label for a party code
     getPartyLabel: function(partyCode) {
-        var labels = { D: 'Democrats', R: 'Republicans', G: 'Green Party', L: 'Libertarian Party', F: 'Forward Party', O: 'Independent' };
+        var labels = { D: 'Democrats', R: 'Republicans', G: 'Green Party', L: 'Libertarian Party', PSL: 'Party for Socialism and Liberation', I: 'Independent' };
         return labels[partyCode] || partyCode;
     },
 

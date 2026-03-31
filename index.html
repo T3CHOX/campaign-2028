@@ -24,9 +24,36 @@
         </header>
         <div class="party-select-container">
             <h2 class="section-title">SELECT YOUR PARTY</h2>
-            <div class="party-panels-row" id="party-panels-row">
-                <!-- Democratic Party Panel -->
-                <div class="party-panel" data-party="D" onclick="app.selParty('D')" style="--party-color: #00AEF3;">
+            <!-- New layout: [left-minor: G+PSL] [D large] [R large] [right-minor: L+I] -->
+            <div class="party-layout-grid" id="party-panels-row">
+                <!-- Left minor column: Green (top) + PSL (bottom) -->
+                <div class="party-minor-col party-minor-col-left">
+                    <!-- Green Party Panel -->
+                    <div class="party-panel party-panel-minor" data-party="G" onclick="app.selParty('G')" style="--party-color: #198754;" id="panel-G">
+                        <div class="party-panel-img-wrap">
+                            <img src="images/party-grn.png" onerror="this.style.display='none'" alt="Green Party">
+                        </div>
+                        <div class="party-panel-overlay">
+                            <div class="party-panel-name">Green Party</div>
+                            <div class="party-panel-desc">Environmental and social justice focused.</div>
+                            <span class="hard-mode-tag">HARD MODE</span>
+                        </div>
+                    </div>
+                    <!-- PSL Panel -->
+                    <div class="party-panel party-panel-minor" data-party="PSL" onclick="app.selParty('PSL')" style="--party-color: #CC0000;" id="panel-PSL">
+                        <div class="party-panel-img-wrap">
+                            <img src="images/party-psl.png" onerror="this.style.display='none'" alt="Party for Socialism and Liberation">
+                        </div>
+                        <div class="party-panel-overlay">
+                            <div class="party-panel-name">PSL</div>
+                            <div class="party-panel-desc">Socialist party for working-class liberation.</div>
+                            <span class="hard-mode-tag">EXTREME</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Democratic Party Panel (large) -->
+                <div class="party-panel party-panel-major" data-party="D" onclick="app.selParty('D')" style="--party-color: #00AEF3;">
                     <div class="party-panel-img-wrap">
                         <img src="images/party-dem.png" onerror="this.style.display='none'" alt="Democratic Party">
                     </div>
@@ -35,8 +62,9 @@
                         <div class="party-panel-desc">The center-left party focused on social equality and progressive policies.</div>
                     </div>
                 </div>
-                <!-- Republican Party Panel -->
-                <div class="party-panel" data-party="R" onclick="app.selParty('R')" style="--party-color: #E81B23;">
+
+                <!-- Republican Party Panel (large) -->
+                <div class="party-panel party-panel-major" data-party="R" onclick="app.selParty('R')" style="--party-color: #E81B23;">
                     <div class="party-panel-img-wrap">
                         <img src="images/party-rep.png" onerror="this.style.display='none'" alt="Republican Party">
                     </div>
@@ -45,48 +73,30 @@
                         <div class="party-panel-desc">The center-right party focused on traditional values and limited government.</div>
                     </div>
                 </div>
-                <!-- Forward Party Panel -->
-                <div class="party-panel party-panel-minor" data-party="F" onclick="app.selParty('F')" style="--party-color: #F2C75C;" id="panel-F">
-                    <div class="party-panel-img-wrap">
-                        <img src="images/party-fwd.png" onerror="this.style.display='none'" alt="Forward Party">
+
+                <!-- Right minor column: Libertarian (top) + Independent (bottom) -->
+                <div class="party-minor-col party-minor-col-right">
+                    <!-- Libertarian Party Panel -->
+                    <div class="party-panel party-panel-minor" data-party="L" onclick="app.selParty('L')" style="--party-color: #fd7e14;" id="panel-L">
+                        <div class="party-panel-img-wrap">
+                            <img src="images/party-lib.png" onerror="this.style.display='none'" alt="Libertarian Party">
+                        </div>
+                        <div class="party-panel-overlay">
+                            <div class="party-panel-name">Libertarian Party</div>
+                            <div class="party-panel-desc">Minimal government, maximum freedom.</div>
+                            <span class="hard-mode-tag">HARD MODE</span>
+                        </div>
                     </div>
-                    <div class="party-panel-overlay">
-                        <div class="party-panel-name">Forward Party</div>
-                        <div class="party-panel-desc">A centrist third party focused on electoral reform.</div>
-                        <span class="hard-mode-tag">HARD MODE</span>
-                    </div>
-                </div>
-                <!-- Green Party Panel -->
-                <div class="party-panel party-panel-minor" data-party="G" onclick="app.selParty('G')" style="--party-color: #198754;" id="panel-G">
-                    <div class="party-panel-img-wrap">
-                        <img src="images/party-grn.png" onerror="this.style.display='none'" alt="Green Party">
-                    </div>
-                    <div class="party-panel-overlay">
-                        <div class="party-panel-name">Green Party</div>
-                        <div class="party-panel-desc">Environmental and social justice focused.</div>
-                        <span class="hard-mode-tag">HARD MODE</span>
-                    </div>
-                </div>
-                <!-- Libertarian Party Panel -->
-                <div class="party-panel party-panel-minor" data-party="L" onclick="app.selParty('L')" style="--party-color: #fd7e14;" id="panel-L">
-                    <div class="party-panel-img-wrap">
-                        <img src="images/party-lib.png" onerror="this.style.display='none'" alt="Libertarian Party">
-                    </div>
-                    <div class="party-panel-overlay">
-                        <div class="party-panel-name">Libertarian Party</div>
-                        <div class="party-panel-desc">Minimal government, maximum freedom.</div>
-                        <span class="hard-mode-tag">HARD MODE</span>
-                    </div>
-                </div>
-                <!-- Other/Independent Panel -->
-                <div class="party-panel party-panel-minor" data-party="O" onclick="app.selParty('O')" style="--party-color: #9B59B6;" id="panel-O">
-                    <div class="party-panel-img-wrap">
-                        <img src="images/party-oth.png" onerror="this.style.display='none'" alt="Independent">
-                    </div>
-                    <div class="party-panel-overlay">
-                        <div class="party-panel-name">Independent</div>
-                        <div class="party-panel-desc">Run outside the two-party system.</div>
-                        <span class="hard-mode-tag">EXTREME</span>
+                    <!-- Independent Panel -->
+                    <div class="party-panel party-panel-minor" data-party="I" onclick="app.selParty('I')" style="--party-color: #9B59B6;" id="panel-I">
+                        <div class="party-panel-img-wrap">
+                            <img src="images/party-ind.png" onerror="this.style.display='none'" alt="Independent">
+                        </div>
+                        <div class="party-panel-overlay">
+                            <div class="party-panel-name">Independent</div>
+                            <div class="party-panel-desc">Run outside the two-party system.</div>
+                            <span class="hard-mode-tag">EXTREME</span>
+                        </div>
                     </div>
                 </div>
             </div>

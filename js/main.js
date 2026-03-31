@@ -15,7 +15,7 @@ function initGameData() {
             adSpent: 0,
             rallies: 0,
             reportedPct: 0,
-            reportedVotes: { D: 0, R: 0, G: 0, L: 0, F: 0, O: 0 },
+            reportedVotes: { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 },
             called: false,
             calledFor: null,
             fundraisingVisits: 0,
@@ -55,9 +55,12 @@ function startGame() {
         return;
     }
 
+    // Apply third-party penalties (harder campaign)
     if (isThirdParty) {
-        gameData.funds = Math.floor(gameData.funds * 0.5);
-        gameData.maxEnergy = Math.max(4, gameData.maxEnergy - 2);
+        // PSL gets harshest penalty (extreme mode), others get standard third-party penalty
+        var isPSL = gameData.selectedParty === 'PSL';
+        gameData.funds = Math.floor(gameData.funds * (isPSL ? 0.3 : 0.5));
+        gameData.maxEnergy = Math.max(isPSL ? 3 : 4, gameData.maxEnergy - (isPSL ? 3 : 2));
         gameData.energy = gameData.maxEnergy;
     }
     
@@ -80,56 +83,92 @@ function applyCandidateBuffs() {
         return;
     }
     
-    // Apply buffs for all candidates based on their characteristics
-    // This modifies county vote percentages based on candidate appeal
-    
-    // Home State Advantage - VP gives 5-10% boost in their home state
-    if (gameData.vp && gameData.vp.state) {
-        var vpStateCode = gameData.vp.state;
-        var vpStateFips = STATES[vpStateCode] ? STATES[vpStateCode].fips : null;
+    // Build list of all tickets: [{ partyCode, pres, vp }]
+    var allTickets = [];
+    if (gameData.selectedParty && gameData.candidate) {
+        allTickets.push({ party: gameData.selectedParty, pres: gameData.candidate, vp: gameData.vp });
+    }
+    if (gameData.demTicket && gameData.demTicket.pres) {
+        allTickets.push({ party: 'D', pres: gameData.demTicket.pres, vp: gameData.demTicket.vp });
+    }
+    if (gameData.repTicket && gameData.repTicket.pres) {
+        allTickets.push({ party: 'R', pres: gameData.repTicket.pres, vp: gameData.repTicket.vp });
+    }
+    if (gameData.thirdTickets) {
+        var tpCodes = ['PSL', 'G', 'L', 'I'];
+        for (var tc = 0; tc < tpCodes.length; tc++) {
+            var tp = tpCodes[tc];
+            if (gameData.thirdTickets[tp] && gameData.thirdTickets[tp].pres) {
+                allTickets.push({ party: tp, pres: gameData.thirdTickets[tp].pres, vp: gameData.thirdTickets[tp].vp });
+            }
+        }
+    }
+
+    // Helper: get the vote key for a party (D, R, or the party code itself for third parties)
+    function getVoteKey(partyCode) {
+        return partyCode; // Matches county.v keys: D, R, G, L, I, PSL
+    }
+
+    // Apply buffs for each ticket
+    for (var t = 0; t < allTickets.length; t++) {
+        var ticket = allTickets[t];
+        var partyCode = ticket.party;
+        var voteKey = getVoteKey(partyCode);
+        var pres = ticket.pres;
+        var vp = ticket.vp;
         
-        if (vpStateFips) {
-            for (var fips in Counties.countyData) {
-                var paddedFips = fips.padStart(5, '0');
-                if (paddedFips.substring(0, 2) === vpStateFips) {
-                    var county = Counties.countyData[fips];
-                    var boost = 5 + Math.random() * 5; // 5-10% boost
-                    
-                    if (gameData.selectedParty === 'D') {
-                        county.v.D = Math.min(100, county.v.D + boost);
-                        county.v.R = Math.max(0, county.v.R - boost / 2);
-                    } else if (gameData.selectedParty === 'R') {
-                        county.v.R = Math.min(100, county.v.R + boost);
-                        county.v.D = Math.max(0, county.v.D - boost / 2);
+        // --- VP Home State Advantage (5-10% boost) ---
+        if (vp && vp.state) {
+            var vpStateFips = STATES[vp.state] ? STATES[vp.state].fips : null;
+            if (vpStateFips) {
+                for (var fips in Counties.countyData) {
+                    var paddedFips = fips.padStart(5, '0');
+                    if (paddedFips.substring(0, 2) === vpStateFips) {
+                        var county = Counties.countyData[fips];
+                        var boost = 5 + Math.random() * 5;
+                        county.v[voteKey] = Math.min(100, (county.v[voteKey] || 0) + boost);
+                        // Reduce opponent D/R proportionally
+                        if (voteKey !== 'D') county.v.D = Math.max(0, county.v.D - boost * 0.4);
+                        if (voteKey !== 'R') county.v.R = Math.max(0, county.v.R - boost * 0.4);
                     }
                 }
             }
         }
-    }
-    
-    // Midwest Appeal (for candidates like Whitmer) - boost in Midwest states
-    if (gameData.candidate && gameData.candidate.buff === "Midwest Appeal") {
-        var midwestStates = ['MI', 'WI', 'MN', 'OH', 'IL', 'IN', 'IA', 'MO'];
-        for (var i = 0; i < midwestStates.length; i++) {
-            var stateCode = midwestStates[i];
-            var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
-            if (stateFips) {
-                for (var fips in Counties.countyData) {
-                    var paddedFips = fips.padStart(5, '0');
-                    if (paddedFips.substring(0, 2) === stateFips) {
-                        var county = Counties.countyData[fips];
-                        var boost = 2 + Math.random() * 3; // 2-5% boost
-                        
-                        if (gameData.selectedParty === 'D') {
-                            county.v.D = Math.min(100, county.v.D + boost);
-                            county.v.R = Math.max(0, county.v.R - boost / 2);
-                        } else if (gameData.selectedParty === 'R') {
-                            county.v.R = Math.min(100, county.v.R + boost);
-                            county.v.D = Math.max(0, county.v.D - boost / 2);
+
+        // --- VP Group Boosts (e.g., Rubio → Hispanic counties) ---
+        if (vp && vp.groupBoosts) {
+            _applyGroupBoostsToCounties(vp.groupBoosts, voteKey, 0.6); // VP has 60% effect vs pres
+        }
+        if (vp && vp.groupDebuffs) {
+            _applyGroupBoostsToCounties(vp.groupDebuffs, voteKey, 0.6);
+        }
+
+        // --- Presidential Candidate Buffs ---
+        if (pres && pres.buff === "Midwest Appeal") {
+            var midwestStates = ['MI', 'WI', 'MN', 'OH', 'IL', 'IN', 'IA', 'MO'];
+            for (var i = 0; i < midwestStates.length; i++) {
+                var stateFips = STATES[midwestStates[i]] ? STATES[midwestStates[i]].fips : null;
+                if (stateFips) {
+                    for (var fips2 in Counties.countyData) {
+                        var pf = fips2.padStart(5, '0');
+                        if (pf.substring(0, 2) === stateFips) {
+                            var co = Counties.countyData[fips2];
+                            var b = 2 + Math.random() * 3;
+                            co.v[voteKey] = Math.min(100, (co.v[voteKey] || 0) + b);
+                            if (voteKey !== 'D') co.v.D = Math.max(0, co.v.D - b * 0.4);
+                            if (voteKey !== 'R') co.v.R = Math.max(0, co.v.R - b * 0.4);
                         }
                     }
                 }
             }
+        }
+
+        // --- Presidential Candidate Group Boosts ---
+        if (pres && typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[pres.id]) {
+            _applyGroupBoostsToCounties(CANDIDATE_GROUP_MODIFIERS[pres.id], voteKey, 1.0);
+        }
+        if (pres && pres.groupBoosts) {
+            _applyGroupBoostsToCounties(pres.groupBoosts, voteKey, 0.8);
         }
     }
     
@@ -140,7 +179,29 @@ function applyCandidateBuffs() {
         }
     }
     
-    console.log('✓ Candidate buffs applied and state margins calculated from counties');
+    console.log('✓ Candidate buffs applied for all tickets; state margins recalculated');
+}
+
+// Helper: apply group boost/debuff values to matching counties
+function _applyGroupBoostsToCounties(groupMods, voteKey, scale) {
+    for (var groupId in groupMods) {
+        var modVal = groupMods[groupId] * (scale || 1.0);
+        for (var fips in Counties.countyData) {
+            var county = Counties.countyData[fips];
+            // Check if county has this interest group data
+            if (county.ig && county.ig[groupId] !== undefined) {
+                // Apply proportional to group presence (0-100% of county)
+                var groupWeight = county.ig[groupId] / 100;
+                var shift = modVal * groupWeight * 0.1; // Scale: full modifier * group weight * dampening
+                county.v[voteKey] = Math.min(100, Math.max(0, (county.v[voteKey] || 0) + shift));
+                // Reduce D/R proportionally if this is a third party boost
+                if (shift > 0 && voteKey !== 'D' && voteKey !== 'R') {
+                    county.v.D = Math.max(0, county.v.D - shift * 0.4);
+                    county.v.R = Math.max(0, county.v.R - shift * 0.4);
+                }
+            }
+        }
+    }
 }
 
 // Handle third-party toggle change
@@ -204,7 +265,7 @@ function initializeInterestGroupSupport() {
     
     // Include third party tickets from the selection flow (if third parties enabled)
     if (gameData.thirdPartiesEnabled && gameData.thirdTickets) {
-        var thirdPartyCodes = ['F', 'G', 'L', 'O'];
+        var thirdPartyCodes = ['PSL', 'G', 'L', 'I'];
         for (var tp = 0; tp < thirdPartyCodes.length; tp++) {
             var tpCode = thirdPartyCodes[tp];
             if (gameData.selectedParty !== tpCode && gameData.thirdTickets[tpCode] && gameData.thirdTickets[tpCode].pres) {
@@ -216,9 +277,11 @@ function initializeInterestGroupSupport() {
             }
         }
     } else if (gameData.thirdPartiesEnabled) {
-        // Fallback: include default Stein and Oliver if no third tickets selected
+        // Fallback: include default third party candidates if no third tickets selected
         allCandidates.push({ id: 'stein', name: 'Jill Stein', party: 'G' });
         allCandidates.push({ id: 'oliver', name: 'Chase Oliver', party: 'L' });
+        allCandidates.push({ id: 'psl_placeholder', name: 'Gloria La Riva', party: 'PSL' });
+        allCandidates.push({ id: 'manchin', name: 'Joe Manchin', party: 'I' });
     }
     
     // For each interest group, calculate initial support for each candidate
@@ -1029,7 +1092,8 @@ var app = {
             'R': '#E81B23',
             'G': '#198754',
             'L': '#fd7e14',
-            'F': '#F2C75C'
+            'I': '#9B59B6',
+            'PSL': '#CC0000'
         };
         return colors[party] || '#888';
     },
