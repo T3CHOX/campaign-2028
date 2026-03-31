@@ -280,7 +280,7 @@ function initializeInterestGroupSupport() {
         // Fallback: include default third party candidates if no third tickets selected
         allCandidates.push({ id: 'stein', name: 'Jill Stein', party: 'G' });
         allCandidates.push({ id: 'oliver', name: 'Chase Oliver', party: 'L' });
-        allCandidates.push({ id: 'psl_placeholder', name: 'Gloria La Riva', party: 'PSL' });
+        allCandidates.push({ id: 'lariva', name: 'Gloria La Riva', party: 'PSL' });
         allCandidates.push({ id: 'manchin', name: 'Joe Manchin', party: 'I' });
     }
     

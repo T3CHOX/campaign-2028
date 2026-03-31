@@ -13,7 +13,7 @@ const CANDIDATES = [
     { id: "ramaswamy", name: "Vivek Ramaswamy", party: "R", homeState: "OH", funds: 70, img: "images/ramaswamy.jpg", stamina: 10, desc: "Biotech entrepreneur.", buff: "Outsider Energy", groupBoosts: { asian: 10, suburban: 5, tech: 8 }, groupDebuffs: { college: -5, union: -6 } },
     { id: "haley", name: "Nikki Haley", party: "R", homeState: "SC", funds: 55, img: "images/haley.jpg", stamina: 8, desc: "Former UN Ambassador.", buff: "Suburban Appeal", groupBoosts: { women: 8, suburban: 8, college: 6, military: 5 }, groupDebuffs: { rural: -3 } },
     { id: "yang", name: "Andrew Yang", party: "PSL", homeState: "NY", funds: 20, img: "images/yang.jpg", stamina: 8, desc: "Tech entrepreneur turned activist.", buff: "UBI Movement", debuff: "Third Party Penalty", groupBoosts: { tech: 12, asian: 10, youth: 8, college: 6 }, groupDebuffs: { rural: -8, evangelical: -5 } },
-    { id: "psl_placeholder", name: "Gloria La Riva", party: "PSL", homeState: "CA", funds: 5, img: "images/scenario.jpg", stamina: 7, desc: "PSL General Secretary & longtime socialist organizer.", buff: "Working Class Appeal", debuff: "Severe Third Party Penalty", groupBoosts: { union: 10, youth: 8, urban: 6, hispanic: 8 }, groupDebuffs: { suburban: -8, rural: -12, smallbusiness: -6 } },
+    { id: "lariva", name: "Gloria La Riva", party: "PSL", homeState: "CA", funds: 5, img: "images/scenario.jpg", stamina: 7, desc: "PSL General Secretary & longtime socialist organizer.", buff: "Working Class Appeal", debuff: "Severe Third Party Penalty", groupBoosts: { union: 10, youth: 8, urban: 6, hispanic: 8 }, groupDebuffs: { suburban: -8, rural: -12, smallbusiness: -6 } },
     { id: "stein", name: "Jill Stein", party: "G", homeState: "MA", funds: 8, img: "images/scenario.jpg", stamina: 6, desc: "Green Party candidate.", buff: "Environmental Base", debuff: "Severe Third Party Penalty", groupBoosts: { secular: 12, youth: 8, urban: 6 }, groupDebuffs: { bluecollar: -5, rural: -10 } },
     { id: "oliver", name: "Chase Oliver", party: "L", homeState: "GA", funds: 10, img: "images/scenario.jpg", stamina: 7, desc: "Libertarian activist.", buff: "Liberty Movement", debuff: "Severe Third Party Penalty", groupBoosts: { smallbusiness: 10, college: 5, tech: 6 }, groupDebuffs: { union: -10, black: -5 } },
     { id: "manchin", name: "Joe Manchin", party: "I", homeState: "WV", funds: 30, img: "images/scenario.jpg", stamina: 7, desc: "Former West Virginia Senator. Centrist Democrat turned Independent.", buff: "Bipartisan Appeal", debuff: "Outsider Penalty", groupBoosts: { bluecollar: 8, rural: 6, catholic: 5 }, groupDebuffs: { urban: -5, youth: -4 } },
@@ -30,10 +30,10 @@ const VPS = [
     { id: "scott_tim", name: "Tim Scott", party: "R", state: "SC", img: "images/scott.jpg", desc: "Senator from South Carolina.", groupBoosts: { black: 5, evangelical: 8, suburban: 4 }, groupDebuffs: {} },
     { id: "stefanik", name:  "Elise Stefanik", party: "R", state: "NY", img: "images/stefanik.jpg", desc: "Congresswoman from New York.", groupBoosts: { women: 6, suburban: 5, college: 3 }, groupDebuffs: {} },
     { id: "noem", name: "Kristi Noem", party: "R", state: "SD", img: "images/noem.jpg", desc: "Governor of South Dakota.", groupBoosts: { rural: 8, evangelical: 6, women: 4 }, groupDebuffs: { urban: -4 } },
-    { id: "lib_vp_placeholder", name: "Mike ter Maat", party: "L", state: "FL", img: "images/scenario.jpg", desc: "Economist and Libertarian activist.", groupBoosts: { smallbusiness: 6, college: 4, tech: 5 }, groupDebuffs: {} },
+    { id: "termaat", name: "Mike ter Maat", party: "L", state: "FL", img: "images/scenario.jpg", desc: "Economist and Libertarian activist.", groupBoosts: { smallbusiness: 6, college: 4, tech: 5 }, groupDebuffs: {} },
     { id: "whitman", name: "Christine Todd Whitman", party: "PSL", state: "NJ", img: "images/scenario.jpg", desc: "Former NJ Governor.", groupBoosts: { women: 5, suburban: 4 }, groupDebuffs: {} },
     { id: "gabbard", name: "Tulsi Gabbard", party: "PSL", state: "HI", img: "images/scenario.jpg", desc: "Former Congresswoman.", groupBoosts: { military: 5, youth: 4 }, groupDebuffs: {} },
-    { id: "psl_vp_placeholder", name: "Sunil Freeman", party: "PSL", state: "PA", img: "images/scenario.jpg", desc: "PSL activist and labor organizer.", groupBoosts: { union: 8, urban: 5, youth: 6 }, groupDebuffs: {} },
+    { id: "freeman", name: "Sunil Freeman", party: "PSL", state: "PA", img: "images/scenario.jpg", desc: "PSL activist and labor organizer.", groupBoosts: { union: 8, urban: 5, youth: 6 }, groupDebuffs: {} },
     { id: "ware", name: "Butch Ware", party: "G", state: "CA", img: "images/scenario.jpg", desc: "Academic and activist.", groupBoosts: { secular: 6, youth: 5, urban: 4 }, groupDebuffs: {} },
     { id: "kinzinger", name: "Adam Kinzinger", party: "I", state: "IL", img: "images/scenario.jpg", desc: "Former Republican Congressman, anti-Trump conservative.", groupBoosts: { military: 6, suburban: 5 }, groupDebuffs: {} },
     { id: "west_cornel", name: "Cornel West", party: "I", state: "MA", img: "images/scenario.jpg", desc: "Academic, activist, and political philosopher.", groupBoosts: { black: 8, youth: 6, progressive: 7 }, groupDebuffs: { suburban: -4 } }
@@ -101,7 +101,7 @@ const CANDIDATE_POSITIONS = {
         criminal: -2, drugpricing: -4, energy: -3, foreign: -1, military: -1,
         israel: 0, govspend: -1, electionreform: -5, scotus: -2, economy: -2
     },
-    psl_placeholder: {
+    lariva: {
         guns: -7, abortion: -9, healthcare: -10, immigration: -8, climate: -10,
         taxation: -9, trade: -6, minwage: -9, labor: -9, lgbtq: -9,
         criminal: -8, drugpricing: -10, energy: -10, foreign: -7, military: -9,
@@ -153,7 +153,7 @@ const CANDIDATE_GROUP_MODIFIERS = {
     yang: {
         tech: 12, asian: 10, youth: 8, college: 6
     },
-    psl_placeholder: {
+    lariva: {
         union: 10, youth: 8, urban: 6, hispanic: 8, black: 5
     },
     rubio: {

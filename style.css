@@ -2680,7 +2680,7 @@ body {
 
 .party-panel[style*="00AEF3"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(0,174,243,0.3) 0%, rgba(0,0,0,0.6) 100%); }
 .party-panel[style*="E81B23"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(232,27,35,0.3) 0%, rgba(0,0,0,0.6) 100%); }
-.party-panel[style*="CC0000"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(204,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%); }
+.party-panel[data-party="PSL"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(204,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%); }
 .party-panel[style*="198754"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(25,135,84,0.3) 0%, rgba(0,0,0,0.6) 100%); }
 .party-panel[style*="fd7e14"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(253,126,20,0.3) 0%, rgba(0,0,0,0.6) 100%); }
 .party-panel[style*="9B59B6"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(155,89,182,0.3) 0%, rgba(0,0,0,0.6) 100%); }
