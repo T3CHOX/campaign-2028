@@ -27,12 +27,16 @@ var Counties = {
                     var c = Counties.countyData[fips];
                     
                     // Store original values for reference
+                    // Map county JSON's 'O' key to 'I' (Independent), 'F' to 'PSL' (Party for Socialism and Liberation)
+                    c.v.I = c.v.O || 0;
+                    c.v.PSL = c.v.F || 0;
                     c.originalV = {
                         D: c.v.D,
                         R: c.v.R,
                         G: c.v.G || 0,
                         L: c.v.L || 0,
-                        O: c.v.O || 0
+                        I: c.v.I || 0,
+                        PSL: c.v.PSL || 0
                     };
                     
                     // Initialize undecided percentage (15% of population)
@@ -72,17 +76,19 @@ var Counties = {
             // Use original third-party percentages
             county.v.G = county.originalV.G;
             county.v.L = county.originalV.L;
-            county.v.O = county.originalV.O;
+            county.v.I = county.originalV.I;
+            county.v.PSL = county.originalV.PSL;
         } else {
             // Split third-party votes 50/50 between D and R
-            var totalThird = (county.originalV.G || 0) + (county.originalV.L || 0) + (county.originalV.O || 0);
+            var totalThird = (county.originalV.G || 0) + (county.originalV.L || 0) + (county.originalV.I || 0) + (county.originalV.PSL || 0);
             var halfThird = totalThird / 2;
             
             county.v.D = county.originalV.D + halfThird;
             county.v.R = county.originalV.R + halfThird;
             county.v.G = 0;
             county.v.L = 0;
-            county.v.O = 0;
+            county.v.I = 0;
+            county.v.PSL = 0;
         }
     },
     
@@ -455,10 +461,10 @@ var Counties = {
                     var demVotes = (county.v.D || 0) * county.p / 100 * decidedMultiplier * demTurnout;
                     var repVotes = (county.v.R || 0) * county.p / 100 * decidedMultiplier * repTurnout;
                     
-                    // Include Third Party votes (G, L, and O - Other)
+                    // Include Third Party votes (G, L, I, and PSL)
                     var thirdVotes = 0;
                     if (gameData.thirdPartiesEnabled) {
-                        thirdVotes = ((county.v.G || 0) + (county.v.L || 0) + (county.v.O || 0)) * county.p / 100 * decidedMultiplier * thirdPartyTurnout;
+                        thirdVotes = ((county.v.G || 0) + (county.v.L || 0) + (county.v.I || 0) + (county.v.PSL || 0)) * county.p / 100 * decidedMultiplier * thirdPartyTurnout;
                     }
                     
                     totalDemVotes += demVotes;

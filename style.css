@@ -5,7 +5,9 @@
     --panel-bg: #1e1e1e;
     --dem-blue: #00AEF3;
     --rep-red: #E81B23;
-    --forward-gold: #F2C75C;
+    --forward-gold: #F2C75C;  /* Legacy — kept for any uses that remain */
+    --psl-red: #CC0000;
+    --independent-purple: #9B59B6;
     --green-party: #198754;
     --libertarian-orange: #fd7e14;
     --gold: #ffd700;
@@ -2601,6 +2603,7 @@ body {
     max-width: 100%;
 }
 
+/* Legacy class - kept for compatibility */
 .party-panels-row {
     display: flex;
     flex-direction: row;
@@ -2613,10 +2616,29 @@ body {
     margin-bottom: 30px;
 }
 
+/* New grid layout: minor-left | D(large) | R(large) | minor-right */
+.party-layout-grid {
+    display: grid;
+    grid-template-columns: 160px 1fr 1fr 160px;
+    gap: 18px;
+    align-items: center;
+    width: 100%;
+    max-width: 1100px;
+    margin-bottom: 30px;
+}
+
+/* Minor columns stack their two panels vertically */
+.party-minor-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
+}
+
 .party-panel {
     --party-color: #888888;
     position: relative;
-    width: 200px;
+    width: 100%;
     min-height: 280px;
     cursor: pointer;
     border-radius: 12px;
@@ -2635,9 +2657,14 @@ body {
     z-index: 5;
 }
 
+/* Major (D/R) panels — taller, more prominent */
+.party-panel-major {
+    min-height: 360px;
+}
+
+/* Minor panels — same aspect ratio as major but smaller */
 .party-panel-minor {
-    width: 170px;
-    min-height: 240px;
+    min-height: 165px;
 }
 
 .party-panel-img-wrap {
@@ -2653,7 +2680,7 @@ body {
 
 .party-panel[style*="00AEF3"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(0,174,243,0.3) 0%, rgba(0,0,0,0.6) 100%); }
 .party-panel[style*="E81B23"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(232,27,35,0.3) 0%, rgba(0,0,0,0.6) 100%); }
-.party-panel[style*="F2C75C"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(242,199,92,0.25) 0%, rgba(0,0,0,0.6) 100%); }
+.party-panel[data-party="PSL"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(204,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%); }
 .party-panel[style*="198754"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(25,135,84,0.3) 0%, rgba(0,0,0,0.6) 100%); }
 .party-panel[style*="fd7e14"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(253,126,20,0.3) 0%, rgba(0,0,0,0.6) 100%); }
 .party-panel[style*="9B59B6"] .party-panel-img-wrap { background: linear-gradient(135deg, rgba(155,89,182,0.3) 0%, rgba(0,0,0,0.6) 100%); }
@@ -2757,6 +2784,24 @@ body {
     accent-color: #00AEF3;
 }
 
+/* Responsive: collapse grid on narrow screens */
+@media (max-width: 820px) {
+    .party-layout-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+    }
+    .party-minor-col {
+        flex-direction: row;
+    }
+    .party-panel-major {
+        min-height: 260px;
+    }
+    .party-panel-minor {
+        min-height: 130px;
+    }
+}
+
+
 /* ============================================
    PARTY PAGE SCREENS (Per-Party Selection)
    ============================================ */
@@ -2840,6 +2885,16 @@ body {
     margin-bottom: 30px;
 }
 
+/* No-candidates placeholder message */
+.no-candidates-msg {
+    color: #888;
+    font-style: italic;
+    font-size: 0.9rem;
+    padding: 20px;
+    text-align: center;
+    width: 100%;
+}
+
 .candidate-tile {
     width: 200px;
     background: #1e1e1e;
@@ -2847,14 +2902,18 @@ body {
     border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
     position: relative;
     box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
 }
 
 .candidate-tile:hover {
     transform: translateY(-6px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6), 0 0 16px var(--tile-party-color, #555);
+    border-color: var(--tile-party-color, #555);
+    z-index: 10;
 }
 
 .candidate-tile.selected {
@@ -2868,10 +2927,42 @@ body {
     object-fit: cover;
     object-position: center top;
     display: block;
+    flex-shrink: 0;
 }
 
-.candidate-tile-body {
-    padding: 12px;
+/* ---- Collapsed view (default, always visible) ---- */
+.candidate-tile-collapsed {
+    padding: 10px 12px 12px;
+    display: block;
+}
+
+/* ---- Expanded view (hidden by default, shown on hover) ---- */
+.candidate-tile-expanded {
+    padding: 0 12px 12px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.4s cubic-bezier(0.25,0.8,0.25,1), opacity 0.35s ease, padding 0.3s ease;
+}
+
+.candidate-tile:hover .candidate-tile-collapsed {
+    display: none;
+}
+
+.candidate-tile:hover .candidate-tile-expanded {
+    max-height: 400px;
+    opacity: 1;
+    padding: 10px 12px 12px;
+}
+
+/* When tile is selected, always show expanded view */
+.candidate-tile.selected .candidate-tile-collapsed {
+    display: none;
+}
+.candidate-tile.selected .candidate-tile-expanded {
+    max-height: 400px;
+    opacity: 1;
+    padding: 10px 12px 12px;
 }
 
 .candidate-tile-name {
@@ -2880,6 +2971,14 @@ body {
     font-weight: 700;
     margin-bottom: 4px;
     color: #fff;
+}
+
+.candidate-tile-position {
+    font-size: 0.72rem;
+    color: #aaa;
+    margin-bottom: 4px;
+    line-height: 1.4;
+    font-style: italic;
 }
 
 .candidate-tile-state {
@@ -2935,6 +3034,10 @@ body {
     padding-top: 4px;
 }
 
+.tile-groups-debuff {
+    color: #f44336;
+}
+
 .stamina-pips {
     display: flex;
     gap: 3px;
@@ -2949,6 +3052,31 @@ body {
 
 .stamina-pip.filled {
     background: #4caf50;
+}
+
+/* Skip bar — shown on third-party nominee pages */
+.pp-skip-bar {
+    display: flex;
+    justify-content: center;
+    padding: 10px 30px 4px;
+}
+
+.pp-skip-btn {
+    background: rgba(200, 50, 50, 0.12);
+    border: 1px solid rgba(var(--skip-color, 200, 50, 50), 0.35);
+    color: #e57373;
+    padding: 8px 22px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.pp-skip-btn:hover {
+    background: rgba(200, 50, 50, 0.25);
+    box-shadow: 0 0 12px rgba(200, 50, 50, 0.35);
 }
 
 .party-page-footer {

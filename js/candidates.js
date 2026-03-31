@@ -12,28 +12,31 @@ const CANDIDATES = [
     { id: "vance", name: "JD Vance", party: "R", homeState: "OH", funds: 50, img: "images/vance.jpg", stamina: 8, desc: "Ohio Senator.", buff: "Populism", groupBoosts: { rural: 10, noncollege: 8, bluecollar: 8, evangelical: 5 }, groupDebuffs: { college: -6, urban: -7 } },
     { id: "ramaswamy", name: "Vivek Ramaswamy", party: "R", homeState: "OH", funds: 70, img: "images/ramaswamy.jpg", stamina: 10, desc: "Biotech entrepreneur.", buff: "Outsider Energy", groupBoosts: { asian: 10, suburban: 5, tech: 8 }, groupDebuffs: { college: -5, union: -6 } },
     { id: "haley", name: "Nikki Haley", party: "R", homeState: "SC", funds: 55, img: "images/haley.jpg", stamina: 8, desc: "Former UN Ambassador.", buff: "Suburban Appeal", groupBoosts: { women: 8, suburban: 8, college: 6, military: 5 }, groupDebuffs: { rural: -3 } },
-    { id: "yang", name: "Andrew Yang", party: "F", homeState: "NY", funds: 35, img: "images/yang.jpg", stamina: 8, desc: "Forward Party founder.", buff: "UBI Movement", debuff: "Third Party Penalty", groupBoosts: { tech: 12, asian: 10, youth: 8, college: 6 }, groupDebuffs: { rural: -8, evangelical: -5 } },
+    { id: "yang", name: "Andrew Yang", party: "PSL", homeState: "NY", funds: 20, img: "images/yang.jpg", stamina: 8, desc: "Tech entrepreneur turned activist.", buff: "UBI Movement", debuff: "Third Party Penalty", groupBoosts: { tech: 12, asian: 10, youth: 8, college: 6 }, groupDebuffs: { rural: -8, evangelical: -5 } },
+    { id: "lariva", name: "Gloria La Riva", party: "PSL", homeState: "CA", funds: 5, img: "images/scenario.jpg", stamina: 7, desc: "PSL General Secretary & longtime socialist organizer.", buff: "Working Class Appeal", debuff: "Severe Third Party Penalty", groupBoosts: { union: 10, youth: 8, urban: 6, hispanic: 8 }, groupDebuffs: { suburban: -8, rural: -12, smallbusiness: -6 } },
     { id: "stein", name: "Jill Stein", party: "G", homeState: "MA", funds: 8, img: "images/scenario.jpg", stamina: 6, desc: "Green Party candidate.", buff: "Environmental Base", debuff: "Severe Third Party Penalty", groupBoosts: { secular: 12, youth: 8, urban: 6 }, groupDebuffs: { bluecollar: -5, rural: -10 } },
     { id: "oliver", name: "Chase Oliver", party: "L", homeState: "GA", funds: 10, img: "images/scenario.jpg", stamina: 7, desc: "Libertarian activist.", buff: "Liberty Movement", debuff: "Severe Third Party Penalty", groupBoosts: { smallbusiness: 10, college: 5, tech: 6 }, groupDebuffs: { union: -10, black: -5 } },
-    { id: "manchin", name: "Joe Manchin", party: "O", homeState: "WV", funds: 30, img: "images/scenario.jpg", stamina: 7, desc: "Former West Virginia Senator. Centrist Democrat turned Independent.", buff: "Bipartisan Appeal", debuff: "Outsider Penalty", groupBoosts: { bluecollar: 8, rural: 6, catholic: 5 }, groupDebuffs: { urban: -5, youth: -4 } },
-    { id: "kennedy_rfk", name: "Robert F. Kennedy Jr.", party: "O", homeState: "NY", funds: 25, img: "images/scenario.jpg", stamina: 6, desc: "Independent candidate and political dynasty scion.", buff: "Name Recognition", debuff: "Outsider Penalty", groupBoosts: { youth: 5, rural: 4 }, groupDebuffs: { mainstream: -6, college: -4 } },
-    { id: "bloomberg", name: "Michael Bloomberg", party: "O", homeState: "NY", funds: 200, img: "images/scenario.jpg", stamina: 7, desc: "Former New York City Mayor and billionaire businessman.", buff: "Unlimited Funds", debuff: "Outsider Penalty", groupBoosts: { whitecollar: 10, urban: 8, college: 7 }, groupDebuffs: { rural: -8, bluecollar: -6 } }
+    { id: "manchin", name: "Joe Manchin", party: "I", homeState: "WV", funds: 30, img: "images/scenario.jpg", stamina: 7, desc: "Former West Virginia Senator. Centrist Democrat turned Independent.", buff: "Bipartisan Appeal", debuff: "Outsider Penalty", groupBoosts: { bluecollar: 8, rural: 6, catholic: 5 }, groupDebuffs: { urban: -5, youth: -4 } },
+    { id: "kennedy_rfk", name: "Robert F. Kennedy Jr.", party: "I", homeState: "NY", funds: 25, img: "images/scenario.jpg", stamina: 6, desc: "Independent candidate and political dynasty scion.", buff: "Name Recognition", debuff: "Outsider Penalty", groupBoosts: { youth: 5, rural: 4 }, groupDebuffs: { mainstream: -6, college: -4 } },
+    { id: "bloomberg", name: "Michael Bloomberg", party: "I", homeState: "NY", funds: 200, img: "images/scenario.jpg", stamina: 7, desc: "Former New York City Mayor and billionaire businessman.", buff: "Unlimited Funds", debuff: "Outsider Penalty", groupBoosts: { whitecollar: 10, urban: 8, college: 7 }, groupDebuffs: { rural: -8, bluecollar: -6 } }
 ];
 
 const VPS = [
-    { id: "shapiro", name: "Josh Shapiro", party: "D", state: "PA", img: "images/shapiro.jpg", desc: "Governor of Pennsylvania." },
-    { id: "kelly", name: "Mark Kelly", party: "D", state: "AZ", img: "images/kelly.jpg", desc: "Senator from Arizona." },
-    { id: "warnock", name: "Raphael Warnock", party: "D", state: "GA", img: "images/warnock.jpg", desc: "Senator from Georgia." },
-    { id: "pritzker", name: "JB Pritzker", party: "D", state: "IL", img: "images/pritzker.jpg", desc: "Governor of Illinois." },
-    { id: "rubio", name: "Marco Rubio", party: "R", state: "FL", img: "images/rubio.jpg", desc: "Senator from Florida." },
-    { id: "scott_tim", name: "Tim Scott", party: "R", state: "SC", img: "images/scott.jpg", desc: "Senator from South Carolina." },
-    { id: "stefanik", name:  "Elise Stefanik", party: "R", state: "NY", img: "images/stefanik.jpg", desc: "Congresswoman from New York." },
-    { id: "noem", name: "Kristi Noem", party: "R", state: "SD", img: "images/noem.jpg", desc: "Governor of South Dakota." },
-    { id: "whitman", name: "Christine Todd Whitman", party: "F", state: "NJ", img: "images/scenario.jpg", desc: "Former NJ Governor." },
-    { id: "gabbard", name: "Tulsi Gabbard", party: "F", state: "HI", img: "images/scenario.jpg", desc: "Former Congresswoman." },
-    { id: "ware", name: "Butch Ware", party: "G", state: "CA", img: "images/scenario.jpg", desc: "Academic and activist." },
-    { id: "kinzinger", name: "Adam Kinzinger", party: "O", state: "IL", img: "images/scenario.jpg", desc: "Former Republican Congressman, anti-Trump conservative." },
-    { id: "west_cornel", name: "Cornel West", party: "O", state: "MA", img: "images/scenario.jpg", desc: "Academic, activist, and political philosopher." }
+    { id: "shapiro", name: "Josh Shapiro", party: "D", state: "PA", img: "images/shapiro.jpg", desc: "Governor of Pennsylvania.", groupBoosts: { jewish: 8, suburban: 6, college: 5 }, groupDebuffs: {} },
+    { id: "kelly", name: "Mark Kelly", party: "D", state: "AZ", img: "images/kelly.jpg", desc: "Senator from Arizona.", groupBoosts: { military: 10, suburban: 5, college: 4 }, groupDebuffs: {} },
+    { id: "warnock", name: "Raphael Warnock", party: "D", state: "GA", img: "images/warnock.jpg", desc: "Senator from Georgia.", groupBoosts: { black: 12, protestant: 8, urban: 6 }, groupDebuffs: { rural: -3 } },
+    { id: "pritzker", name: "JB Pritzker", party: "D", state: "IL", img: "images/pritzker.jpg", desc: "Governor of Illinois.", groupBoosts: { jewish: 6, urban: 5, college: 4 }, groupDebuffs: {} },
+    { id: "rubio", name: "Marco Rubio", party: "R", state: "FL", img: "images/rubio.jpg", desc: "Senator from Florida.", groupBoosts: { hispanic: 14, cuban: 20, catholic: 8, florida: 10 }, groupDebuffs: { black: -3 } },
+    { id: "scott_tim", name: "Tim Scott", party: "R", state: "SC", img: "images/scott.jpg", desc: "Senator from South Carolina.", groupBoosts: { black: 5, evangelical: 8, suburban: 4 }, groupDebuffs: {} },
+    { id: "stefanik", name:  "Elise Stefanik", party: "R", state: "NY", img: "images/stefanik.jpg", desc: "Congresswoman from New York.", groupBoosts: { women: 6, suburban: 5, college: 3 }, groupDebuffs: {} },
+    { id: "noem", name: "Kristi Noem", party: "R", state: "SD", img: "images/noem.jpg", desc: "Governor of South Dakota.", groupBoosts: { rural: 8, evangelical: 6, women: 4 }, groupDebuffs: { urban: -4 } },
+    { id: "termaat", name: "Mike ter Maat", party: "L", state: "FL", img: "images/scenario.jpg", desc: "Economist and Libertarian activist.", groupBoosts: { smallbusiness: 6, college: 4, tech: 5 }, groupDebuffs: {} },
+    { id: "whitman", name: "Christine Todd Whitman", party: "PSL", state: "NJ", img: "images/scenario.jpg", desc: "Former NJ Governor.", groupBoosts: { women: 5, suburban: 4 }, groupDebuffs: {} },
+    { id: "gabbard", name: "Tulsi Gabbard", party: "PSL", state: "HI", img: "images/scenario.jpg", desc: "Former Congresswoman.", groupBoosts: { military: 5, youth: 4 }, groupDebuffs: {} },
+    { id: "freeman", name: "Sunil Freeman", party: "PSL", state: "PA", img: "images/scenario.jpg", desc: "PSL activist and labor organizer.", groupBoosts: { union: 8, urban: 5, youth: 6 }, groupDebuffs: {} },
+    { id: "ware", name: "Butch Ware", party: "G", state: "CA", img: "images/scenario.jpg", desc: "Academic and activist.", groupBoosts: { secular: 6, youth: 5, urban: 4 }, groupDebuffs: {} },
+    { id: "kinzinger", name: "Adam Kinzinger", party: "I", state: "IL", img: "images/scenario.jpg", desc: "Former Republican Congressman, anti-Trump conservative.", groupBoosts: { military: 6, suburban: 5 }, groupDebuffs: {} },
+    { id: "west_cornel", name: "Cornel West", party: "I", state: "MA", img: "images/scenario.jpg", desc: "Academic, activist, and political philosopher.", groupBoosts: { black: 8, youth: 6, progressive: 7 }, groupDebuffs: { suburban: -4 } }
 ];
 
 // Candidate issue positions (-10 = far left, +10 = far right)
@@ -98,6 +101,12 @@ const CANDIDATE_POSITIONS = {
         criminal: -2, drugpricing: -4, energy: -3, foreign: -1, military: -1,
         israel: 0, govspend: -1, electionreform: -5, scotus: -2, economy: -2
     },
+    lariva: {
+        guns: -7, abortion: -9, healthcare: -10, immigration: -8, climate: -10,
+        taxation: -9, trade: -6, minwage: -9, labor: -9, lgbtq: -9,
+        criminal: -8, drugpricing: -10, energy: -10, foreign: -7, military: -9,
+        israel: -8, govspend: -8, electionreform: -7, scotus: -8, economy: -7
+    },
     stein: {
         guns: -6, abortion: -7, healthcare: -8, immigration: -5, climate: -10,
         taxation: -6, trade: -4, minwage: -7, labor: -7, lgbtq: -7,
@@ -143,5 +152,21 @@ const CANDIDATE_GROUP_MODIFIERS = {
     },
     yang: {
         tech: 12, asian: 10, youth: 8, college: 6
+    },
+    lariva: {
+        union: 10, youth: 8, urban: 6, hispanic: 8, black: 5
+    },
+    rubio: {
+        hispanic: 14, cuban: 20, catholic: 8
+    },
+    shapiro: {
+        jewish: 8, suburban: 6, college: 5
+    },
+    warnock: {
+        black: 12, protestant: 8
+    },
+    kelly: {
+        military: 10, suburban: 5
+    }
     }
 };

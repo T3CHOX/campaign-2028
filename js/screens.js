@@ -8,6 +8,7 @@ var Screens = {
     selectionFlowIdx: 0,      // Current index in the flow
     selectionPhase: 'pres',   // 'pres' or 'vp'
     currentPartyForPage: null,// Which party's page is being shown
+    skippedParties: [],       // Parties removed from this election by the player
 
     goTo: function(screenId) {
         var screens = document.querySelectorAll('.screen');
@@ -19,33 +20,41 @@ var Screens = {
 
     selectParty: function(partyCode) {
         gameData.selectedParty = partyCode;
+        this.skippedParties = [];
         // Build the selection flow:
-        // Player's party first, then Dem, Rep, then (if thirdPartiesEnabled) F, G, L, O
+        // Player's party first, then Dem, Rep, then (if thirdPartiesEnabled) L, G, I, PSL
         // But skip the player's party in the opponent slots
         var flow = [partyCode];
         var opponents = ['D', 'R'];
         if (gameData.thirdPartiesEnabled) {
-            opponents = opponents.concat(['F', 'G', 'L', 'O']);
+            opponents = opponents.concat(['L', 'G', 'I', 'PSL']);
         }
         for (var i = 0; i < opponents.length; i++) {
             if (opponents[i] !== partyCode) {
-                // Check if any candidates exist for this party
-                var hasCandidates = false;
-                for (var j = 0; j < CANDIDATES.length; j++) {
-                    if (CANDIDATES[j].party === opponents[i]) {
-                        hasCandidates = true;
-                        break;
-                    }
-                }
-                if (hasCandidates) {
-                    flow.push(opponents[i]);
-                }
+                // Always include all parties — placeholders ensure progress is possible
+                flow.push(opponents[i]);
             }
         }
         this.selectionFlow = flow;
         this.selectionFlowIdx = 0;
         this.selectionPhase = 'pres';
         this.showPartyPage(flow[0], 'pres');
+    },
+
+    // Skip a third-party — remove them from election entirely
+    skipParty: function(partyCode) {
+        this.skippedParties.push(partyCode);
+        // Clear any previously set ticket for this party
+        if (gameData.thirdTickets) {
+            delete gameData.thirdTickets[partyCode];
+        }
+        // Advance to next party in flow
+        this.selectionFlowIdx++;
+        if (this.selectionFlowIdx < this.selectionFlow.length) {
+            this.showPartyPage(this.selectionFlow[this.selectionFlowIdx], 'pres');
+        } else {
+            app.startGame();
+        }
     },
 
     showPartyPage: function(partyCode, phase) {
@@ -62,6 +71,7 @@ var Screens = {
         var flowIdx = this.selectionFlow.indexOf(partyCode);
         var totalParties = this.selectionFlow.length;
         var isPlayerParty = partyCode === gameData.selectedParty;
+        var isThirdParty = partyCode !== 'D' && partyCode !== 'R';
         var phaseLabel = phase === 'pres' ? 'Presidential Nominee' : 'Vice Presidential Nominee';
         var stepNum = (flowIdx * 2) + (phase === 'vp' ? 2 : 1);
         var totalSteps = totalParties * 2;
@@ -69,7 +79,7 @@ var Screens = {
 
         // Build banner HTML
         var logoName = 'party-' + partyCode.toLowerCase() + '.png';
-        if (partyCode === 'O') logoName = 'party-oth.png';
+        if (partyCode === 'I') logoName = 'party-ind.png';
         var bannerHTML =
             '<div class="party-page-banner" style="background: linear-gradient(135deg, rgba(' + this._hexToRgb(color) + ',0.15) 0%, rgba(0,0,0,0.6) 100%); --party-banner-color: ' + color + ';">' +
                 '<div class="party-banner-left" style="background: rgba(' + this._hexToRgb(color) + ',0.08);">' +
@@ -90,6 +100,9 @@ var Screens = {
 
         if (phase === 'pres') {
             var partyCands = CANDIDATES.filter(function(c) { return c.party === partyCode; });
+            if (partyCands.length === 0) {
+                tilesHTML += '<div class="no-candidates-msg">No candidates registered for this party.</div>';
+            }
             for (var i = 0; i < partyCands.length; i++) {
                 tilesHTML += this._buildCandidateTile(partyCands[i], color, false);
             }
@@ -97,18 +110,33 @@ var Screens = {
             // VP phase
             var selectedPresId = this._getSelectedPresForParty(partyCode);
             var partyVPs = VPS.filter(function(v) { return v.party === partyCode && v.id !== selectedPresId; });
+            if (partyVPs.length === 0) {
+                tilesHTML += '<div class="no-candidates-msg">No VP candidates registered for this party.</div>';
+            }
             for (var j = 0; j < partyVPs.length; j++) {
                 tilesHTML += this._buildVpTile(partyVPs[j], color);
             }
         }
         tilesHTML += '</div>';
 
+        // Skip button — only for third parties that are not the player's party
+        var skipBtnHTML = '';
+        if (isThirdParty && !isPlayerParty && phase === 'pres') {
+            skipBtnHTML =
+                '<div class="pp-skip-bar">' +
+                    '<button class="pp-skip-btn" onclick="Screens.skipParty(\'' + partyCode + '\')" style="--skip-color:' + color + ';">' +
+                        '✕ Remove ' + party.name + ' from this Election' +
+                    '</button>' +
+                '</div>';
+        }
+
+        var continueLabel = phase === 'pres' ? 'CONTINUE TO VP SELECTION &rarr;' : 'CONFIRM &rarr;';
         var footerHTML =
             '<div class="party-page-footer">' +
                 '<button class="pp-back-btn" onclick="Screens.goPartyPageBack()">&larr; BACK</button>' +
                 '<span class="pp-step-indicator">' + party.name.toUpperCase() + ' &bull; ' + phaseLabel.toUpperCase() + '</span>' +
                 '<button class="pp-continue-btn" id="pp-continue-btn" style="--pp-btn-color:' + color + '; color:' + color + ';" disabled onclick="Screens.advancePartyPage()">' +
-                    (phase === 'pres' ? 'CONTINUE TO VP SELECTION &rarr;' : 'CONFIRM &rarr;') +
+                    continueLabel +
                 '</button>' +
             '</div>';
 
@@ -117,12 +145,8 @@ var Screens = {
                 '<div class="party-page-selection-title" style="color:' + color + ';">' + roleLabel + '</div>' +
                 tilesHTML +
             '</div>' +
+            skipBtnHTML +
             footerHTML;
-
-        // For non-player parties, auto-select first candidate
-        if (!isPlayerParty) {
-            this._autoSelectFirstTile(partyCode, phase);
-        }
 
         this.goTo('party-page-screen');
     },
@@ -135,23 +159,6 @@ var Screens = {
             return gameData.thirdTickets[partyCode].pres.id;
         }
         return null;
-    },
-
-    _autoSelectFirstTile: function(partyCode, phase) {
-        var self = this;
-        setTimeout(function() {
-            var firstTile = document.querySelector('.candidate-tile');
-            if (firstTile) {
-                firstTile.click();
-                // Auto advance after brief pause
-                setTimeout(function() {
-                    var continueBtn = document.getElementById('pp-continue-btn');
-                    if (continueBtn && !continueBtn.disabled) {
-                        self.advancePartyPage();
-                    }
-                }, 300);
-            }
-        }, 100);
     },
 
     _buildCandidateTile: function(c, color, selected) {
@@ -170,15 +177,22 @@ var Screens = {
         if (c.groupDebuffs) {
             var debuffKeys = Object.keys(c.groupDebuffs).slice(0, 2);
             if (debuffKeys.length > 0) {
-                groupDebuffsText = '<div class="tile-groups" style="color:#f44336;">⚠ ' + debuffKeys.map(function(k) { return k + ' ' + c.groupDebuffs[k]; }).join(', ') + '</div>';
+                groupDebuffsText = '<div class="tile-groups tile-groups-debuff">⚠ ' + debuffKeys.map(function(k) { return k + ' ' + c.groupDebuffs[k]; }).join(', ') + '</div>';
             }
         }
+        // Collapsed (default) view: name + position + home state
+        // Expanded (hover) view: all details
         return '<div class="candidate-tile' + (selected ? ' selected' : '') + '" data-id="' + c.id + '" data-type="pres" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + c.party + '\', \'pres\')">' +
             '<img class="candidate-tile-img" src="' + c.img + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + c.name + '">' +
-            '<div class="candidate-tile-body">' +
+            '<div class="candidate-tile-collapsed">' +
                 '<div class="candidate-tile-name">' + c.name + '</div>' +
-                '<div class="candidate-tile-state">🏠 ' + (c.homeState || c.party) + '</div>' +
-                '<div class="candidate-tile-desc">' + (c.desc || '') + '</div>' +
+                '<div class="candidate-tile-position">' + (c.desc || '') + '</div>' +
+                '<div class="candidate-tile-state">🏠 ' + (c.homeState || '') + '</div>' +
+            '</div>' +
+            '<div class="candidate-tile-expanded">' +
+                '<div class="candidate-tile-name">' + c.name + '</div>' +
+                '<div class="candidate-tile-position">' + (c.desc || '') + '</div>' +
+                '<div class="candidate-tile-state">🏠 ' + (c.homeState || '') + '</div>' +
                 '<div class="candidate-tile-stats">' +
                     '<div class="tile-stat-row"><span class="tile-stat-label">Funds:</span><span class="tile-stat-val">$' + (c.funds || 0) + 'M</span></div>' +
                     '<div class="tile-stat-row"><span class="tile-stat-label">Stamina:</span><div class="stamina-pips">' + staminaPips + '</div></div>' +
@@ -192,12 +206,33 @@ var Screens = {
     },
 
     _buildVpTile: function(v, color) {
+        var groupBoostsText = '';
+        if (v.groupBoosts) {
+            var boostKeys = Object.keys(v.groupBoosts).slice(0, 3);
+            if (boostKeys.length > 0) {
+                groupBoostsText = '<div class="tile-groups">👥 ' + boostKeys.map(function(k) { return k + ' +' + v.groupBoosts[k]; }).join(', ') + '</div>';
+            }
+        }
+        var groupDebuffsText = '';
+        if (v.groupDebuffs) {
+            var debuffKeys = Object.keys(v.groupDebuffs).filter(function(k) { return v.groupDebuffs[k] < 0; }).slice(0, 2);
+            if (debuffKeys.length > 0) {
+                groupDebuffsText = '<div class="tile-groups tile-groups-debuff">⚠ ' + debuffKeys.map(function(k) { return k + ' ' + v.groupDebuffs[k]; }).join(', ') + '</div>';
+            }
+        }
         return '<div class="candidate-tile" data-id="' + v.id + '" data-type="vp" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + v.party + '\', \'vp\')">' +
             '<img class="candidate-tile-img" src="' + v.img + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + v.name + '">' +
-            '<div class="candidate-tile-body">' +
+            '<div class="candidate-tile-collapsed">' +
                 '<div class="candidate-tile-name">' + v.name + '</div>' +
+                '<div class="candidate-tile-position">' + (v.desc || '') + '</div>' +
                 '<div class="candidate-tile-state">🏠 ' + v.state + '</div>' +
-                '<div class="candidate-tile-desc">' + (v.desc || '') + '</div>' +
+            '</div>' +
+            '<div class="candidate-tile-expanded">' +
+                '<div class="candidate-tile-name">' + v.name + '</div>' +
+                '<div class="candidate-tile-position">' + (v.desc || '') + '</div>' +
+                '<div class="candidate-tile-state">🏠 ' + v.state + '</div>' +
+                groupBoostsText +
+                groupDebuffsText +
             '</div>' +
         '</div>';
     },
@@ -328,6 +363,10 @@ var Screens = {
         } else {
             // Go back to previous party's VP selection
             this.selectionFlowIdx--;
+            // Skip over any parties that were skipped (go back to previous active party)
+            while (this.selectionFlowIdx > 0 && this.skippedParties.indexOf(this.selectionFlow[this.selectionFlowIdx]) !== -1) {
+                this.selectionFlowIdx--;
+            }
             this.showPartyPage(this.selectionFlow[this.selectionFlowIdx], 'vp');
         }
     },

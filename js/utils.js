@@ -64,7 +64,7 @@ var Utils = {
     },
 
     isThirdParty: function(partyCode) {
-        return partyCode === 'F' || partyCode === 'G' || partyCode === 'L' || partyCode === 'O';
+        return partyCode === 'PSL' || partyCode === 'G' || partyCode === 'L' || partyCode === 'I';
     },
 
     shuffleArray: function(array) {
