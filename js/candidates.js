@@ -456,6 +456,24 @@ const CANDIDATE_POSITIONS = {
         criminal: -4, drugpricing: -6, energy: -5, foreign: -2, military: -1,
         israel: -2, govspend: -4, electionreform: -5, scotus: -5, economy: -3
     },
+    beshear: {
+        guns: -2, abortion: -3, healthcare: -3, immigration: -2, climate: -3,
+        taxation: -2, trade: 0, minwage: -3, labor: -3, lgbtq: -3,
+        criminal: -2, drugpricing: -3, energy: -2, foreign: -1, military: 1,
+        israel: 0, govspend: -2, electionreform: -2, scotus: -3, economy: -1
+    },
+    booker: {
+        guns: -5, abortion: -6, healthcare: -5, immigration: -4, climate: -5,
+        taxation: -4, trade: -1, minwage: -5, labor: -5, lgbtq: -6,
+        criminal: -5, drugpricing: -5, energy: -4, foreign: -2, military: 0,
+        israel: -1, govspend: -3, electionreform: -5, scotus: -5, economy: -3
+    },
+    shapiro: {
+        guns: -3, abortion: -4, healthcare: -4, immigration: -2, climate: -4,
+        taxation: -3, trade: -1, minwage: -3, labor: -3, lgbtq: -4,
+        criminal: -2, drugpricing: -4, energy: -3, foreign: -1, military: 1,
+        israel: 2, govspend: -2, electionreform: -3, scotus: -4, economy: -2
+    },
     trump: {
         guns: 7, abortion: 6, healthcare: 6, immigration: 9, climate: 5,
         taxation: 7, trade: 6, minwage: 4, labor: 3, lgbtq: 5,
@@ -515,6 +533,12 @@ const CANDIDATE_POSITIONS = {
         taxation: 5, trade: 6, minwage: 3, labor: 4, lgbtq: 6,
         criminal: 7, drugpricing: 2, energy: 7, foreign: 4, military: 4,
         israel: 3, govspend: 4, electionreform: 2, scotus: 6, economy: 4
+    },
+    rubio: {
+        guns: 5, abortion: 6, healthcare: 5, immigration: 6, climate: 2,
+        taxation: 6, trade: 3, minwage: 3, labor: 2, lgbtq: 3,
+        criminal: 4, drugpricing: 1, energy: 4, foreign: 6, military: 7,
+        israel: 7, govspend: 4, electionreform: 1, scotus: 5, economy: 4
     },
     stein: {
         guns: -6, abortion: -7, healthcare: -8, immigration: -5, climate: -10,
@@ -577,6 +601,9 @@ const CANDIDATE_GROUP_MODIFIERS = {
     khanna: { youth: 10, tech: 12, asian: 8, progressive: 10 },
     emanuel: { jewish: 8, urban: 6, college: 5, suburban: 5 },
     stewart: { youth: 12, college: 8, secular: 10, independent: 8 },
+    beshear: { rural: 6, noncollege: 5, suburban: 7, independent: 8, catholic: 5 },
+    booker: { black: 12, urban: 8, youth: 6, college: 5 },
+    shapiro: { jewish: 8, suburban: 7, college: 6, independent: 6 },
     trump: { evangelical: 14, rural: 12, noncollege: 10, bluecollar: 8 },
     vance: { rural: 10, noncollege: 8, bluecollar: 8, evangelical: 5 },
     desantis: { evangelical: 12, rural: 8, seniors: 6, noncollege: 5 },
@@ -587,11 +614,16 @@ const CANDIDATE_GROUP_MODIFIERS = {
     bannon: { noncollege: 12, rural: 10, evangelical: 8, bluecollar: 10 },
     hawley: { bluecollar: 10, rural: 8, noncollege: 7, evangelical: 6 },
     carlson: { rural: 10, noncollege: 8, evangelical: 5 },
+    rubio: { hispanic: 14, cuban: 20, catholic: 8, suburban: 5 },
+    stein: { secular: 12, youth: 8, urban: 6, progressive: 10 },
+    oliver: { smallbusiness: 10, college: 5, tech: 6, libertarian: 8 },
     yang: { tech: 12, asian: 10, youth: 8, college: 6 },
+    manchin: { bluecollar: 8, rural: 6, catholic: 5, independent: 7 },
+    kennedy_rfk: { youth: 5, rural: 4, independent: 6, health: 8 },
+    bloomberg: { whitecollar: 10, urban: 8, college: 7, jewish: 6 },
     lariva: { union: 10, youth: 8, urban: 6, hispanic: 8, black: 5 },
     delacruz: { hispanic: 12, youth: 10, urban: 8, union: 8 },
-    rubio: { hispanic: 14, cuban: 20, catholic: 8 },
-    shapiro: { jewish: 8, suburban: 6, college: 5 },
+    rubio: { hispanic: 14, cuban: 20, catholic: 8, suburban: 5 },
     warnock: { black: 12, protestant: 8 },
     kelly_vp: { military: 10, suburban: 5 }
 };
