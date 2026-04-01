@@ -111,6 +111,7 @@ var gameData = {
     // Interest group support tracking
     interestGroupSupport: {},  // Will store support % for each candidate per group
     interestGroupChanges: {},   // Will store last turn's changes for display
+    interestGroupTurnout: {},   // Per-group turnout propensity (1.0 = baseline 100%)
     // Pending campaign actions queue (applied on turn submission)
     pendingActions: [],  // Array of {type, state, countyId, issueId, intensity, cost}
     turnPressure: {}     // Track cumulative pressure per state+issue for diminishing returns
