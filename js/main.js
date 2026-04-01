@@ -67,8 +67,12 @@ function startGame() {
     // Initialize interest group support for all candidates
     initializeInterestGroupSupport();
     
-    // Apply candidate and VP buffs to county data BEFORE showing the map
-    applyCandidateBuffs();
+    // Initialize per-group turnout tracking
+    initInterestGroupTurnout();
+    
+    // Note: applyCandidateBuffs() and recomputeInterestGroupSupport() are called
+    // inside the Counties.loadCountyData() callback in Campaign.initMap()
+    // so that county data is available when buffs are applied.
     
     Screens.goTo('game-screen');
     Campaign.initMap();
@@ -76,14 +80,24 @@ function startGame() {
     Utils.addLog("Campaign begins!  Good luck, " + gameData.candidate.name + "!");
 }
 
-// Apply candidate and VP buffs/debuffs to county data
+// Tuning constants for the dynamic buff/group system
+var BUFF_CONSTANTS = {
+    GROUP_MOD_DAMPENING: 0.1,       // Scale factor: +15 mod with 100% group weight → +1.5 pts vote share
+    MIN_GROUP_TURNOUT: 0.5,          // Minimum group turnout propensity (50%)
+    MAX_GROUP_TURNOUT: 1.5,          // Maximum group turnout propensity (150%)
+    GROUP_TURNOUT_RATE: 0.008,       // Per-intensity turnout change rate per aligned campaign action
+    VOTE_NORMALIZE_MIN: 95,          // Lower bound for county vote total before normalization
+    VOTE_NORMALIZE_MAX: 101          // Upper bound for county vote total before normalization
+};
+
+// Apply candidate and VP buffs/debuffs to county data (deterministic, county ig-weighted)
 function applyCandidateBuffs() {
     if (typeof Counties === 'undefined' || !Counties.countyData) {
         console.warn('County data not loaded, skipping buff application');
         return;
     }
-    
-    // Build list of all tickets: [{ partyCode, pres, vp }]
+
+    // Build list of all active tickets
     var allTickets = [];
     if (gameData.selectedParty && gameData.candidate) {
         allTickets.push({ party: gameData.selectedParty, pres: gameData.candidate, vp: gameData.vp });
@@ -104,103 +118,228 @@ function applyCandidateBuffs() {
         }
     }
 
-    // Helper: get the vote key for a party (D, R, or the party code itself for third parties)
-    function getVoteKey(partyCode) {
-        return partyCode; // Matches county.v keys: D, R, G, L, I, PSL
-    }
-
-    // Apply buffs for each ticket
     for (var t = 0; t < allTickets.length; t++) {
         var ticket = allTickets[t];
-        var partyCode = ticket.party;
-        var voteKey = getVoteKey(partyCode);
+        var voteKey = ticket.party;
         var pres = ticket.pres;
         var vp = ticket.vp;
-        
-        // --- VP Home State Advantage (5-10% boost) ---
-        if (vp && (vp.state || vp.homeState)) {
-            var vpHomeState = vp.state || vp.homeState;
-            var vpStateFips = STATES[vpHomeState] ? STATES[vpHomeState].fips : null;
-            if (vpStateFips) {
-                for (var fips in Counties.countyData) {
-                    var paddedFips = fips.padStart(5, '0');
-                    if (paddedFips.substring(0, 2) === vpStateFips) {
-                        var county = Counties.countyData[fips];
-                        var boost = 5 + Math.random() * 5;
-                        county.v[voteKey] = Math.min(100, (county.v[voteKey] || 0) + boost);
-                        // Reduce opponent D/R proportionally
-                        if (voteKey !== 'D') county.v.D = Math.max(0, county.v.D - boost * 0.4);
-                        if (voteKey !== 'R') county.v.R = Math.max(0, county.v.R - boost * 0.4);
-                    }
-                }
-            }
+
+        // 1. Presidential home-state advantage — strong, deterministic
+        if (pres && pres.homeState) {
+            var presBoost = pres.homeStateBoost || 12;
+            _applyStateBoostToCounties(pres.homeState, voteKey, presBoost);
         }
 
-        // --- VP Group Boosts (e.g., Rubio → Hispanic counties) ---
+        // 2. VP home-state advantage — materially weaker (~50% of pres)
+        if (vp && (vp.homeState || vp.state)) {
+            var vpHome = vp.homeState || vp.state;
+            var vpBoost = vp.homeStateBoost || 6;
+            _applyStateBoostToCounties(vpHome, voteKey, vpBoost);
+        }
+
+        // 3. Presidential group boosts/debuffs (from candidate data)
+        if (pres && pres.groupBoosts) {
+            _applyGroupModsToCounties(pres.groupBoosts, voteKey, 1.0);
+        }
+        if (pres && pres.groupDebuffs) {
+            _applyGroupModsToCounties(pres.groupDebuffs, voteKey, 1.0);
+        }
+
+        // 4. Presidential group modifiers from CANDIDATE_GROUP_MODIFIERS
+        if (pres && typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[pres.id]) {
+            _applyGroupModsToCounties(CANDIDATE_GROUP_MODIFIERS[pres.id], voteKey, 1.0);
+        }
+
+        // 5. VP group boosts/debuffs (50% of presidential effect)
         if (vp && vp.groupBoosts) {
-            _applyGroupBoostsToCounties(vp.groupBoosts, voteKey, 0.6); // VP has 60% effect vs pres
+            _applyGroupModsToCounties(vp.groupBoosts, voteKey, 0.5);
         }
         if (vp && vp.groupDebuffs) {
-            _applyGroupBoostsToCounties(vp.groupDebuffs, voteKey, 0.6);
+            _applyGroupModsToCounties(vp.groupDebuffs, voteKey, 0.5);
         }
 
-        // --- Presidential Candidate Buffs ---
-        if (pres && pres.buff === "Midwest Appeal") {
+        // 6. VP group modifiers from CANDIDATE_GROUP_MODIFIERS
+        if (vp && typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[vp.id]) {
+            _applyGroupModsToCounties(CANDIDATE_GROUP_MODIFIERS[vp.id], voteKey, 0.5);
+        }
+
+        // 7. Special named buffs (deterministic)
+        if (pres && pres.buff === 'Midwest Appeal') {
             var midwestStates = ['MI', 'WI', 'MN', 'OH', 'IL', 'IN', 'IA', 'MO'];
-            for (var i = 0; i < midwestStates.length; i++) {
-                var stateFips = STATES[midwestStates[i]] ? STATES[midwestStates[i]].fips : null;
-                if (stateFips) {
-                    for (var fips2 in Counties.countyData) {
-                        var pf = fips2.padStart(5, '0');
-                        if (pf.substring(0, 2) === stateFips) {
-                            var co = Counties.countyData[fips2];
-                            var b = 2 + Math.random() * 3;
-                            co.v[voteKey] = Math.min(100, (co.v[voteKey] || 0) + b);
-                            if (voteKey !== 'D') co.v.D = Math.max(0, co.v.D - b * 0.4);
-                            if (voteKey !== 'R') co.v.R = Math.max(0, co.v.R - b * 0.4);
-                        }
-                    }
-                }
+            for (var mi = 0; mi < midwestStates.length; mi++) {
+                _applyStateBoostToCounties(midwestStates[mi], voteKey, 3);
             }
         }
-
-        // --- Presidential Candidate Group Boosts ---
-        if (pres && typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[pres.id]) {
-            _applyGroupBoostsToCounties(CANDIDATE_GROUP_MODIFIERS[pres.id], voteKey, 1.0);
-        }
-        if (pres && pres.groupBoosts) {
-            _applyGroupBoostsToCounties(pres.groupBoosts, voteKey, 0.8);
-        }
     }
-    
-    // After applying all buffs, calculate state margins from county data
+
+    // Normalize all county vote shares to prevent incoherent totals
+    _normalizeAllCountyVotes();
+
+    // Recalculate all state margins from county data
     for (var code in gameData.states) {
         if (typeof Counties !== 'undefined') {
             Counties.updateStateFromCounties(code);
         }
     }
-    
-    console.log('✓ Candidate buffs applied for all tickets; state margins recalculated');
+
+    console.log('✓ Candidate buffs applied deterministically for all tickets; state margins recalculated');
 }
 
-// Helper: apply group boost/debuff values to matching counties
-function _applyGroupBoostsToCounties(groupMods, voteKey, scale) {
+// Apply a flat vote-share boost to every county in a state (home-state / regional advantage)
+function _applyStateBoostToCounties(stateCode, voteKey, boostPoints) {
+    var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
+    if (!stateFips) return;
+
+    for (var fips in Counties.countyData) {
+        var paddedFips = fips.padStart(5, '0');
+        if (paddedFips.substring(0, 2) !== stateFips) continue;
+        var county = Counties.countyData[fips];
+        if (!county.v) continue;
+
+        county.v[voteKey] = Math.min(98, (county.v[voteKey] || 0) + boostPoints);
+        // Distribute the loss between the two major-party opponents
+        if (voteKey !== 'D' && county.v.D !== undefined) {
+            county.v.D = Math.max(1, county.v.D - boostPoints * 0.5);
+        }
+        if (voteKey !== 'R' && county.v.R !== undefined) {
+            county.v.R = Math.max(1, county.v.R - boostPoints * 0.5);
+        }
+    }
+}
+
+// Map INTEREST_GROUPS / CANDIDATE_GROUP_MODIFIERS keys → county ig keys
+function _mapGroupToIgKey(groupId) {
+    var MAP = {
+        'black':          'black',
+        'hispanic':       'hispanic',
+        'asian':          'asian',
+        'native':         'native',
+        'evangelical':    'evangelical',
+        'protestant':     'protestant',
+        'catholic':       'catholic',
+        'jewish':         'jewish',
+        'muslim':         'muslim',
+        'secular':        'secular',
+        'union':          'union',
+        'college':        'college',
+        'rural':          'rural',
+        'progressive':    'progressive',
+        'progressives':   'progressive',
+        'libertarian':    'libertarian',
+        'libertarians':   'libertarian',
+        'maga':           'maga',
+        'centrist':       'centrist',
+        'centrists':      'centrist',
+        // keys that need special handling (null = use fallback logic)
+        'urban':          null,
+        'suburban':       null,
+        'noncollege':     null,
+        'bluecollar':     null,
+        'whitecollar':    null,
+        'tech':           null,
+        'farmers':        null,
+        'military':       null,
+        'seniors':        null,
+        'youth':          null,
+        'women':          null,
+        'lgbtq_community':null,
+        'smallbusiness':  null,
+        'independent':    null,
+        'moderate':       null,
+        'neocon':         null,
+        'corporate':      null,
+        'cuban':          'hispanic',
+        'florida':        null,
+        'health':         null,
+        'mainstream':     null,
+        'white':          null
+    };
+    return (groupId in MAP) ? MAP[groupId] : null;
+}
+
+// Apply group modifier values to every county, weighted by that county's ig composition
+function _applyGroupModsToCounties(groupMods, voteKey, scale) {
     for (var groupId in groupMods) {
-        var modVal = groupMods[groupId] * (scale || 1.0);
+        var rawMod = groupMods[groupId]; // positive = boost, negative = debuff
+        var modVal = rawMod * (scale || 1.0);
+        var igKey = _mapGroupToIgKey(groupId);
+
         for (var fips in Counties.countyData) {
             var county = Counties.countyData[fips];
-            // Check if county has this interest group data
-            if (county.ig && county.ig[groupId] !== undefined) {
-                // Apply proportional to group presence (0-100% of county)
-                var groupWeight = county.ig[groupId] / 100;
-                var shift = modVal * groupWeight * 0.1; // Scale: full modifier * group weight * dampening
-                county.v[voteKey] = Math.min(100, Math.max(0, (county.v[voteKey] || 0) + shift));
-                // Reduce D/R proportionally if this is a third party boost
-                if (shift > 0 && voteKey !== 'D' && voteKey !== 'R') {
-                    county.v.D = Math.max(0, county.v.D - shift * 0.4);
-                    county.v.R = Math.max(0, county.v.R - shift * 0.4);
+            if (!county.v) continue;
+
+            // Determine group weight for this county
+            var groupWeight = 0;
+            if (igKey !== null && igKey !== undefined && county.ig && county.ig[igKey] !== undefined) {
+                groupWeight = county.ig[igKey] / 100;
+            } else if (groupId === 'urban') {
+                groupWeight = (county.t === 'Urban') ? 0.8 : (county.t === 'Mixed' ? 0.3 : 0.05);
+            } else if (groupId === 'suburban') {
+                groupWeight = (county.t === 'Mixed') ? 0.6 : (county.t === 'Urban' ? 0.25 : 0.1);
+            } else if (groupId === 'rural') {
+                groupWeight = (county.t === 'Rural') ? 0.9 : (county.t === 'Mixed' ? 0.35 : 0.05);
+            } else if (groupId === 'noncollege' && county.ig && county.ig.college !== undefined) {
+                groupWeight = (100 - county.ig.college) / 100;
+            } else if (groupId === 'bluecollar' && county.ig && county.ig.college !== undefined) {
+                // Approximate bluecollar from noncollege + rural signal
+                groupWeight = ((100 - county.ig.college) / 100) * 0.6;
+            } else if (groupId === 'youth') {
+                // Approximate: urban counties skew younger
+                groupWeight = (county.t === 'Urban') ? 0.28 : (county.t === 'Mixed' ? 0.22 : 0.18);
+            } else if (groupId === 'seniors') {
+                groupWeight = (county.t === 'Urban') ? 0.16 : (county.t === 'Mixed' ? 0.20 : 0.24);
+            } else if (groupId === 'women') {
+                groupWeight = 0.51; // ~51% of every county is women
+            } else {
+                continue; // No mapping available; skip
+            }
+
+            if (groupWeight <= 0) continue;
+
+            // shift = modifier_points * county_group_weight * dampening
+            // GROUP_MOD_DAMPENING of 0.1 means a +15 mod with 100% group weight → +1.5 pts vote share
+            var shift = modVal * groupWeight * BUFF_CONSTANTS.GROUP_MOD_DAMPENING;
+
+            if (shift > 0) {
+                // Boost this candidate
+                county.v[voteKey] = Math.min(98, (county.v[voteKey] || 0) + shift);
+                // Draw proportionally from the two major-party opponents
+                if (voteKey !== 'D' && county.v.D !== undefined) {
+                    county.v.D = Math.max(1, county.v.D - shift * 0.5);
+                }
+                if (voteKey !== 'R' && county.v.R !== undefined) {
+                    county.v.R = Math.max(1, county.v.R - shift * 0.5);
+                }
+            } else if (shift < 0) {
+                // Debuff: reduce this candidate's share
+                county.v[voteKey] = Math.max(1, (county.v[voteKey] || 0) + shift);
+                // Give a proportional gain back to opponents
+                var gain = -shift * 0.3;
+                if (voteKey !== 'D' && county.v.D !== undefined) {
+                    county.v.D = Math.min(98, county.v.D + gain);
+                }
+                if (voteKey !== 'R' && county.v.R !== undefined) {
+                    county.v.R = Math.min(98, county.v.R + gain);
                 }
             }
+        }
+    }
+}
+
+// Normalize all county vote shares so totals remain coherent (no negatives, no >100 incoherence)
+function _normalizeAllCountyVotes() {
+    for (var fips in Counties.countyData) {
+        var county = Counties.countyData[fips];
+        if (!county.v) continue;
+        var total = (county.v.D || 0) + (county.v.R || 0) + (county.v.G || 0) +
+                    (county.v.L || 0) + (county.v.I || 0) + (county.v.PSL || 0);
+        if (total > 0 && (total > BUFF_CONSTANTS.VOTE_NORMALIZE_MAX || total < BUFF_CONSTANTS.VOTE_NORMALIZE_MIN)) {
+            county.v.D   = (county.v.D   || 0) / total * 100;
+            county.v.R   = (county.v.R   || 0) / total * 100;
+            county.v.G   = (county.v.G   || 0) / total * 100;
+            county.v.L   = (county.v.L   || 0) / total * 100;
+            county.v.I   = (county.v.I   || 0) / total * 100;
+            county.v.PSL = (county.v.PSL || 0) / total * 100;
         }
     }
 }
@@ -229,136 +368,168 @@ function toggleThirdParties(enabled) {
     }
 }
 
-// Initialize interest group support percentages for all candidates
+// Build the list of all active presidential candidates with their vote keys
+function _buildActiveCandidatesList() {
+    var list = [];
+    if (gameData.selectedParty && gameData.candidate) {
+        list.push({ id: gameData.candidate.id, name: gameData.candidate.name, party: gameData.selectedParty, voteKey: gameData.selectedParty });
+    }
+    if (gameData.demTicket && gameData.demTicket.pres && gameData.selectedParty !== 'D') {
+        list.push({ id: gameData.demTicket.pres.id, name: gameData.demTicket.pres.name, party: 'D', voteKey: 'D' });
+    }
+    if (gameData.repTicket && gameData.repTicket.pres && gameData.selectedParty !== 'R') {
+        list.push({ id: gameData.repTicket.pres.id, name: gameData.repTicket.pres.name, party: 'R', voteKey: 'R' });
+    }
+    if (gameData.thirdPartiesEnabled && gameData.thirdTickets) {
+        var tpCodes = ['PSL', 'G', 'L', 'I'];
+        for (var tp = 0; tp < tpCodes.length; tp++) {
+            var tpCode = tpCodes[tp];
+            if (gameData.selectedParty !== tpCode && gameData.thirdTickets[tpCode] && gameData.thirdTickets[tpCode].pres) {
+                list.push({ id: gameData.thirdTickets[tpCode].pres.id, name: gameData.thirdTickets[tpCode].pres.name, party: tpCode, voteKey: tpCode });
+            }
+        }
+    }
+    return list;
+}
+
+// Initialize per-group turnout tracking (baseline 1.0 = 100%)
+function initInterestGroupTurnout() {
+    if (!gameData.interestGroupTurnout) {
+        gameData.interestGroupTurnout = {};
+    }
+    if (typeof INTEREST_GROUPS === 'undefined') return;
+    for (var groupId in INTEREST_GROUPS) {
+        if (!gameData.interestGroupTurnout[groupId]) {
+            gameData.interestGroupTurnout[groupId] = 1.0;
+        }
+    }
+}
+
+// Update group turnout propensity based on issue campaigning
+// Called from persuasion system whenever an issue-based action is applied
+function updateGroupTurnoutFromIssue(issueId, partyCode, intensity) {
+    if (!gameData.interestGroupTurnout) initInterestGroupTurnout();
+    if (typeof INTEREST_GROUPS === 'undefined') return;
+
+    for (var groupId in INTEREST_GROUPS) {
+        var group = INTEREST_GROUPS[groupId];
+        if (!group.priorities) continue;
+
+        var idx = group.priorities.indexOf(issueId);
+        if (idx === -1) continue; // Issue not a priority for this group
+
+        // Importance decreases by priority rank
+        var importance = idx === 0 ? 1.0 : (idx === 1 ? 0.7 : 0.4);
+
+        // Alignment: does this party/campaign direction match the group's lean?
+        var groupBaseline = group.baseline || 0;
+        // Negative baseline = D-lean, positive = R-lean
+        var partySign = (partyCode === 'D') ? -1 : ((partyCode === 'R') ? 1 : 0);
+        var aligned = (groupBaseline * partySign > 0) ? 1 : (groupBaseline * partySign < 0 ? -1 : 0);
+
+        // Sustained favorable campaigning increases turnout; opposing decreases it
+        var delta = aligned * importance * BUFF_CONSTANTS.GROUP_TURNOUT_RATE * (intensity || 1);
+        gameData.interestGroupTurnout[groupId] = Math.max(BUFF_CONSTANTS.MIN_GROUP_TURNOUT,
+            Math.min(BUFF_CONSTANTS.MAX_GROUP_TURNOUT, (gameData.interestGroupTurnout[groupId] || 1.0) + delta));
+    }
+}
+
+// Initialize interest group support — delegates immediately to the live recompute
 function initializeInterestGroupSupport() {
     gameData.interestGroupSupport = {};
     gameData.interestGroupChanges = {};
-    
-    // Get all candidates running (player, opponents, and third parties)
-    var allCandidates = [];
-    
-    // Player's ticket
-    if (gameData.candidate) {
-        allCandidates.push({
-            id: gameData.candidate.id,
-            name: gameData.candidate.name,
-            party: gameData.selectedParty
-        });
-    }
-    
-    // Democrat ticket
-    if (gameData.demTicket.pres && gameData.selectedParty !== 'D') {
-        allCandidates.push({
-            id: gameData.demTicket.pres.id,
-            name: gameData.demTicket.pres.name,
-            party: 'D'
-        });
-    }
-    
-    // Republican ticket
-    if (gameData.repTicket.pres && gameData.selectedParty !== 'R') {
-        allCandidates.push({
-            id: gameData.repTicket.pres.id,
-            name: gameData.repTicket.pres.name,
-            party: 'R'
-        });
-    }
-    
-    // Include third party tickets from the selection flow (if third parties enabled)
-    if (gameData.thirdPartiesEnabled && gameData.thirdTickets) {
-        var thirdPartyCodes = ['PSL', 'G', 'L', 'I'];
-        for (var tp = 0; tp < thirdPartyCodes.length; tp++) {
-            var tpCode = thirdPartyCodes[tp];
-            if (gameData.selectedParty !== tpCode && gameData.thirdTickets[tpCode] && gameData.thirdTickets[tpCode].pres) {
-                allCandidates.push({
-                    id: gameData.thirdTickets[tpCode].pres.id,
-                    name: gameData.thirdTickets[tpCode].pres.name,
-                    party: tpCode
-                });
-            }
-        }
-    } else if (gameData.thirdPartiesEnabled) {
-        // Fallback: include default third party candidates if no third tickets selected
-        allCandidates.push({ id: 'stein', name: 'Jill Stein', party: 'G' });
-        allCandidates.push({ id: 'oliver', name: 'Chase Oliver', party: 'L' });
-        allCandidates.push({ id: 'lariva', name: 'Gloria La Riva', party: 'PSL' });
-        allCandidates.push({ id: 'manchin', name: 'Joe Manchin', party: 'I' });
-    }
-    
-    // For each interest group, calculate initial support for each candidate
-    if (typeof INTEREST_GROUPS === 'undefined') {
-        console.warn('INTEREST_GROUPS not defined, skipping initialization');
-        return;
-    }
-    
+    // Actual values are populated by recomputeInterestGroupSupport() which is called
+    // right after applyCandidateBuffs() in startGame, once county data is loaded.
+}
+
+// Recompute TRUE current support for each interest group from county vote data.
+// Aggregates across ALL counties weighted by county ig composition × population.
+// Should be called after any event that changes county vote shares.
+function recomputeInterestGroupSupport() {
+    if (typeof Counties === 'undefined' || !Counties.countyData) return;
+    if (typeof INTEREST_GROUPS === 'undefined') return;
+
+    var activeCandidates = _buildActiveCandidatesList();
+    if (activeCandidates.length === 0) return;
+
     for (var groupId in INTEREST_GROUPS) {
-        var group = INTEREST_GROUPS[groupId];
-        gameData.interestGroupSupport[groupId] = {};
-        gameData.interestGroupChanges[groupId] = {};
-        
-        // Check if group has explicit support percentages
-        if (group.support) {
-            // Use explicit support percentages
-            var totalSupport = 0;
-            var supportValues = [];
-            
-            for (var i = 0; i < allCandidates.length; i++) {
-                var cand = allCandidates[i];
-                var baseSupport = group.support[cand.party] || 0;
-                
-                // Apply candidate-specific modifiers
-                if (typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[cand.id] && CANDIDATE_GROUP_MODIFIERS[cand.id][groupId]) {
-                    baseSupport += CANDIDATE_GROUP_MODIFIERS[cand.id][groupId] * 0.1; // Scale down modifiers
-                }
-                
-                supportValues.push({ candId: cand.id, support: Math.max(baseSupport, 0) });
-                totalSupport += Math.max(baseSupport, 0);
+        if (!gameData.interestGroupSupport[groupId]) gameData.interestGroupSupport[groupId] = {};
+        if (!gameData.interestGroupChanges[groupId])  gameData.interestGroupChanges[groupId] = {};
+
+        var igKey = _mapGroupToIgKey(groupId);
+
+        // Accumulate: for each candidate, sum of (group_population_in_county * candidate_vote_share_in_county)
+        var candWeightedVotes = {};
+        for (var ci = 0; ci < activeCandidates.length; ci++) {
+            candWeightedVotes[activeCandidates[ci].id] = 0;
+        }
+        var totalGroupPop = 0;
+
+        for (var fips in Counties.countyData) {
+            var county = Counties.countyData[fips];
+            if (!county.v || !county.p) continue;
+
+            // Determine what share of this county belongs to the interest group
+            var groupShare = 0;
+            if (igKey !== null && igKey !== undefined && county.ig && county.ig[igKey] !== undefined) {
+                groupShare = county.ig[igKey] / 100;
+            } else if (groupId === 'urban') {
+                groupShare = (county.t === 'Urban') ? 0.8 : (county.t === 'Mixed' ? 0.3 : 0.05);
+            } else if (groupId === 'suburban') {
+                groupShare = (county.t === 'Mixed') ? 0.6 : (county.t === 'Urban' ? 0.25 : 0.1);
+            } else if (groupId === 'rural') {
+                groupShare = (county.t === 'Rural') ? 0.9 : (county.t === 'Mixed' ? 0.35 : 0.05);
+            } else if (groupId === 'noncollege' && county.ig && county.ig.college !== undefined) {
+                groupShare = (100 - county.ig.college) / 100;
+            } else if (groupId === 'youth') {
+                groupShare = (county.t === 'Urban') ? 0.28 : (county.t === 'Mixed' ? 0.22 : 0.18);
+            } else if (groupId === 'seniors') {
+                groupShare = (county.t === 'Urban') ? 0.16 : (county.t === 'Mixed' ? 0.20 : 0.24);
+            } else if (groupId === 'women') {
+                groupShare = 0.51;
+            } else if (groupId === 'bluecollar' && county.ig && county.ig.college !== undefined) {
+                groupShare = ((100 - county.ig.college) / 100) * 0.6;
+            } else {
+                continue; // Cannot map this group to county data
             }
-            
-            // Normalize to 100% (in case modifiers changed the total)
-            if (totalSupport > 0) {
-                for (var j = 0; j < supportValues.length; j++) {
-                    var pct = (supportValues[j].support / totalSupport) * 100;
-                    gameData.interestGroupSupport[groupId][supportValues[j].candId] = pct;
-                    gameData.interestGroupChanges[groupId][supportValues[j].candId] = 0;
-                }
-            }
-        } else {
-            // Use baseline calculation for groups without explicit support
-            var totalSupport = 0;
-            var supportValues = [];
-            
-            // Calculate base support for each candidate
-            for (var i = 0; i < allCandidates.length; i++) {
-                var cand = allCandidates[i];
-                var baseSupport = 25; // Start with equal base
-                
-                // Apply group baseline lean (convert to support)
-                if (cand.party === 'D') {
-                    baseSupport += Math.max(-group.baseline * 3, 0);
-                } else if (cand.party === 'R') {
-                    baseSupport += Math.max(group.baseline * 3, 0);
-                } else {
-                    baseSupport = baseSupport * 0.3; // Third parties get much less support
-                }
-                
-                // Apply candidate-specific modifiers
-                if (typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[cand.id] && CANDIDATE_GROUP_MODIFIERS[cand.id][groupId]) {
-                    baseSupport += CANDIDATE_GROUP_MODIFIERS[cand.id][groupId];
-                }
-                
-                supportValues.push({ candId: cand.id, support: Math.max(baseSupport, 0.1) });
-                totalSupport += Math.max(baseSupport, 0.1);
-            }
-            
-            // Normalize to 100%
-            for (var j = 0; j < supportValues.length; j++) {
-                var pct = (supportValues[j].support / totalSupport) * 100;
-                gameData.interestGroupSupport[groupId][supportValues[j].candId] = pct;
-                gameData.interestGroupChanges[groupId][supportValues[j].candId] = 0; // No change initially
+
+            if (groupShare <= 0) continue;
+
+            var groupPop = county.p * groupShare;
+            totalGroupPop += groupPop;
+
+            // Total vote share in this county (to convert raw shares to fractions)
+            var totalVoteShares = (county.v.D || 0) + (county.v.R || 0) + (county.v.G || 0) +
+                                  (county.v.L || 0) + (county.v.I || 0) + (county.v.PSL || 0);
+            if (totalVoteShares <= 0) continue;
+
+            for (var ci2 = 0; ci2 < activeCandidates.length; ci2++) {
+                var cand = activeCandidates[ci2];
+                var vShare = (county.v[cand.voteKey] || 0) / totalVoteShares;
+                candWeightedVotes[cand.id] += groupPop * vShare;
             }
         }
+
+        if (totalGroupPop <= 0) continue;
+
+        // Convert to percentages (normalize to 100% across active candidates)
+        var totalWeightedVotes = 0;
+        for (var ci3 = 0; ci3 < activeCandidates.length; ci3++) {
+            totalWeightedVotes += candWeightedVotes[activeCandidates[ci3].id] || 0;
+        }
+
+        for (var ci4 = 0; ci4 < activeCandidates.length; ci4++) {
+            var cand4 = activeCandidates[ci4];
+            var prevSupport = gameData.interestGroupSupport[groupId][cand4.id] || 0;
+            var newSupport = totalWeightedVotes > 0
+                ? (candWeightedVotes[cand4.id] || 0) / totalWeightedVotes * 100
+                : 0;
+            gameData.interestGroupSupport[groupId][cand4.id] = newSupport;
+            gameData.interestGroupChanges[groupId][cand4.id] = newSupport - prevSupport;
+        }
     }
+
+    console.log('✓ Interest group support recomputed from county data');
 }
 
 var app = {
@@ -952,7 +1123,14 @@ var app = {
                     
                     html += '<div class="ig-name">' + group.name + '</div>';
                     
-                    // Show candidate support
+                    // Show per-group turnout (if tracked)
+                    if (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined) {
+                        var turnoutPct = Math.round(gameData.interestGroupTurnout[groupId] * 100);
+                        var turnoutColor = turnoutPct >= 110 ? '#198754' : (turnoutPct <= 90 ? '#E81B23' : '#ccc');
+                        html += '<div class="ig-turnout" style="font-size:0.75em; color:' + turnoutColor + '; margin-bottom:4px;">Turnout: ' + turnoutPct + '%</div>';
+                    }
+                    
+                    // Show candidate support (live, county-weighted)
                     if (gameData.interestGroupSupport && gameData.interestGroupSupport[groupId]) {
                         html += '<div class="ig-support">';
                         html += this.renderCandidateSupport(groupId);

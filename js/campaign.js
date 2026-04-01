@@ -24,6 +24,13 @@ var Campaign = {
         // Load county data first
         Counties.loadCountyData(function() {
             console.log('County data loaded');
+            
+            // Apply candidate/VP buffs now that county data is available
+            applyCandidateBuffs();
+            
+            // Compute live interest group support from county data
+            recomputeInterestGroupSupport();
+            
             // Update map colors after county data initializes state margins
             Campaign.colorMap();
         });
@@ -328,6 +335,11 @@ var Campaign = {
         }
         
         app.closeSpeechModal();
+        
+        // Update interest group turnout propensity for aligned groups
+        if (typeof updateGroupTurnoutFromIssue !== 'undefined') {
+            updateGroupTurnoutFromIssue(issueId, gameData.selectedParty, intensity);
+        }
     },
 
     openStateBio: function() {
@@ -404,6 +416,11 @@ var Campaign = {
         
         // Process undecided voters
         this.processUndecidedVoters();
+        
+        // Recompute live interest group support after all changes
+        if (typeof recomputeInterestGroupSupport !== 'undefined') {
+            recomputeInterestGroupSupport();
+        }
         
         // Random chance for PAC offer
         if (Math.random() < GAME_CONSTANTS.PAC_OFFER_CHANCE && typeof app.triggerPacOffer !== 'undefined') {

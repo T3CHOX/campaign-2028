@@ -171,6 +171,11 @@ var Persuasion = {
                 this.applyTurnoutBoost(county, PERSUASION_CONSTANTS.AD_TURNOUT_BOOST);
             }
         }
+        
+        // Update interest group turnout propensity for aligned groups
+        if (typeof updateGroupTurnoutFromIssue !== 'undefined') {
+            updateGroupTurnoutFromIssue(issueId, gameData.selectedParty, intensity);
+        }
     },
     
     // Apply a SPEECH action (county-specific with statewide effect)
@@ -213,9 +218,12 @@ var Persuasion = {
                 this.applyTurnoutBoost(county, turnoutBoost);
             }
         }
+        
+        // Update interest group turnout propensity for aligned groups
+        if (typeof updateGroupTurnoutFromIssue !== 'undefined') {
+            updateGroupTurnoutFromIssue(issueId, gameData.selectedParty, intensity);
+        }
     },
-    
-    // Apply a RALLY action (preserved for compatibility)
     applyRallyAction: function(action) {
         var stateCode = action.state;
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
@@ -238,12 +246,29 @@ var Persuasion = {
         
         var totalDelta = 0;
         
-        // Get county group shares (from demographics or default)
-        var countyDemographics = this.getCountyDemographics(county);
+        // Use county ig data directly (authoritative, populated for all counties)
+        var countyIg = (county && county.ig) ? county.ig : null;
         
         // Iterate through all interest groups
         for (var groupId in INTEREST_GROUPS) {
-            var groupShare = countyDemographics[groupId] || 0;
+            // Map INTEREST_GROUPS key → county ig key
+            var igKey = (typeof _mapGroupToIgKey !== 'undefined') ? _mapGroupToIgKey(groupId) : groupId;
+            
+            var groupShare = 0;
+            if (countyIg && igKey && countyIg[igKey] !== undefined) {
+                groupShare = countyIg[igKey]; // Already a percentage (0-100)
+            } else if (countyIg && igKey === null) {
+                // Special fallbacks for unmapped groups
+                if (groupId === 'rural') groupShare = (county.t === 'Rural') ? 85 : (county.t === 'Mixed' ? 35 : 5);
+                else if (groupId === 'urban') groupShare = (county.t === 'Urban') ? 80 : (county.t === 'Mixed' ? 30 : 5);
+                else if (groupId === 'suburban') groupShare = (county.t === 'Mixed') ? 60 : (county.t === 'Urban' ? 25 : 10);
+                else if (groupId === 'noncollege' && countyIg.college !== undefined) groupShare = 100 - countyIg.college;
+            } else if (!countyIg) {
+                // Fallback: use state demographics
+                var stateDemographics = this.getCountyDemographics(county);
+                groupShare = stateDemographics[groupId] || 0;
+            }
+            
             if (groupShare <= 0) continue;
             
             // Get issue importance for this group
@@ -269,16 +294,17 @@ var Persuasion = {
         return totalDelta;
     },
     
-    // Get county demographics (group shares)
+    // Get county demographics — uses county's own ig data directly (populated for all 3142 counties)
     getCountyDemographics: function(county) {
-        // In a real implementation, this would come from county data
-        // For now, use state demographics as approximation
-        var stateCode = this.getStateCodeFromFips(county.fips);
-        
-        if (STATE_DEMOGRAPHICS[stateCode]) {
+        // County ig data is the authoritative source; fall back to state-level if not present
+        if (county && county.ig) {
+            return county.ig;
+        }
+        // Fallback: use state-level demographics
+        var stateCode = this.getStateCodeFromFips(county ? county.fips : null);
+        if (stateCode && STATE_DEMOGRAPHICS[stateCode]) {
             return STATE_DEMOGRAPHICS[stateCode];
         }
-        
         return DEFAULT_DEMOGRAPHICS;
     },
     
