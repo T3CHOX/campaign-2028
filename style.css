@@ -3551,14 +3551,6 @@ body {
     flex-shrink: 0;
 }
 
-#election-cv-title {
-    font-family: 'Merriweather', serif;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #ffd700;
-    letter-spacing: 0.5px;
-}
-
 /* Flip legend shown below map mode buttons in projected mode */
 #flip-legend-hint {
     font-size: 0.68rem;

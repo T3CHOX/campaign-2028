@@ -203,7 +203,7 @@ function _applyCountyBoost(fips5, voteKey, boostPoints) {
         for (var key in Counties.countyData) {
             if (key.padStart(5, '0') === fips5) {
                 county = Counties.countyData[key];
-                console.warn('[FIPS] _applyCountyBoost: direct lookup missed for ' + fips5 + ', found via fallback key "' + key + '"');
+                console.warn('[FIPS] _applyCountyBoost: direct lookup missed for ' + fips5 + ', found via fallback key "' + key + '". Consider normalizing county data keys to 5-digit FIPS on load.');
                 break;
             }
         }

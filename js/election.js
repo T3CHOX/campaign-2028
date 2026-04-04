@@ -955,12 +955,14 @@ var Election = {
                     var parts = line.split(',');
                     if (parts.length < 10) continue;
                     var rawFips = (parts[1] || '').replace(/"/g, '').trim();
-                    // per_point_diff is a decimal fraction: per_gop - per_dem (e.g. 0.46 = 46pp GOP lead)
+                    // CSV per_point_diff = (votes_gop - votes_dem) / total_votes stored as a
+                    // decimal fraction, e.g. 0.46 means GOP led by 46 percentage points.
+                    // We multiply by 100 to convert to percentage-point scale and negate so that
+                    // positive values represent a Dem-favoring margin (matching game convention).
                     var perPointDiff = parseFloat(parts[9]);
                     if (!rawFips || isNaN(perPointDiff)) continue;
                     // Normalise to 5-digit FIPS with leading zeros
                     var fips5 = String(parseInt(rawFips, 10)).padStart(5, '0');
-                    // Multiply by 100 → percentage points; negate so positive = Dem-favoring.
                     self.data2024[fips5] = -perPointDiff * 100;
                 }
                 console.log('✓ 2024 election data loaded: ' + Object.keys(self.data2024).length + ' counties');
