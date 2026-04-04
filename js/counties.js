@@ -313,26 +313,12 @@ var Counties = {
             populationDiv.innerText = 'Pop: ' + (county.p || 0).toLocaleString();
         }
         
-        // Calculate and display vote percentages with bar
-        var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
-        var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
-        
-        var demVotes = (county.v.D || 0) * demTurnout;
-        var repVotes = (county.v.R || 0) * repTurnout;
-        var total = demVotes + repVotes;
-        
-        if (total > 0) {
-            var demPct = (demVotes / total) * 100;
-            var repPct = (repVotes / total) * 100;
-            
-            demPct = Math.max(0, Math.min(100, demPct));
-            repPct = Math.max(0, Math.min(100, repPct));
-            
-            document.getElementById('poll-bar-wrap').innerHTML = 
-                '<div style="width: ' + demPct + '%; background: #00AEF3;"></div>' +
-                '<div style="width: ' + repPct + '%; background: #E81B23;"></div>';
-            document.getElementById('poll-dem-val').innerText = demPct.toFixed(1) + '%';
-            document.getElementById('poll-rep-val').innerText = repPct.toFixed(1) + '%';
+        // Build ranked candidate list for the county
+        var pollByParty = Utils.getCountyPollingByParty(county);
+        var prevPollByParty = (gameData.pollCache && gameData.pollCache.county && gameData.pollCache.county[normalizedFips]) || null;
+        var pollVis = document.getElementById('poll-vis');
+        if (pollVis) {
+            pollVis.innerHTML = Utils.buildCandidateRankedListHTML(pollByParty, prevPollByParty);
         }
         
         // Show turnout info

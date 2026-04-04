@@ -170,6 +170,16 @@ function applyCandidateBuffs() {
                 _applyStateBoostToCounties(midwestStates[mi], voteKey, 3);
             }
         }
+
+        // 8. County-specific boosts for candidates with strong local ties
+        if (pres) {
+            _applyCountySpecificBoosts(pres.id, voteKey);
+        }
+
+        // 9. Regional spillover boosts for regionally-connected candidates
+        if (pres) {
+            _applyRegionalSpillover(pres, voteKey);
+        }
     }
 
     // Normalize all county vote shares to prevent incoherent totals
@@ -183,6 +193,113 @@ function applyCandidateBuffs() {
     }
 
     console.log('✓ Candidate buffs applied deterministically for all tickets; state margins recalculated');
+}
+
+// Apply a flat vote-share boost to a single county identified by its 5-digit FIPS code
+function _applyCountyBoost(fips5, voteKey, boostPoints) {
+    var county = Counties.countyData[fips5];
+    if (!county || !county.v) {
+        // Fallback: scan for keys that normalize to the same 5-digit FIPS
+        for (var key in Counties.countyData) {
+            if (key.padStart(5, '0') === fips5) {
+                county = Counties.countyData[key];
+                console.warn('[FIPS] _applyCountyBoost: direct lookup missed for ' + fips5 + ', found via fallback key "' + key + '". Consider normalizing county data keys to 5-digit FIPS on load.');
+                break;
+            }
+        }
+    }
+    if (!county || !county.v) return;
+
+    county.v[voteKey] = Math.min(98, (county.v[voteKey] || 0) + boostPoints);
+    if (voteKey !== 'D' && county.v.D !== undefined) {
+        county.v.D = Math.max(1, county.v.D - boostPoints * 0.5);
+    }
+    if (voteKey !== 'R' && county.v.R !== undefined) {
+        county.v.R = Math.max(1, county.v.R - boostPoints * 0.5);
+    }
+}
+
+// County-level targeted boosts for candidates with specific local ties
+function _applyCountySpecificBoosts(candId, voteKey) {
+    if (candId === 'emanuel') {
+        // Rahm Emanuel was Chicago's mayor — very strong Cook County D boost,
+        // but slightly dampened statewide boost (handled by lower homeStateBoost)
+        _applyCountyBoost('17031', voteKey, 18); // Cook County (Chicago)
+        _applyCountyBoost('17043', voteKey, 6);  // DuPage County (Chicago suburbs)
+        _applyCountyBoost('17097', voteKey, 6);  // Lake County IL
+    }
+    if (candId === 'rubio') {
+        // Marco Rubio — enormous Cuban-American community in Miami-Dade
+        _applyCountyBoost('12086', voteKey, 20); // Miami-Dade County
+        _applyCountyBoost('12011', voteKey, 12); // Broward County (large Hispanic pop)
+        _applyCountyBoost('12099', voteKey, 8);  // Palm Beach County
+    }
+    if (candId === 'booker') {
+        // Cory Booker — former Newark mayor, Essex County NJ stronghold
+        _applyCountyBoost('34013', voteKey, 12); // Essex County NJ (Newark)
+    }
+    if (candId === 'aoc') {
+        // AOC — very strong in The Bronx and Queens
+        _applyCountyBoost('36005', voteKey, 15); // Bronx County, NY
+        _applyCountyBoost('36081', voteKey, 10); // Queens County, NY
+    }
+    if (candId === 'bloomberg') {
+        // Bloomberg — former NYC mayor
+        _applyCountyBoost('36061', voteKey, 10); // New York County (Manhattan)
+        _applyCountyBoost('36047', voteKey, 7);  // Kings County (Brooklyn)
+    }
+    if (candId === 'beshear') {
+        // Andy Beshear — very strong in Louisville area but also rural KY
+        _applyCountyBoost('21111', voteKey, 8);  // Jefferson County KY (Louisville)
+    }
+}
+
+// Regional spillover boosts for candidates with Rust Belt / Southern / regional ties
+function _applyRegionalSpillover(pres, voteKey) {
+    if (!pres || !pres.homeState) return;
+
+    // Vance: Rust Belt working-class identity resonates beyond just OH
+    if (pres.id === 'vance') {
+        var rustBelt = ['PA', 'MI', 'IN', 'WV'];
+        for (var ri = 0; ri < rustBelt.length; ri++) {
+            _applyStateBoostToCounties(rustBelt[ri], voteKey, 2);
+        }
+    }
+    // Beshear: Southern crossover appeal in neighboring states
+    if (pres.id === 'beshear') {
+        var beshearRegion = ['TN', 'WV', 'VA'];
+        for (var bi = 0; bi < beshearRegion.length; bi++) {
+            _applyStateBoostToCounties(beshearRegion[bi], voteKey, 2);
+        }
+    }
+    // Rubio: Hispanic outreach spills over to other large-Hispanic states
+    if (pres.id === 'rubio') {
+        var hispanicStates = ['TX', 'NM', 'NV', 'CO', 'AZ'];
+        for (var hi = 0; hi < hispanicStates.length; hi++) {
+            _applyStateBoostToCounties(hispanicStates[hi], voteKey, 2);
+        }
+    }
+    // Whitmer: Great Lakes crossover
+    if (pres.id === 'whitmer') {
+        var greatlakes = ['WI', 'MN', 'OH'];
+        for (var gi = 0; gi < greatlakes.length; gi++) {
+            _applyStateBoostToCounties(greatlakes[gi], voteKey, 1);
+        }
+    }
+    // Shapiro: Mid-Atlantic appeal
+    if (pres.id === 'shapiro') {
+        var midAtlantic = ['NJ', 'OH', 'MD'];
+        for (var si = 0; si < midAtlantic.length; si++) {
+            _applyStateBoostToCounties(midAtlantic[si], voteKey, 1);
+        }
+    }
+    // Manchin: Appalachian crossover
+    if (pres.id === 'manchin') {
+        var appalachian = ['KY', 'VA', 'PA'];
+        for (var ai = 0; ai < appalachian.length; ai++) {
+            _applyStateBoostToCounties(appalachian[ai], voteKey, 2);
+        }
+    }
 }
 
 // Apply a flat vote-share boost to every county in a state (home-state / regional advantage)

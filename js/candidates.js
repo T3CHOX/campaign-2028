@@ -15,46 +15,52 @@ const CANDIDATES = [
     /* ===== DEMOCRATIC PARTY ===== */
     {
         id: "harris", name: "Kamala Harris", party: "D", homeState: "CA",
+        homeStateBoost: 5,
         funds: 60, img: "images/harris.jpg", stamina: 8,
         desc: "Former VP & 2024 nominee. Lost to Trump but says she is 'not done.'",
         buff: "Name Recognition", debuff: null,
-        groupBoosts: { black: 15, women: 10, urban: 8, college: 5, asian: 5 },
-        groupDebuffs: { rural: -4, evangelical: -8 }
+        groupBoosts: { black: 15, women: 8, urban: 5, college: 5, asian: 5 },
+        groupDebuffs: { rural: -2, evangelical: -7 }
     },
     {
         id: "newsom", name: "Gavin Newsom", party: "D", homeState: "CA",
+        homeStateBoost: 8,
         funds: 75, img: "images/newsom.jpg", stamina: 9,
         desc: "California Governor widely seen as a national frontrunner for 2028.",
         buff: "War Chest", debuff: null,
-        groupBoosts: { college: 8, urban: 6, tech: 10, secular: 6 },
-        groupDebuffs: { rural: -6, evangelical: -10, bluecollar: -4 }
+        groupBoosts: { college: 7, urban: 4, tech: 8, secular: 6 },
+        groupDebuffs: { rural: -4, evangelical: -8, bluecollar: -3 }
     },
     {
         id: "whitmer", name: "Gretchen Whitmer", party: "D", homeState: "MI",
+        homeStateBoost: 12,
         funds: 55, img: "images/whitmer.jpg", stamina: 8,
         desc: "Michigan Governor. Midwestern moderate with strong union ties.",
         buff: "Midwest Appeal", debuff: null,
         groupBoosts: { women: 8, suburban: 6, union: 8, noncollege: 4 },
-        groupDebuffs: { evangelical: -5, rural: -3 }
+        groupDebuffs: { evangelical: -4, rural: -2 }
     },
     {
         id: "buttigieg", name: "Pete Buttigieg", party: "D", homeState: "IN",
+        homeStateBoost: 5,
         funds: 50, img: "images/buttigieg.jpg", stamina: 8,
         desc: "Former Transportation Secretary (2021–2025). Leads early polls in New Hampshire.",
         buff: "Media Savvy", debuff: null,
-        groupBoosts: { lgbtq_community: 12, college: 6, urban: 5, youth: 5 },
-        groupDebuffs: { evangelical: -10, rural: -5 }
+        groupBoosts: { lgbtq_community: 12, college: 6, urban: 4, youth: 5 },
+        groupDebuffs: { evangelical: -7, rural: -3 }
     },
     {
         id: "aoc", name: "Alexandria Ocasio-Cortez", party: "D", homeState: "NY",
+        homeStateBoost: 7,
         funds: 45, img: "images/aoc.jpg", stamina: 10,
         desc: "Progressive congresswoman and youth movement icon.",
         buff: "Youth Vote", debuff: null,
-        groupBoosts: { youth: 15, hispanic: 10, urban: 8, women: 6 },
-        groupDebuffs: { suburban: -8, rural: -12, seniors: -6 }
+        groupBoosts: { youth: 12, hispanic: 8, urban: 5, women: 6 },
+        groupDebuffs: { suburban: -5, rural: -7, seniors: -5 }
     },
     {
         id: "kelly", name: "Mark Kelly", party: "D", homeState: "AZ",
+        homeStateBoost: 10,
         funds: 45, img: "images/kelly.jpg", stamina: 8,
         desc: "Arizona Senator and former NASA astronaut. Confirmed considering a 2028 run.",
         buff: "Military Credibility", debuff: null,
@@ -63,46 +69,52 @@ const CANDIDATES = [
     },
     {
         id: "khanna", name: "Ro Khanna", party: "D", homeState: "CA",
+        homeStateBoost: 5,
         funds: 40, img: "images/scenario.jpg", stamina: 9,
         desc: "Progressive Silicon Valley Congressman. Bernie Sanders wing of the party.",
         buff: "Tech Progressive", debuff: null,
-        groupBoosts: { youth: 10, tech: 12, asian: 8, progressive: 10 },
-        groupDebuffs: { bluecollar: -5, rural: -8, seniors: -4 }
+        groupBoosts: { youth: 10, tech: 9, asian: 8, progressive: 10 },
+        groupDebuffs: { bluecollar: -4, rural: -5, seniors: -3 }
     },
     {
         id: "emanuel", name: "Rahm Emanuel", party: "D", homeState: "IL",
+        homeStateBoost: 5,
         funds: 50, img: "images/scenario.jpg", stamina: 7,
         desc: "Former Chicago Mayor and Ambassador to Japan. Centrist 'renewal wing' Democrat.",
         buff: "Establishment Network", debuff: null,
-        groupBoosts: { jewish: 8, urban: 6, college: 5, suburban: 5 },
+        groupBoosts: { jewish: 8, urban: 4, college: 5, suburban: 5 },
         groupDebuffs: { progressive: -8, youth: -6, black: -5 }
     },
     {
         id: "stewart", name: "Jon Stewart", party: "D", homeState: "NY",
+        homeStateBoost: 6,
         funds: 35, img: "images/scenario.jpg", stamina: 8,
         desc: "Comedian, activist, and political commentator. Anti-establishment outsider appeal.",
         buff: "Cultural Phenomenon", debuff: null,
-        groupBoosts: { youth: 12, college: 8, secular: 10, independent: 8 },
-        groupDebuffs: { seniors: -5, rural: -6, evangelical: -8 }
+        groupBoosts: { youth: 9, college: 8, secular: 10, independent: 8 },
+        groupDebuffs: { seniors: -4, rural: -4, evangelical: -7 }
     },
     {
         id: "beshear", name: "Andy Beshear", party: "D", homeState: "KY",
+        homeStateBoost: 16,
         funds: 45, img: "images/scenario.jpg", stamina: 8,
         desc: "Kentucky Governor. Won 3 straight statewide races in a Trump+30 state — most electable Dem.",
         buff: "Red State Crossover", debuff: null,
-        groupBoosts: { rural: 6, noncollege: 5, suburban: 7, independent: 8, catholic: 5 },
-        groupDebuffs: { progressive: -6, youth: -3 }
+        groupBoosts: { rural: 8, noncollege: 7, suburban: 7, independent: 8, catholic: 5 },
+        groupDebuffs: { progressive: -5, youth: -3 }
     },
     {
         id: "booker", name: "Cory Booker", party: "D", homeState: "NJ",
+        homeStateBoost: 8,
         funds: 40, img: "images/scenario.jpg", stamina: 9,
         desc: "New Jersey Senator. Set a record-length Senate floor speech in protest of Trump in 2025.",
         buff: "National Spotlight", debuff: null,
-        groupBoosts: { black: 12, urban: 8, youth: 6, college: 5 },
-        groupDebuffs: { rural: -5, noncollege: -4, evangelical: -4 }
+        groupBoosts: { black: 12, urban: 6, youth: 6, college: 5 },
+        groupDebuffs: { rural: -3, noncollege: -3, evangelical: -3 }
     },
     {
         id: "shapiro", name: "Josh Shapiro", party: "D", homeState: "PA",
+        homeStateBoost: 12,
         funds: 55, img: "images/shapiro.jpg", stamina: 8,
         desc: "Pennsylvania Governor. Won by 15 points in a Trump state — viewed as a top 2028 contender.",
         buff: "Battleground Governor", debuff: null,
@@ -113,38 +125,43 @@ const CANDIDATES = [
     /* ===== REPUBLICAN PARTY ===== */
     {
         id: "trump", name: "Donald Trump", party: "R", homeState: "FL",
+        homeStateBoost: 7,
         funds: 80, img: "images/scenario.jpg", stamina: 6,
         desc: "45th & 47th President. Pushing an unconstitutional 3rd term — electrifies the base.",
         buff: "MAGA Kingmaker", debuff: "22nd Amendment Crisis",
-        groupBoosts: { evangelical: 14, rural: 12, noncollege: 10, bluecollar: 8 },
-        groupDebuffs: { college: -8, urban: -10, women: -6, independent: -12 }
+        groupBoosts: { evangelical: 10, rural: 7, noncollege: 6, bluecollar: 5 },
+        groupDebuffs: { college: -7, urban: -6, women: -4, independent: -8 }
     },
     {
         id: "vance", name: "JD Vance", party: "R", homeState: "OH",
+        homeStateBoost: 11,
         funds: 55, img: "images/vance.jpg", stamina: 8,
         desc: "Sitting Vice President (2025–present). Widely seen as Trump's natural successor.",
         buff: "VP Incumbency", debuff: null,
-        groupBoosts: { rural: 10, noncollege: 8, bluecollar: 8, evangelical: 5 },
-        groupDebuffs: { college: -6, urban: -7 }
+        groupBoosts: { rural: 7, noncollege: 5, bluecollar: 5, evangelical: 5 },
+        groupDebuffs: { college: -5, urban: -5 }
     },
     {
         id: "desantis", name: "Ron DeSantis", party: "R", homeState: "FL",
+        homeStateBoost: 13,
         funds: 65, img: "images/desantis.jpg", stamina: 9,
         desc: "Florida Governor. Term-limited in 2026 and openly considering a 2028 run.",
         buff: "Culture Warrior", debuff: null,
-        groupBoosts: { evangelical: 12, rural: 8, seniors: 6, noncollege: 5 },
-        groupDebuffs: { lgbtq_community: -15, urban: -8, black: -6 }
+        groupBoosts: { evangelical: 9, rural: 5, seniors: 5, noncollege: 5 },
+        groupDebuffs: { lgbtq_community: -15, urban: -5, black: -5 }
     },
     {
         id: "cruz", name: "Ted Cruz", party: "R", homeState: "TX",
+        homeStateBoost: 9,
         funds: 50, img: "images/scenario.jpg", stamina: 8,
         desc: "Texas Senator since 2013. Longtime presidential aspirant with a loyal conservative base.",
         buff: "Constitutional Conservative", debuff: null,
-        groupBoosts: { evangelical: 10, college: 5, military: 5, rural: 6 },
-        groupDebuffs: { urban: -8, independent: -7, moderate: -6 }
+        groupBoosts: { evangelical: 7, college: 5, military: 5, rural: 4 },
+        groupDebuffs: { urban: -5, independent: -5, moderate: -5 }
     },
     {
         id: "paul", name: "Rand Paul", party: "R", homeState: "KY",
+        homeStateBoost: 11,
         funds: 40, img: "images/scenario.jpg", stamina: 7,
         desc: "Kentucky Senator. Libertarian-leaning Republican — will not run if Vance runs.",
         buff: "Liberty Conservative", debuff: null,
@@ -153,6 +170,7 @@ const CANDIDATES = [
     },
     {
         id: "haley", name: "Nikki Haley", party: "R", homeState: "SC",
+        homeStateBoost: 11,
         funds: 55, img: "images/haley.jpg", stamina: 8,
         desc: "Former UN Ambassador. Moderate suburban Republican with crossover appeal.",
         buff: "Suburban Appeal", debuff: null,
@@ -161,38 +179,43 @@ const CANDIDATES = [
     },
     {
         id: "ramaswamy", name: "Vivek Ramaswamy", party: "R", homeState: "OH",
+        homeStateBoost: 7,
         funds: 70, img: "images/ramaswamy.jpg", stamina: 10,
         desc: "Biotech entrepreneur. High energy outsider who thrives on controversy.",
         buff: "Outsider Energy", debuff: null,
         groupBoosts: { asian: 10, suburban: 5, tech: 8, youth: 6 },
-        groupDebuffs: { college: -5, union: -6 }
+        groupDebuffs: { college: -4, union: -5 }
     },
     {
         id: "bannon", name: "Steve Bannon", party: "R", homeState: "VA",
+        homeStateBoost: 4,
         funds: 20, img: "images/scenario.jpg", stamina: 6,
         desc: "Former White House Chief Strategist. MAGA populist firebrand with rabid base loyalty.",
         buff: "MAGA Base Mobilizer", debuff: "Controversialist",
-        groupBoosts: { noncollege: 12, rural: 10, evangelical: 8, bluecollar: 10 },
-        groupDebuffs: { college: -12, urban: -14, suburban: -10, independent: -15 }
+        groupBoosts: { noncollege: 8, rural: 7, evangelical: 6, bluecollar: 7 },
+        groupDebuffs: { college: -8, urban: -9, suburban: -6, independent: -10 }
     },
     {
         id: "hawley", name: "Josh Hawley", party: "R", homeState: "MO",
+        homeStateBoost: 11,
         funds: 35, img: "images/scenario.jpg", stamina: 7,
         desc: "Missouri Senator. Working-class populist with a national profile.",
         buff: "Populist Firebrand", debuff: null,
-        groupBoosts: { bluecollar: 10, rural: 8, noncollege: 7, evangelical: 6 },
-        groupDebuffs: { college: -6, urban: -7, corporate: -8 }
+        groupBoosts: { bluecollar: 7, rural: 5, noncollege: 5, evangelical: 6 },
+        groupDebuffs: { college: -5, urban: -6, corporate: -7 }
     },
     {
         id: "carlson", name: "Tucker Carlson", party: "R", homeState: "FL",
+        homeStateBoost: 5,
         funds: 30, img: "images/scenario.jpg", stamina: 7,
         desc: "Conservative media personality. Speculation about a 2028 run is high.",
         buff: "Media Platform", debuff: "Untested Candidate",
-        groupBoosts: { rural: 10, noncollege: 8, maga: 10, evangelical: 5 },
-        groupDebuffs: { college: -8, urban: -10, independent: -8, suburban: -6 }
+        groupBoosts: { rural: 7, noncollege: 7, maga: 8, evangelical: 5 },
+        groupDebuffs: { college: -6, urban: -7, independent: -6, suburban: -5 }
     },
     {
         id: "rubio", name: "Marco Rubio", party: "R", homeState: "FL",
+        homeStateBoost: 12,
         funds: 65, img: "images/rubio.jpg", stamina: 8,
         desc: "Secretary of State (2025–present). After a prominent role in the 2026 Iran crisis, speculation he will run surged.",
         buff: "Foreign Policy Record", debuff: null,
@@ -203,16 +226,18 @@ const CANDIDATES = [
     /* ===== GREEN PARTY ===== */
     {
         id: "stein", name: "Jill Stein", party: "G", homeState: "MA",
+        homeStateBoost: 6,
         funds: 8, img: "images/stein.jpg", stamina: 6,
         desc: "Green Party perennial candidate — environmental and social justice platform.",
         buff: "Environmental Base", debuff: "Severe Third Party Penalty",
-        groupBoosts: { secular: 12, youth: 8, urban: 6 },
-        groupDebuffs: { bluecollar: -5, rural: -10 }
+        groupBoosts: { secular: 12, youth: 8, urban: 5 },
+        groupDebuffs: { bluecollar: -4, rural: -8 }
     },
 
     /* ===== LIBERTARIAN PARTY ===== */
     {
         id: "oliver", name: "Chase Oliver", party: "L", homeState: "GA",
+        homeStateBoost: 5,
         funds: 10, img: "images/oliver.jpg", stamina: 7,
         desc: "Libertarian activist. Maximum freedom, minimal government.",
         buff: "Liberty Movement", debuff: "Severe Third Party Penalty",
@@ -223,22 +248,25 @@ const CANDIDATES = [
     /* ===== INDEPENDENT ===== */
     {
         id: "yang", name: "Andrew Yang", party: "I", homeState: "NY",
+        homeStateBoost: 6,
         funds: 20, img: "images/yang.jpg", stamina: 8,
         desc: "Forward Party founder. His book hints 'the odds of my running again are high.'",
         buff: "UBI Movement", debuff: "Outsider Penalty",
         groupBoosts: { tech: 12, asian: 10, youth: 8, college: 6 },
-        groupDebuffs: { rural: -8, evangelical: -5 }
+        groupDebuffs: { rural: -6, evangelical: -4 }
     },
     {
         id: "manchin", name: "Joe Manchin", party: "I", homeState: "WV",
+        homeStateBoost: 14,
         funds: 30, img: "images/manchin.jpg", stamina: 7,
         desc: "Former West Virginia Senator. Centrist outsider with rural blue-collar appeal.",
         buff: "Bipartisan Appeal", debuff: "Outsider Penalty",
         groupBoosts: { bluecollar: 8, rural: 6, catholic: 5 },
-        groupDebuffs: { urban: -5, youth: -4 }
+        groupDebuffs: { urban: -4, youth: -4 }
     },
     {
         id: "kennedy_rfk", name: "Robert F. Kennedy Jr.", party: "I", homeState: "CA",
+        homeStateBoost: 4,
         funds: 25, img: "images/kennedy_rfk.jpg", stamina: 6,
         desc: "Former HHS Secretary & 2024 independent candidate. Speculation of another run.",
         buff: "Name Recognition", debuff: "Outsider Penalty",
@@ -247,29 +275,32 @@ const CANDIDATES = [
     },
     {
         id: "bloomberg", name: "Michael Bloomberg", party: "I", homeState: "NY",
+        homeStateBoost: 6,
         funds: 200, img: "images/bloomberg.jpg", stamina: 7,
         desc: "Former NYC Mayor and billionaire businessman. Self-financed mega-campaign.",
         buff: "Unlimited Funds", debuff: "Outsider Penalty",
-        groupBoosts: { whitecollar: 10, urban: 8, college: 7 },
-        groupDebuffs: { rural: -8, bluecollar: -6 }
+        groupBoosts: { whitecollar: 10, urban: 7, college: 7 },
+        groupDebuffs: { rural: -6, bluecollar: -5 }
     },
 
     /* ===== PARTY FOR SOCIALISM AND LIBERATION (PSL) ===== */
     {
         id: "delacruz", name: "Claudia De la Cruz", party: "PSL", homeState: "NY",
+        homeStateBoost: 5,
         funds: 5, img: "images/scenario.jpg", stamina: 9,
         desc: "PSL presidential candidate. Activist, organizer, and Bronx-born community leader.",
         buff: "Working Class Champion", debuff: "Severe Third Party Penalty",
-        groupBoosts: { hispanic: 12, youth: 10, urban: 8, union: 8 },
-        groupDebuffs: { suburban: -10, rural: -15, smallbusiness: -6 }
+        groupBoosts: { hispanic: 12, youth: 10, urban: 7, union: 8 },
+        groupDebuffs: { suburban: -8, rural: -12, smallbusiness: -6 }
     },
     {
         id: "lariva", name: "Gloria La Riva", party: "PSL", homeState: "CA",
+        homeStateBoost: 4,
         funds: 5, img: "images/lariva.jpg", stamina: 7,
         desc: "PSL General Secretary and longtime socialist organizer.",
         buff: "Working Class Appeal", debuff: "Severe Third Party Penalty",
-        groupBoosts: { union: 10, youth: 8, urban: 6, hispanic: 8 },
-        groupDebuffs: { suburban: -8, rural: -12, smallbusiness: -6 }
+        groupBoosts: { union: 10, youth: 8, urban: 5, hispanic: 8 },
+        groupDebuffs: { suburban: -7, rural: -10, smallbusiness: -6 }
     }
 ];
 

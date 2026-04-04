@@ -114,7 +114,9 @@ var gameData = {
     interestGroupTurnout: {},   // Per-group turnout propensity (1.0 = baseline 100%)
     // Pending campaign actions queue (applied on turn submission)
     pendingActions: [],  // Array of {type, state, countyId, issueId, intensity, cost}
-    turnPressure: {}     // Track cumulative pressure per state+issue for diminishing returns
+    turnPressure: {},     // Track cumulative pressure per state+issue for diminishing returns
+    // Per-turn polling cache: { stateCode: { D: 48.5, R: 44.2, ... }, county: { fips: {...} } }
+    pollCache: {}
 };
 
 // ==== CAMPAIGN PERSUASION TUNING CONSTANTS ====
