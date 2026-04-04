@@ -108,16 +108,13 @@ var Campaign = {
         document.getElementById('sp-name').innerText = s.name;
         document.getElementById('sp-ev').innerText = s.ev + ' EV';
         
-        var demPct = 50 + s.margin / 2;
-        var repPct = 50 - s.margin / 2;
-        demPct = Math.max(0, Math.min(100, demPct));
-        repPct = Math.max(0, Math.min(100, repPct));
-        
-        document.getElementById('poll-bar-wrap').innerHTML = 
-            '<div style="width: ' + demPct + '%; background: #00AEF3;"></div>' +
-            '<div style="width: ' + repPct + '%; background: #E81B23;"></div>';
-        document.getElementById('poll-dem-val').innerText = demPct.toFixed(1) + '%';
-        document.getElementById('poll-rep-val').innerText = repPct.toFixed(1) + '%';
+        // Build ranked candidate list for the state
+        var pollByParty = Utils.getStatePollingByParty(code);
+        var prevPollByParty = (gameData.pollCache && gameData.pollCache[code]) || null;
+        var pollVis = document.getElementById('poll-vis');
+        if (pollVis) {
+            pollVis.innerHTML = Utils.buildCandidateRankedListHTML(pollByParty, prevPollByParty);
+        }
         
         // Calculate and display turnout if available
         var turnoutText = 'Normal';
@@ -406,6 +403,23 @@ var Campaign = {
     nextWeek: function() {
         this.saveState();
         
+        // Save current poll values so next-turn delta can be shown
+        if (typeof Utils !== 'undefined' && Utils.getStatePollingByParty) {
+            if (!gameData.pollCache) gameData.pollCache = {};
+            if (!gameData.pollCache.county) gameData.pollCache.county = {};
+            for (var cacheCode in gameData.states) {
+                var sp = Utils.getStatePollingByParty(cacheCode);
+                if (sp) gameData.pollCache[cacheCode] = sp;
+            }
+            // Cache county-level polls for currently-loaded county data
+            if (typeof Counties !== 'undefined' && Counties.countyData) {
+                for (var cfips in Counties.countyData) {
+                    var cp = Utils.getCountyPollingByParty(Counties.countyData[cfips]);
+                    if (cp) gameData.pollCache.county[cfips] = cp;
+                }
+            }
+        }
+
         // Apply all queued campaign actions BEFORE advancing the turn
         if (typeof Persuasion !== 'undefined') {
             Persuasion.applyQueuedActions();

@@ -177,13 +177,8 @@
                         <h2 id="sp-name">STATE</h2>
                         <span class="ev-badge" id="sp-ev">0 EV</span>
                     </div>
-                    <div class="poll-vis">
-                        <div class="poll-bar-wrap" id="poll-bar-wrap"></div>
-                        <div class="poll-numbers">
-                            <span class="blue" id="poll-dem-val">50%</span>
-                            <span class="gray">vs</span>
-                            <span class="red" id="poll-rep-val">50%</span>
-                        </div>
+                    <div id="poll-vis" class="poll-vis">
+                        <!-- Dynamically populated: ranked candidate list with per-turn polling deltas -->
                     </div>
                     <div class="action-menu">
                         <h4>CAMPAIGN STRATEGY</h4>
@@ -263,7 +258,9 @@
                 <div class="map-mode-toggle">
                     <button class="mode-btn active" id="mode-leader" onclick="app.election.setMapMode('leader')">CURRENT LEADER</button>
                     <button class="mode-btn" id="mode-projected" onclick="app.election.setMapMode('projected')">PROJECTED WINNER</button>
+                    <button class="mode-btn hidden" id="mode-shift2024" onclick="app.election.setMapMode('shift2024')">📊 2024 SHIFT</button>
                 </div>
+                <div id="flip-legend-hint" class="hidden">⬦ diagonal stripes = flipped from 2024</div>
             </div>
         </header>
 
@@ -301,49 +298,19 @@
             <div class="election-content">
                 <div id="election-map-container">
                     <div id="election-map-wrapper"></div>
+                    <div id="election-county-view-wrapper" class="hidden">
+                        <div id="election-county-header">
+                            <button class="county-back-btn" onclick="Election.closeCountyView()">← BACK TO NATIONAL MAP</button>
+                            <span id="election-cv-title">COUNTY RESULTS</span>
+                        </div>
+                        <div id="election-county-map-container"></div>
+                    </div>
                 </div>
 
                 <aside id="election-sidebar">
-                    <div id="election-state-info" class="hidden">
-                        <div class="elec-state-header">
-                            <h2 id="elec-state-name">STATE</h2>
-                            <span class="elec-ev-badge" id="elec-state-ev">0 EV</span>
+                        <div id="election-state-info" class="hidden">
+                            <!-- Dynamically populated by Election.selectState() -->
                         </div>
-                        <div class="elec-reporting">
-                            <span id="elec-pct-reporting">0%</span> Reporting
-                        </div>
-                        <div class="elec-results-bar">
-                            <div class="elec-bar-dem" id="elec-state-bar-dem"></div>
-                            <div class="elec-bar-rep" id="elec-state-bar-rep"></div>
-                        </div>
-                        <div class="elec-vote-counts">
-                            <div class="elec-vote-row">
-                                <span class="elec-cand-name blue" id="elec-state-dem-name">Democrat</span>
-                                <span class="elec-votes" id="elec-state-dem-votes">0</span>
-                                <span class="elec-pct blue" id="elec-state-dem-pct">0%</span>
-                            </div>
-                            <div class="elec-vote-row">
-                                <span class="elec-cand-name red" id="elec-state-rep-name">Republican</span>
-                                <span class="elec-votes" id="elec-state-rep-votes">0</span>
-                                <span class="elec-pct red" id="elec-state-rep-pct">0%</span>
-                            </div>
-                            <div id="elec-state-third-row" class="hidden">
-                                <div class="elec-vote-row">
-                                    <span class="elec-cand-name" style="color: #198754;">Green</span>
-                                    <span class="elec-votes" id="elec-state-green-votes">0</span>
-                                    <span class="elec-pct" style="color: #198754;" id="elec-state-green-pct">0%</span>
-                                </div>
-                                <div class="elec-vote-row">
-                                    <span class="elec-cand-name" style="color: #fd7e14;">Libertarian</span>
-                                    <span class="elec-votes" id="elec-state-lib-votes">0</span>
-                                    <span class="elec-pct" style="color: #fd7e14;" id="elec-state-lib-pct">0%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="elec-projection" id="elec-projection">
-                            <span class="proj-status">TOO EARLY TO CALL</span>
-                        </div>
-                    </div>
                     
                     <div id="election-feed">
                         <h4>🔴 LIVE UPDATES</h4>
