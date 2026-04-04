@@ -955,11 +955,12 @@ var Election = {
                     var parts = line.split(',');
                     if (parts.length < 10) continue;
                     var rawFips = (parts[1] || '').replace(/"/g, '').trim();
-                    var perPointDiff = parseFloat(parts[9]); // per_gop - per_dem
+                    // per_point_diff is a decimal fraction: per_gop - per_dem (e.g. 0.46 = 46pp GOP lead)
+                    var perPointDiff = parseFloat(parts[9]);
                     if (!rawFips || isNaN(perPointDiff)) continue;
                     // Normalise to 5-digit FIPS with leading zeros
                     var fips5 = String(parseInt(rawFips, 10)).padStart(5, '0');
-                    // Store as Dem-positive: negative per_point_diff means D won
+                    // Multiply by 100 → percentage points; negate so positive = Dem-favoring.
                     self.data2024[fips5] = -perPointDiff * 100;
                 }
                 console.log('✓ 2024 election data loaded: ' + Object.keys(self.data2024).length + ' counties');

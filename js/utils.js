@@ -43,21 +43,6 @@ var Utils = {
         return "#730000"; // Very dark red
     },
 
-    // Color for shift-from-2024 map (positive = D shift, negative = R shift)
-    getShiftColor: function(shift) {
-        if (shift > 15)  return "#00264d";
-        if (shift > 8)   return "#0055a6";
-        if (shift > 4)   return "#3399ff";
-        if (shift > 1.5) return "#66b3ff";
-        if (shift > 0.5) return "#aad4ff";
-        if (shift > -0.5) return "#dddddd";
-        if (shift > -1.5) return "#ffaaaa";
-        if (shift > -4)   return "#ff6666";
-        if (shift > -8)   return "#d90000";
-        if (shift > -15)  return "#a60000";
-        return "#730000";
-    },
-
     formatDate: function(date) {
         var months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
         return months[date.getMonth()] + ' ' + date.getDate();
@@ -115,105 +100,6 @@ var Utils = {
             }
         }
         return list;
-    },
-
-    // Build a ranked candidate list HTML from poll percentages.
-    // pollByParty:     { D: 48.5, R: 44.2, G: 2.1, ... }
-    // prevPollByParty: { D: 47.0, R: 45.0, ... }  — pass null on first turn for 0.0 deltas
-    buildCandidateRankedListHTML: function(pollByParty, prevPollByParty) {
-        if (!pollByParty) {
-            return '<div class="cpl-empty">No polling data available.</div>';
-        }
-
-        var candidates = this.getActiveCandidates();
-        var items = [];
-
-        for (var ci = 0; ci < candidates.length; ci++) {
-            var entry = candidates[ci];
-            var pct  = pollByParty[entry.party] || 0;
-            var prev = (prevPollByParty && prevPollByParty[entry.party] !== undefined)
-                        ? prevPollByParty[entry.party] : pct;
-            items.push({ party: entry.party, cand: entry.cand, pct: pct, delta: pct - prev });
-        }
-
-        items.sort(function(a, b) { return b.pct - a.pct; });
-
-        var html = '<div class="cpl">';
-        for (var i = 0; i < items.length; i++) {
-            var item = items[i];
-            var partyData = (typeof PARTIES !== 'undefined' && PARTIES[item.party]) ? PARTIES[item.party] : null;
-            var partyColor = partyData ? partyData.color : '#888888';
-            var homeState = item.cand.homeState || item.cand.state || '';
-            var formattedName = item.cand.name + ' (' + item.party + (homeState ? '-' + homeState : '') + ')';
-            var deltaStr = (item.delta >= 0 ? '+' : '') + item.delta.toFixed(1);
-            var deltaClass = item.delta > 0.05 ? 'cpl-delta-pos' : (item.delta < -0.05 ? 'cpl-delta-neg' : 'cpl-delta-neu');
-
-            html += '<div class="cpl-row">';
-            html += '<span class="cpl-rank">' + (i + 1) + '</span>';
-            html += '<img class="cpl-avatar" src="' + (item.cand.img || 'images/scenario.jpg') + '" onerror="this.src=\'images/scenario.jpg\'" alt="" style="border-color:' + partyColor + ';">';
-            html += '<div class="cpl-info">';
-            html += '<span class="cpl-name" style="color:' + partyColor + ';">' + formattedName + '</span>';
-            html += '<div class="cpl-bar-track"><div class="cpl-bar" style="width:' + Math.min(100, item.pct).toFixed(1) + '%;background:' + partyColor + ';"></div></div>';
-            html += '</div>';
-            html += '<div class="cpl-stats">';
-            html += '<span class="cpl-pct" style="color:' + partyColor + ';">' + item.pct.toFixed(1) + '%</span>';
-            html += '<span class="' + deltaClass + '">' + deltaStr + '</span>';
-            html += '</div>';
-            html += '</div>';
-        }
-        html += '</div>';
-        return html;
-    },
-
-    // Build ranked candidate list from ELECTION NIGHT reported votes (no delta support needed)
-    buildElectionRankedListHTML: function(reportedVotes, reportedPct, stateEV, projStatus) {
-        var candidates = this.getActiveCandidates();
-        var items = [];
-
-        var totalVotes = 0;
-        var partyKeys = ['D', 'R', 'G', 'L', 'I', 'PSL'];
-        for (var pk = 0; pk < partyKeys.length; pk++) {
-            totalVotes += reportedVotes[partyKeys[pk]] || 0;
-        }
-
-        for (var ci = 0; ci < candidates.length; ci++) {
-            var entry = candidates[ci];
-            var votes = reportedVotes[entry.party] || 0;
-            var pct = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
-            items.push({ party: entry.party, cand: entry.cand, votes: votes, pct: pct });
-        }
-
-        items.sort(function(a, b) { return b.pct - a.pct; });
-
-        var html = '<div class="cpl">';
-        for (var i = 0; i < items.length; i++) {
-            var item = items[i];
-            var partyData = (typeof PARTIES !== 'undefined' && PARTIES[item.party]) ? PARTIES[item.party] : null;
-            var partyColor = partyData ? partyData.color : '#888888';
-            var homeState = item.cand.homeState || item.cand.state || '';
-            var formattedName = item.cand.name + ' (' + item.party + (homeState ? '-' + homeState : '') + ')';
-
-            html += '<div class="cpl-row">';
-            html += '<span class="cpl-rank">' + (i + 1) + '</span>';
-            html += '<img class="cpl-avatar" src="' + (item.cand.img || 'images/scenario.jpg') + '" onerror="this.src=\'images/scenario.jpg\'" alt="" style="border-color:' + partyColor + ';">';
-            html += '<div class="cpl-info">';
-            html += '<span class="cpl-name" style="color:' + partyColor + ';">' + formattedName + '</span>';
-            html += '<div class="cpl-bar-track"><div class="cpl-bar" style="width:' + Math.min(100, item.pct).toFixed(1) + '%;background:' + partyColor + ';"></div></div>';
-            html += '</div>';
-            html += '<div class="cpl-stats">';
-            html += '<span class="cpl-pct" style="color:' + partyColor + ';">' + item.pct.toFixed(1) + '%</span>';
-            html += '<span class="cpl-votes">' + item.votes.toLocaleString() + '</span>';
-            html += '</div>';
-            html += '</div>';
-        }
-        html += '</div>';
-
-        // Status line
-        if (projStatus) {
-            html += '<div class="elec-projection"><span class="proj-status ' + (projStatus.cssClass || '') + '">' + projStatus.text + '</span></div>';
-        }
-
-        return html;
     },
 
     // Compute per-party polling percentages for a state from county data

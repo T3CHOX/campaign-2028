@@ -199,10 +199,11 @@ function applyCandidateBuffs() {
 function _applyCountyBoost(fips5, voteKey, boostPoints) {
     var county = Counties.countyData[fips5];
     if (!county || !county.v) {
-        // Also try without leading zero for keys stored differently
+        // Fallback: scan for keys that normalize to the same 5-digit FIPS
         for (var key in Counties.countyData) {
             if (key.padStart(5, '0') === fips5) {
                 county = Counties.countyData[key];
+                console.warn('[FIPS] _applyCountyBoost: direct lookup missed for ' + fips5 + ', found via fallback key "' + key + '"');
                 break;
             }
         }
