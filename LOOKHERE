@@ -1,0 +1,750 @@
+const candidates = [
+  {
+    id: "harris",
+    name: "Kamala Harris",
+    party: "D",
+    homeState: "CA",
+    homeStateBoost: 2.3,
+    funds: 86,
+    img: "images/harris.jpg",
+    stamina: 7,
+    desc: "Harris enters the 2028 cycle with national name ID, a large donor network, and the burden of having already lost a presidential race. Her lane is still the same: maximize turnout in blue metros, hold suburban college-educated women, and avoid a collapse with noncollege voters in the Midwest. She is a proven fundraising magnet, but the party will not treat her as inevitable if the polling shows repeated ceiling problems in the Great Lakes and Sun Belt exurbs.",
+    buff: "Donor Magnet",
+    debuff: "General-Election Ceiling",
+    groupBoosts: {
+      black: 9,
+      asian: 7,
+      suburban_college: 7
+    },
+    groupDebuffs: {
+      noncollege: -4,
+      rural: -5
+    },
+    regionalSpillover: ["NV", "AZ"],
+    regionalSpilloverBoost: 1.0
+  },
+  {
+    id: "newsom",
+    name: "Gavin Newsom",
+    party: "D",
+    homeState: "CA",
+    homeStateBoost: 2.0,
+    funds: 84,
+    img: "images/newsom.jpg",
+    stamina: 8,
+    desc: "Newsom is the clearest elite-alternative Democrat: fluent on camera, aggressive on Trump, and backed by the kind of money that wants a confident national fighter. His problem is that the same profile that plays in California and coastal donor circles can harden resistance in the industrial Midwest and the exurbs. If he can translate California-style organizing into a broader anti-Trump coalition, he becomes dangerous; if not, he remains a regionalized national brand.",
+    buff: "Media Combatant",
+    debuff: "Heartland Liability",
+    groupBoosts: {
+      urban: 8,
+      tech: 8,
+      lgbtq: 7
+    },
+    groupDebuffs: {
+      rural: -6,
+      evangelical: -5
+    },
+    regionalSpillover: ["NV", "OR"],
+    regionalSpilloverBoost: 0.9
+  },
+  {
+    id: "whitmer",
+    name: "Gretchen Whitmer",
+    party: "D",
+    homeState: "MI",
+    homeStateBoost: 3.1,
+    funds: 77,
+    img: "images/whitmer.jpg",
+    stamina: 8,
+    desc: "Whitmer is built for the kind of map Democrats need: she can talk to union households, suburban women, and persuadable Midwestern voters without sounding like she came off a cable panel. Her value is not ideological purity; it is that she can defend Michigan and force Republicans to spend money where they want to win cheaply. If the race is about preventing Trump-era margins from widening in the Blue Wall, she is one of the few candidates who can credibly do it.",
+    buff: "Blue Wall Anchor",
+    debuff: "Low-Voltage Base",
+    groupBoosts: {
+      union: 8,
+      suburban_women: 8,
+      midwest_noncollege: 6
+    },
+    groupDebuffs: {
+      progressive_left: -3,
+      rural: -4
+    },
+    regionalSpillover: ["WI", "PA"],
+    regionalSpilloverBoost: 1.5
+  },
+  {
+    id: "buttigieg",
+    name: "Pete Buttigieg",
+    party: "D",
+    homeState: "IN",
+    homeStateBoost: 1.4,
+    funds: 73,
+    img: "images/buttigieg.jpg",
+    stamina: 8,
+    desc: "Buttigieg has discipline, message control, and the kind of fundraising network that keeps him in the top tier. He is strongest with highly educated voters, especially suburban and professional classes, and his weakness is obvious: he has to overperform in exactly the places where Democrats have been slipping with working-class voters. His best case is a clean, technocratic contrast to Republican chaos; his worst case is looking like an overqualified consultant in a fight that rewards raw coalition energy.",
+    buff: "Suburban Precision",
+    debuff: "Working-Class Gap",
+    groupBoosts: {
+      suburban_college: 8,
+      lgbtq: 9,
+      urban: 7
+    },
+    groupDebuffs: {
+      rural: -6,
+      noncollege: -4
+    },
+    regionalSpillover: ["MI", "OH"],
+    regionalSpilloverBoost: 0.8
+  },
+  {
+    id: "ocasio_cortez",
+    name: "Alexandria Ocasio-Cortez",
+    party: "D",
+    homeState: "NY",
+    homeStateBoost: 1.6,
+    funds: 70,
+    img: "images/ocasio_cortez.jpg",
+    stamina: 9,
+    desc: "Ocasio-Cortez is the purest turnout candidate in the field: unmatched social reach, strong youth intensity, and the ability to generate free media every time she opens her mouth. She can build a large small-dollar machine fast, but she also triggers the sharpest right-wing response and gives moderates an easy socialist frame. If Democrats want maximal enthusiasm in deep-blue metros and among younger voters, she is elite; if they want a low-drama general-election nominee, she is a problem.",
+    buff: "Youth Engine",
+    debuff: "Swing Voter Repellent",
+    groupBoosts: {
+      youth: 10,
+      hispanic: 9,
+      progressive_left: 9
+    },
+    groupDebuffs: {
+      noncollege: -6,
+      evangelical: -7
+    },
+    regionalSpillover: ["NJ", "CT"],
+    regionalSpilloverBoost: 0.8
+  },
+  {
+    id: "kelly",
+    name: "Mark Kelly",
+    party: "D",
+    homeState: "AZ",
+    homeStateBoost: 2.8,
+    funds: 67,
+    img: "images/kelly.jpg",
+    stamina: 7,
+    desc: "Kelly has one of the cleanest resumes for a swing-state Democrat: veteran, astronaut, senator, and winner in Arizona. His pitch is competence, restraint, and a calm contrast with Trump-style politics, which plays well with suburban moderates and national-security voters. He does not electrify the left, but he can hold enough of the center to make Arizona the foundation of a viable Sun Belt path.",
+    buff: "Sun Belt Credibility",
+    debuff: "Muted Fire",
+    groupBoosts: {
+      veterans: 8,
+      suburban_moderates: 7,
+      latino: 6
+    },
+    groupDebuffs: {
+      progressive_left: -3,
+      evangelical: -4
+    },
+    regionalSpillover: ["NV", "CO"],
+    regionalSpilloverBoost: 1.2
+  },
+  {
+    id: "khanna",
+    name: "Ro Khanna",
+    party: "D",
+    homeState: "CA",
+    homeStateBoost: 1.4,
+    funds: 61,
+    img: "images/khanna.jpg",
+    stamina: 8,
+    desc: "Khanna is the policy-heavy candidate trying to fuse progressive economics with Silicon Valley credibility. He can raise money from tech and online networks, but he has to prove he is more than a west-coast theory candidate if he wants to matter in the Great Lakes. His upside is an argument that sounds economically sharper than the average Democrat; his downside is that many voters will still file him under coastal technocrat.",
+    buff: "Tech-Left Blend",
+    debuff: "Rust Belt Doubt",
+    groupBoosts: {
+      tech: 9,
+      asian: 7,
+      progressive_left: 8
+    },
+    groupDebuffs: {
+      rural: -5,
+      noncollege: -4
+    },
+    regionalSpillover: ["NV", "WA"],
+    regionalSpilloverBoost: 0.7
+  },
+  {
+    id: "emanuel",
+    name: "Rahm Emanuel",
+    party: "D",
+    homeState: "IL",
+    homeStateBoost: 1.7,
+    funds: 64,
+    img: "images/emanuel.jpg",
+    stamina: 6,
+    desc: "Emanuel is the hard-knuckle institutionalist in the field: experienced, intimidating, and deeply connected to money and power. He would have no trouble attracting business donors and establishment support, but his own style is a tax on enthusiasm, especially among younger activists and progressive organizers. If the race rewards competence and toughness over inspiration, he becomes relevant; if not, he is a machine candidate in an anti-machine era.",
+    buff: "Institutional Muscle",
+    debuff: "Base Friction",
+    groupBoosts: {
+      suburban_moderates: 7,
+      business_community: 8,
+      jewish: 6
+    },
+    groupDebuffs: {
+      progressive_left: -7,
+      youth: -4
+    },
+    regionalSpillover: ["WI", "MI"],
+    regionalSpilloverBoost: 1.0
+  },
+  {
+    id: "stewart",
+    name: "Jon Stewart",
+    party: "D",
+    homeState: "NJ",
+    homeStateBoost: 1.4,
+    funds: 48,
+    img: "images/stewart.jpg",
+    stamina: 6,
+    desc: "Stewart would enter politics as a high-recognition outsider with enormous media leverage and almost no governing track record. That makes him useful as a vehicle for anti-establishment energy, but risky for donors who want someone who can survive a 17-state campaign without turning every week into a comedy bit. He can excite disaffected younger and online voters, yet the absence of executive experience would be his first and last attack line.",
+    buff: "Media Reach",
+    debuff: "No Governing Record",
+    groupBoosts: {
+      youth: 8,
+      media_consumers: 9,
+      progressive_left: 6
+    },
+    groupDebuffs: {
+      institutional_dems: -4,
+      high_info_swing: -3
+    },
+    regionalSpillover: ["NY", "PA"],
+    regionalSpilloverBoost: 1.0
+  },
+  {
+    id: "beshear",
+    name: "Andy Beshear",
+    party: "D",
+    homeState: "KY",
+    homeStateBoost: 2.4,
+    funds: 56,
+    img: "images/beshear.jpg",
+    stamina: 8,
+    desc: "Beshear is the moderate Democrat who can still speak to red-state voters without sounding like he is begging for permission. That matters because Democrats need some evidence they can win back voters outside the coasts, not just maximize margins in metro areas. He has a real story in Kentucky, but his national ceiling depends on whether voters believe his style can travel beyond one unusually favorable personal brand.",
+    buff: "Red-State Crossover",
+    debuff: "National Ceiling",
+    groupBoosts: {
+      rural_whites: 7,
+      union: 6,
+      moderate_dems: 8
+    },
+    groupDebuffs: {
+      progressive_left: -4,
+      youth: -3
+    },
+    regionalSpillover: ["OH", "WV"],
+    regionalSpilloverBoost: 1.1
+  },
+  {
+    id: "booker",
+    name: "Cory Booker",
+    party: "D",
+    homeState: "NJ",
+    homeStateBoost: 1.9,
+    funds: 60,
+    img: "images/booker.jpg",
+    stamina: 7,
+    desc: "Booker has the biography, the rhetorical range, and the ability to speak fluently to urban Black voters, suburban professionals, and moralistic liberals. The challenge is that he has often read as more inspirational than operational, and campaign cycles punish that distinction when the floor starts dropping in working-class counties. He can build a broad coalition, but he still has to prove that coalition can survive contact with the Midwest map.",
+    buff: "Urban Coalition",
+    debuff: "Execution Questions",
+    groupBoosts: {
+      black: 8,
+      urban: 8,
+      suburban_moderates: 6
+    },
+    groupDebuffs: {
+      noncollege: -3,
+      progressive_left: -3
+    },
+    regionalSpillover: ["NY", "PA"],
+    regionalSpilloverBoost: 1.0
+  },
+  {
+    id: "shapiro",
+    name: "Josh Shapiro",
+    party: "D",
+    homeState: "PA",
+    homeStateBoost: 3.4,
+    funds: 69,
+    img: "images/shapiro.jpg",
+    stamina: 8,
+    desc: "Shapiro is the most straightforward Blue Wall candidate in the field because Pennsylvania is both his home base and his proof of concept. He has the executive profile, the state-level governing record, and the kind of moderate tone that can hold suburban voters without fully alienating the left. If Democrats want a candidate who starts with the map instead of the brand, he is one of the strongest options.",
+    buff: "Keystone Anchor",
+    debuff: "Soft National Brand",
+    groupBoosts: {
+      suburban_college: 8,
+      jewish: 7,
+      moderate_dems: 7
+    },
+    groupDebuffs: {
+      youth: -3,
+      progressive_left: -3
+    },
+    regionalSpillover: ["MI", "WI"],
+    regionalSpilloverBoost: 1.5
+  },
+
+  {
+    id: "trump",
+    name: "Donald Trump",
+    party: "R",
+    homeState: "FL",
+    homeStateBoost: 1.8,
+    funds: 90,
+    img: "images/trump.jpg",
+    stamina: 6,
+    desc: "Trump is the sitting political gravity well: he dominates the party, sets the tone, and still forces every other Republican to define themselves against him. By the 2028 cycle, the issue is less persuasion than maintenance—protect the margins with noncollege whites, keep rural enthusiasm high, and avoid erosion in suburban counties that have already moved against him. He has the strongest base machine in the field, but age, fatigue, and saturation mean the operation depends on turnout more than expansion.",
+    buff: "Base Dominance",
+    debuff: "Fatigue Ceiling",
+    groupBoosts: {
+      noncollege: 10,
+      evangelical: 10,
+      rural: 10
+    },
+    groupDebuffs: {
+      suburban_college: -7,
+      youth: -6
+    },
+    regionalSpillover: ["PA", "OH"],
+    regionalSpilloverBoost: 1.5
+  },
+  {
+    id: "vance",
+    name: "JD Vance",
+    party: "R",
+    homeState: "OH",
+    homeStateBoost: 2.4,
+    funds: 78,
+    img: "images/vance.jpg",
+    stamina: 8,
+    desc: "Vance is the heir apparent type: younger than the rest, fluent in the grievance politics of the post-2016 GOP, and positioned to inherit Trump’s coalition if the transition is managed cleanly. His challenge is that being the logical successor is not the same as being universally liked, especially with donors and suburban voters who want the Trump coalition without the chaos. If he can keep the Rust Belt edge while not collapsing in Sun Belt suburbs, he becomes a very serious 2028 front-runner.",
+    buff: "Succession Candidate",
+    debuff: "Trust Deficit",
+    groupBoosts: {
+      noncollege: 9,
+      evangelical: 8,
+      rural: 9
+    },
+    groupDebuffs: {
+      suburban_college: -5,
+      youth: -4
+    },
+    regionalSpillover: ["PA", "MI"],
+    regionalSpilloverBoost: 1.3
+  },
+  {
+    id: "desantis",
+    name: "Ron DeSantis",
+    party: "R",
+    homeState: "FL",
+    homeStateBoost: 2.6,
+    funds: 72,
+    img: "images/desantis.jpg",
+    stamina: 8,
+    desc: "DeSantis remains the most obvious anti-Trump Republican with a governing record and a national donor address book. His problem is that he never fully solved the Trump authenticity test, and every cycle since his peak has reinforced the sense that he is more methodical than magnetic. He can raise real money and appeal to hard-line culture voters, but he has to stop bleeding credibility with rank-and-file Republicans before he can be treated as a true top-tier contender.",
+    buff: "Culture Warrior",
+    debuff: "Momentum Loss",
+    groupBoosts: {
+      evangelical: 8,
+      suburban_conservative: 7,
+      noncollege: 7
+    },
+    groupDebuffs: {
+      youth: -5,
+      college_liberals: -6
+    },
+    regionalSpillover: ["GA", "NC"],
+    regionalSpilloverBoost: 1.0
+  },
+  {
+    id: "cruz",
+    name: "Ted Cruz",
+    party: "R",
+    homeState: "TX",
+    homeStateBoost: 2.2,
+    funds: 70,
+    img: "images/cruz.jpg",
+    stamina: 7,
+    desc: "Cruz is a high-end ideological operator with real fundraising ability and a hard-core conservative base. He is excellent at alienating people who already dislike him, but in the modern GOP that can still be a feature if the primary electorate wants combat over comfort. His ceiling in a general election is clear: suburban voters, moderates, and many independents see him as pure conflict with no off-ramp.",
+    buff: "Primary Knife Fighter",
+    debuff: "General-Election Baggage",
+    groupBoosts: {
+      evangelical: 9,
+      noncollege: 8,
+      donor_conservative: 8
+    },
+    groupDebuffs: {
+      suburban_college: -7,
+      latino: -3
+    },
+    regionalSpillover: ["OK", "LA"],
+    regionalSpilloverBoost: 0.9
+  },
+  {
+    id: "paul",
+    name: "Rand Paul",
+    party: "R",
+    homeState: "KY",
+    homeStateBoost: 2.0,
+    funds: 55,
+    img: "images/paul.jpg",
+    stamina: 7,
+    desc: "Paul is the libertarian lane inside the GOP: anti-war, anti-spending, anti-establishment, and deeply appealing to a slice of donors and online conservatives who want less culture-war machinery. That niche is real, but it is too narrow to dominate a presidential primary unless the field fractures. He can survive by being the dissenting voice, not by building the broadest coalition.",
+    buff: "Libertarian Lane",
+    debuff: "Narrow Coalition",
+    groupBoosts: {
+      libertarian: 9,
+      tech_conservative: 6,
+      donor_antiestablishment: 7
+    },
+    groupDebuffs: {
+      evangelical: -4,
+      national_security_hawks: -5
+    },
+    regionalSpillover: ["TN", "IN"],
+    regionalSpilloverBoost: 0.7
+  },
+  {
+    id: "haley",
+    name: "Nikki Haley",
+    party: "R",
+    homeState: "SC",
+    homeStateBoost: 2.4,
+    funds: 76,
+    img: "images/haley.jpg",
+    stamina: 8,
+    desc: "Haley is the most credible Republican answer to voters who want the party without the baggage. She can speak to donors, suburban moderates, and voters uneasy about Trump’s style, but she pays a heavy price with the MAGA base whenever she sounds insufficiently loyal. If the GOP wants to broaden its coalition, she is the natural vehicle; if it wants to remain fully Trump-defined, she is an intraparty problem.",
+    buff: "Suburban Alternative",
+    debuff: "MAGA Suspicion",
+    groupBoosts: {
+      suburban_college: 8,
+      donor_class: 8,
+      women: 7
+    },
+    groupDebuffs: {
+      evangelical: -4,
+      noncollege: -3
+    },
+    regionalSpillover: ["NC", "GA"],
+    regionalSpilloverBoost: 1.2
+  },
+  {
+    id: "ramaswamy",
+    name: "Vivek Ramaswamy",
+    party: "R",
+    homeState: "OH",
+    homeStateBoost: 1.8,
+    funds: 68,
+    img: "images/ramaswamy.jpg",
+    stamina: 9,
+    desc: "Ramaswamy is the pure disruption candidate: young, fluent on media, and built for attention economics. He can raise money from anti-establishment donors and generate volume online, but he still has to prove that he can survive a real primary electorate rather than just dominate clips. His upside is obvious as a fresh face; his downside is that many Republicans may eventually decide he sounds more like a pitch deck than a president.",
+    buff: "Disruption Machine",
+    debuff: "Experience Gap",
+    groupBoosts: {
+      youth: 8,
+      tech: 8,
+      antiestablishment: 9
+    },
+    groupDebuffs: {
+      evangelical: -3,
+      suburban_college: -4
+    },
+    regionalSpillover: ["MI", "PA"],
+    regionalSpilloverBoost: 1.0
+  },
+  {
+    id: "bannon",
+    name: "Steve Bannon",
+    party: "R",
+    homeState: "NY",
+    homeStateBoost: 1.2,
+    funds: 40,
+    img: "images/bannon.jpg",
+    stamina: 6,
+    desc: "Bannon is less a normal candidate than a force multiplier for insurgent nationalism. He can shape rhetoric, elevate grievances, and help define the hard-right lane, but his personal electoral appeal outside the activist ecosystem is limited. If the race becomes a purity contest, he matters; if it becomes a general-election contest, he becomes mostly a message threat to everyone else.",
+    buff: "Insurgent Ideologue",
+    debuff: "Electoral Toxicity",
+    groupBoosts: {
+      hardcore_right: 9,
+      antiestablishment: 8,
+      online_militant: 8
+    },
+    groupDebuffs: {
+      suburban_college: -8,
+      women: -6
+    },
+    regionalSpillover: ["AZ", "WI"],
+    regionalSpilloverBoost: 0.9
+  },
+  {
+    id: "hawley",
+    name: "Josh Hawley",
+    party: "R",
+    homeState: "MO",
+    homeStateBoost: 1.9,
+    funds: 62,
+    img: "images/hawley.jpg",
+    stamina: 8,
+    desc: "Hawley combines populist economics with culture-war aggression, which gives him a sharper identity than the average Senate Republican. He can speak to anti-elite voters who want the GOP to sound economically combative rather than merely business-friendly, but he will be under constant pressure to prove he can govern rather than just denounce. His real strength is in a primary where resentment and nationalism matter more than reassurance.",
+    buff: "Populist Fire",
+    debuff: "Trust Issues",
+    groupBoosts: {
+      noncollege: 8,
+      evangelical: 8,
+      blue_collar: 7
+    },
+    groupDebuffs: {
+      suburban_college: -6,
+      donor_class: -4
+    },
+    regionalSpillover: ["IA", "OH"],
+    regionalSpilloverBoost: 1.0
+  },
+  {
+    id: "carlson",
+    name: "Tucker Carlson",
+    party: "R",
+    homeState: "FL",
+    homeStateBoost: 1.4,
+    funds: 66,
+    img: "images/carlson.jpg",
+    stamina: 7,
+    desc: "Carlson brings a ready-made media platform, a loyal audience, and the ability to dominate the conversation without spending much to do it. He can pull in donors who like the fact that he changes the incentives of the race, but plenty of Republicans would worry that he turns a campaign into an endless grievance broadcast. His ceiling is as much about whether the party wants a commentator as a nominee as it is about any specific policy position.",
+    buff: "Media Star Power",
+    debuff: "Candidate Question",
+    groupBoosts: {
+      online_right: 9,
+      noncollege: 7,
+      antiestablishment: 8
+    },
+    groupDebuffs: {
+      suburban_college: -7,
+      women: -5
+    },
+    regionalSpillover: ["MN", "WI"],
+    regionalSpilloverBoost: 1.0
+  },
+  {
+    id: "rubio",
+    name: "Marco Rubio",
+    party: "R",
+    homeState: "FL",
+    homeStateBoost: 2.7,
+    funds: 75,
+    img: "images/rubio.jpg",
+    stamina: 8,
+    desc: "Rubio is the most polished Republican diplomat-politician in the field, with a résumé that bridges the Senate, national security, and the post-Trump establishment. He can speak to donors, moderates, and Hispanic voters more naturally than most of the party, but he still has to outrun the shadow of having once been tagged as the 'establishment' option. If the GOP wants a nominee who can talk like a president and not just a movement figure, Rubio is a serious contender.",
+    buff: "Diplomatic Polish",
+    debuff: "Base Skepticism",
+    groupBoosts: {
+      hispanic: 7,
+      suburban_college: 7,
+      donor_class: 8
+    },
+    groupDebuffs: {
+      hard_right: -4,
+      antiestablishment: -3
+    },
+    regionalSpillover: ["NV", "AZ"],
+    regionalSpilloverBoost: 1.1
+  },
+
+  {
+    id: "stein",
+    name: "Jill Stein",
+    party: "G",
+    homeState: "MA",
+    homeStateBoost: 1.0,
+    funds: 20,
+    img: "images/stein.jpg",
+    stamina: 5,
+    desc: "Stein remains the left-green protest option, strongest as a pressure valve for voters who want to punish Democrats from the left. Her campaign can influence margins more than it can win states, and that is the whole story: she matters if the race is close in Michigan, Wisconsin, or Pennsylvania. She is not building a national majority coalition; she is trying to maximize protest oxygen.",
+    buff: "Protest Vehicle",
+    debuff: "Ballot-Box Ceiling",
+    groupBoosts: {
+      progressive_left: 7,
+      antiwar_left: 8,
+      environmentalists: 8
+    },
+    groupDebuffs: {
+      suburban_moderates: -6,
+      institutional_dems: -7
+    },
+    regionalSpillover: ["MI", "WI"],
+    regionalSpilloverBoost: 0.8
+  },
+  {
+    id: "oliver",
+    name: "Chase Oliver",
+    party: "L",
+    homeState: "GA",
+    homeStateBoost: 1.2,
+    funds: 18,
+    img: "images/oliver.jpg",
+    stamina: 7,
+    desc: "Oliver is the libertarian ballot-line candidate: small-government, civil-liberties centered, and mostly relevant where the major parties are too polarized for some voters to tolerate. He can appeal to a tiny but real slice of independents and anti-regulation voters, but he is not going to break into the high-single digits nationally without a broader anti-duopoly mood. His value is mostly in regions where a few thousand votes can matter.",
+    buff: "Libertarian Purist",
+    debuff: "Low Visibility",
+    groupBoosts: {
+      libertarian: 9,
+      small_business: 6,
+      antiwar_independents: 6
+    },
+    groupDebuffs: {
+      evangelical: -5,
+      union: -4
+    },
+    regionalSpillover: ["NC", "FL"],
+    regionalSpilloverBoost: 0.7
+  },
+
+  {
+    id: "yang",
+    name: "Andrew Yang",
+    party: "I",
+    homeState: "NY",
+    homeStateBoost: 1.3,
+    funds: 45,
+    img: "images/yang.jpg",
+    stamina: 7,
+    desc: "Yang is the founder-friendly outsider who can still talk to tech, younger independents, and disaffected moderates in a language that sounds less tribal than either major party. His challenge is that his coalition is real but diffuse, and third-party campaigns are punished by the electoral system unless they land in a very specific moment. He can make noise, raise enough money to stay relevant, and pull on the 'system is broken' electorate, but he needs a chaos environment to matter.",
+    buff: "Independent Brand",
+    debuff: "Coalition Drift",
+    groupBoosts: {
+      tech: 8,
+      youth: 7,
+      independents: 8
+    },
+    groupDebuffs: {
+      union: -4,
+      party_loyalists: -6
+    },
+    regionalSpillover: ["CA", "NY"],
+    regionalSpilloverBoost: 0.6
+  },
+  {
+    id: "manchin",
+    name: "Joe Manchin",
+    party: "I",
+    homeState: "WV",
+    homeStateBoost: 3.0,
+    funds: 52,
+    img: "images/manchin.jpg",
+    stamina: 5,
+    desc: "Manchin is the old-school Appalachian dealmaker, strongest in places where Democrats have already been written off and Republicans still need to prove they can speak to cultural moderates. He can sell himself as the last independent-minded adult in the room, but the national electorate has moved far enough that his brand is more plausible as a spoiler than a winner. He is useful if the map gets weird; otherwise, he is a nostalgia candidate for an era of split-ticket politics that has mostly vanished.",
+    buff: "Appalachian Rogue",
+    debuff: "Era Mismatch",
+    groupBoosts: {
+      rural_whites: 8,
+      union: 6,
+      moderates: 7
+    },
+    groupDebuffs: {
+      progressive_left: -6,
+      youth: -5
+    },
+    regionalSpillover: ["OH", "PA"],
+    regionalSpilloverBoost: 1.1
+  },
+  {
+    id: "rfk",
+    name: "Robert F. Kennedy Jr.",
+    party: "I",
+    homeState: "NY",
+    homeStateBoost: 1.2,
+    funds: 58,
+    img: "images/rfk.jpg",
+    stamina: 6,
+    desc: "Kennedy remains a highly unusual independent presence: strong name ID, strong anti-establishment signaling, and a brand that can briefly cut across partisan lines before collapsing under scrutiny. He can pull dissatisfied voters who want to punish both parties, but his coalition is unstable and often more emotional than durable. If the race is close enough for protest votes to matter, he is dangerous; if not, he is mostly a spoiler with an oversized microphone.",
+    buff: "Anti-Establishment Pull",
+    debuff: "Message Volatility",
+    groupBoosts: {
+      antiestablishment: 8,
+      independents: 7,
+      alternative_media: 7
+    },
+    groupDebuffs: {
+      institutional_dems: -7,
+      public_health_professionals: -8
+    },
+    regionalSpillover: ["AZ", "NH"],
+    regionalSpilloverBoost: 0.8
+  },
+  {
+    id: "bloomberg",
+    name: "Michael Bloomberg",
+    party: "I",
+    homeState: "NY",
+    homeStateBoost: 1.0,
+    funds: 100,
+    img: "images/bloomberg.jpg",
+    stamina: 5,
+    desc: "Bloomberg is the pure money candidate: unmatched resources, serious managerial credentials, and the ability to bankroll a professional operation at a scale no outsider can match. The catch is that money buys structure, not affection, and his profile remains deeply polarizing with both populists and activists. He can shape the field, dominate issue spending, and function as the emergency asset for anxious moderates, but he is not naturally built for mass enthusiasm.",
+    buff: "Unlimited War Chest",
+    debuff: "Mass-appeal Problem",
+    groupBoosts: {
+      suburban_moderates: 8,
+      donor_class: 10,
+      business_community: 10
+    },
+    groupDebuffs: {
+      black: -3,
+      progressive_left: -8
+    },
+    regionalSpillover: ["NY", "NJ"],
+    regionalSpilloverBoost: 0.9
+  },
+
+  {
+    id: "claudia_de_la_cruz",
+    name: "Claudia De la Cruz",
+    party: "PSL",
+    homeState: "NY",
+    homeStateBoost: 1.0,
+    funds: 12,
+    img: "images/de_la_cruz.jpg",
+    stamina: 7,
+    desc: "De la Cruz is a hard-left organizing candidate whose purpose is not to win the presidency in the conventional sense, but to turn out anti-capitalist and anti-war voters who feel abandoned by Democrats. She can speak to activists, young radicals, and portions of the Latino left with authenticity, but the electoral system gives her almost no path to institutional power. Her campaign matters if protest energy is the commodity being measured.",
+    buff: "Hard-Left Organizing",
+    debuff: "Electoral Margin",
+    groupBoosts: {
+      progressive_left: 8,
+      youth: 7,
+      latino_left: 7
+    },
+    groupDebuffs: {
+      suburban_moderates: -8,
+      institutional_dems: -9
+    },
+    regionalSpillover: ["NY", "CA"],
+    regionalSpilloverBoost: 0.5
+  },
+  {
+    id: "gloria_la_riva",
+    name: "Gloria La Riva",
+    party: "PSL",
+    homeState: "CA",
+    homeStateBoost: 1.0,
+    funds: 10,
+    img: "images/la_riva.jpg",
+    stamina: 5,
+    desc: "La Riva is the veteran socialist protest candidate with deep left activist credibility and very limited national reach. She can energize niche anti-imperialist and labor-left circles, but her ceiling is tiny in a presidential system that rewards broad coalitions and punishes fragmentation. She is a message candidate first and a vote-getter second, which is why her influence comes from issue pressure rather than electoral viability.",
+    buff: "Leftist Credentials",
+    debuff: "Tiny Ceiling",
+    groupBoosts: {
+      antiwar_left: 8,
+      progressive_left: 6,
+      labor_left: 6
+    },
+    groupDebuffs: {
+      suburban_moderates: -7,
+      donor_class: -9
+    },
+    regionalSpillover: ["CA", "NY"],
+    regionalSpilloverBoost: 0.5
+  }
+];
