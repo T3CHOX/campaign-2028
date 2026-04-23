@@ -289,6 +289,11 @@ var Election = {
         var collegeShare = county && county.ig && county.ig.college !== undefined ? Math.max(0, Math.min(100, county.ig.college)) / 100 : 0.35;
         var ruralShare = county && county.ig && county.ig.rural !== undefined ? Math.max(0, Math.min(100, county.ig.rural)) / 100 : (county && county.t === 'Rural' ? 0.7 : 0.3);
         var urbanIndex = county && county.t === 'Urban' ? 1 : (county && county.t === 'Mixed' ? 0.58 : 0.22);
+        // Tuned baseline turnout model:
+        // - starts near modern presidential turnout (~53% of total population in this dataset context),
+        // - rises in higher-education / urban counties,
+        // - softens in heavily rural counties,
+        // - clamped to a realistic 50%–65% envelope before campaign turnout modifiers apply.
         var baselineTurnout = 0.53 + (collegeShare * 0.08) + (urbanIndex * 0.03) - (ruralShare * 0.02);
         return Math.max(0.50, Math.min(0.65, baselineTurnout));
     },

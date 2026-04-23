@@ -263,8 +263,19 @@ function _applyStateBoostToCounties(stateCode, voteKey, boostPoints) {
 }
 
 // Map INTEREST_GROUPS / CANDIDATE_GROUP_MODIFIERS keys → county ig keys
+function _normalizeGroupTag(groupId) {
+    return (groupId || '').toLowerCase().replace(/[\s-]+/g, '_');
+}
+
+var GROUP_TAG_ALIASES = {
+    independents: 'independent',
+    small_business: 'smallbusiness',
+    blue_collar: 'bluecollar',
+    latino: 'hispanic'
+};
+
 function _mapGroupToIgKey(groupId) {
-    var normalizedGroupId = (groupId || '').toLowerCase().replace(/[\s-]+/g, '_');
+    var normalizedGroupId = _normalizeGroupTag(groupId);
     var MAP = {
         'black':          'black',
         'hispanic':       'hispanic',
@@ -382,7 +393,7 @@ function _countyInRegion(county, regionName) {
 
 // Interprets composite demographic tags from candidate data into county-weighted modifier values.
 function calculateCompositeTag(tag, value, county) {
-    var normalizedTag = (tag || '').toLowerCase().replace(/[\s-]+/g, '_');
+    var normalizedTag = _normalizeGroupTag(tag);
     var urbanIndex = _getCountyUrbanIndex(county);
     var suburbanIndex = _getCountySuburbanIndex(county);
     var ruralShare = _getCountyIgValue(county, 'rural');
@@ -394,11 +405,8 @@ function calculateCompositeTag(tag, value, county) {
     var magaShare = _getCountyIgValue(county, 'maga');
     var unionShare = _getCountyIgValue(county, 'union');
     var secularShare = _getCountyIgValue(county, 'secular');
-
-    if (normalizedTag === 'independents') normalizedTag = 'independent';
-    if (normalizedTag === 'small_business') normalizedTag = 'smallbusiness';
-    if (normalizedTag === 'blue_collar') normalizedTag = 'bluecollar';
-    if (normalizedTag === 'latino') normalizedTag = 'hispanic';
+    var donorClassWeight = collegeShare * (0.4 + (urbanIndex * 0.6)) * (1 - (ruralShare * 0.5));
+    normalizedTag = GROUP_TAG_ALIASES[normalizedTag] || normalizedTag;
 
     switch (normalizedTag) {
         case 'midwest_noncollege':
@@ -406,7 +414,7 @@ function calculateCompositeTag(tag, value, county) {
         case 'suburban_college':
             return value * suburbanIndex * collegeShare;
         case 'donor_class':
-            return value * collegeShare * (0.4 + (urbanIndex * 0.6)) * (1 - (ruralShare * 0.5));
+            return value * donorClassWeight;
         case 'suburban_moderates':
             return value * suburbanIndex * ((centristShare * 0.7) + (collegeShare * 0.3));
         case 'moderates':
@@ -425,6 +433,7 @@ function calculateCompositeTag(tag, value, county) {
         case 'moderate_dems':
             return value * ((centristShare * 0.6) + (unionShare * 0.25) + (_getCountyIgValue(county, 'black') * 0.15));
         case 'rural_whites':
+            // Intentional approximation: uses major non-white shares as a conservative proxy to avoid adding new county columns.
             return value * ruralShare * nonCollegeShare * (1 - (_getCountyIgValue(county, 'black') + _getCountyIgValue(county, 'hispanic') + _getCountyIgValue(county, 'asian')) * 0.65);
         case 'veterans':
             return value * ((ruralShare * 0.35) + (nonCollegeShare * 0.35) + (_countyInRegion(county, 'south') ? 0.2 : 0.1));
@@ -439,9 +448,9 @@ function calculateCompositeTag(tag, value, county) {
         case 'college_liberals':
             return value * collegeShare * ((progressiveShare * 0.7) + (secularShare * 0.3));
         case 'donor_conservative':
-            return value * calculateCompositeTag('donor_class', 1, county) * ((evangelicalShare * 0.55) + (magaShare * 0.45));
+            return value * donorClassWeight * ((evangelicalShare * 0.55) + (magaShare * 0.45));
         case 'donor_antiestablishment':
-            return value * calculateCompositeTag('donor_class', 1, county) * ((magaShare * 0.6) + (_getCountyIgValue(county, 'libertarian') * 0.4));
+            return value * donorClassWeight * ((magaShare * 0.6) + (_getCountyIgValue(county, 'libertarian') * 0.4));
         case 'tech_conservative':
             return value * (collegeShare * urbanIndex) * ((magaShare * 0.5) + (_getCountyIgValue(county, 'libertarian') * 0.5));
         case 'hardcore_right':
@@ -486,7 +495,7 @@ function _applyGroupModsToCounties(groupMods, voteKey, scale) {
         var rawMod = groupMods[groupId]; // positive = boost, negative = debuff
         var modVal = rawMod * (scale || 1.0);
         var igKey = _mapGroupToIgKey(groupId);
-        var normalizedGroupId = (groupId || '').toLowerCase().replace(/[\s-]+/g, '_');
+        var normalizedGroupId = _normalizeGroupTag(groupId);
 
         for (var fips in Counties.countyData) {
             var county = Counties.countyData[fips];
