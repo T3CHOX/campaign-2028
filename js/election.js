@@ -308,7 +308,7 @@ var Election = {
             : (county && county.t === 'Rural' ? TURNOUT_MODEL.RURAL_COUNTY_SHARE : TURNOUT_MODEL.DEFAULT_RURAL_SHARE);
         var urbanIndex = county && county.t === 'Urban' ? 1 : (county && county.t === 'Mixed' ? TURNOUT_MODEL.DEFAULT_URBAN_INDEX : TURNOUT_MODEL.RURAL_URBAN_INDEX);
         // Tuned baseline turnout model:
-        // - starts near modern presidential turnout (~53% of total population in this dataset context),
+        // - starts near modern presidential turnout (~53% of county total population in this simulation model),
         // - rises in higher-education / urban counties,
         // - softens in heavily rural counties,
         // - clamped to a realistic 50%–65% envelope before campaign turnout modifiers apply.
@@ -443,7 +443,7 @@ var Election = {
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
             var pct = totalVotes > 0 ? ((row.votes / totalVotes) * 100).toFixed(1) : '0.0';
-            if (!gameData.thirdPartiesEnabled && row.votes <= 0 && row.party !== 'D' && row.party !== 'R') continue;
+            if (!gameData.thirdPartiesEnabled && row.party !== 'D' && row.party !== 'R') continue;
             html += '<div class=\"national-popular-vote-row\">' +
                 '<span class=\"npv-name\" style=\"color:' + row.color + '\">' + row.name + '</span>' +
                 '<span class=\"npv-votes\">' + row.votes.toLocaleString() + '</span>' +

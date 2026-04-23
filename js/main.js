@@ -278,6 +278,7 @@ var GROUP_TAG_ALIASES = {
 
 function _mapGroupToIgKey(groupId) {
     var normalizedGroupId = _normalizeGroupTag(groupId);
+    normalizedGroupId = GROUP_TAG_ALIASES[normalizedGroupId] || normalizedGroupId;
     var MAP = {
         'black':          'black',
         'hispanic':       'hispanic',
@@ -438,8 +439,8 @@ function calculateCompositeTag(tag, value, county) {
         case 'rural_whites':
             // Intentional approximation: uses major non-white shares as a conservative proxy to avoid adding new county columns.
             var majorNonWhiteShare = _getCountyIgValue(county, 'black') + _getCountyIgValue(county, 'hispanic') + _getCountyIgValue(county, 'asian');
-            var whiteningAdjustment = Math.max(0.05, 1 - (majorNonWhiteShare * 0.65));
-            return value * ruralShare * nonCollegeShare * whiteningAdjustment;
+            var ruralWhiteShareAdjustment = Math.max(0.05, 1 - (majorNonWhiteShare * 0.65));
+            return value * ruralShare * nonCollegeShare * ruralWhiteShareAdjustment;
         case 'veterans':
             return value * ((ruralShare * 0.35) + (nonCollegeShare * 0.35) + (_countyInRegion(county, 'south') ? 0.2 : 0.1));
         case 'business_community':
@@ -499,8 +500,9 @@ function _applyGroupModsToCounties(groupMods, voteKey, scale) {
     for (var groupId in groupMods) {
         var rawMod = groupMods[groupId]; // positive = boost, negative = debuff
         var modVal = rawMod * (scale || 1.0);
-        var igKey = _mapGroupToIgKey(groupId);
         var normalizedGroupId = _normalizeGroupTag(groupId);
+        normalizedGroupId = GROUP_TAG_ALIASES[normalizedGroupId] || normalizedGroupId;
+        var igKey = _mapGroupToIgKey(normalizedGroupId);
 
         for (var fips in Counties.countyData) {
             var county = Counties.countyData[fips];
@@ -512,6 +514,7 @@ function _applyGroupModsToCounties(groupMods, voteKey, scale) {
             var compositeValue = calculateCompositeTag(normalizedGroupId, modVal, county);
 
             if (typeof compositeValue === 'number') {
+                // Composite tags return a pre-weighted modifier value, so county weight is already baked in.
                 groupWeight = 1;
                 effectiveModVal = compositeValue;
             } else if (igKey !== null && igKey !== undefined && county.ig && county.ig[igKey] !== undefined) {

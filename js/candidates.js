@@ -563,9 +563,18 @@ const CANDIDATES = [
     normalized.funds = Number(normalized.funds);
     normalized.stamina = Number(normalized.stamina);
     if (!normalized.img) normalized.img = CANDIDATE_DEFAULTS.img;
-    if (!normalized.id) normalized.id = "unknown";
-    if (!normalized.party) normalized.party = "I";
-    if (!normalized.homeState) normalized.homeState = "DC";
+    if (!normalized.id) {
+        console.warn('[Candidates] Missing id for candidate profile; applying fallback id "unknown".', candidate);
+        normalized.id = "unknown";
+    }
+    if (!normalized.party) {
+        console.warn('[Candidates] Missing party for candidate ' + normalized.id + '; defaulting to Independent.');
+        normalized.party = "I";
+    }
+    if (!normalized.homeState) {
+        console.warn('[Candidates] Missing homeState for candidate ' + normalized.id + '; defaulting to DC.');
+        normalized.homeState = "DC";
+    }
     return normalized;
 });
 
