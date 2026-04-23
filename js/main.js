@@ -273,7 +273,8 @@ var GROUP_TAG_ALIASES = {
     independents: 'independent',
     small_business: 'smallbusiness',
     blue_collar: 'bluecollar',
-    latino: 'hispanic'
+    latino: 'hispanic',
+    lgbtq_community: 'lgbtq'
 };
 
 function _mapGroupToIgKey(groupId) {
@@ -359,7 +360,8 @@ function _mapGroupToIgKey(groupId) {
         'alternative_media': null,
         'public_health_professionals': null,
         'latino_left': null,
-        'labor_left': null
+        'labor_left': null,
+        'national_security_hawks': null
     };
     return (normalizedGroupId in MAP) ? MAP[normalizedGroupId] : null;
 }
@@ -477,6 +479,8 @@ function calculateCompositeTag(tag, value, county) {
             return value * ((unionShare * 0.35) + (magaShare * 0.35) + (progressiveShare * 0.3));
         case 'public_health_professionals':
             return value * collegeShare * urbanIndex * 0.75;
+        case 'national_security_hawks':
+            return value * ((collegeShare * 0.45) + (evangelicalShare * 0.3) + (magaShare * 0.25));
         case 'latino_left':
             return value * _getCountyIgValue(county, 'hispanic') * ((progressiveShare * 0.65) + (unionShare * 0.35));
         case 'labor_left':

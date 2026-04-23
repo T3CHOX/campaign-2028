@@ -308,7 +308,7 @@ var Election = {
             : (county && county.t === 'Rural' ? TURNOUT_MODEL.RURAL_COUNTY_SHARE : TURNOUT_MODEL.DEFAULT_RURAL_SHARE);
         var urbanIndex = county && county.t === 'Urban' ? 1 : (county && county.t === 'Mixed' ? TURNOUT_MODEL.DEFAULT_URBAN_INDEX : TURNOUT_MODEL.RURAL_URBAN_INDEX);
         // Tuned baseline turnout model:
-        // - starts near modern presidential turnout (~53% of county total population in this simulation model),
+        // - starts near modern presidential turnout (~53% of county total population proxy, since dataset uses total population not VAP),
         // - rises in higher-education / urban counties,
         // - softens in heavily rural counties,
         // - clamped to a realistic 50%–65% envelope before campaign turnout modifiers apply.
