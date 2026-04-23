@@ -774,7 +774,7 @@ var Election = {
 
         // Unlock the 2024 Shift map mode button now that all votes are counted
         var shift24Btn = document.getElementById('mode-shift2024');
-        if (shift24Btn && Object.keys(this.data2024).length > 0) {
+        if (shift24Btn) {
             shift24Btn.classList.remove('hidden');
         }
     },
@@ -831,20 +831,36 @@ var Election = {
                 
                 // Calculate final county votes with turnout
                 if (county.v) {
+                    county.reportedVotes = county.reportedVotes || {};
                     var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
                     var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
+                    var countyPop = county.p || 0;
+                    var undecidedPct = county.undecided || 0;
+                    var decidedMultiplier = (100 - undecidedPct) / 100;
+
+                    if (!county.marginOfError) {
+                        county.marginOfError = (Math.random() - 0.5) * 4; // ±2%
+                    }
+                    var errorFactor = 1.0 + (county.marginOfError / 100);
+                    var adjVotes = Election.applyInterestGroupAdjustments(county);
                     
-                    county.reportedVotes.D = Math.floor((county.v.D || 0) * demTurnout);
-                    county.reportedVotes.R = Math.floor((county.v.R || 0) * repTurnout);
+                    county.reportedVotes.D = Math.floor((adjVotes.D || 0) * countyPop / 100 * decidedMultiplier * demTurnout * errorFactor);
+                    county.reportedVotes.R = Math.floor((adjVotes.R || 0) * countyPop / 100 * decidedMultiplier * repTurnout * errorFactor);
                     
                     if (gameData.thirdPartiesEnabled) {
                         var greenTurnout = gameData.selectedParty === 'G' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
                         var libTurnout = gameData.selectedParty === 'L' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
-                        county.reportedVotes.G = Math.floor((county.v.G || 0) * greenTurnout);
-                        county.reportedVotes.L = Math.floor((county.v.L || 0) * libTurnout);
+                        var pslTurnout = gameData.selectedParty === 'PSL' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
+                        var indTurnout = gameData.selectedParty === 'I' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.6);
+                        county.reportedVotes.G = Math.floor((adjVotes.G || 0) * countyPop / 100 * decidedMultiplier * greenTurnout * errorFactor);
+                        county.reportedVotes.L = Math.floor((adjVotes.L || 0) * countyPop / 100 * decidedMultiplier * libTurnout * errorFactor);
+                        county.reportedVotes.PSL = Math.floor((adjVotes.PSL || 0) * countyPop / 100 * decidedMultiplier * pslTurnout * errorFactor);
+                        county.reportedVotes.I = Math.floor((adjVotes.I || 0) * countyPop / 100 * decidedMultiplier * indTurnout * errorFactor);
                     } else {
                         county.reportedVotes.G = 0;
                         county.reportedVotes.L = 0;
+                        county.reportedVotes.PSL = 0;
+                        county.reportedVotes.I = 0;
                     }
                 }
             }
@@ -1081,7 +1097,7 @@ var Election = {
                                 stateCountyPaths.push(path);
                                 path.style.display = 'block';
                                 path.style.cursor = 'pointer';
-                                path.style.stroke = '#1a1a1a';
+                                path.style.stroke = '#ffffff';
                                 path.style.strokeWidth = '0.5';
 
                                 self.colorCountyPath(path, fips, stateCode);

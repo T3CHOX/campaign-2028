@@ -1398,6 +1398,7 @@ var app = {
         togglePause: function() { Election.togglePause(); },
         setSpeed: function(s) { Election.setSpeed(s); },
         setMapMode: function(m) { Election.setMapMode(m); },
+        skipToEnd: function() { Election.skipToEnd(); },
         closeWinnerOverlay: function() { Election.closeWinnerOverlay(); }
     }
 };

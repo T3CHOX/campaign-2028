@@ -3420,7 +3420,7 @@ body {
 
 #county-election-map-svg path {
     transition: fill 0.25s ease;
-    stroke: #1a1a1a;
+    stroke: #ffffff;
     stroke-width: 0.5px;
 }
 
