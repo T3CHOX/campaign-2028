@@ -78,6 +78,14 @@ const STATES = {
     "WY": { name: "Wyoming", ev: 3, lean: -40, fips: "56" }
 };
 
+const REGIONS = {
+    midwest: ["WI", "MI", "PA", "OH", "MN", "IA", "IN", "IL", "MO"],
+    northeast: ["ME", "NH", "VT", "MA", "RI", "CT", "NY", "NJ", "PA", "DE", "MD", "DC"],
+    south: ["VA", "WV", "KY", "TN", "NC", "SC", "GA", "FL", "AL", "MS", "AR", "LA", "TX", "OK"],
+    west: ["AZ", "NM", "CO", "UT", "NV", "CA", "OR", "WA", "ID", "MT", "WY", "AK", "HI"],
+    sunbelt: ["AZ", "NV", "NM", "TX", "FL", "GA", "NC", "SC"]
+};
+
 const POLL_CLOSE_TIMES = {
     "IN": 18, "KY": 18, "GA": 19, "SC": 19, "VT": 19, "VA": 19, "FL": 19, "NH": 19,
     "NC": 19.5, "OH": 19.5, "WV": 19.5, "AL": 20, "CT": 20, "DE": 20, "DC": 20,

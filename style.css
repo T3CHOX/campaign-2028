@@ -1367,6 +1367,61 @@ body {
     margin-top: 5px;
 }
 
+.national-popular-vote-ticker {
+    background: linear-gradient(180deg, #101216 0%, #0c0e12 100%);
+    border-top: 1px solid #2b2f38;
+    border-bottom: 1px solid #2b2f38;
+    padding: 8px 20px 10px;
+}
+
+.npv-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #d5dae6;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.national-popular-vote-rows {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+}
+
+.national-popular-vote-row {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 6px;
+    padding: 6px 8px;
+    min-width: 160px;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.npv-name {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+}
+
+.npv-votes {
+    color: #f1f4ff;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+
+.npv-percent {
+    color: #b7bfd1;
+    font-weight: 700;
+    font-size: 0.78rem;
+}
+
 .election-content {
     flex:  1;
     display: flex;
