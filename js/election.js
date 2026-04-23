@@ -774,7 +774,7 @@ var Election = {
 
         // Unlock the 2024 Shift map mode button now that all votes are counted
         var shift24Btn = document.getElementById('mode-shift2024');
-        if (shift24Btn) {
+        if (shift24Btn && Object.keys(this.data2024).length > 0) {
             shift24Btn.classList.remove('hidden');
         }
     },
