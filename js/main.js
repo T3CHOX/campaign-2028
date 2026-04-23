@@ -264,6 +264,8 @@ function _applyStateBoostToCounties(stateCode, voteKey, boostPoints) {
 
 // Map INTEREST_GROUPS / CANDIDATE_GROUP_MODIFIERS keys → county ig keys
 function _normalizeGroupTag(groupId) {
+    // Normalize demographic/group tags to canonical lookup form.
+    // Example: "Suburban College" / "suburban-college" -> "suburban_college".
     return (groupId || '').toLowerCase().replace(/[\s-]+/g, '_');
 }
 
@@ -392,6 +394,7 @@ function _countyInRegion(county, regionName) {
 }
 
 // Interprets composite demographic tags from candidate data into county-weighted modifier values.
+// Returns a numeric scaled modifier for recognized tags, or null to trigger fallback handling.
 function calculateCompositeTag(tag, value, county) {
     var normalizedTag = _normalizeGroupTag(tag);
     var urbanIndex = _getCountyUrbanIndex(county);
@@ -434,7 +437,9 @@ function calculateCompositeTag(tag, value, county) {
             return value * ((centristShare * 0.6) + (unionShare * 0.25) + (_getCountyIgValue(county, 'black') * 0.15));
         case 'rural_whites':
             // Intentional approximation: uses major non-white shares as a conservative proxy to avoid adding new county columns.
-            return value * ruralShare * nonCollegeShare * (1 - (_getCountyIgValue(county, 'black') + _getCountyIgValue(county, 'hispanic') + _getCountyIgValue(county, 'asian')) * 0.65);
+            var majorNonWhiteShare = _getCountyIgValue(county, 'black') + _getCountyIgValue(county, 'hispanic') + _getCountyIgValue(county, 'asian');
+            var whiteningAdjustment = Math.max(0.05, 1 - (majorNonWhiteShare * 0.65));
+            return value * ruralShare * nonCollegeShare * whiteningAdjustment;
         case 'veterans':
             return value * ((ruralShare * 0.35) + (nonCollegeShare * 0.35) + (_countyInRegion(county, 'south') ? 0.2 : 0.1));
         case 'business_community':

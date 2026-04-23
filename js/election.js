@@ -15,6 +15,20 @@ var RESULTS_2024 = {
     WY:'R', DC:'D'
 };
 
+var TURNOUT_MODEL = {
+    DEFAULT_COLLEGE_SHARE: 0.35,
+    DEFAULT_RURAL_SHARE: 0.3,
+    DEFAULT_URBAN_INDEX: 0.58,
+    RURAL_COUNTY_SHARE: 0.7,
+    RURAL_URBAN_INDEX: 0.22,
+    BASELINE: 0.53,
+    COLLEGE_MULTIPLIER: 0.08,
+    URBAN_MULTIPLIER: 0.03,
+    RURAL_PENALTY: 0.02,
+    MIN_TURNOUT: 0.50,
+    MAX_TURNOUT: 0.65
+};
+
 var Election = {
     time: 17.5,
     speed: 1,
@@ -286,16 +300,23 @@ var Election = {
     },
 
     getCountyTurnoutRate: function(county) {
-        var collegeShare = county && county.ig && county.ig.college !== undefined ? Math.max(0, Math.min(100, county.ig.college)) / 100 : 0.35;
-        var ruralShare = county && county.ig && county.ig.rural !== undefined ? Math.max(0, Math.min(100, county.ig.rural)) / 100 : (county && county.t === 'Rural' ? 0.7 : 0.3);
-        var urbanIndex = county && county.t === 'Urban' ? 1 : (county && county.t === 'Mixed' ? 0.58 : 0.22);
+        var collegeShare = county && county.ig && county.ig.college !== undefined
+            ? Math.max(0, Math.min(100, county.ig.college)) / 100
+            : TURNOUT_MODEL.DEFAULT_COLLEGE_SHARE;
+        var ruralShare = county && county.ig && county.ig.rural !== undefined
+            ? Math.max(0, Math.min(100, county.ig.rural)) / 100
+            : (county && county.t === 'Rural' ? TURNOUT_MODEL.RURAL_COUNTY_SHARE : TURNOUT_MODEL.DEFAULT_RURAL_SHARE);
+        var urbanIndex = county && county.t === 'Urban' ? 1 : (county && county.t === 'Mixed' ? TURNOUT_MODEL.DEFAULT_URBAN_INDEX : TURNOUT_MODEL.RURAL_URBAN_INDEX);
         // Tuned baseline turnout model:
         // - starts near modern presidential turnout (~53% of total population in this dataset context),
         // - rises in higher-education / urban counties,
         // - softens in heavily rural counties,
         // - clamped to a realistic 50%–65% envelope before campaign turnout modifiers apply.
-        var baselineTurnout = 0.53 + (collegeShare * 0.08) + (urbanIndex * 0.03) - (ruralShare * 0.02);
-        return Math.max(0.50, Math.min(0.65, baselineTurnout));
+        var baselineTurnout = TURNOUT_MODEL.BASELINE +
+            (collegeShare * TURNOUT_MODEL.COLLEGE_MULTIPLIER) +
+            (urbanIndex * TURNOUT_MODEL.URBAN_MULTIPLIER) -
+            (ruralShare * TURNOUT_MODEL.RURAL_PENALTY);
+        return Math.max(TURNOUT_MODEL.MIN_TURNOUT, Math.min(TURNOUT_MODEL.MAX_TURNOUT, baselineTurnout));
     },
 
     getCountyVoterPool: function(county, reportingFactor, decidedMultiplier, errorFactor) {
@@ -406,15 +427,15 @@ var Election = {
 
         var totalVotes = this.totalReportedVotes || 0;
         var rows = [
-            { party: 'D', name: gameData.demTicket && gameData.demTicket.pres ? gameData.demTicket.pres.name.toUpperCase() : 'DEMOCRAT', color: '#00AEF3', votes: this.nationalPopularVotes.D || 0 },
-            { party: 'R', name: gameData.repTicket && gameData.repTicket.pres ? gameData.repTicket.pres.name.toUpperCase() : 'REPUBLICAN', color: '#E81B23', votes: this.nationalPopularVotes.R || 0 }
+            { party: 'D', name: gameData.demTicket && gameData.demTicket.pres ? gameData.demTicket.pres.name.toUpperCase() : 'DEMOCRAT', color: PARTIES.D.color, votes: this.nationalPopularVotes.D || 0 },
+            { party: 'R', name: gameData.repTicket && gameData.repTicket.pres ? gameData.repTicket.pres.name.toUpperCase() : 'REPUBLICAN', color: PARTIES.R.color, votes: this.nationalPopularVotes.R || 0 }
         ];
 
         if (gameData.thirdPartiesEnabled) {
-            rows.push({ party: 'I', name: 'INDEPENDENT', color: '#9B59B6', votes: this.nationalPopularVotes.I || 0 });
-            rows.push({ party: 'G', name: 'GREEN', color: '#198754', votes: this.nationalPopularVotes.G || 0 });
-            rows.push({ party: 'L', name: 'LIBERTARIAN', color: '#fd7e14', votes: this.nationalPopularVotes.L || 0 });
-            rows.push({ party: 'PSL', name: 'PSL', color: '#CC0000', votes: this.nationalPopularVotes.PSL || 0 });
+            rows.push({ party: 'I', name: 'INDEPENDENT', color: PARTIES.I.color, votes: this.nationalPopularVotes.I || 0 });
+            rows.push({ party: 'G', name: 'GREEN', color: PARTIES.G.color, votes: this.nationalPopularVotes.G || 0 });
+            rows.push({ party: 'L', name: 'LIBERTARIAN', color: PARTIES.L.color, votes: this.nationalPopularVotes.L || 0 });
+            rows.push({ party: 'PSL', name: 'PSL', color: PARTIES.PSL.color, votes: this.nationalPopularVotes.PSL || 0 });
         }
 
         rows.sort(function(a, b) { return b.votes - a.votes; });

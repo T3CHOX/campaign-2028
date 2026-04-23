@@ -553,6 +553,8 @@ const CANDIDATES = [
         regionalSpilloverBoost: 0.5,
     }
 ].map(function(candidate) {
+    // Ensure every candidate object has the core fields expected by game logic and UI,
+    // while safely defaulting missing values from CANDIDATE_DEFAULTS.
     var normalized = Object.assign({}, CANDIDATE_DEFAULTS, candidate || {});
     normalized.groupBoosts = Object.assign({}, CANDIDATE_DEFAULTS.groupBoosts, normalized.groupBoosts || {});
     normalized.groupDebuffs = Object.assign({}, CANDIDATE_DEFAULTS.groupDebuffs, normalized.groupDebuffs || {});
