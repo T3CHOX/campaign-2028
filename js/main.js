@@ -173,7 +173,7 @@ function applyCandidateBuffs() {
 
         // 8. County-specific boosts for candidates with strong local ties
         if (pres) {
-            _applyCountySpecificBoosts(pres.id, voteKey);
+            _applyCountySpecificBoosts(pres, voteKey);
         }
 
         // 9. Regional spillover boosts for regionally-connected candidates
@@ -220,85 +220,23 @@ function _applyCountyBoost(fips5, voteKey, boostPoints) {
 }
 
 // County-level targeted boosts for candidates with specific local ties
-function _applyCountySpecificBoosts(candId, voteKey) {
-    if (candId === 'emanuel') {
-        // Rahm Emanuel was Chicago's mayor — very strong Cook County D boost,
-        // but slightly dampened statewide boost (handled by lower homeStateBoost)
-        _applyCountyBoost('17031', voteKey, 18); // Cook County (Chicago)
-        _applyCountyBoost('17043', voteKey, 6);  // DuPage County (Chicago suburbs)
-        _applyCountyBoost('17097', voteKey, 6);  // Lake County IL
-    }
-    if (candId === 'rubio') {
-        // Marco Rubio — enormous Cuban-American community in Miami-Dade
-        _applyCountyBoost('12086', voteKey, 20); // Miami-Dade County
-        _applyCountyBoost('12011', voteKey, 12); // Broward County (large Hispanic pop)
-        _applyCountyBoost('12099', voteKey, 8);  // Palm Beach County
-    }
-    if (candId === 'booker') {
-        // Cory Booker — former Newark mayor, Essex County NJ stronghold
-        _applyCountyBoost('34013', voteKey, 12); // Essex County NJ (Newark)
-    }
-    if (candId === 'aoc') {
-        // AOC — very strong in The Bronx and Queens
-        _applyCountyBoost('36005', voteKey, 15); // Bronx County, NY
-        _applyCountyBoost('36081', voteKey, 10); // Queens County, NY
-    }
-    if (candId === 'bloomberg') {
-        // Bloomberg — former NYC mayor
-        _applyCountyBoost('36061', voteKey, 10); // New York County (Manhattan)
-        _applyCountyBoost('36047', voteKey, 7);  // Kings County (Brooklyn)
-    }
-    if (candId === 'beshear') {
-        // Andy Beshear — very strong in Louisville area but also rural KY
-        _applyCountyBoost('21111', voteKey, 8);  // Jefferson County KY (Louisville)
+function _applyCountySpecificBoosts(candidate, voteKey) {
+    if (!candidate || !candidate.localBoosts || !candidate.localBoosts.length) return;
+
+    for (var i = 0; i < candidate.localBoosts.length; i++) {
+        var entry = candidate.localBoosts[i];
+        if (!entry || !entry.fips || typeof entry.boost !== 'number') continue;
+        _applyCountyBoost(entry.fips.padStart(5, '0'), voteKey, entry.boost);
     }
 }
 
 // Regional spillover boosts for candidates with Rust Belt / Southern / regional ties
 function _applyRegionalSpillover(pres, voteKey) {
-    if (!pres || !pres.homeState) return;
+    if (!pres || !pres.regionalSpillover || !pres.regionalSpillover.length) return;
 
-    // Vance: Rust Belt working-class identity resonates beyond just OH
-    if (pres.id === 'vance') {
-        var rustBelt = ['PA', 'MI', 'IN', 'WV'];
-        for (var ri = 0; ri < rustBelt.length; ri++) {
-            _applyStateBoostToCounties(rustBelt[ri], voteKey, 2);
-        }
-    }
-    // Beshear: Southern crossover appeal in neighboring states
-    if (pres.id === 'beshear') {
-        var beshearRegion = ['TN', 'WV', 'VA'];
-        for (var bi = 0; bi < beshearRegion.length; bi++) {
-            _applyStateBoostToCounties(beshearRegion[bi], voteKey, 2);
-        }
-    }
-    // Rubio: Hispanic outreach spills over to other large-Hispanic states
-    if (pres.id === 'rubio') {
-        var hispanicStates = ['TX', 'NM', 'NV', 'CO', 'AZ'];
-        for (var hi = 0; hi < hispanicStates.length; hi++) {
-            _applyStateBoostToCounties(hispanicStates[hi], voteKey, 2);
-        }
-    }
-    // Whitmer: Great Lakes crossover
-    if (pres.id === 'whitmer') {
-        var greatlakes = ['WI', 'MN', 'OH'];
-        for (var gi = 0; gi < greatlakes.length; gi++) {
-            _applyStateBoostToCounties(greatlakes[gi], voteKey, 1);
-        }
-    }
-    // Shapiro: Mid-Atlantic appeal
-    if (pres.id === 'shapiro') {
-        var midAtlantic = ['NJ', 'OH', 'MD'];
-        for (var si = 0; si < midAtlantic.length; si++) {
-            _applyStateBoostToCounties(midAtlantic[si], voteKey, 1);
-        }
-    }
-    // Manchin: Appalachian crossover
-    if (pres.id === 'manchin') {
-        var appalachian = ['KY', 'VA', 'PA'];
-        for (var ai = 0; ai < appalachian.length; ai++) {
-            _applyStateBoostToCounties(appalachian[ai], voteKey, 2);
-        }
+    var spilloverBoost = (typeof pres.regionalSpilloverBoost === 'number') ? pres.regionalSpilloverBoost : 2;
+    for (var i = 0; i < pres.regionalSpillover.length; i++) {
+        _applyStateBoostToCounties(pres.regionalSpillover[i], voteKey, spilloverBoost);
     }
 }
 
@@ -678,11 +616,27 @@ var app = {
             Utils.showToast("Select a state first!");
             return;
         }
-        document.getElementById('issues-modal').classList.remove('hidden');
+        var issuesPanel = document.getElementById('issues-modal');
+        if (!issuesPanel) return;
+        issuesPanel.classList.remove('hidden');
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(function() {
+                issuesPanel.classList.add('drawer-open');
+            });
+        } else {
+            issuesPanel.classList.add('drawer-open');
+        }
         this.renderIssuesPanel();
     },
     closeIssuesPanel: function() {
-        document.getElementById('issues-modal').classList.add('hidden');
+        var issuesPanel = document.getElementById('issues-modal');
+        if (!issuesPanel) return;
+        issuesPanel.classList.remove('drawer-open');
+        setTimeout(function() {
+            if (!issuesPanel.classList.contains('drawer-open')) {
+                issuesPanel.classList.add('hidden');
+            }
+        }, 250);
     },
     renderIssuesPanel: function() {
         var showThirdParty = document.getElementById('show-third-party-toggle').checked;
@@ -1398,6 +1352,7 @@ var app = {
         togglePause: function() { Election.togglePause(); },
         setSpeed: function(s) { Election.setSpeed(s); },
         setMapMode: function(m) { Election.setMapMode(m); },
+        skipToEnd: function() { Election.skipToEnd(); },
         closeWinnerOverlay: function() { Election.closeWinnerOverlay(); }
     }
 };
