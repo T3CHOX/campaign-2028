@@ -38,7 +38,9 @@ const CANDIDATES = [
         desc: "Michigan Governor. Midwestern moderate with strong union ties.",
         buff: "Midwest Appeal", debuff: null,
         groupBoosts: { women: 8, suburban: 6, union: 8, noncollege: 4 },
-        groupDebuffs: { evangelical: -4, rural: -2 }
+        groupDebuffs: { evangelical: -4, rural: -2 },
+        regionalSpillover: ["WI", "MN", "OH"],
+        regionalSpilloverBoost: 1
     },
     {
         id: "buttigieg", name: "Pete Buttigieg", party: "D", homeState: "IN",
@@ -56,7 +58,8 @@ const CANDIDATES = [
         desc: "Progressive congresswoman and youth movement icon.",
         buff: "Youth Vote", debuff: null,
         groupBoosts: { youth: 12, hispanic: 8, urban: 5, women: 6 },
-        groupDebuffs: { suburban: -5, rural: -7, seniors: -5 }
+        groupDebuffs: { suburban: -5, rural: -7, seniors: -5 },
+        localBoosts: [{ fips: "36005", boost: 15 }, { fips: "36081", boost: 10 }]
     },
     {
         id: "kelly", name: "Mark Kelly", party: "D", homeState: "AZ",
@@ -83,7 +86,8 @@ const CANDIDATES = [
         desc: "Former Chicago Mayor and Ambassador to Japan. Centrist 'renewal wing' Democrat.",
         buff: "Establishment Network", debuff: null,
         groupBoosts: { jewish: 8, urban: 4, college: 5, suburban: 5 },
-        groupDebuffs: { progressive: -8, youth: -6, black: -5 }
+        groupDebuffs: { progressive: -8, youth: -6, black: -5 },
+        localBoosts: [{ fips: "17031", boost: 18 }, { fips: "17043", boost: 6 }, { fips: "17097", boost: 6 }]
     },
     {
         id: "stewart", name: "Jon Stewart", party: "D", homeState: "NY",
@@ -101,7 +105,10 @@ const CANDIDATES = [
         desc: "Kentucky Governor. Won 3 straight statewide races in a Trump+30 state — most electable Dem.",
         buff: "Red State Crossover", debuff: null,
         groupBoosts: { rural: 8, noncollege: 7, suburban: 7, independent: 8, catholic: 5 },
-        groupDebuffs: { progressive: -5, youth: -3 }
+        groupDebuffs: { progressive: -5, youth: -3 },
+        localBoosts: [{ fips: "21111", boost: 8 }],
+        regionalSpillover: ["TN", "WV", "VA"],
+        regionalSpilloverBoost: 2
     },
     {
         id: "booker", name: "Cory Booker", party: "D", homeState: "NJ",
@@ -110,7 +117,8 @@ const CANDIDATES = [
         desc: "New Jersey Senator. Set a record-length Senate floor speech in protest of Trump in 2025.",
         buff: "National Spotlight", debuff: null,
         groupBoosts: { black: 12, urban: 6, youth: 6, college: 5 },
-        groupDebuffs: { rural: -3, noncollege: -3, evangelical: -3 }
+        groupDebuffs: { rural: -3, noncollege: -3, evangelical: -3 },
+        localBoosts: [{ fips: "34013", boost: 12 }]
     },
     {
         id: "shapiro", name: "Josh Shapiro", party: "D", homeState: "PA",
@@ -119,7 +127,9 @@ const CANDIDATES = [
         desc: "Pennsylvania Governor. Won by 15 points in a Trump state — viewed as a top 2028 contender.",
         buff: "Battleground Governor", debuff: null,
         groupBoosts: { jewish: 8, suburban: 7, college: 6, independent: 6 },
-        groupDebuffs: { progressive: -5, youth: -3 }
+        groupDebuffs: { progressive: -5, youth: -3 },
+        regionalSpillover: ["NJ", "OH", "MD"],
+        regionalSpilloverBoost: 1
     },
 
     /* ===== REPUBLICAN PARTY ===== */
@@ -139,7 +149,9 @@ const CANDIDATES = [
         desc: "Sitting Vice President (2025–present). Widely seen as Trump's natural successor.",
         buff: "VP Incumbency", debuff: null,
         groupBoosts: { rural: 7, noncollege: 5, bluecollar: 5, evangelical: 5 },
-        groupDebuffs: { college: -5, urban: -5 }
+        groupDebuffs: { college: -5, urban: -5 },
+        regionalSpillover: ["PA", "MI", "IN", "WV"],
+        regionalSpilloverBoost: 2
     },
     {
         id: "desantis", name: "Ron DeSantis", party: "R", homeState: "FL",
@@ -220,7 +232,10 @@ const CANDIDATES = [
         desc: "Secretary of State (2025–present). After a prominent role in the 2026 Iran crisis, speculation he will run surged.",
         buff: "Foreign Policy Record", debuff: null,
         groupBoosts: { hispanic: 14, cuban: 20, catholic: 8, suburban: 5, florida: 10 },
-        groupDebuffs: { maga: -4, rural: -2 }
+        groupDebuffs: { maga: -4, rural: -2 },
+        localBoosts: [{ fips: "12086", boost: 20 }, { fips: "12011", boost: 12 }, { fips: "12099", boost: 8 }],
+        regionalSpillover: ["TX", "NM", "NV", "CO", "AZ"],
+        regionalSpilloverBoost: 2
     },
 
     /* ===== GREEN PARTY ===== */
@@ -262,7 +277,9 @@ const CANDIDATES = [
         desc: "Former West Virginia Senator. Centrist outsider with rural blue-collar appeal.",
         buff: "Bipartisan Appeal", debuff: "Outsider Penalty",
         groupBoosts: { bluecollar: 8, rural: 6, catholic: 5 },
-        groupDebuffs: { urban: -4, youth: -4 }
+        groupDebuffs: { urban: -4, youth: -4 },
+        regionalSpillover: ["KY", "VA", "PA"],
+        regionalSpilloverBoost: 2
     },
     {
         id: "kennedy_rfk", name: "Robert F. Kennedy Jr.", party: "I", homeState: "CA",
@@ -280,7 +297,8 @@ const CANDIDATES = [
         desc: "Former NYC Mayor and billionaire businessman. Self-financed mega-campaign.",
         buff: "Unlimited Funds", debuff: "Outsider Penalty",
         groupBoosts: { whitecollar: 10, urban: 7, college: 7 },
-        groupDebuffs: { rural: -6, bluecollar: -5 }
+        groupDebuffs: { rural: -6, bluecollar: -5 },
+        localBoosts: [{ fips: "36061", boost: 10 }, { fips: "36047", boost: 7 }]
     },
 
     /* ===== PARTY FOR SOCIALISM AND LIBERATION (PSL) ===== */
