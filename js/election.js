@@ -15,6 +15,20 @@ var RESULTS_2024 = {
     WY:'R', DC:'D'
 };
 
+var TURNOUT_MODEL = {
+    DEFAULT_COLLEGE_SHARE: 0.35,
+    DEFAULT_RURAL_SHARE: 0.3,
+    DEFAULT_URBAN_INDEX: 0.58,
+    RURAL_COUNTY_SHARE: 0.7,
+    RURAL_URBAN_INDEX: 0.22,
+    BASELINE: 0.53,
+    COLLEGE_MULTIPLIER: 0.08,
+    URBAN_MULTIPLIER: 0.03,
+    RURAL_PENALTY: 0.02,
+    MIN_TURNOUT: 0.50,
+    MAX_TURNOUT: 0.65
+};
+
 var Election = {
     time: 17.5,
     speed: 1,
@@ -26,6 +40,8 @@ var Election = {
     thirdPartyEV: 0,
     winnerShown: false,
     allVotesCounted: false,
+    nationalPopularVotes: { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 },
+    totalReportedVotes: 0,
 
     start: function() {
         var self = this;
@@ -35,6 +51,8 @@ var Election = {
         this.thirdPartyEV = 0;
         this.winnerShown = false;
         this.allVotesCounted = false;
+        this.nationalPopularVotes = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+        this.totalReportedVotes = 0;
 
         // Initialize county-level reporting data with staggered schedules
         if (typeof Counties !== 'undefined' && Counties.countyData) {
@@ -101,6 +119,7 @@ var Election = {
         this.load2024Data();
 
         this.loadElectionMap();
+        this.updateNationalPopularVote();
         this.updateDisplay();
 
         if (this.interval) clearInterval(this.interval);
@@ -138,9 +157,6 @@ var Election = {
 
                 // Calculate county reported votes once it starts reporting
                 if (county.v) {
-                    var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
-                    var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
-
                     if (!county.marginOfError) {
                         county.marginOfError = (Math.random() - 0.5) * 4; // ±2%
                     }
@@ -150,24 +166,7 @@ var Election = {
                     var undecidedPct = county.undecided || 0;
                     var decidedMultiplier = (100 - undecidedPct) / 100;
 
-                    var adjVotes = Election.applyInterestGroupAdjustments(county);
-
-                    county.reportedVotes.D = Math.floor((adjVotes.D || 0) * county.p / 100 * decidedMultiplier * demTurnout * reportingFactor * errorFactor);
-                    county.reportedVotes.R = Math.floor((adjVotes.R || 0) * county.p / 100 * decidedMultiplier * repTurnout * reportingFactor * errorFactor);
-
-                    if (gameData.thirdPartiesEnabled) {
-                        var greenTurnout = gameData.selectedParty === 'G' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
-                        var libTurnout   = gameData.selectedParty === 'L' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
-                        var pslTurnout   = gameData.selectedParty === 'PSL' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
-                        var indTurnout   = gameData.selectedParty === 'I' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.6);
-                        county.reportedVotes.G   = Math.floor((adjVotes.G   || 0) * county.p / 100 * decidedMultiplier * greenTurnout * reportingFactor * errorFactor);
-                        county.reportedVotes.L   = Math.floor((adjVotes.L   || 0) * county.p / 100 * decidedMultiplier * libTurnout   * reportingFactor * errorFactor);
-                        county.reportedVotes.PSL = Math.floor((adjVotes.PSL || 0) * county.p / 100 * decidedMultiplier * pslTurnout   * reportingFactor * errorFactor);
-                        county.reportedVotes.I   = Math.floor((adjVotes.I   || 0) * county.p / 100 * decidedMultiplier * indTurnout   * reportingFactor * errorFactor);
-                    } else {
-                        county.reportedVotes.G = 0; county.reportedVotes.L = 0;
-                        county.reportedVotes.PSL = 0; county.reportedVotes.I = 0;
-                    }
+                    county.reportedVotes = this.calculateCountyReportedVotes(county, reportingFactor, decidedMultiplier, errorFactor);
                 }
 
                 // Track which states need aggregation this tick
@@ -184,6 +183,7 @@ var Election = {
                 }
             }
         }
+        this.updateNationalPopularVote();
 
         // Check if all votes are counted
         var allCounted = true;
@@ -296,6 +296,71 @@ var Election = {
                 thirdPartyBar.style.display = 'block';
             }
         }
+        this.updateNationalPopularVoteDisplay();
+    },
+
+    getCountyTurnoutRate: function(county) {
+        var collegeShare = county && county.ig && county.ig.college !== undefined
+            ? Math.max(0, Math.min(100, county.ig.college)) / 100
+            : TURNOUT_MODEL.DEFAULT_COLLEGE_SHARE;
+        var ruralShare = county && county.ig && county.ig.rural !== undefined
+            ? Math.max(0, Math.min(100, county.ig.rural)) / 100
+            : (county && county.t === 'Rural' ? TURNOUT_MODEL.RURAL_COUNTY_SHARE : TURNOUT_MODEL.DEFAULT_RURAL_SHARE);
+        var urbanIndex = county && county.t === 'Urban' ? 1 : (county && county.t === 'Mixed' ? TURNOUT_MODEL.DEFAULT_URBAN_INDEX : TURNOUT_MODEL.RURAL_URBAN_INDEX);
+        // Tuned baseline turnout model:
+        // - starts near modern presidential turnout (~53% of county total population proxy, since dataset uses total population not VAP),
+        // - rises in higher-education / urban counties,
+        // - softens in heavily rural counties,
+        // - clamped to a realistic 50%–65% envelope before campaign turnout modifiers apply.
+        var baselineTurnout = TURNOUT_MODEL.BASELINE +
+            (collegeShare * TURNOUT_MODEL.COLLEGE_MULTIPLIER) +
+            (urbanIndex * TURNOUT_MODEL.URBAN_MULTIPLIER) -
+            (ruralShare * TURNOUT_MODEL.RURAL_PENALTY);
+        return Math.max(TURNOUT_MODEL.MIN_TURNOUT, Math.min(TURNOUT_MODEL.MAX_TURNOUT, baselineTurnout));
+    },
+
+    getCountyVoterPool: function(county, reportingFactor, decidedMultiplier, errorFactor) {
+        var countyPopulation = Math.max(0, county && county.p ? county.p : 0);
+        var turnoutRate = this.getCountyTurnoutRate(county);
+        var baseVoters = countyPopulation * turnoutRate;
+        var effectivePool = baseVoters * (decidedMultiplier || 1) * (reportingFactor || 1) * (errorFactor || 1);
+        return Math.max(0, effectivePool);
+    },
+
+    calculateCountyReportedVotes: function(county, reportingFactor, decidedMultiplier, errorFactor) {
+        var turnoutMultipliers = {
+            D: gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0),
+            R: gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0),
+            G: gameData.selectedParty === 'G' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7),
+            L: gameData.selectedParty === 'L' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7),
+            PSL: gameData.selectedParty === 'PSL' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7),
+            I: gameData.selectedParty === 'I' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.6)
+        };
+
+        var adjustedShares = Election.applyInterestGroupAdjustments(county);
+        var weightedShares = {
+            D: Math.max(0, (adjustedShares.D || 0) * turnoutMultipliers.D),
+            R: Math.max(0, (adjustedShares.R || 0) * turnoutMultipliers.R),
+            G: gameData.thirdPartiesEnabled ? Math.max(0, (adjustedShares.G || 0) * turnoutMultipliers.G) : 0,
+            L: gameData.thirdPartiesEnabled ? Math.max(0, (adjustedShares.L || 0) * turnoutMultipliers.L) : 0,
+            PSL: gameData.thirdPartiesEnabled ? Math.max(0, (adjustedShares.PSL || 0) * turnoutMultipliers.PSL) : 0,
+            I: gameData.thirdPartiesEnabled ? Math.max(0, (adjustedShares.I || 0) * turnoutMultipliers.I) : 0
+        };
+
+        var totalWeightedShare = weightedShares.D + weightedShares.R + weightedShares.G + weightedShares.L + weightedShares.PSL + weightedShares.I;
+        if (totalWeightedShare <= 0) {
+            return { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+        }
+
+        var voterPool = this.getCountyVoterPool(county, reportingFactor, decidedMultiplier, errorFactor);
+        return {
+            D: Math.floor(voterPool * (weightedShares.D / totalWeightedShare)),
+            R: Math.floor(voterPool * (weightedShares.R / totalWeightedShare)),
+            G: Math.floor(voterPool * (weightedShares.G / totalWeightedShare)),
+            L: Math.floor(voterPool * (weightedShares.L / totalWeightedShare)),
+            PSL: Math.floor(voterPool * (weightedShares.PSL / totalWeightedShare)),
+            I: Math.floor(voterPool * (weightedShares.I / totalWeightedShare))
+        };
     },
 
     aggregateCountyVotes: function(stateCode) {
@@ -337,6 +402,60 @@ var Election = {
         
         // State reporting percentage is average of county reporting percentages
         state.reportedPct = countyCount > 0 ? totalReportedPct / countyCount : 0;
+    },
+
+    updateNationalPopularVote: function() {
+        var totals = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+        for (var stateCode in gameData.states) {
+            var s = gameData.states[stateCode];
+            if (!s || !s.reportedVotes) continue;
+            totals.D += s.reportedVotes.D || 0;
+            totals.R += s.reportedVotes.R || 0;
+            totals.G += s.reportedVotes.G || 0;
+            totals.L += s.reportedVotes.L || 0;
+            totals.PSL += s.reportedVotes.PSL || 0;
+            totals.I += s.reportedVotes.I || 0;
+        }
+        this.nationalPopularVotes = totals;
+        this.totalReportedVotes = totals.D + totals.R + totals.G + totals.L + totals.PSL + totals.I;
+    },
+
+    updateNationalPopularVoteDisplay: function() {
+        var ticker = document.getElementById('national-popular-vote-ticker');
+        var rowsContainer = document.getElementById('national-popular-vote-rows');
+        if (!ticker || !rowsContainer) return;
+
+        var totalVotes = this.totalReportedVotes || 0;
+        var rows = [
+            { party: 'D', name: gameData.demTicket && gameData.demTicket.pres ? gameData.demTicket.pres.name.toUpperCase() : 'DEMOCRAT', color: PARTIES.D.color, votes: this.nationalPopularVotes.D || 0 },
+            { party: 'R', name: gameData.repTicket && gameData.repTicket.pres ? gameData.repTicket.pres.name.toUpperCase() : 'REPUBLICAN', color: PARTIES.R.color, votes: this.nationalPopularVotes.R || 0 }
+        ];
+
+        if (gameData.thirdPartiesEnabled) {
+            rows.push({ party: 'I', name: 'INDEPENDENT', color: PARTIES.I.color, votes: this.nationalPopularVotes.I || 0 });
+            rows.push({ party: 'G', name: 'GREEN', color: PARTIES.G.color, votes: this.nationalPopularVotes.G || 0 });
+            rows.push({ party: 'L', name: 'LIBERTARIAN', color: PARTIES.L.color, votes: this.nationalPopularVotes.L || 0 });
+            rows.push({ party: 'PSL', name: 'PSL', color: PARTIES.PSL.color, votes: this.nationalPopularVotes.PSL || 0 });
+        }
+
+        rows.sort(function(a, b) { return b.votes - a.votes; });
+        var html = '';
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var pct = totalVotes > 0 ? ((row.votes / totalVotes) * 100).toFixed(1) : '0.0';
+            if (!gameData.thirdPartiesEnabled && row.party !== 'D' && row.party !== 'R') continue;
+            html += '<div class=\"national-popular-vote-row\">' +
+                '<span class=\"npv-name\" style=\"color:' + row.color + '\">' + row.name + '</span>' +
+                '<span class=\"npv-votes\">' + row.votes.toLocaleString() + '</span>' +
+                '<span class=\"npv-percent\">' + pct + '%</span>' +
+            '</div>';
+        }
+
+        rowsContainer.innerHTML = html;
+        var totalLabel = document.getElementById('national-popular-vote-total');
+        if (totalLabel) {
+            totalLabel.textContent = 'TOTAL REPORTED: ' + totalVotes.toLocaleString();
+        }
     },
 
     // Determine which party won a state based on reported votes (plurality)
@@ -832,9 +951,6 @@ var Election = {
                 // Calculate final county votes with turnout
                 if (county.v) {
                     county.reportedVotes = county.reportedVotes || {};
-                    var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
-                    var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
-                    var countyPop = county.p || 0;
                     var undecidedPct = county.undecided || 0;
                     var decidedMultiplier = (100 - undecidedPct) / 100;
 
@@ -842,26 +958,7 @@ var Election = {
                         county.marginOfError = (Math.random() - 0.5) * 4; // ±2%
                     }
                     var errorFactor = 1.0 + (county.marginOfError / 100);
-                    var adjVotes = Election.applyInterestGroupAdjustments(county);
-                    
-                    county.reportedVotes.D = Math.floor((adjVotes.D || 0) * countyPop / 100 * decidedMultiplier * demTurnout * errorFactor);
-                    county.reportedVotes.R = Math.floor((adjVotes.R || 0) * countyPop / 100 * decidedMultiplier * repTurnout * errorFactor);
-                    
-                    if (gameData.thirdPartiesEnabled) {
-                        var greenTurnout = gameData.selectedParty === 'G' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
-                        var libTurnout = gameData.selectedParty === 'L' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
-                        var pslTurnout = gameData.selectedParty === 'PSL' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7);
-                        var indTurnout = gameData.selectedParty === 'I' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.6);
-                        county.reportedVotes.G = Math.floor((adjVotes.G || 0) * countyPop / 100 * decidedMultiplier * greenTurnout * errorFactor);
-                        county.reportedVotes.L = Math.floor((adjVotes.L || 0) * countyPop / 100 * decidedMultiplier * libTurnout * errorFactor);
-                        county.reportedVotes.PSL = Math.floor((adjVotes.PSL || 0) * countyPop / 100 * decidedMultiplier * pslTurnout * errorFactor);
-                        county.reportedVotes.I = Math.floor((adjVotes.I || 0) * countyPop / 100 * decidedMultiplier * indTurnout * errorFactor);
-                    } else {
-                        county.reportedVotes.G = 0;
-                        county.reportedVotes.L = 0;
-                        county.reportedVotes.PSL = 0;
-                        county.reportedVotes.I = 0;
-                    }
+                    county.reportedVotes = this.calculateCountyReportedVotes(county, 1, decidedMultiplier, errorFactor);
                 }
             }
         }
@@ -879,6 +976,7 @@ var Election = {
                 this.awardEV(s);
             }
         }
+        this.updateNationalPopularVote();
         
         // Advance time to end
         this.time = 26;

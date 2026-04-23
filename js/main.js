@@ -263,10 +263,27 @@ function _applyStateBoostToCounties(stateCode, voteKey, boostPoints) {
 }
 
 // Map INTEREST_GROUPS / CANDIDATE_GROUP_MODIFIERS keys → county ig keys
+function _normalizeGroupTag(groupId) {
+    // Normalize demographic/group tags to canonical lookup form.
+    // Example: "Suburban College" / "suburban-college" -> "suburban_college".
+    return (groupId || '').toLowerCase().replace(/[\s-]+/g, '_');
+}
+
+var GROUP_TAG_ALIASES = {
+    independents: 'independent',
+    small_business: 'smallbusiness',
+    blue_collar: 'bluecollar',
+    latino: 'hispanic',
+    lgbtq_community: 'lgbtq'
+};
+
 function _mapGroupToIgKey(groupId) {
+    var normalizedGroupId = _normalizeGroupTag(groupId);
+    normalizedGroupId = GROUP_TAG_ALIASES[normalizedGroupId] || normalizedGroupId;
     var MAP = {
         'black':          'black',
         'hispanic':       'hispanic',
+        'latino':         'hispanic',
         'asian':          'asian',
         'native':         'native',
         'evangelical':    'evangelical',
@@ -307,9 +324,179 @@ function _mapGroupToIgKey(groupId) {
         'florida':        null,
         'health':         null,
         'mainstream':     null,
-        'white':          null
+        'white':          null,
+        'lgbtq':          null,
+        'veterans':       null,
+        'suburban_college': null,
+        'suburban_women': null,
+        'suburban_moderates': null,
+        'suburban_conservative': null,
+        'midwest_noncollege': null,
+        'progressive_left': null,
+        'business_community': null,
+        'media_consumers': null,
+        'institutional_dems': null,
+        'high_info_swing': null,
+        'rural_whites': null,
+        'moderate_dems': null,
+        'college_liberals': null,
+        'donor_conservative': null,
+        'tech_conservative': null,
+        'donor_antiestablishment': null,
+        'donor_class': null,
+        'antiestablishment': null,
+        'hardcore_right': null,
+        'online_militant': null,
+        'blue_collar': null,
+        'online_right': null,
+        'hard_right': null,
+        'antiwar_left': null,
+        'environmentalists': null,
+        'small_business': null,
+        'antiwar_independents': null,
+        'independents': null,
+        'party_loyalists': null,
+        'moderates': null,
+        'alternative_media': null,
+        'public_health_professionals': null,
+        'latino_left': null,
+        'labor_left': null,
+        'national_security_hawks': null
     };
-    return (groupId in MAP) ? MAP[groupId] : null;
+    return (normalizedGroupId in MAP) ? MAP[normalizedGroupId] : null;
+}
+
+function _getCountyIgValue(county, key) {
+    if (key === 'youth') {
+        return county && county.t === 'Urban' ? 0.28 : (county && county.t === 'Mixed' ? 0.22 : 0.18);
+    }
+    if (key === 'seniors') {
+        return county && county.t === 'Urban' ? 0.16 : (county && county.t === 'Mixed' ? 0.20 : 0.24);
+    }
+    if (!county || !county.ig || county.ig[key] === undefined || county.ig[key] === null) return 0;
+    return Math.max(0, Math.min(100, county.ig[key])) / 100;
+}
+
+function _getCountyUrbanIndex(county) {
+    if (!county) return 0.4;
+    if (county.t === 'Urban') return 0.95;
+    if (county.t === 'Mixed') return 0.55;
+    return 0.2;
+}
+
+function _getCountySuburbanIndex(county) {
+    if (!county) return 0.25;
+    if (county.t === 'Mixed') return 0.75;
+    if (county.t === 'Urban') return 0.35;
+    return 0.2;
+}
+
+function _countyInRegion(county, regionName) {
+    if (!county || !county.s || typeof REGIONS === 'undefined' || !REGIONS[regionName]) return false;
+    return REGIONS[regionName].indexOf(county.s) !== -1;
+}
+
+// Interprets composite demographic tags from candidate data into county-weighted modifier values.
+// Returns a numeric scaled modifier for recognized tags, or null to trigger fallback handling.
+function calculateCompositeTag(tag, value, county) {
+    var normalizedTag = _normalizeGroupTag(tag);
+    var urbanIndex = _getCountyUrbanIndex(county);
+    var suburbanIndex = _getCountySuburbanIndex(county);
+    var ruralShare = _getCountyIgValue(county, 'rural');
+    var collegeShare = _getCountyIgValue(county, 'college');
+    var nonCollegeShare = 1 - collegeShare;
+    var centristShare = _getCountyIgValue(county, 'centrist');
+    var progressiveShare = _getCountyIgValue(county, 'progressive');
+    var evangelicalShare = _getCountyIgValue(county, 'evangelical');
+    var magaShare = _getCountyIgValue(county, 'maga');
+    var unionShare = _getCountyIgValue(county, 'union');
+    var secularShare = _getCountyIgValue(county, 'secular');
+    var donorClassWeight = collegeShare * (0.4 + (urbanIndex * 0.6)) * (1 - (ruralShare * 0.5));
+    normalizedTag = GROUP_TAG_ALIASES[normalizedTag] || normalizedTag;
+
+    switch (normalizedTag) {
+        case 'midwest_noncollege':
+            return _countyInRegion(county, 'midwest') ? value * nonCollegeShare : 0;
+        case 'suburban_college':
+            return value * suburbanIndex * collegeShare;
+        case 'donor_class':
+            return value * donorClassWeight;
+        case 'suburban_moderates':
+            return value * suburbanIndex * ((centristShare * 0.7) + (collegeShare * 0.3));
+        case 'moderates':
+        case 'moderate':
+            return value * ((centristShare * 0.7) + (suburbanIndex * 0.3));
+        case 'independent':
+            return value * ((centristShare * 0.65) + (_getCountyIgValue(county, 'libertarian') * 0.2) + (suburbanIndex * 0.15));
+        case 'smallbusiness':
+            return value * ((nonCollegeShare * 0.45) + (suburbanIndex * 0.35) + (ruralShare * 0.2));
+        case 'suburban_women':
+            return value * suburbanIndex * 0.51;
+        case 'suburban_conservative':
+            return value * suburbanIndex * ((evangelicalShare * 0.6) + (magaShare * 0.4));
+        case 'progressive_left':
+            return value * ((progressiveShare * 0.75) + (secularShare * 0.25));
+        case 'moderate_dems':
+            return value * ((centristShare * 0.6) + (unionShare * 0.25) + (_getCountyIgValue(county, 'black') * 0.15));
+        case 'rural_whites':
+            // Intentional approximation: uses major non-white shares as a conservative proxy to avoid adding new county columns.
+            var majorNonWhiteShare = _getCountyIgValue(county, 'black') + _getCountyIgValue(county, 'hispanic') + _getCountyIgValue(county, 'asian');
+            var ruralWhiteShareAdjustment = Math.max(0.05, 1 - (majorNonWhiteShare * 0.65));
+            return value * ruralShare * nonCollegeShare * ruralWhiteShareAdjustment;
+        case 'veterans':
+            return value * ((ruralShare * 0.35) + (nonCollegeShare * 0.35) + (_countyInRegion(county, 'south') ? 0.2 : 0.1));
+        case 'business_community':
+            return value * ((collegeShare * 0.55) + (suburbanIndex * 0.2) + (urbanIndex * 0.25));
+        case 'media_consumers':
+            return value * Math.min(1, (urbanIndex * 0.6) + (suburbanIndex * 0.4));
+        case 'institutional_dems':
+            return value * ((unionShare * 0.4) + (collegeShare * 0.3) + (urbanIndex * 0.3));
+        case 'high_info_swing':
+            return value * collegeShare * suburbanIndex * ((centristShare * 0.6) + 0.4);
+        case 'college_liberals':
+            return value * collegeShare * ((progressiveShare * 0.7) + (secularShare * 0.3));
+        case 'donor_conservative':
+            return value * donorClassWeight * ((evangelicalShare * 0.55) + (magaShare * 0.45));
+        case 'donor_antiestablishment':
+            return value * donorClassWeight * ((magaShare * 0.6) + (_getCountyIgValue(county, 'libertarian') * 0.4));
+        case 'tech_conservative':
+            return value * (collegeShare * urbanIndex) * ((magaShare * 0.5) + (_getCountyIgValue(county, 'libertarian') * 0.5));
+        case 'hardcore_right':
+        case 'hard_right':
+            return value * ((magaShare * 0.65) + (evangelicalShare * 0.35));
+        case 'online_right':
+        case 'online_militant':
+            return value * ((magaShare * 0.55) + (nonCollegeShare * 0.25) + (suburbanIndex * 0.2));
+        case 'antiestablishment':
+            return value * ((magaShare * 0.45) + (progressiveShare * 0.2) + (_getCountyIgValue(county, 'libertarian') * 0.35));
+        case 'antiwar_left':
+            return value * ((progressiveShare * 0.7) + (_getCountyIgValue(county, 'youth') * 0.3));
+        case 'environmentalists':
+            return value * ((progressiveShare * 0.5) + (collegeShare * 0.25) + (_countyInRegion(county, 'west') ? 0.25 : 0.1));
+        case 'antiwar_independents':
+            return value * ((centristShare * 0.35) + (_getCountyIgValue(county, 'libertarian') * 0.4) + (progressiveShare * 0.25));
+        case 'party_loyalists':
+            return value * ((unionShare * 0.35) + (magaShare * 0.35) + (progressiveShare * 0.3));
+        case 'public_health_professionals':
+            return value * collegeShare * urbanIndex * 0.75;
+        case 'national_security_hawks':
+            return value * ((collegeShare * 0.45) + (evangelicalShare * 0.3) + (magaShare * 0.25));
+        case 'latino_left':
+            return value * _getCountyIgValue(county, 'hispanic') * ((progressiveShare * 0.65) + (unionShare * 0.35));
+        case 'labor_left':
+            return value * unionShare * ((progressiveShare * 0.7) + (nonCollegeShare * 0.3));
+        case 'lgbtq':
+        case 'lgbtq_community':
+            return value * ((secularShare * 0.5) + (urbanIndex * 0.3) + (collegeShare * 0.2));
+        case 'women':
+            return value * 0.51;
+        case 'youth':
+            return value * (county && county.t === 'Urban' ? 0.28 : (county && county.t === 'Mixed' ? 0.22 : 0.18));
+        case 'seniors':
+            return value * (county && county.t === 'Urban' ? 0.16 : (county && county.t === 'Mixed' ? 0.20 : 0.24));
+        default:
+            return null;
+    }
 }
 
 // Apply group modifier values to every county, weighted by that county's ig composition
@@ -317,33 +504,42 @@ function _applyGroupModsToCounties(groupMods, voteKey, scale) {
     for (var groupId in groupMods) {
         var rawMod = groupMods[groupId]; // positive = boost, negative = debuff
         var modVal = rawMod * (scale || 1.0);
-        var igKey = _mapGroupToIgKey(groupId);
+        var normalizedGroupId = _normalizeGroupTag(groupId);
+        normalizedGroupId = GROUP_TAG_ALIASES[normalizedGroupId] || normalizedGroupId;
+        var igKey = _mapGroupToIgKey(normalizedGroupId);
 
         for (var fips in Counties.countyData) {
             var county = Counties.countyData[fips];
             if (!county.v) continue;
+            var effectiveModVal = modVal;
 
             // Determine group weight for this county
             var groupWeight = 0;
-            if (igKey !== null && igKey !== undefined && county.ig && county.ig[igKey] !== undefined) {
+            var compositeValue = calculateCompositeTag(normalizedGroupId, modVal, county);
+
+            if (typeof compositeValue === 'number') {
+                // Composite tags return a pre-weighted modifier value, so county weight is already baked in.
+                groupWeight = 1;
+                effectiveModVal = compositeValue;
+            } else if (igKey !== null && igKey !== undefined && county.ig && county.ig[igKey] !== undefined) {
                 groupWeight = county.ig[igKey] / 100;
-            } else if (groupId === 'urban') {
+            } else if (normalizedGroupId === 'urban') {
                 groupWeight = (county.t === 'Urban') ? 0.8 : (county.t === 'Mixed' ? 0.3 : 0.05);
-            } else if (groupId === 'suburban') {
+            } else if (normalizedGroupId === 'suburban') {
                 groupWeight = (county.t === 'Mixed') ? 0.6 : (county.t === 'Urban' ? 0.25 : 0.1);
-            } else if (groupId === 'rural') {
+            } else if (normalizedGroupId === 'rural') {
                 groupWeight = (county.t === 'Rural') ? 0.9 : (county.t === 'Mixed' ? 0.35 : 0.05);
-            } else if (groupId === 'noncollege' && county.ig && county.ig.college !== undefined) {
+            } else if (normalizedGroupId === 'noncollege' && county.ig && county.ig.college !== undefined) {
                 groupWeight = (100 - county.ig.college) / 100;
-            } else if (groupId === 'bluecollar' && county.ig && county.ig.college !== undefined) {
+            } else if (normalizedGroupId === 'bluecollar' && county.ig && county.ig.college !== undefined) {
                 // Approximate bluecollar from noncollege + rural signal
                 groupWeight = ((100 - county.ig.college) / 100) * 0.6;
-            } else if (groupId === 'youth') {
+            } else if (normalizedGroupId === 'youth') {
                 // Approximate: urban counties skew younger
                 groupWeight = (county.t === 'Urban') ? 0.28 : (county.t === 'Mixed' ? 0.22 : 0.18);
-            } else if (groupId === 'seniors') {
+            } else if (normalizedGroupId === 'seniors') {
                 groupWeight = (county.t === 'Urban') ? 0.16 : (county.t === 'Mixed' ? 0.20 : 0.24);
-            } else if (groupId === 'women') {
+            } else if (normalizedGroupId === 'women') {
                 groupWeight = 0.51; // ~51% of every county is women
             } else {
                 continue; // No mapping available; skip
@@ -353,7 +549,7 @@ function _applyGroupModsToCounties(groupMods, voteKey, scale) {
 
             // shift = modifier_points * county_group_weight * dampening
             // GROUP_MOD_DAMPENING of 0.1 means a +15 mod with 100% group weight → +1.5 pts vote share
-            var shift = modVal * groupWeight * BUFF_CONSTANTS.GROUP_MOD_DAMPENING;
+            var shift = effectiveModVal * groupWeight * BUFF_CONSTANTS.GROUP_MOD_DAMPENING;
 
             if (shift > 0) {
                 // Boost this candidate
