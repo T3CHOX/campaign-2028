@@ -134,7 +134,7 @@ const CANDIDATES = [
         homeState: "CA",
         homeStateBoost: 1.4,
         funds: 61,
-        img: "images/scenario.jpg",
+        img: "images/khanna.jpg",
         stamina: 8,
         desc: "Khanna is the policy-heavy candidate trying to fuse progressive economics with Silicon Valley credibility. He can raise money from tech and online networks, but he has to prove he is more than a west-coast theory candidate if he wants to matter in the Great Lakes. His upside is an argument that sounds economically sharper than the average Democrat; his downside is that many voters will still file him under coastal technocrat.",
         buff: "Tech-Left Blend",
@@ -151,7 +151,7 @@ const CANDIDATES = [
         homeState: "IL",
         homeStateBoost: 1.7,
         funds: 64,
-        img: "images/scenario.jpg",
+        img: "images/emanuel.jpg",
         stamina: 6,
         desc: "Emanuel is the hard-knuckle institutionalist in the field: experienced, intimidating, and deeply connected to money and power. He would have no trouble attracting business donors and establishment support, but his own style is a tax on enthusiasm, especially among younger activists and progressive organizers. If the race rewards competence and toughness over inspiration, he becomes relevant; if not, he is a machine candidate in an anti-machine era.",
         buff: "Institutional Muscle",
@@ -168,7 +168,7 @@ const CANDIDATES = [
         homeState: "NJ",
         homeStateBoost: 1.4,
         funds: 48,
-        img: "images/scenario.jpg",
+        img: "images/stewart.jpg",
         stamina: 6,
         desc: "Stewart would enter politics as a high-recognition outsider with enormous media leverage and almost no governing track record. That makes him useful as a vehicle for anti-establishment energy, but risky for donors who want someone who can survive a 17-state campaign without turning every week into a comedy bit. He can excite disaffected younger and online voters, yet the absence of executive experience would be his first and last attack line.",
         buff: "Media Reach",
@@ -185,7 +185,7 @@ const CANDIDATES = [
         homeState: "KY",
         homeStateBoost: 2.4,
         funds: 56,
-        img: "images/scenario.jpg",
+        img: "images/beshear.jpg",
         stamina: 8,
         desc: "Beshear is the moderate Democrat who can still speak to red-state voters without sounding like he is begging for permission. That matters because Democrats need some evidence they can win back voters outside the coasts, not just maximize margins in metro areas. He has a real story in Kentucky, but his national ceiling depends on whether voters believe his style can travel beyond one unusually favorable personal brand.",
         buff: "Red-State Crossover",
@@ -202,7 +202,7 @@ const CANDIDATES = [
         homeState: "NJ",
         homeStateBoost: 1.9,
         funds: 60,
-        img: "images/scenario.jpg",
+        img: "images/booker.jpg",
         stamina: 7,
         desc: "Booker has the biography, the rhetorical range, and the ability to speak fluently to urban Black voters, suburban professionals, and moralistic liberals. The challenge is that he has often read as more inspirational than operational, and campaign cycles punish that distinction when the floor starts dropping in working-class counties. He can build a broad coalition, but he still has to prove that coalition can survive contact with the Midwest map.",
         buff: "Urban Coalition",
@@ -236,7 +236,7 @@ const CANDIDATES = [
         homeState: "FL",
         homeStateBoost: 1.8,
         funds: 90,
-        img: "images/scenario.jpg",
+        img: "images/trump.jpg",
         stamina: 6,
         desc: "Trump is the sitting political gravity well: he dominates the party, sets the tone, and still forces every other Republican to define themselves against him. By the 2028 cycle, the issue is less persuasion than maintenance—protect the margins with noncollege whites, keep rural enthusiasm high, and avoid erosion in suburban counties that have already moved against him. He has the strongest base machine in the field, but age, fatigue, and saturation mean the operation depends on turnout more than expansion.",
         buff: "Base Dominance",
@@ -287,7 +287,7 @@ const CANDIDATES = [
         homeState: "TX",
         homeStateBoost: 2.2,
         funds: 70,
-        img: "images/scenario.jpg",
+        img: "images/cruz.jpg",
         stamina: 7,
         desc: "Cruz is a high-end ideological operator with real fundraising ability and a hard-core conservative base. He is excellent at alienating people who already dislike him, but in the modern GOP that can still be a feature if the primary electorate wants combat over comfort. His ceiling in a general election is clear: suburban voters, moderates, and many independents see him as pure conflict with no off-ramp.",
         buff: "Primary Knife Fighter",
@@ -304,7 +304,7 @@ const CANDIDATES = [
         homeState: "KY",
         homeStateBoost: 2,
         funds: 55,
-        img: "images/scenario.jpg",
+        img: "images/paul.jpg",
         stamina: 7,
         desc: "Paul is the libertarian lane inside the GOP: anti-war, anti-spending, anti-establishment, and deeply appealing to a slice of donors and online conservatives who want less culture-war machinery. That niche is real, but it is too narrow to dominate a presidential primary unless the field fractures. He can survive by being the dissenting voice, not by building the broadest coalition.",
         buff: "Libertarian Lane",
@@ -355,7 +355,7 @@ const CANDIDATES = [
         homeState: "NY",
         homeStateBoost: 1.2,
         funds: 40,
-        img: "images/scenario.jpg",
+        img: "images/bannon.jpg",
         stamina: 6,
         desc: "Bannon is less a normal candidate than a force multiplier for insurgent nationalism. He can shape rhetoric, elevate grievances, and help define the hard-right lane, but his personal electoral appeal outside the activist ecosystem is limited. If the race becomes a purity contest, he matters; if it becomes a general-election contest, he becomes mostly a message threat to everyone else.",
         buff: "Insurgent Ideologue",
@@ -372,7 +372,7 @@ const CANDIDATES = [
         homeState: "MO",
         homeStateBoost: 1.9,
         funds: 62,
-        img: "images/scenario.jpg",
+        img: "images/hawley.jpg",
         stamina: 8,
         desc: "Hawley combines populist economics with culture-war aggression, which gives him a sharper identity than the average Senate Republican. He can speak to anti-elite voters who want the GOP to sound economically combative rather than merely business-friendly, but he will be under constant pressure to prove he can govern rather than just denounce. His real strength is in a primary where resentment and nationalism matter more than reassurance.",
         buff: "Populist Fire",
@@ -389,7 +389,7 @@ const CANDIDATES = [
         homeState: "FL",
         homeStateBoost: 1.4,
         funds: 66,
-        img: "images/scenario.jpg",
+        img: "images/carlson.jpg",
         stamina: 7,
         desc: "Carlson brings a ready-made media platform, a loyal audience, and the ability to dominate the conversation without spending much to do it. He can pull in donors who like the fact that he changes the incentives of the race, but plenty of Republicans would worry that he turns a campaign into an endless grievance broadcast. His ceiling is as much about whether the party wants a commentator as a nominee as it is about any specific policy position.",
         buff: "Media Star Power",
@@ -474,7 +474,7 @@ const CANDIDATES = [
         homeState: "WV",
         homeStateBoost: 3,
         funds: 52,
-        img: "images/scenario.jpg",
+        img: "images/delacruz.jpg",
         stamina: 5,
         desc: "Manchin is the old-school Appalachian dealmaker, strongest in places where Democrats have already been written off and Republicans still need to prove they can speak to cultural moderates. He can sell himself as the last independent-minded adult in the room, but the national electorate has moved far enough that his brand is more plausible as a spoiler than a winner. He is useful if the map gets weird; otherwise, he is a nostalgia candidate for an era of split-ticket politics that has mostly vanished.",
         buff: "Appalachian Rogue",
@@ -621,7 +621,7 @@ const VPS = [
     },
     {
         id: "khanna_vp", name: "Ro Khanna", party: "D", state: "CA", homeState: "CA",
-        funds: 10, img: "images/scenario.jpg", stamina: 9,
+        funds: 10, img: "images/khanna.jpg", stamina: 9,
         desc: "Silicon Valley progressive. Bridges the gap between tech donors and the online left.",
         groupBoosts: { tech: 4, youth: 3, progressive_left: 3 }, 
         groupDebuffs: { noncollege: -2 }
@@ -658,14 +658,14 @@ const VPS = [
     },
     {
         id: "cruz_vp", name: "Ted Cruz", party: "R", state: "TX", homeState: "TX",
-        funds: 15, img: "images/scenario.jpg", stamina: 8,
+        funds: 15, img: "images/cruz.jpg", stamina: 8,
         desc: "Texas Senator. Unifies the constitutional conservative and evangelical flanks.",
         groupBoosts: { donor_conservative: 3, evangelical: 3 }, 
         groupDebuffs: { independents: -2 }
     },
     {
         id: "hawley_vp", name: "Josh Hawley", party: "R", state: "MO", homeState: "MO",
-        funds: 10, img: "images/scenario.jpg", stamina: 7,
+        funds: 10, img: "images/hawley.jpg", stamina: 7,
         desc: "Missouri Senator. Reinforces the populist, working-class narrative of the ticket.",
         groupBoosts: { blue_collar: 3, noncollege: 2 }, 
         groupDebuffs: { donor_class: -2 }
@@ -674,7 +674,7 @@ const VPS = [
     /* ===== GREEN & LIBERTARIAN VPs ===== */
     {
         id: "ware", name: "Butch Ware", party: "G", state: "CA", homeState: "CA",
-        funds: 0, img: "images/scenario.jpg", stamina: 7,
+        funds: 0, img: "images/ware.jpg", stamina: 7,
         desc: "Academic and activist. Secures the anti-war progressive flank.",
         groupBoosts: { antiwar_left: 3, progressive_left: 2 }, 
         groupDebuffs: {}
@@ -909,4 +909,3 @@ const CANDIDATE_POSITIONS = {
         israel: -8, govspend: -8, electionreform: -7, scotus: -8, economy: -7
     }
 };
-
