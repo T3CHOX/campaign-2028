@@ -118,23 +118,40 @@ function applyCandidateBuffs() {
         }
     }
 
+    // Hard cap: combined home-state + regional advantage per ticket per state (percentage points)
+    var maxRegionalAdvantage = 4.0;
+
     for (var t = 0; t < allTickets.length; t++) {
         var ticket = allTickets[t];
         var voteKey = ticket.party;
         var pres = ticket.pres;
         var vp = ticket.vp;
 
-        // 1. Presidential home-state advantage — strong, deterministic
+        // Track accumulated regional boost per state for this ticket to enforce the cap
+        var stateRegionalBoosts = {};
+
+        // 1. Presidential home-state advantage — treated as percentage-point shift.
+        // All presidential CANDIDATES have explicit homeStateBoost values (1.4–3.4).
+        // Default 3.0 only applies if a candidate object is missing the property.
         if (pres && pres.homeState) {
-            var presBoost = pres.homeStateBoost || 12;
-            _applyStateBoostToCounties(pres.homeState, voteKey, presBoost);
+            var presBoost = typeof pres.homeStateBoost === 'number' ? pres.homeStateBoost : 3.0;
+            var cappedPresBoost = Math.min(presBoost, maxRegionalAdvantage);
+            stateRegionalBoosts[pres.homeState] = (stateRegionalBoosts[pres.homeState] || 0) + cappedPresBoost;
+            _applyStateBoostToCounties(pres.homeState, voteKey, cappedPresBoost);
         }
 
-        // 2. VP home-state advantage — materially weaker (~50% of pres)
+        // 2. VP home-state advantage — percentage-point shift, capped by remaining ticket allowance.
+        // VPs typically don't define homeStateBoost; default 2.0 represents a modest home-state edge.
         if (vp && (vp.homeState || vp.state)) {
             var vpHome = vp.homeState || vp.state;
-            var vpBoost = vp.homeStateBoost || 6;
-            _applyStateBoostToCounties(vpHome, voteKey, vpBoost);
+            var vpBoost = typeof vp.homeStateBoost === 'number' ? vp.homeStateBoost : 2.0;
+            var vpAlready = stateRegionalBoosts[vpHome] || 0;
+            var vpAllowance = Math.max(0, maxRegionalAdvantage - vpAlready);
+            var actualVpBoost = Math.min(vpBoost, vpAllowance);
+            if (actualVpBoost > 0) {
+                stateRegionalBoosts[vpHome] = vpAlready + actualVpBoost;
+                _applyStateBoostToCounties(vpHome, voteKey, actualVpBoost);
+            }
         }
 
         // 3. Presidential group boosts/debuffs (from candidate data)
@@ -145,12 +162,7 @@ function applyCandidateBuffs() {
             _applyGroupModsToCounties(pres.groupDebuffs, voteKey, 1.0);
         }
 
-        // 4. Presidential group modifiers from CANDIDATE_GROUP_MODIFIERS
-        if (pres && typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[pres.id]) {
-            _applyGroupModsToCounties(CANDIDATE_GROUP_MODIFIERS[pres.id], voteKey, 1.0);
-        }
-
-        // 5. VP group boosts/debuffs (50% of presidential effect)
+        // 4. VP group boosts/debuffs (50% of presidential effect)
         if (vp && vp.groupBoosts) {
             _applyGroupModsToCounties(vp.groupBoosts, voteKey, 0.5);
         }
@@ -158,12 +170,7 @@ function applyCandidateBuffs() {
             _applyGroupModsToCounties(vp.groupDebuffs, voteKey, 0.5);
         }
 
-        // 6. VP group modifiers from CANDIDATE_GROUP_MODIFIERS
-        if (vp && typeof CANDIDATE_GROUP_MODIFIERS !== 'undefined' && CANDIDATE_GROUP_MODIFIERS[vp.id]) {
-            _applyGroupModsToCounties(CANDIDATE_GROUP_MODIFIERS[vp.id], voteKey, 0.5);
-        }
-
-        // 7. Special named buffs (deterministic)
+        // 5. Special named buffs (deterministic)
         if (pres && pres.buff === 'Midwest Appeal') {
             var midwestStates = ['MI', 'WI', 'MN', 'OH', 'IL', 'IN', 'IA', 'MO'];
             for (var mi = 0; mi < midwestStates.length; mi++) {
@@ -171,14 +178,25 @@ function applyCandidateBuffs() {
             }
         }
 
-        // 8. County-specific boosts for candidates with strong local ties
+        // 6. County-specific boosts for candidates with strong local ties
         if (pres) {
             _applyCountySpecificBoosts(pres, voteKey);
         }
 
-        // 9. Regional spillover boosts for regionally-connected candidates
-        if (pres) {
-            _applyRegionalSpillover(pres, voteKey);
+        // 7. Regional spillover boosts — `regionalSpilloverBoost` is a percentage-point value applied
+        // to each state listed in `regionalSpillover`. Capped by the ticket's remaining state allowance.
+        if (pres && pres.regionalSpillover && pres.regionalSpillover.length) {
+            var spilloverBoost = typeof pres.regionalSpilloverBoost === 'number' ? pres.regionalSpilloverBoost : 2.0;
+            for (var si = 0; si < pres.regionalSpillover.length; si++) {
+                var spillState = pres.regionalSpillover[si];
+                var spillAlready = stateRegionalBoosts[spillState] || 0;
+                var spillAllowance = Math.max(0, maxRegionalAdvantage - spillAlready);
+                var actualSpill = Math.min(spilloverBoost, spillAllowance);
+                if (actualSpill > 0) {
+                    stateRegionalBoosts[spillState] = spillAlready + actualSpill;
+                    _applyStateBoostToCounties(spillState, voteKey, actualSpill);
+                }
+            }
         }
     }
 
@@ -262,7 +280,7 @@ function _applyStateBoostToCounties(stateCode, voteKey, boostPoints) {
     }
 }
 
-// Map INTEREST_GROUPS / CANDIDATE_GROUP_MODIFIERS keys → county ig keys
+// Map INTEREST_GROUPS keys → county ig keys
 function _normalizeGroupTag(groupId) {
     // Normalize demographic/group tags to canonical lookup form.
     // Example: "Suburban College" / "suburban-college" -> "suburban_college".
