@@ -3019,7 +3019,7 @@ body {
     overflow: hidden;
     -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
     mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-    transition: max-height 0.3s ease, -webkit-mask-image 0.3s ease;
+    transition: max-height 0.3s ease, -webkit-mask-image 0.3s ease, mask-image 0.3s ease;
 }
 
 .candidate-tile:hover .candidate-tile-desc-wrapper,
