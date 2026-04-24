@@ -191,27 +191,24 @@ var Screens = {
                 groupDebuffsText = '<div class="tile-groups tile-groups-debuff">⚠ ' + debuffKeys.map(function(k) { return k + ' ' + c.groupDebuffs[k]; }).join(', ') + '</div>';
             }
         }
-        // Collapsed (default) view: name + position + home state
-        // Expanded (hover) view: all details
         return '<div class="candidate-tile' + (selected ? ' selected' : '') + '" data-id="' + c.id + '" data-type="pres" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + c.party + '\', \'pres\')">' +
             '<img class="candidate-tile-img" src="' + c.img + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + c.name + '">' +
-            '<div class="candidate-tile-collapsed">' +
-                '<div class="candidate-tile-name">' + c.name + '</div>' +
-                '<div class="candidate-tile-position">' + (c.desc || '') + '</div>' +
-                '<div class="candidate-tile-state">🏠 ' + (c.homeState || '') + '</div>' +
-            '</div>' +
-            '<div class="candidate-tile-expanded">' +
-                '<div class="candidate-tile-name">' + c.name + '</div>' +
-                '<div class="candidate-tile-position">' + (c.desc || '') + '</div>' +
-                '<div class="candidate-tile-state">🏠 ' + (c.homeState || '') + '</div>' +
-                '<div class="candidate-tile-stats">' +
-                    '<div class="tile-stat-row"><span class="tile-stat-label">Funds:</span><span class="tile-stat-val">$' + (c.funds || 0) + 'M</span></div>' +
-                    '<div class="tile-stat-row"><span class="tile-stat-label">Stamina:</span><div class="stamina-pips">' + staminaPips + '</div></div>' +
-                    (c.buff ? '<div class="tile-buff">✦ ' + c.buff + '</div>' : '') +
-                    (c.debuff ? '<div class="tile-debuff">⚠ ' + c.debuff + '</div>' : '') +
+            '<div class="candidate-tile-body">' +
+                '<div class="candidate-tile-desc-wrapper">' +
+                    '<p class="candidate-tile-desc">' + (c.desc || '') + '</p>' +
                 '</div>' +
-                groupBoostsText +
-                groupDebuffsText +
+                '<div class="candidate-tile-meta">' +
+                    '<div class="candidate-tile-name">' + c.name + '</div>' +
+                    '<div class="candidate-tile-state">🏠 ' + (c.homeState || '') + '</div>' +
+                    '<div class="candidate-tile-stats">' +
+                        '<div class="tile-stat-row"><span class="tile-stat-label">Funds:</span><span class="tile-stat-val">$' + (c.funds || 0) + 'M</span></div>' +
+                        '<div class="tile-stat-row"><span class="tile-stat-label">Stamina:</span><div class="stamina-pips">' + staminaPips + '</div></div>' +
+                        (c.buff ? '<div class="tile-buff">✦ ' + c.buff + '</div>' : '') +
+                        (c.debuff ? '<div class="tile-debuff">⚠ ' + c.debuff + '</div>' : '') +
+                    '</div>' +
+                    groupBoostsText +
+                    groupDebuffsText +
+                '</div>' +
             '</div>' +
         '</div>';
     },
@@ -233,17 +230,16 @@ var Screens = {
         }
         return '<div class="candidate-tile" data-id="' + v.id + '" data-type="vp" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + v.party + '\', \'vp\')">' +
             '<img class="candidate-tile-img" src="' + (v.img || 'images/scenario.jpg') + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + v.name + '">' +
-            '<div class="candidate-tile-collapsed">' +
-                '<div class="candidate-tile-name">' + v.name + '</div>' +
-                '<div class="candidate-tile-position">' + (v.desc || '') + '</div>' +
-                '<div class="candidate-tile-state">🏠 ' + (v.state || v.homeState || '') + '</div>' +
-            '</div>' +
-            '<div class="candidate-tile-expanded">' +
-                '<div class="candidate-tile-name">' + v.name + '</div>' +
-                '<div class="candidate-tile-position">' + (v.desc || '') + '</div>' +
-                '<div class="candidate-tile-state">🏠 ' + (v.state || v.homeState || '') + '</div>' +
-                groupBoostsText +
-                groupDebuffsText +
+            '<div class="candidate-tile-body">' +
+                '<div class="candidate-tile-desc-wrapper">' +
+                    '<p class="candidate-tile-desc">' + (v.desc || '') + '</p>' +
+                '</div>' +
+                '<div class="candidate-tile-meta">' +
+                    '<div class="candidate-tile-name">' + v.name + '</div>' +
+                    '<div class="candidate-tile-state">🏠 ' + (v.state || v.homeState || '') + '</div>' +
+                    groupBoostsText +
+                    groupDebuffsText +
+                '</div>' +
             '</div>' +
         '</div>';
     },

@@ -2979,6 +2979,7 @@ body {
     box-shadow: 0 4px 15px rgba(0,0,0,0.4);
     display: flex;
     flex-direction: column;
+    min-height: 360px;
 }
 
 .candidate-tile:hover {
@@ -3002,39 +3003,34 @@ body {
     flex-shrink: 0;
 }
 
-/* ---- Collapsed view (default, always visible) ---- */
-.candidate-tile-collapsed {
+.candidate-tile-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
     padding: 10px 12px 12px;
-    display: block;
+    gap: 10px;
 }
 
-/* ---- Expanded view (hidden by default, shown on hover) ---- */
-.candidate-tile-expanded {
-    padding: 0 12px 12px;
-    max-height: 0;
+.candidate-tile-desc-wrapper {
+    max-height: 72px;
     overflow: hidden;
-    opacity: 0;
-    transition: max-height 0.4s cubic-bezier(0.25,0.8,0.25,1), opacity 0.35s ease, padding 0.3s ease;
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    transition: max-height 0.3s ease, -webkit-mask-image 0.3s ease;
 }
 
-.candidate-tile:hover .candidate-tile-collapsed {
-    display: none;
+.candidate-tile:hover .candidate-tile-desc-wrapper,
+.candidate-tile.selected .candidate-tile-desc-wrapper {
+    max-height: 500px;
+    -webkit-mask-image: linear-gradient(to bottom, black 100%, black 100%);
+    mask-image: linear-gradient(to bottom, black 100%, black 100%);
 }
 
-.candidate-tile:hover .candidate-tile-expanded {
-    max-height: 400px;
-    opacity: 1;
-    padding: 10px 12px 12px;
-}
-
-/* When tile is selected, always show expanded view */
-.candidate-tile.selected .candidate-tile-collapsed {
-    display: none;
-}
-.candidate-tile.selected .candidate-tile-expanded {
-    max-height: 400px;
-    opacity: 1;
-    padding: 10px 12px 12px;
+.candidate-tile-meta {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .candidate-tile-name {
@@ -3062,8 +3058,9 @@ body {
 .candidate-tile-desc {
     font-size: 0.72rem;
     color: #aaa;
-    margin-bottom: 8px;
+    margin: 0;
     line-height: 1.4;
+    font-style: italic;
 }
 
 .candidate-tile-stats {
