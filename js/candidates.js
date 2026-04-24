@@ -73,7 +73,7 @@ const CANDIDATES = [
         debuff: "Low-Voltage Base",
         groupBoosts: { union: 8, suburban_women: 8, midwest_noncollege: 6 },
         groupDebuffs: { progressive_left: -3, rural: -4 },
-        regionalSpillover: [ "WI", "PA" ],
+        regionalSpillover: [ "WI", "PA", "IN", "OH", "MN" ],
         regionalSpilloverBoost: 1.5,
     },
     {
