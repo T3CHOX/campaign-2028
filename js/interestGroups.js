@@ -214,7 +214,7 @@ const INTEREST_GROUPS = {
     }
 };
 
-// Candidate/VP group modifiers are defined in candidates.js (CANDIDATE_GROUP_MODIFIERS)
+// Candidate/VP group modifiers are embedded directly in CANDIDATES and VPS entries as groupBoosts/groupDebuffs.
 
 // PAC definitions
 const PACS = {

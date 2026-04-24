@@ -581,127 +581,142 @@ const CANDIDATES = [
 /* ---- RUNNING MATES ----
    Structured identically to CANDIDATES for flexibility.
    `state` is used by applyCandidateBuffs for home-state VP advantage.
-   `homeState` added as alias for cross-compatibility with candidate rendering. */
+   `homeState` added as alias for cross-compatibility. */
 const VPS = [
-
     /* ===== DEMOCRATIC VPs ===== */
     {
         id: "shapiro", name: "Josh Shapiro", party: "D", state: "PA", homeState: "PA",
-        funds: 0, img: "images/shapiro.jpg", stamina: 8,
-        desc: "Governor of Pennsylvania. Centrist Dem with strong crossover appeal.",
-        groupBoosts: { jewish: 8, suburban: 6, college: 5 }, groupDebuffs: {}
+        funds: 15, img: "images/shapiro.jpg", stamina: 8,
+        desc: "Governor of Pennsylvania. Brings critical Blue Wall structural advantages and moderate credibility.",
+        groupBoosts: { suburban_moderates: 3, jewish: 4, moderate_dems: 2 }, 
+        groupDebuffs: { progressive_left: -2, youth: -1 }
     },
     {
         id: "kelly_vp", name: "Mark Kelly", party: "D", state: "AZ", homeState: "AZ",
-        funds: 0, img: "images/kelly.jpg", stamina: 8,
-        desc: "Arizona Senator and former NASA astronaut. Military credibility.",
-        groupBoosts: { military: 10, suburban: 5, independent: 5, college: 4 }, groupDebuffs: {}
+        funds: 10, img: "images/kelly.jpg", stamina: 8,
+        desc: "Arizona Senator. Offers border-state defensive capability and high floor with independents.",
+        groupBoosts: { veterans: 4, suburban_moderates: 2, independents: 2 }, 
+        groupDebuffs: { progressive_left: -1 }
     },
     {
         id: "warnock", name: "Raphael Warnock", party: "D", state: "GA", homeState: "GA",
-        funds: 0, img: "images/warnock.jpg", stamina: 8,
-        desc: "Georgia Senator. Black church leader with strong Southern base.",
-        groupBoosts: { black: 12, protestant: 8, urban: 6 }, groupDebuffs: { rural: -3 }
+        funds: 12, img: "images/warnock.jpg", stamina: 8,
+        desc: "Georgia Senator. Elite surrogate for turning out the Black church network in the Sun Belt.",
+        groupBoosts: { black: 4, urban: 2 }, 
+        groupDebuffs: { rural_whites: -1 }
     },
     {
         id: "pritzker", name: "JB Pritzker", party: "D", state: "IL", homeState: "IL",
-        funds: 0, img: "images/pritzker.jpg", stamina: 7,
-        desc: "Illinois Governor. Deep-pocketed Midwest establishment Democrat.",
-        groupBoosts: { jewish: 6, urban: 5, college: 4 }, groupDebuffs: {}
+        funds: 25, img: "images/pritzker.jpg", stamina: 7,
+        desc: "Illinois Governor. Provides a massive self-funded financial floor for the campaign.",
+        groupBoosts: { union: 2, suburban_college: 2 }, 
+        groupDebuffs: { rural: -1 }
     },
     {
         id: "whitmer_vp", name: "Gretchen Whitmer", party: "D", state: "MI", homeState: "MI",
-        funds: 0, img: "images/whitmer.jpg", stamina: 8,
-        desc: "Michigan Governor. Anchors the ticket in a critical battleground state.",
-        groupBoosts: { women: 8, suburban: 5, union: 6, noncollege: 3 }, groupDebuffs: {}
+        funds: 15, img: "images/whitmer.jpg", stamina: 8,
+        desc: "Michigan Governor. Locks down the Midwest and appeals strongly to suburban women.",
+        groupBoosts: { suburban_women: 4, midwest_noncollege: 2, union: 2 }, 
+        groupDebuffs: { rural: -1 }
     },
     {
         id: "khanna_vp", name: "Ro Khanna", party: "D", state: "CA", homeState: "CA",
-        funds: 0, img: "images/scenario.jpg", stamina: 9,
-        desc: "Silicon Valley progressive Congressman. Energizes the youth and tech vote.",
-        groupBoosts: { youth: 10, tech: 10, asian: 8, progressive: 8 }, groupDebuffs: {}
+        funds: 10, img: "images/scenario.jpg", stamina: 9,
+        desc: "Silicon Valley progressive. Bridges the gap between tech donors and the online left.",
+        groupBoosts: { tech: 4, youth: 3, progressive_left: 3 }, 
+        groupDebuffs: { noncollege: -2 }
     },
 
     /* ===== REPUBLICAN VPs ===== */
     {
         id: "rubio", name: "Marco Rubio", party: "R", state: "FL", homeState: "FL",
-        funds: 0, img: "images/rubio.jpg", stamina: 8,
-        desc: "Secretary of State (2025–present). Won't run for pres if Vance runs — could be VP.",
-        groupBoosts: { hispanic: 14, cuban: 20, catholic: 8, florida: 10 }, groupDebuffs: { black: -3 }
+        funds: 15, img: "images/rubio.jpg", stamina: 8,
+        desc: "Secretary of State. Softens the ticket's edges with Hispanics and suburban moderates.",
+        groupBoosts: { hispanic: 4, suburban_college: 2, donor_class: 3 }, 
+        groupDebuffs: { hardcore_right: -1 }
     },
     {
         id: "scott_tim", name: "Tim Scott", party: "R", state: "SC", homeState: "SC",
-        funds: 0, img: "images/scott.jpg", stamina: 7,
-        desc: "South Carolina Senator. Enthusiastic Trump supporter with evangelical roots.",
-        groupBoosts: { black: 5, evangelical: 8, suburban: 4 }, groupDebuffs: {}
+        funds: 12, img: "images/scott.jpg", stamina: 7,
+        desc: "South Carolina Senator. A high-energy, optimistic surrogate with deep evangelical ties.",
+        groupBoosts: { evangelical: 3, suburban_conservative: 2 }, 
+        groupDebuffs: {}
     },
     {
         id: "stefanik", name: "Elise Stefanik", party: "R", state: "NY", homeState: "NY",
-        funds: 0, img: "images/stefanik.jpg", stamina: 7,
-        desc: "Congresswoman from New York. MAGA-aligned with suburban appeal.",
-        groupBoosts: { women: 6, suburban: 5, college: 3 }, groupDebuffs: {}
+        funds: 10, img: "images/stefanik.jpg", stamina: 7,
+        desc: "New York Congresswoman. A ruthless MAGA loyalist who plays well on cable news.",
+        groupBoosts: { online_militant: 2, noncollege: 2 }, 
+        groupDebuffs: { suburban_college: -2 }
     },
     {
         id: "noem", name: "Kristi Noem", party: "R", state: "SD", homeState: "SD",
-        funds: 0, img: "images/noem.jpg", stamina: 7,
-        desc: "South Dakota Governor. Energizes the rural evangelical base.",
-        groupBoosts: { rural: 8, evangelical: 6, women: 4 }, groupDebuffs: { urban: -4 }
+        funds: 8, img: "images/noem.jpg", stamina: 7,
+        desc: "South Dakota Governor. A base-play to energize the rural and evangelical wings.",
+        groupBoosts: { rural: 3, evangelical: 2 }, 
+        groupDebuffs: { suburban_moderates: -2 }
     },
     {
         id: "cruz_vp", name: "Ted Cruz", party: "R", state: "TX", homeState: "TX",
-        funds: 0, img: "images/scenario.jpg", stamina: 8,
-        desc: "Texas Senator. If not running for pres, brings Texas base + constitutional conservatives.",
-        groupBoosts: { evangelical: 10, college: 4, military: 5, rural: 6 }, groupDebuffs: {}
+        funds: 15, img: "images/scenario.jpg", stamina: 8,
+        desc: "Texas Senator. Unifies the constitutional conservative and evangelical flanks.",
+        groupBoosts: { donor_conservative: 3, evangelical: 3 }, 
+        groupDebuffs: { independents: -2 }
     },
     {
         id: "hawley_vp", name: "Josh Hawley", party: "R", state: "MO", homeState: "MO",
-        funds: 0, img: "images/scenario.jpg", stamina: 7,
-        desc: "Missouri Senator. Populist working-class appeal in the Heartland.",
-        groupBoosts: { bluecollar: 10, rural: 7, noncollege: 6 }, groupDebuffs: {}
+        funds: 10, img: "images/scenario.jpg", stamina: 7,
+        desc: "Missouri Senator. Reinforces the populist, working-class narrative of the ticket.",
+        groupBoosts: { blue_collar: 3, noncollege: 2 }, 
+        groupDebuffs: { donor_class: -2 }
     },
 
-    /* ===== GREEN VP ===== */
+    /* ===== GREEN & LIBERTARIAN VPs ===== */
     {
         id: "ware", name: "Butch Ware", party: "G", state: "CA", homeState: "CA",
         funds: 0, img: "images/scenario.jpg", stamina: 7,
-        desc: "Academic, scholar, and activist.",
-        groupBoosts: { secular: 6, youth: 5, urban: 4 }, groupDebuffs: {}
+        desc: "Academic and activist. Secures the anti-war progressive flank.",
+        groupBoosts: { antiwar_left: 3, progressive_left: 2 }, 
+        groupDebuffs: {}
     },
-
-    /* ===== LIBERTARIAN VP ===== */
     {
         id: "termaat", name: "Mike ter Maat", party: "L", state: "FL", homeState: "FL",
         funds: 0, img: "images/scenario.jpg", stamina: 7,
-        desc: "Economist and Libertarian activist.",
-        groupBoosts: { smallbusiness: 6, college: 4, tech: 5 }, groupDebuffs: {}
+        desc: "Economist. Appeals to fiscal conservatives and small business owners.",
+        groupBoosts: { small_business: 2, libertarian: 2 }, 
+        groupDebuffs: {}
     },
 
     /* ===== INDEPENDENT VPs ===== */
     {
         id: "kinzinger", name: "Adam Kinzinger", party: "I", state: "IL", homeState: "IL",
-        funds: 0, img: "images/scenario.jpg", stamina: 7,
-        desc: "Former Republican Congressman. Anti-Trump conservative with military background.",
-        groupBoosts: { military: 6, suburban: 5, independent: 6 }, groupDebuffs: {}
+        funds: 5, img: "images/scenario.jpg", stamina: 7,
+        desc: "Former Republican Congressman. Pulls disaffected anti-Trump conservatives.",
+        groupBoosts: { suburban_moderates: 2, veterans: 2, antiestablishment: 1 }, 
+        groupDebuffs: { hardcore_right: -3 }
     },
     {
         id: "west_cornel", name: "Cornel West", party: "I", state: "MA", homeState: "MA",
-        funds: 0, img: "images/scenario.jpg", stamina: 6,
-        desc: "Academic, activist, and political philosopher. Black progressive intellectual.",
-        groupBoosts: { black: 8, youth: 6, progressive: 7 }, groupDebuffs: { suburban: -4 }
+        funds: 5, img: "images/scenario.jpg", stamina: 6,
+        desc: "Philosopher and activist. Gives an independent ticket deep progressive credibility.",
+        groupBoosts: { black: 2, progressive_left: 3 }, 
+        groupDebuffs: { suburban_moderates: -2 }
     },
 
     /* ===== PSL VPs ===== */
     {
         id: "freeman", name: "Sunil Freeman", party: "PSL", state: "PA", homeState: "PA",
         funds: 0, img: "images/scenario.jpg", stamina: 7,
-        desc: "PSL activist and labor organizer from Pennsylvania.",
-        groupBoosts: { union: 8, urban: 5, youth: 6 }, groupDebuffs: {}
+        desc: "Activist and labor organizer.",
+        groupBoosts: { labor_left: 2, urban: 1 }, 
+        groupDebuffs: {}
     },
     {
         id: "lariva_vp", name: "Gloria La Riva", party: "PSL", state: "CA", homeState: "CA",
         funds: 0, img: "images/lariva.jpg", stamina: 7,
-        desc: "PSL General Secretary. If De la Cruz is nominee, La Riva anchors the ticket.",
-        groupBoosts: { hispanic: 8, union: 10, urban: 6 }, groupDebuffs: {}
+        desc: "PSL General Secretary. Anchors the ticket with institutional socialist credibility.",
+        groupBoosts: { labor_left: 2, antiwar_left: 2 }, 
+        groupDebuffs: {}
     }
 ];
 
@@ -895,40 +910,3 @@ const CANDIDATE_POSITIONS = {
     }
 };
 
-/* ---- CANDIDATE GROUP MODIFIERS ---- */
-const CANDIDATE_GROUP_MODIFIERS = {
-    harris: { black: 15, women: 10, urban: 8, college: 5, asian: 5 },
-    newsom: { college: 8, urban: 6, tech: 10, secular: 6 },
-    whitmer: { women: 8, suburban: 6, union: 8, noncollege: 4 },
-    buttigieg: { lgbtq_community: 12, college: 6, urban: 5, youth: 5 },
-    aoc: { youth: 15, hispanic: 10, urban: 8, women: 6 },
-    kelly: { military: 10, suburban: 5, independent: 5 },
-    khanna: { youth: 10, tech: 12, asian: 8, progressive: 10 },
-    emanuel: { jewish: 8, urban: 6, college: 5, suburban: 5 },
-    stewart: { youth: 12, college: 8, secular: 10, independent: 8 },
-    beshear: { rural: 6, noncollege: 5, suburban: 7, independent: 8, catholic: 5 },
-    booker: { black: 12, urban: 8, youth: 6, college: 5 },
-    shapiro: { jewish: 8, suburban: 7, college: 6, independent: 6 },
-    trump: { evangelical: 14, rural: 12, noncollege: 10, bluecollar: 8 },
-    vance: { rural: 10, noncollege: 8, bluecollar: 8, evangelical: 5 },
-    desantis: { evangelical: 12, rural: 8, seniors: 6, noncollege: 5 },
-    cruz: { evangelical: 10, college: 5, military: 5, rural: 6 },
-    paul: { libertarian: 12, youth: 6, college: 5, smallbusiness: 8 },
-    haley: { women: 8, suburban: 8, college: 6, military: 5 },
-    ramaswamy: { asian: 10, college: -5, suburban: 5, tech: 8 },
-    bannon: { noncollege: 12, rural: 10, evangelical: 8, bluecollar: 10 },
-    hawley: { bluecollar: 10, rural: 8, noncollege: 7, evangelical: 6 },
-    carlson: { rural: 10, noncollege: 8, evangelical: 5 },
-    rubio: { hispanic: 14, cuban: 20, catholic: 8, suburban: 5 },
-    stein: { secular: 12, youth: 8, urban: 6, progressive: 10 },
-    oliver: { smallbusiness: 10, college: 5, tech: 6, libertarian: 8 },
-    yang: { tech: 12, asian: 10, youth: 8, college: 6 },
-    manchin: { bluecollar: 8, rural: 6, catholic: 5, independent: 7 },
-    kennedy_rfk: { youth: 5, rural: 4, independent: 6, health: 8 },
-    bloomberg: { whitecollar: 10, urban: 8, college: 7, jewish: 6 },
-    lariva: { union: 10, youth: 8, urban: 6, hispanic: 8, black: 5 },
-    delacruz: { hispanic: 12, youth: 10, urban: 8, union: 8 },
-    rubio: { hispanic: 14, cuban: 20, catholic: 8, suburban: 5 },
-    warnock: { black: 12, protestant: 8 },
-    kelly_vp: { military: 10, suburban: 5 }
-};
