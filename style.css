@@ -2968,6 +2968,9 @@ body {
 }
 
 .candidate-tile {
+    --candidate-tile-min-height: 360px;
+    --candidate-desc-collapsed-max-height: 72px;
+    --candidate-desc-expanded-max-height: 500px;
     width: 200px;
     background: #1e1e1e;
     border: 2px solid transparent;
@@ -2979,7 +2982,7 @@ body {
     box-shadow: 0 4px 15px rgba(0,0,0,0.4);
     display: flex;
     flex-direction: column;
-    min-height: 360px;
+    min-height: var(--candidate-tile-min-height);
 }
 
 .candidate-tile:hover {
@@ -3012,7 +3015,7 @@ body {
 }
 
 .candidate-tile-desc-wrapper {
-    max-height: 72px;
+    max-height: var(--candidate-desc-collapsed-max-height);
     overflow: hidden;
     -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
     mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
@@ -3021,7 +3024,7 @@ body {
 
 .candidate-tile:hover .candidate-tile-desc-wrapper,
 .candidate-tile.selected .candidate-tile-desc-wrapper {
-    max-height: 500px;
+    max-height: var(--candidate-desc-expanded-max-height);
     -webkit-mask-image: linear-gradient(to bottom, black 100%, black 100%);
     mask-image: linear-gradient(to bottom, black 100%, black 100%);
 }
