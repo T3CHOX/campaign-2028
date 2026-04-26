@@ -11,6 +11,9 @@ var Counties = {
     },
     RALLY_RADIUS_MILES: 120,
     MAX_RALLY_ATTENDANCE: 65000,
+    DEFAULT_MAJOR_PARTY_TURNOUT: 1.0,
+    DEFAULT_THIRD_PARTY_TURNOUT: 0.7,
+    MAX_TURNOUT_MULTIPLIER: 1.3,
     
     // Normalize FIPS code by ensuring it's a 5-digit string with leading zeros
     // Ensures consistent FIPS format (e.g., "04013", "01001")
@@ -52,7 +55,12 @@ var Counties = {
                     Counties.applyThirdPartyToggle(c);
                     
                     // Initialize turnout multipliers
-                    c.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+                    c.turnout = {
+                        player: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
+                        demOpponent: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
+                        repOpponent: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
+                        thirdParty: Counties.DEFAULT_THIRD_PARTY_TURNOUT
+                    };
                 }
                 
                 Counties.initializeRallyDistanceRatios();
@@ -106,20 +114,35 @@ var Counties = {
             return null;
         }
         
+        // Calibrate miles-per-pixel using LA County (06037) ↔ New York County (36061),
+        // which are approximately 2,445 real-world miles apart.
         var lower48Ratio = 2445 / pixelDistance;
         return {
             lower48: lower48Ratio,
+            // Alaska is intentionally scaled down in the SVG map (~35% of lower-48 scale),
+            // so convert with an adjusted miles-per-pixel ratio.
             alaska: lower48Ratio / 0.35
         };
     },
     
     initializeRallyDistanceRatios: function() {
+        if (
+            this.rallyDistanceRatios &&
+            isFinite(this.rallyDistanceRatios.lower48) &&
+            isFinite(this.rallyDistanceRatios.alaska) &&
+            this.rallyDistanceRatios.lower48 > 0 &&
+            this.rallyDistanceRatios.alaska > 0
+        ) {
+            return this.rallyDistanceRatios;
+        }
+        
         var ratios = this.calculateRallyDistanceRatios();
         if (!ratios) {
             console.warn('⚠️ Unable to initialize rally distance ratios. Missing/invalid county centroids.');
-            return;
+            return null;
         }
         this.rallyDistanceRatios = ratios;
+        return ratios;
     },
     
     getMilesPerPixelRatio: function(stateFips) {
@@ -143,6 +166,11 @@ var Counties = {
         var targetCounty = this.countyData[targetFips];
         if (!targetCounty) return null;
         
+        if (!this.getMilesPerPixelRatio('01')) {
+            this.initializeRallyDistanceRatios();
+        }
+        if (!this.getMilesPerPixelRatio('01')) return null;
+        
         var targetCentroid = this.getCountyCentroid(targetFips);
         if (!targetCentroid) return null;
         
@@ -157,7 +185,8 @@ var Counties = {
             var normalizedFips = this.normalizeFips(fips);
             var stateFips = normalizedFips.substring(0, 2);
             
-            if (stateFips === '15') continue; // No spillover for Hawaii
+            // Hawaii is intentionally excluded from mainland/Alaska distance spillover.
+            if (stateFips === '15') continue;
             
             var centroid = this.getCountyCentroid(normalizedFips);
             if (!centroid) continue;
@@ -196,16 +225,27 @@ var Counties = {
             var entry = candidates[i];
             var countyEntry = entry.county;
             if (!countyEntry.turnout) {
-                countyEntry.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+                countyEntry.turnout = {
+                    player: this.DEFAULT_MAJOR_PARTY_TURNOUT,
+                    demOpponent: this.DEFAULT_MAJOR_PARTY_TURNOUT,
+                    repOpponent: this.DEFAULT_MAJOR_PARTY_TURNOUT,
+                    thirdParty: this.DEFAULT_THIRD_PARTY_TURNOUT
+                };
             }
             
             var scaledBoost = entry.provisionalBoost * scaleFactor;
             totalAppliedRawTurnout += entry.rawTurnout * scaleFactor;
             
             if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
-                countyEntry.turnout.player = Math.min(1.3, (countyEntry.turnout.player || 1.0) + scaledBoost);
+                countyEntry.turnout.player = Math.min(
+                    this.MAX_TURNOUT_MULTIPLIER,
+                    (countyEntry.turnout.player || this.DEFAULT_MAJOR_PARTY_TURNOUT) + scaledBoost
+                );
             } else {
-                countyEntry.turnout.thirdParty = Math.min(1.3, (countyEntry.turnout.thirdParty || 0.7) + scaledBoost);
+                countyEntry.turnout.thirdParty = Math.min(
+                    this.MAX_TURNOUT_MULTIPLIER,
+                    (countyEntry.turnout.thirdParty || this.DEFAULT_THIRD_PARTY_TURNOUT) + scaledBoost
+                );
             }
             
             var stateCode = this.getStateCodeFromFips(entry.stateFips);
@@ -543,8 +583,8 @@ var Counties = {
         gameData.energy -= 1;
         gameData.funds -= 0.5;
         
-        var attendanceText = Math.round(spilloverResult.totalAppliedRawTurnout).toLocaleString();
-        var message = 'Regional rally in ' + (county.n || 'County') + ': ' + spilloverResult.countyCount + ' counties impacted, est. turnout +' + attendanceText + '.';
+        var appliedTurnoutText = Math.round(spilloverResult.totalAppliedRawTurnout).toLocaleString();
+        var message = 'Regional rally in ' + (county.n || 'County') + ': ' + spilloverResult.countyCount + ' counties impacted, est. turnout +' + appliedTurnoutText + '.';
         Utils.addLog(message);
         Campaign.updateHUD();
         Campaign.colorMap();
