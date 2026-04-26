@@ -126,13 +126,7 @@ var Counties = {
     },
     
     initializeRallyDistanceRatios: function() {
-        if (
-            this.rallyDistanceRatios &&
-            isFinite(this.rallyDistanceRatios.lower48) &&
-            isFinite(this.rallyDistanceRatios.alaska) &&
-            this.rallyDistanceRatios.lower48 > 0 &&
-            this.rallyDistanceRatios.alaska > 0
-        ) {
+        if (this.hasRallyDistanceRatios()) {
             return this.rallyDistanceRatios;
         }
         
@@ -583,8 +577,12 @@ var Counties = {
         if (!this.hasRallyDistanceRatios()) {
             this.initializeRallyDistanceRatios();
         }
-        if (!this.hasRallyDistanceRatios() || !this.getCountyCentroid(normalizedFips)) {
-            Utils.showToast("Rally spillover unavailable: missing centroid data.");
+        if (!this.hasRallyDistanceRatios()) {
+            Utils.showToast("Rally unavailable: missing distance ratio calibration.");
+            return;
+        }
+        if (!this.getCountyCentroid(normalizedFips)) {
+            Utils.showToast("Rally unavailable: missing county centroid data.");
             return;
         }
         
@@ -601,7 +599,8 @@ var Counties = {
         gameData.funds -= 0.5;
         
         var turnoutDisplay = Math.round(spilloverResult.totalAppliedRawTurnout).toLocaleString();
-        var message = 'Regional rally in ' + (county.n || 'County') + ': ' + spilloverResult.countyCount + ' counties impacted, est. turnout +' + turnoutDisplay + '.';
+        var countyWord = spilloverResult.countyCount === 1 ? 'county' : 'counties';
+        var message = 'Regional rally in ' + (county.n || 'County') + ': ' + spilloverResult.countyCount + ' ' + countyWord + ' impacted, est. turnout +' + turnoutDisplay + '.';
         Utils.addLog(message);
         Campaign.updateHUD();
         Campaign.colorMap();
