@@ -5,6 +5,12 @@
 var Counties = {
     currentState: null,
     countyData: {},
+    rallyDistanceRatios: {
+        lower48: null,
+        alaska: null
+    },
+    RALLY_RADIUS_MILES: 120,
+    MAX_RALLY_ATTENDANCE: 65000,
     
     // Normalize FIPS code by ensuring it's a 5-digit string with leading zeros
     // Ensures consistent FIPS format (e.g., "04013", "01001")
@@ -49,6 +55,8 @@ var Counties = {
                     c.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
                 }
                 
+                Counties.initializeRallyDistanceRatios();
+                
                 // Initialize state margins from county data to ensure consistency
                 // This prevents the bug where first campaign action causes large margin shifts
                 // Defensive checks ensure globals are loaded (this runs in async callback)
@@ -64,6 +72,156 @@ var Counties = {
             }
         };
         xhr.send();
+    },
+    
+    getCountyCentroid: function(fips) {
+        var normalizedFips = this.normalizeFips(fips);
+        var county = this.countyData[normalizedFips];
+        if (!county) return null;
+        
+        var x = Number(county.centroidX);
+        var y = Number(county.centroidY);
+        if (!isFinite(x) || !isFinite(y)) return null;
+        
+        return { x: x, y: y };
+    },
+    
+    getPixelDistance: function(pointA, pointB) {
+        if (!pointA || !pointB) return Infinity;
+        var dx = pointA.x - pointB.x;
+        var dy = pointA.y - pointB.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    },
+    
+    calculateRallyDistanceRatios: function() {
+        var laCentroid = this.getCountyCentroid('06037');
+        var nyCentroid = this.getCountyCentroid('36061');
+        
+        if (!laCentroid || !nyCentroid) {
+            return null;
+        }
+        
+        var pixelDistance = this.getPixelDistance(laCentroid, nyCentroid);
+        if (!isFinite(pixelDistance) || pixelDistance <= 0) {
+            return null;
+        }
+        
+        var lower48Ratio = 2445 / pixelDistance;
+        return {
+            lower48: lower48Ratio,
+            alaska: lower48Ratio / 0.35
+        };
+    },
+    
+    initializeRallyDistanceRatios: function() {
+        var ratios = this.calculateRallyDistanceRatios();
+        if (!ratios) {
+            console.warn('⚠️ Unable to initialize rally distance ratios. Missing/invalid county centroids.');
+            return;
+        }
+        this.rallyDistanceRatios = ratios;
+    },
+    
+    getMilesPerPixelRatio: function(stateFips) {
+        if (!this.rallyDistanceRatios || !this.rallyDistanceRatios.lower48 || !this.rallyDistanceRatios.alaska) {
+            return null;
+        }
+        return stateFips === '02' ? this.rallyDistanceRatios.alaska : this.rallyDistanceRatios.lower48;
+    },
+    
+    getStateCodeFromFips: function(stateFips) {
+        for (var stateCode in STATES) {
+            if (STATES[stateCode] && STATES[stateCode].fips === stateFips) {
+                return stateCode;
+            }
+        }
+        return null;
+    },
+    
+    applyRallySpillover: function(targetCountyID) {
+        var targetFips = this.normalizeFips(targetCountyID);
+        var targetCounty = this.countyData[targetFips];
+        if (!targetCounty) return null;
+        
+        var targetCentroid = this.getCountyCentroid(targetFips);
+        if (!targetCentroid) return null;
+        
+        var baseBoost = (typeof PERSUASION_CONSTANTS !== 'undefined' && typeof PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST === 'number')
+            ? PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST
+            : 0.05;
+        var candidates = [];
+        var totalRawTurnout = 0;
+        
+        for (var fips in this.countyData) {
+            var county = this.countyData[fips];
+            var normalizedFips = this.normalizeFips(fips);
+            var stateFips = normalizedFips.substring(0, 2);
+            
+            if (stateFips === '15') continue; // No spillover for Hawaii
+            
+            var centroid = this.getCountyCentroid(normalizedFips);
+            if (!centroid) continue;
+            
+            var milesPerPixel = this.getMilesPerPixelRatio(stateFips);
+            if (!milesPerPixel) continue;
+            
+            var pixelDistance = this.getPixelDistance(targetCentroid, centroid);
+            var distanceMiles = pixelDistance * milesPerPixel;
+            if (distanceMiles > this.RALLY_RADIUS_MILES) continue;
+            
+            var decay = Math.max(0, 1 - (distanceMiles / this.RALLY_RADIUS_MILES));
+            var provisionalBoost = baseBoost * decay;
+            var rawTurnout = (county.p || 0) * provisionalBoost;
+            if (rawTurnout <= 0) continue;
+            
+            candidates.push({
+                fips: normalizedFips,
+                stateFips: stateFips,
+                county: county,
+                provisionalBoost: provisionalBoost,
+                rawTurnout: rawTurnout
+            });
+            totalRawTurnout += rawTurnout;
+        }
+        
+        var scaleFactor = 1;
+        if (totalRawTurnout > this.MAX_RALLY_ATTENDANCE) {
+            scaleFactor = this.MAX_RALLY_ATTENDANCE / totalRawTurnout;
+        }
+        
+        var totalAppliedRawTurnout = 0;
+        var affectedStates = {};
+        
+        for (var i = 0; i < candidates.length; i++) {
+            var entry = candidates[i];
+            var countyEntry = entry.county;
+            if (!countyEntry.turnout) {
+                countyEntry.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+            }
+            
+            var scaledBoost = entry.provisionalBoost * scaleFactor;
+            totalAppliedRawTurnout += entry.rawTurnout * scaleFactor;
+            
+            if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
+                countyEntry.turnout.player = Math.min(1.3, (countyEntry.turnout.player || 1.0) + scaledBoost);
+            } else {
+                countyEntry.turnout.thirdParty = Math.min(1.3, (countyEntry.turnout.thirdParty || 0.7) + scaledBoost);
+            }
+            
+            var stateCode = this.getStateCodeFromFips(entry.stateFips);
+            if (stateCode) affectedStates[stateCode] = true;
+        }
+        
+        for (var affectedStateCode in affectedStates) {
+            this.updateStateFromCounties(affectedStateCode);
+        }
+        
+        return {
+            countyCount: candidates.length,
+            totalRawTurnout: totalRawTurnout,
+            totalAppliedRawTurnout: totalAppliedRawTurnout,
+            scaleFactor: scaleFactor
+        };
     },
     
     // Apply third-party toggle - redistribute or include third-party votes
@@ -376,33 +534,17 @@ var Counties = {
         Campaign.saveState();
         
         var county = this.countyData[normalizedFips];
-        
-        // Apply turnout boost to this county - more realistic values (3-8% boost)
-        var turnoutBoost = 0.03 + Math.random() * 0.05; // 3-8% boost
-        
-        if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
-        
-        if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
-            county.turnout.player = (county.turnout.player || 1.0) + turnoutBoost;
-        } else {
-            county.turnout.thirdParty = (county.turnout.thirdParty || 0.7) + (turnoutBoost * 0.5);
+        var spilloverResult = this.applyRallySpillover(normalizedFips);
+        if (!spilloverResult) {
+            Utils.showToast("Rally spillover unavailable: missing centroid data.");
+            return;
         }
-        
-        // Cap turnout at 1.3 (130% - more realistic)
-        county.turnout.player = Math.min(1.3, county.turnout.player || 1.0);
-        county.turnout.thirdParty = Math.min(1.3, county.turnout.thirdParty || 0.7);
-        
-        // Apply smaller boost to adjacent counties
-        var adjacentBoost = turnoutBoost * 0.3;
-        // For simplicity, boost nearby counties (would need proper adjacency data)
         
         gameData.energy -= 1;
         gameData.funds -= 0.5;
         
-        // Update state-level margin based on county votes
-        this.updateStateFromCounties(this.currentState);
-        
-        var message = 'County rally in ' + (county.n || 'County') + '! Turnout boost: +' + (turnoutBoost * 100).toFixed(1) + '%';
+        var attendanceText = Math.round(spilloverResult.totalAppliedRawTurnout).toLocaleString();
+        var message = 'Regional rally in ' + (county.n || 'County') + ': ' + spilloverResult.countyCount + ' counties impacted, est. turnout +' + attendanceText + '.';
         Utils.addLog(message);
         Campaign.updateHUD();
         Campaign.colorMap();
