@@ -152,6 +152,16 @@ var Counties = {
         return stateFips === '02' ? this.rallyDistanceRatios.alaska : this.rallyDistanceRatios.lower48;
     },
     
+    hasRallyDistanceRatios: function() {
+        return !!(
+            this.rallyDistanceRatios &&
+            isFinite(this.rallyDistanceRatios.lower48) &&
+            isFinite(this.rallyDistanceRatios.alaska) &&
+            this.rallyDistanceRatios.lower48 > 0 &&
+            this.rallyDistanceRatios.alaska > 0
+        );
+    },
+    
     getStateCodeFromFips: function(stateFips) {
         for (var stateCode in STATES) {
             if (STATES[stateCode] && STATES[stateCode].fips === stateFips) {
@@ -166,10 +176,10 @@ var Counties = {
         var targetCounty = this.countyData[targetFips];
         if (!targetCounty) return null;
         
-        if (!this.getMilesPerPixelRatio('01')) {
+        if (!this.hasRallyDistanceRatios()) {
             this.initializeRallyDistanceRatios();
         }
-        if (!this.getMilesPerPixelRatio('01')) return null;
+        if (!this.hasRallyDistanceRatios()) return null;
         
         var targetCentroid = this.getCountyCentroid(targetFips);
         if (!targetCentroid) return null;
@@ -570,6 +580,13 @@ var Counties = {
             Utils.showToast("Need $0.5M for county rally!");
             return;
         }
+        if (!this.hasRallyDistanceRatios()) {
+            this.initializeRallyDistanceRatios();
+        }
+        if (!this.hasRallyDistanceRatios() || !this.getCountyCentroid(normalizedFips)) {
+            Utils.showToast("Rally spillover unavailable: missing centroid data.");
+            return;
+        }
         
         Campaign.saveState();
         
@@ -583,8 +600,8 @@ var Counties = {
         gameData.energy -= 1;
         gameData.funds -= 0.5;
         
-        var appliedTurnoutText = Math.round(spilloverResult.totalAppliedRawTurnout).toLocaleString();
-        var message = 'Regional rally in ' + (county.n || 'County') + ': ' + spilloverResult.countyCount + ' counties impacted, est. turnout +' + appliedTurnoutText + '.';
+        var turnoutDisplay = Math.round(spilloverResult.totalAppliedRawTurnout).toLocaleString();
+        var message = 'Regional rally in ' + (county.n || 'County') + ': ' + spilloverResult.countyCount + ' counties impacted, est. turnout +' + turnoutDisplay + '.';
         Utils.addLog(message);
         Campaign.updateHUD();
         Campaign.colorMap();
