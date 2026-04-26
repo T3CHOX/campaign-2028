@@ -14,6 +14,11 @@ var Counties = {
     DEFAULT_MAJOR_PARTY_TURNOUT: 1.0,
     DEFAULT_THIRD_PARTY_TURNOUT: 0.7,
     MAX_TURNOUT_MULTIPLIER: 1.3,
+    CALIBRATION_LA_FIPS: '06037',
+    CALIBRATION_NY_FIPS: '36061',
+    CALIBRATION_DISTANCE_MILES: 2445,
+    ALASKA_MAP_SCALE_FACTOR: 0.35,
+    HAWAII_STATE_FIPS: '15',
     
     // Normalize FIPS code by ensuring it's a 5-digit string with leading zeros
     // Ensures consistent FIPS format (e.g., "04013", "01001")
@@ -102,8 +107,8 @@ var Counties = {
     },
     
     calculateRallyDistanceRatios: function() {
-        var laCentroid = this.getCountyCentroid('06037');
-        var nyCentroid = this.getCountyCentroid('36061');
+        var laCentroid = this.getCountyCentroid(this.CALIBRATION_LA_FIPS);
+        var nyCentroid = this.getCountyCentroid(this.CALIBRATION_NY_FIPS);
         
         if (!laCentroid || !nyCentroid) {
             return null;
@@ -116,12 +121,12 @@ var Counties = {
         
         // Calibrate miles-per-pixel using LA County (06037) ↔ New York County (36061),
         // which are approximately 2,445 real-world miles apart.
-        var lower48Ratio = 2445 / pixelDistance;
+        var lower48Ratio = this.CALIBRATION_DISTANCE_MILES / pixelDistance;
         return {
             lower48: lower48Ratio,
             // Alaska is intentionally scaled down in the SVG map (~35% of lower-48 scale),
             // so convert with an adjusted miles-per-pixel ratio.
-            alaska: lower48Ratio / 0.35
+            alaska: lower48Ratio / this.ALASKA_MAP_SCALE_FACTOR
         };
     },
     
@@ -190,7 +195,7 @@ var Counties = {
             var stateFips = normalizedFips.substring(0, 2);
             
             // Hawaii is intentionally excluded from mainland/Alaska distance spillover.
-            if (stateFips === '15') continue;
+            if (stateFips === this.HAWAII_STATE_FIPS) continue;
             
             var centroid = this.getCountyCentroid(normalizedFips);
             if (!centroid) continue;
@@ -600,7 +605,10 @@ var Counties = {
         
         var turnoutDisplay = Math.round(spilloverResult.totalAppliedRawTurnout).toLocaleString();
         var countyWord = spilloverResult.countyCount === 1 ? 'county' : 'counties';
-        var message = 'Regional rally in ' + (county.n || 'County') + ': ' + spilloverResult.countyCount + ' ' + countyWord + ' impacted, est. turnout +' + turnoutDisplay + '.';
+        var countyName = county.n || 'County';
+        var impactText = spilloverResult.countyCount + ' ' + countyWord + ' impacted';
+        var turnoutText = 'est. turnout +' + turnoutDisplay;
+        var message = 'Regional rally in ' + countyName + ': ' + impactText + ', ' + turnoutText + '.';
         Utils.addLog(message);
         Campaign.updateHUD();
         Campaign.colorMap();
