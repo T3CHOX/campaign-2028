@@ -329,18 +329,11 @@ var Election = {
 
         var maxTurnoutMultiplier = 1.0;
         if (county && county.turnout) {
-            var multipliers = [
-                county.turnout.player,
-                county.turnout.demOpponent,
-                county.turnout.repOpponent,
-                county.turnout.thirdParty
-            ];
-            for (var i = 0; i < multipliers.length; i++) {
-                var m = multipliers[i];
-                if (typeof m === 'number' && isFinite(m)) {
-                    maxTurnoutMultiplier = Math.max(maxTurnoutMultiplier, m);
-                }
-            }
+            var playerTurnout = (typeof county.turnout.player === 'number' && isFinite(county.turnout.player)) ? county.turnout.player : 1.0;
+            var demOpponentTurnout = (typeof county.turnout.demOpponent === 'number' && isFinite(county.turnout.demOpponent)) ? county.turnout.demOpponent : 1.0;
+            var repOpponentTurnout = (typeof county.turnout.repOpponent === 'number' && isFinite(county.turnout.repOpponent)) ? county.turnout.repOpponent : 1.0;
+            var thirdPartyTurnout = (typeof county.turnout.thirdParty === 'number' && isFinite(county.turnout.thirdParty)) ? county.turnout.thirdParty : 1.0;
+            maxTurnoutMultiplier = Math.max(1.0, playerTurnout, demOpponentTurnout, repOpponentTurnout, thirdPartyTurnout);
         }
 
         var elasticityWindow = Math.max(0, maxCap - baseTurnout);

@@ -51,11 +51,11 @@ function main() {
     }
 
     var headers = parseCsvLine(lines[0]);
-    var fipsIdx = headers.indexOf('FIP (NOT STANDARIZED)');
-    if (fipsIdx === -1) fipsIdx = headers.indexOf('FIP (NOT STANDARDIZED)');
+    var fipsIdx = headers.indexOf('FIP (NOT STANDARDIZED)');
+    if (fipsIdx === -1) fipsIdx = headers.indexOf('FIP (NOT STANDARIZED)');
     var ruralIdx = headers.indexOf('% Rural');
     if (fipsIdx === -1 || ruralIdx === -1) {
-        throw new Error('CSV headers must include "FIP (NOT STANDARIZED)" or "FIP (NOT STANDARDIZED)", and "% Rural".');
+        throw new Error('CSV headers must include "FIP (NOT STANDARDIZED)" (legacy typo "FIP (NOT STANDARIZED)" also accepted), and "% Rural".');
     }
 
     var updated = 0;
