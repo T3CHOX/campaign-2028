@@ -83,7 +83,7 @@ function main() {
         updated++;
     }
 
-    var mergedJson = JSON.stringify(countyData);
+    var mergedJson = JSON.stringify(countyData, null, 2);
     if (shouldWrite) {
         fs.writeFileSync(countyJsonPath, mergedJson + '\n', 'utf8');
     } else {

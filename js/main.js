@@ -470,7 +470,8 @@ function calculateCompositeTag(tag, value, county) {
     var urbanIndex = _getCountyUrbanIndex(county);
     var suburbanIndex = _getCountySuburbanIndex(county);
     var ruralShare = _getCountyIgValue(county, 'rural');
-    if (ruralShare <= 0) ruralShare = _getCountyRuralIndex(county);
+    var hasExplicitRuralShare = !!(county && county.ig && county.ig.rural !== undefined && county.ig.rural !== null);
+    if (!hasExplicitRuralShare) ruralShare = _getCountyRuralIndex(county);
     var collegeShare = _getCountyIgValue(county, 'college');
     var nonCollegeShare = 1 - collegeShare;
     var centristShare = _getCountyIgValue(county, 'centrist');
