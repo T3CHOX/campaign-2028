@@ -386,27 +386,76 @@ function _mapGroupToIgKey(groupId) {
 
 function _getCountyIgValue(county, key) {
     if (key === 'youth') {
-        return county && county.t === 'Urban' ? 0.28 : (county && county.t === 'Mixed' ? 0.22 : 0.18);
+        var tierYouth = county && county.t ? county.t : 'Suburban/Mixed';
+        if (tierYouth === 'Highly Urban') return 0.28;
+        if (tierYouth === 'Urban/Dense Suburban') return 0.24;
+        if (tierYouth === 'Suburban/Mixed') return 0.22;
+        if (tierYouth === 'Rural/Small Town') return 0.20;
+        return 0.18;
     }
     if (key === 'seniors') {
-        return county && county.t === 'Urban' ? 0.16 : (county && county.t === 'Mixed' ? 0.20 : 0.24);
+        var tierSeniors = county && county.t ? county.t : 'Suburban/Mixed';
+        if (tierSeniors === 'Highly Urban') return 0.16;
+        if (tierSeniors === 'Urban/Dense Suburban') return 0.19;
+        if (tierSeniors === 'Suburban/Mixed') return 0.20;
+        if (tierSeniors === 'Rural/Small Town') return 0.22;
+        return 0.24;
     }
     if (!county || !county.ig || county.ig[key] === undefined || county.ig[key] === null) return 0;
     return Math.max(0, Math.min(100, county.ig[key])) / 100;
 }
 
 function _getCountyUrbanIndex(county) {
-    if (!county) return 0.4;
-    if (county.t === 'Urban') return 0.95;
-    if (county.t === 'Mixed') return 0.55;
-    return 0.2;
+    var tier = county && county.t ? county.t : 'Suburban/Mixed';
+    if (tier === 'Highly Urban') return 1.0;
+    if (tier === 'Urban/Dense Suburban') return 0.7;
+    if (tier === 'Suburban/Mixed') return 0.4;
+    if (tier === 'Rural/Small Town') return 0.1;
+    return 0.0;
 }
 
 function _getCountySuburbanIndex(county) {
-    if (!county) return 0.25;
-    if (county.t === 'Mixed') return 0.75;
-    if (county.t === 'Urban') return 0.35;
-    return 0.2;
+    var tier = county && county.t ? county.t : 'Suburban/Mixed';
+    if (tier === 'Highly Urban') return 0.2;
+    if (tier === 'Urban/Dense Suburban') return 0.9;
+    if (tier === 'Suburban/Mixed') return 0.8;
+    if (tier === 'Rural/Small Town') return 0.3;
+    return 0.0;
+}
+
+function _getCountyRuralIndex(county) {
+    var tier = county && county.t ? county.t : 'Suburban/Mixed';
+    if (tier === 'Highly Urban') return 0.0;
+    if (tier === 'Urban/Dense Suburban') return 0.1;
+    if (tier === 'Suburban/Mixed') return 0.4;
+    if (tier === 'Rural/Small Town') return 0.8;
+    return 1.0;
+}
+
+function _getCountyTierGroupWeight(county, groupType) {
+    var tier = county && county.t ? county.t : 'Suburban/Mixed';
+    if (groupType === 'urban') {
+        if (tier === 'Highly Urban') return 0.95;
+        if (tier === 'Urban/Dense Suburban') return 0.70;
+        if (tier === 'Suburban/Mixed') return 0.35;
+        if (tier === 'Rural/Small Town') return 0.10;
+        return 0.02;
+    }
+    if (groupType === 'suburban') {
+        if (tier === 'Highly Urban') return 0.15;
+        if (tier === 'Urban/Dense Suburban') return 0.80;
+        if (tier === 'Suburban/Mixed') return 0.65;
+        if (tier === 'Rural/Small Town') return 0.25;
+        return 0.05;
+    }
+    if (groupType === 'rural') {
+        if (tier === 'Highly Urban') return 0.02;
+        if (tier === 'Urban/Dense Suburban') return 0.15;
+        if (tier === 'Suburban/Mixed') return 0.40;
+        if (tier === 'Rural/Small Town') return 0.75;
+        return 0.95;
+    }
+    return 0;
 }
 
 function _countyInRegion(county, regionName) {
@@ -421,6 +470,7 @@ function calculateCompositeTag(tag, value, county) {
     var urbanIndex = _getCountyUrbanIndex(county);
     var suburbanIndex = _getCountySuburbanIndex(county);
     var ruralShare = _getCountyIgValue(county, 'rural');
+    if (ruralShare <= 0) ruralShare = _getCountyRuralIndex(county);
     var collegeShare = _getCountyIgValue(county, 'college');
     var nonCollegeShare = 1 - collegeShare;
     var centristShare = _getCountyIgValue(county, 'centrist');
@@ -509,9 +559,9 @@ function calculateCompositeTag(tag, value, county) {
         case 'women':
             return value * 0.51;
         case 'youth':
-            return value * (county && county.t === 'Urban' ? 0.28 : (county && county.t === 'Mixed' ? 0.22 : 0.18));
+            return value * _getCountyIgValue(county, 'youth');
         case 'seniors':
-            return value * (county && county.t === 'Urban' ? 0.16 : (county && county.t === 'Mixed' ? 0.20 : 0.24));
+            return value * _getCountyIgValue(county, 'seniors');
         default:
             return null;
     }
@@ -542,21 +592,20 @@ function _applyGroupModsToCounties(groupMods, voteKey, scale) {
             } else if (igKey !== null && igKey !== undefined && county.ig && county.ig[igKey] !== undefined) {
                 groupWeight = county.ig[igKey] / 100;
             } else if (normalizedGroupId === 'urban') {
-                groupWeight = (county.t === 'Urban') ? 0.8 : (county.t === 'Mixed' ? 0.3 : 0.05);
+                groupWeight = _getCountyTierGroupWeight(county, 'urban');
             } else if (normalizedGroupId === 'suburban') {
-                groupWeight = (county.t === 'Mixed') ? 0.6 : (county.t === 'Urban' ? 0.25 : 0.1);
+                groupWeight = _getCountyTierGroupWeight(county, 'suburban');
             } else if (normalizedGroupId === 'rural') {
-                groupWeight = (county.t === 'Rural') ? 0.9 : (county.t === 'Mixed' ? 0.35 : 0.05);
+                groupWeight = _getCountyTierGroupWeight(county, 'rural');
             } else if (normalizedGroupId === 'noncollege' && county.ig && county.ig.college !== undefined) {
                 groupWeight = (100 - county.ig.college) / 100;
             } else if (normalizedGroupId === 'bluecollar' && county.ig && county.ig.college !== undefined) {
                 // Approximate bluecollar from noncollege + rural signal
                 groupWeight = ((100 - county.ig.college) / 100) * 0.6;
             } else if (normalizedGroupId === 'youth') {
-                // Approximate: urban counties skew younger
-                groupWeight = (county.t === 'Urban') ? 0.28 : (county.t === 'Mixed' ? 0.22 : 0.18);
+                groupWeight = _getCountyIgValue(county, 'youth');
             } else if (normalizedGroupId === 'seniors') {
-                groupWeight = (county.t === 'Urban') ? 0.16 : (county.t === 'Mixed' ? 0.20 : 0.24);
+                groupWeight = _getCountyIgValue(county, 'seniors');
             } else if (normalizedGroupId === 'women') {
                 groupWeight = 0.51; // ~51% of every county is women
             } else {
@@ -743,17 +792,17 @@ function recomputeInterestGroupSupport() {
             if (igKey !== null && igKey !== undefined && county.ig && county.ig[igKey] !== undefined) {
                 groupShare = county.ig[igKey] / 100;
             } else if (groupId === 'urban') {
-                groupShare = (county.t === 'Urban') ? 0.8 : (county.t === 'Mixed' ? 0.3 : 0.05);
+                groupShare = _getCountyTierGroupWeight(county, 'urban');
             } else if (groupId === 'suburban') {
-                groupShare = (county.t === 'Mixed') ? 0.6 : (county.t === 'Urban' ? 0.25 : 0.1);
+                groupShare = _getCountyTierGroupWeight(county, 'suburban');
             } else if (groupId === 'rural') {
-                groupShare = (county.t === 'Rural') ? 0.9 : (county.t === 'Mixed' ? 0.35 : 0.05);
+                groupShare = _getCountyTierGroupWeight(county, 'rural');
             } else if (groupId === 'noncollege' && county.ig && county.ig.college !== undefined) {
                 groupShare = (100 - county.ig.college) / 100;
             } else if (groupId === 'youth') {
-                groupShare = (county.t === 'Urban') ? 0.28 : (county.t === 'Mixed' ? 0.22 : 0.18);
+                groupShare = _getCountyIgValue(county, 'youth');
             } else if (groupId === 'seniors') {
-                groupShare = (county.t === 'Urban') ? 0.16 : (county.t === 'Mixed' ? 0.20 : 0.24);
+                groupShare = _getCountyIgValue(county, 'seniors');
             } else if (groupId === 'women') {
                 groupShare = 0.51;
             } else if (groupId === 'bluecollar' && county.ig && county.ig.college !== undefined) {

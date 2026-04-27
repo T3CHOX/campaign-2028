@@ -300,23 +300,52 @@ var Election = {
     },
 
     getCountyTurnoutRate: function(county) {
-        var collegeShare = county && county.ig && county.ig.college !== undefined
-            ? Math.max(0, Math.min(100, county.ig.college)) / 100
-            : TURNOUT_MODEL.DEFAULT_COLLEGE_SHARE;
-        var ruralShare = county && county.ig && county.ig.rural !== undefined
-            ? Math.max(0, Math.min(100, county.ig.rural)) / 100
-            : (county && county.t === 'Rural' ? TURNOUT_MODEL.RURAL_COUNTY_SHARE : TURNOUT_MODEL.DEFAULT_RURAL_SHARE);
-        var urbanIndex = county && county.t === 'Urban' ? 1 : (county && county.t === 'Mixed' ? TURNOUT_MODEL.DEFAULT_URBAN_INDEX : TURNOUT_MODEL.RURAL_URBAN_INDEX);
-        // Tuned baseline turnout model:
-        // - starts near modern presidential turnout (~53% of county total population proxy, since dataset uses total population not VAP),
-        // - rises in higher-education / urban counties,
-        // - softens in heavily rural counties,
-        // - clamped to a realistic 50%–65% envelope before campaign turnout modifiers apply.
-        var baselineTurnout = TURNOUT_MODEL.BASELINE +
-            (collegeShare * TURNOUT_MODEL.COLLEGE_MULTIPLIER) +
-            (urbanIndex * TURNOUT_MODEL.URBAN_MULTIPLIER) -
-            (ruralShare * TURNOUT_MODEL.RURAL_PENALTY);
-        return Math.max(TURNOUT_MODEL.MIN_TURNOUT, Math.min(TURNOUT_MODEL.MAX_TURNOUT, baselineTurnout));
+        var countyType = county && county.t ? county.t : 'Suburban/Mixed';
+        var baseTurnout = 0.56;
+        var maxCap = 0.65;
+
+        switch (countyType) {
+            case 'Highly Urban':
+                baseTurnout = 0.52;
+                maxCap = 0.58;
+                break;
+            case 'Urban/Dense Suburban':
+                baseTurnout = 0.58;
+                maxCap = 0.68;
+                break;
+            case 'Suburban/Mixed':
+                baseTurnout = 0.56;
+                maxCap = 0.65;
+                break;
+            case 'Rural/Small Town':
+                baseTurnout = 0.54;
+                maxCap = 0.64;
+                break;
+            case 'Deep Rural':
+                baseTurnout = 0.58;
+                maxCap = 0.61;
+                break;
+        }
+
+        var maxTurnoutMultiplier = 1.0;
+        if (county && county.turnout) {
+            var multipliers = [
+                county.turnout.player,
+                county.turnout.demOpponent,
+                county.turnout.repOpponent,
+                county.turnout.thirdParty
+            ];
+            for (var i = 0; i < multipliers.length; i++) {
+                var m = multipliers[i];
+                if (typeof m === 'number' && isFinite(m)) {
+                    maxTurnoutMultiplier = Math.max(maxTurnoutMultiplier, m);
+                }
+            }
+        }
+
+        var elasticityWindow = Math.max(0, maxCap - baseTurnout);
+        var turnoutRate = baseTurnout + Math.max(0, maxTurnoutMultiplier - 1) * elasticityWindow;
+        return Math.max(baseTurnout, Math.min(maxCap, turnoutRate));
     },
 
     getCountyVoterPool: function(county, reportingFactor, decidedMultiplier, errorFactor) {
