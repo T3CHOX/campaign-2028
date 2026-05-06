@@ -6,6 +6,7 @@
     <title>Decision 2028 | Campaign Simulator</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body>
 
@@ -140,7 +141,7 @@
                 <div class="progress-bar-bg"><div class="progress-bar-fill" id="ev-bar"></div></div>
             </div>
             <div class="hud-right">
-                <button class="interest-groups-btn" onclick="app.openInterestGroups()">📊 INTEREST GROUPS</button>
+                <button class="interest-groups-btn" onclick="app.openInterestGroups()"><i class="fa-solid fa-users"></i> INTEREST GROUPS</button>
                 <button class="undo-btn" onclick="app.undoLastAction()">⟲ UNDO</button>
                 <div class="stat-group">
                     <label>ENERGY</label>
@@ -183,18 +184,20 @@
                     <div class="action-menu">
                         <h4>CAMPAIGN STRATEGY</h4>
                         <div class="action-grid">
-                            <button class="act-btn" onclick="app.handleAction('fundraise')"><span>💰</span><span>FUNDRAISE</span></button>
-                            <button class="act-btn" onclick="app.handleAction('rally')"><span>📣</span><span>RALLY</span></button>
-                            <button class="act-btn" onclick="app.openStateBio()"><span>📖</span><span>INTEL</span></button>
-                            <button class="act-btn" onclick="app.openCountyView()"><span>🗺️</span><span>BREAKDOWN</span></button>
-                            <button class="act-btn" onclick="app.openIssuesPanel()"><span>📊</span><span>ISSUES</span></button>
-                            <button class="act-btn" onclick="app.handleAction('speech')"><span>🎙️</span><span>SPEECH</span></button>
+                            <button class="act-btn" onclick="app.handleAction('fundraise')"><span><i class="fa-solid fa-sack-dollar"></i></span><span>FUNDRAISE</span></button>
+                            <button class="act-btn" onclick="app.handleAction('rally')"><span><i class="fa-solid fa-bullhorn"></i></span><span>RALLY</span></button>
+                            <button class="act-btn" onclick="app.handleAction('field')"><span><i class="fa-solid fa-people-group"></i></span><span>FIELD OPS</span></button>
+                            <button class="act-btn" onclick="app.handleAction('digital')"><span><i class="fa-solid fa-laptop"></i></span><span>DIGITAL</span></button>
+                            <button class="act-btn" onclick="app.openStateBio()"><span><i class="fa-solid fa-book-open"></i></span><span>INTEL</span></button>
+                            <button class="act-btn" onclick="app.openCountyView()"><span><i class="fa-solid fa-map"></i></span><span>BREAKDOWN</span></button>
+                            <button class="act-btn" onclick="app.openIssuesPanel()"><span><i class="fa-solid fa-chart-line"></i></span><span>ISSUES</span></button>
+                            <button class="act-btn" onclick="app.handleAction('speech')"><span><i class="fa-solid fa-microphone"></i></span><span>SPEECH</span></button>
                         </div>
                     </div>
                     
                     <!-- Ad Campaign Tile (Bottom, Spans 2 columns) -->
                     <div class="ad-campaign-tile">
-                        <h4>📺 AD CAMPAIGN</h4>
+                        <h4><i class="fa-solid fa-tv"></i> AD CAMPAIGN</h4>
                         <div class="ad-controls">
                             <div class="control-group">
                                 <label>Issue:</label>
@@ -220,7 +223,7 @@
                     <div class="issues-list"><h4>TOP ISSUES</h4><div id="sp-issues-list"></div></div>
                 </div>
                 <div id="empty-msg">
-                    <div class="empty-icon">🗳️</div>
+                    <div class="empty-icon"><i class="fa-solid fa-person-booth"></i></div>
                     <p>Select a State</p>
                     <p style="font-size:  0.8rem; color: #666;">Click any state to view details</p>
                 </div>
@@ -421,6 +424,56 @@
                 </div>
                 
                 <div id="speech-issues-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="field-modal" class="hidden">
+        <div class="modal-box speech-modal-box">
+            <div class="modal-header">
+                <h2>FIELD OPERATIONS</h2>
+                <button class="modal-close-btn" onclick="app.closeFieldModal()">×</button>
+            </div>
+            <div id="field-content">
+                <p style="margin-bottom: 15px; color: #ccc;">Deploy staff and volunteers to mobilize a specific demographic in this state.</p>
+                <div class="control-group">
+                    <label>Target Group:</label>
+                    <select id="field-group-select" class="issue-dropdown"></select>
+                </div>
+                <div class="control-group">
+                    <label>Intensity:</label>
+                    <select id="field-intensity-select" class="intensity-dropdown">
+                        <option value="1">Local Push ($2.5M)</option>
+                        <option value="2">Regional Surge ($5.0M)</option>
+                        <option value="3">Statewide Blitz ($7.5M)</option>
+                    </select>
+                </div>
+                <button class="queue-ad-btn" onclick="app.queueFieldOperation()">QUEUE FIELD OPS</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="digital-modal" class="hidden">
+        <div class="modal-box speech-modal-box">
+            <div class="modal-header">
+                <h2>DIGITAL CAMPAIGN</h2>
+                <button class="modal-close-btn" onclick="app.closeDigitalModal()">×</button>
+            </div>
+            <div id="digital-content">
+                <p style="margin-bottom: 15px; color: #ccc;">Target online messaging and social ads to energize a demographic cohort.</p>
+                <div class="control-group">
+                    <label>Target Group:</label>
+                    <select id="digital-group-select" class="issue-dropdown"></select>
+                </div>
+                <div class="control-group">
+                    <label>Intensity:</label>
+                    <select id="digital-intensity-select" class="intensity-dropdown">
+                        <option value="1">Precision Target ($1.5M)</option>
+                        <option value="2">Platform Push ($3.0M)</option>
+                        <option value="3">National Trending ($4.5M)</option>
+                    </select>
+                </div>
+                <button class="queue-ad-btn" onclick="app.queueDigitalCampaign()">QUEUE DIGITAL</button>
             </div>
         </div>
     </div>

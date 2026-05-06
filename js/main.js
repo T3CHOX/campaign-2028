@@ -711,6 +711,60 @@ function _buildActiveCandidatesList() {
     return list;
 }
 
+function _buildCandidateByIdMap() {
+    var map = {};
+    if (gameData.candidate) map[gameData.candidate.id] = gameData.candidate;
+    if (gameData.demTicket && gameData.demTicket.pres) map[gameData.demTicket.pres.id] = gameData.demTicket.pres;
+    if (gameData.repTicket && gameData.repTicket.pres) map[gameData.repTicket.pres.id] = gameData.repTicket.pres;
+    if (gameData.thirdTickets) {
+        var tpCodes = ['PSL', 'G', 'L', 'I'];
+        for (var i = 0; i < tpCodes.length; i++) {
+            var tp = tpCodes[i];
+            if (gameData.thirdTickets[tp] && gameData.thirdTickets[tp].pres) {
+                map[gameData.thirdTickets[tp].pres.id] = gameData.thirdTickets[tp].pres;
+            }
+        }
+    }
+    return map;
+}
+
+function _computeIssueGroupModifiers(candidate) {
+    var modifiers = {};
+    if (!candidate || !candidate.issuePositions || typeof ISSUE_GROUP_BASELINE_EFFECTS === 'undefined') {
+        return modifiers;
+    }
+
+    for (var issueId in ISSUE_GROUP_BASELINE_EFFECTS) {
+        var effects = ISSUE_GROUP_BASELINE_EFFECTS[issueId];
+        var position = candidate.issuePositions[issueId] || 0;
+        var normalized = position / 10; // -1..1
+        for (var groupId in effects) {
+            var delta = effects[groupId] * (-normalized);
+            modifiers[groupId] = (modifiers[groupId] || 0) + delta;
+        }
+    }
+
+    if (typeof ISSUE_SYNERGY_EFFECTS !== 'undefined') {
+        for (var i = 0; i < ISSUE_SYNERGY_EFFECTS.length; i++) {
+            var synergy = ISSUE_SYNERGY_EFFECTS[i];
+            var threshold = synergy.threshold;
+            var satisfied = true;
+            for (var j = 0; j < synergy.issues.length; j++) {
+                var issueKey = synergy.issues[j];
+                var posValue = candidate.issuePositions[issueKey] || 0;
+                if (threshold < 0 && posValue > threshold) satisfied = false;
+                if (threshold > 0 && posValue < threshold) satisfied = false;
+            }
+            if (!satisfied) continue;
+            for (var effGroup in synergy.effects) {
+                modifiers[effGroup] = (modifiers[effGroup] || 0) + synergy.effects[effGroup];
+            }
+        }
+    }
+
+    return modifiers;
+}
+
 // Initialize per-group turnout tracking (baseline 1.0 = 100%)
 function initInterestGroupTurnout() {
     if (!gameData.interestGroupTurnout) {
@@ -757,6 +811,7 @@ function updateGroupTurnoutFromIssue(issueId, partyCode, intensity) {
 function initializeInterestGroupSupport() {
     gameData.interestGroupSupport = {};
     gameData.interestGroupChanges = {};
+    gameData.interestGroupBaseSupport = {};
     // Actual values are populated by recomputeInterestGroupSupport() which is called
     // right after applyCandidateBuffs() in startGame, once county data is loaded.
 }
@@ -771,9 +826,17 @@ function recomputeInterestGroupSupport() {
     var activeCandidates = _buildActiveCandidatesList();
     if (activeCandidates.length === 0) return;
 
+    var candidateById = _buildCandidateByIdMap();
+    var issueModifiersByCandidate = {};
+    for (var ciMod = 0; ciMod < activeCandidates.length; ciMod++) {
+        var candMod = activeCandidates[ciMod];
+        issueModifiersByCandidate[candMod.id] = _computeIssueGroupModifiers(candidateById[candMod.id]);
+    }
+
     for (var groupId in INTEREST_GROUPS) {
         if (!gameData.interestGroupSupport[groupId]) gameData.interestGroupSupport[groupId] = {};
-        if (!gameData.interestGroupChanges[groupId])  gameData.interestGroupChanges[groupId] = {};
+        if (!gameData.interestGroupChanges[groupId]) gameData.interestGroupChanges[groupId] = {};
+        if (!gameData.interestGroupBaseSupport[groupId]) gameData.interestGroupBaseSupport[groupId] = {};
 
         var igKey = _mapGroupToIgKey(groupId);
 
@@ -837,14 +900,26 @@ function recomputeInterestGroupSupport() {
             totalWeightedVotes += candWeightedVotes[activeCandidates[ci3].id] || 0;
         }
 
+        var updatedSupport = {};
+        var supportTotal = 0;
         for (var ci4 = 0; ci4 < activeCandidates.length; ci4++) {
             var cand4 = activeCandidates[ci4];
-            var prevSupport = gameData.interestGroupSupport[groupId][cand4.id] || 0;
-            var newSupport = totalWeightedVotes > 0
+            var baseSupport = totalWeightedVotes > 0
                 ? (candWeightedVotes[cand4.id] || 0) / totalWeightedVotes * 100
                 : 0;
-            gameData.interestGroupSupport[groupId][cand4.id] = newSupport;
-            gameData.interestGroupChanges[groupId][cand4.id] = newSupport - prevSupport;
+            gameData.interestGroupBaseSupport[groupId][cand4.id] = baseSupport;
+            var issueDelta = (issueModifiersByCandidate[cand4.id] && issueModifiersByCandidate[cand4.id][groupId]) || 0;
+            var adjusted = Math.max(0, baseSupport + issueDelta);
+            updatedSupport[cand4.id] = adjusted;
+            supportTotal += adjusted;
+        }
+
+        for (var ci5 = 0; ci5 < activeCandidates.length; ci5++) {
+            var cand5 = activeCandidates[ci5];
+            var prevSupport = gameData.interestGroupSupport[groupId][cand5.id] || 0;
+            var normalizedSupport = supportTotal > 0 ? (updatedSupport[cand5.id] / supportTotal) * 100 : 0;
+            gameData.interestGroupSupport[groupId][cand5.id] = normalizedSupport;
+            gameData.interestGroupChanges[groupId][cand5.id] = normalizedSupport - prevSupport;
         }
     }
 
@@ -911,6 +986,29 @@ var app = {
         
         var issuesHtml = '';
         var categories = ['Economic', 'Social', 'Healthcare', 'Environment', 'Foreign', 'Governance'];
+
+        // Coalition warning banner
+        var warnings = [];
+        if (typeof ISSUE_COALITION_CONFLICTS !== 'undefined' && gameData.candidate && gameData.candidate.issuePositions) {
+            for (var w = 0; w < ISSUE_COALITION_CONFLICTS.length; w++) {
+                var conflict = ISSUE_COALITION_CONFLICTS[w];
+                var satisfied = true;
+                for (var c = 0; c < conflict.issues.length; c++) {
+                    var req = conflict.issues[c];
+                    var pos = gameData.candidate.issuePositions[req.id] || 0;
+                    if (req.max !== undefined && pos > req.max) satisfied = false;
+                    if (req.min !== undefined && pos < req.min) satisfied = false;
+                }
+                if (satisfied) warnings.push(conflict.label);
+            }
+        }
+
+        if (warnings.length) {
+            issuesHtml += '<div class="coalition-warning">';
+            issuesHtml += '<div class="coalition-warning-title"><span class="coalition-warning-icon"></span>COALITION WARNING</div>';
+            issuesHtml += '<ul>' + warnings.map(function(text) { return '<li>' + text + '</li>'; }).join('') + '</ul>';
+            issuesHtml += '</div>';
+        }
         
         for (var c = 0; c < categories.length; c++) {
             var category = categories[c];
@@ -1092,15 +1190,134 @@ var app = {
         document.getElementById('speech-issues-list').innerHTML = issuesHtml;
         document.getElementById('speech-modal').classList.remove('hidden');
     },
+
+    openFieldModal: function() {
+        if (!gameData.selectedState) {
+            Utils.showToast("Select a state first!");
+            return;
+        }
+        var modal = document.getElementById('field-modal');
+        if (!modal) return;
+        this.initTargetGroupDropdown('field-group-select');
+        modal.classList.remove('hidden');
+    },
+
+    closeFieldModal: function() {
+        var modal = document.getElementById('field-modal');
+        if (modal) modal.classList.add('hidden');
+    },
+
+    openDigitalModal: function() {
+        if (!gameData.selectedState) {
+            Utils.showToast("Select a state first!");
+            return;
+        }
+        var modal = document.getElementById('digital-modal');
+        if (!modal) return;
+        this.initTargetGroupDropdown('digital-group-select');
+        modal.classList.remove('hidden');
+    },
+
+    closeDigitalModal: function() {
+        var modal = document.getElementById('digital-modal');
+        if (modal) modal.classList.add('hidden');
+    },
     
     handleSpeechWithIntensity: function(issueId) {
         var intensitySelect = document.getElementById('speech-intensity-select');
         var intensity = parseInt(intensitySelect.value) || 1;
         Campaign.handleSpeech(issueId, intensity);
     },
+
+    queueFieldOperation: function() {
+        if (!gameData.selectedState) return;
+
+        var groupSelect = document.getElementById('field-group-select');
+        var intensitySelect = document.getElementById('field-intensity-select');
+        if (!groupSelect || !intensitySelect) return;
+
+        var groupId = groupSelect.value;
+        var intensity = parseInt(intensitySelect.value) || 1;
+        if (!groupId) {
+            Utils.showToast("Select a target group!");
+            return;
+        }
+
+        var cost = intensity * PERSUASION_CONSTANTS.FIELD_BASE_COST;
+        var action = {
+            type: 'FIELD',
+            state: gameData.selectedState,
+            groupId: groupId,
+            intensity: intensity,
+            cost: {
+                funds: cost,
+                energy: PERSUASION_CONSTANTS.FIELD_ENERGY_COST
+            }
+        };
+
+        if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(action)) {
+            var groupName = INTEREST_GROUPS[groupId] ? INTEREST_GROUPS[groupId].name : groupId;
+            Utils.showToast("Field ops queued: " + groupName);
+            Utils.addLog("Queued field ops targeting " + groupName + " in " + gameData.states[gameData.selectedState].name);
+            this.updateQueuedAdsDisplay();
+            this.closeFieldModal();
+        }
+    },
+
+    queueDigitalCampaign: function() {
+        if (!gameData.selectedState) return;
+
+        var groupSelect = document.getElementById('digital-group-select');
+        var intensitySelect = document.getElementById('digital-intensity-select');
+        if (!groupSelect || !intensitySelect) return;
+
+        var groupId = groupSelect.value;
+        var intensity = parseInt(intensitySelect.value) || 1;
+        if (!groupId) {
+            Utils.showToast("Select a target group!");
+            return;
+        }
+
+        var cost = intensity * PERSUASION_CONSTANTS.DIGITAL_BASE_COST;
+        var action = {
+            type: 'DIGITAL',
+            state: gameData.selectedState,
+            groupId: groupId,
+            intensity: intensity,
+            cost: {
+                funds: cost,
+                energy: PERSUASION_CONSTANTS.DIGITAL_ENERGY_COST
+            }
+        };
+
+        if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(action)) {
+            var groupName = INTEREST_GROUPS[groupId] ? INTEREST_GROUPS[groupId].name : groupId;
+            Utils.showToast("Digital campaign queued: " + groupName);
+            Utils.addLog("Queued digital campaign targeting " + groupName + " in " + gameData.states[gameData.selectedState].name);
+            this.updateQueuedAdsDisplay();
+            this.closeDigitalModal();
+        }
+    },
     
     closeSpeechModal: function() {
         document.getElementById('speech-modal').classList.add('hidden');
+    },
+
+    initTargetGroupDropdown: function(selectId) {
+        var select = document.getElementById(selectId);
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Select Group...</option>';
+        var groups = (typeof TARGETABLE_GROUPS !== 'undefined') ? TARGETABLE_GROUPS : [];
+        for (var i = 0; i < groups.length; i++) {
+            var groupId = groups[i];
+            var group = INTEREST_GROUPS[groupId];
+            if (!group) continue;
+            var option = document.createElement('option');
+            option.value = groupId;
+            option.textContent = group.name;
+            select.appendChild(option);
+        }
     },
     
     // Queue an ad action
@@ -1329,12 +1546,11 @@ var app = {
         // Calculate credibility penalty using constant
         var credibilityPenalty = shift * GAME_CONSTANTS.CREDIBILITY_PENALTY_MULTIPLIER;
         
-        // Apply debuff to all states
-        for (var code in gameData.states) {
-            if (gameData.selectedParty === 'D') {
-                gameData.states[code].margin -= credibilityPenalty;
-            } else if (gameData.selectedParty === 'R') {
-                gameData.states[code].margin += credibilityPenalty;
+        // Apply debuff across counties (statewide credibility hit)
+        if (typeof Counties !== 'undefined' && Counties.countyData && typeof Persuasion !== 'undefined') {
+            var penaltyDelta = gameData.selectedParty === 'D' ? -credibilityPenalty : (gameData.selectedParty === 'R' ? credibilityPenalty : 0);
+            for (var fips in Counties.countyData) {
+                Persuasion.applyMarginShift(Counties.countyData[fips], penaltyDelta);
             }
         }
         
@@ -1347,6 +1563,14 @@ var app = {
         Utils.addLog("Shifted position on " + issue.name + " to " + newPos + " (credibility penalty: -" + credibilityPenalty.toFixed(1) + ")");
         Utils.showToast("Position shifted! Credibility penalty applied.");
         
+        if (typeof recomputeInterestGroupSupport === 'function') {
+            recomputeInterestGroupSupport();
+        }
+        if (typeof Counties !== 'undefined') {
+            for (var sc in gameData.states) {
+                Counties.updateStateFromCounties(sc);
+            }
+        }
         Campaign.colorMap();
         this.renderIssuesPanel();
     },

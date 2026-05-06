@@ -206,4 +206,53 @@ const ISSUE_SALIENCE = {
     'default': { economy: 8, healthcare: 7, immigration: 5, climate: 5 }
 };
 
+// Issue-to-demographic baseline modifiers (progressive positions boost positive values)
+const ISSUE_GROUP_BASELINE_EFFECTS = {
+    labor: { union: 3.0, urban: 1.5, college: 1.0, bluecollar: 1.2, smallbusiness: -2.0 },
+    taxation: { smallbusiness: 4.0, suburban: 2.0, college: 1.0, union: -3.0, progressives: -2.0, centrists: 1.0 },
+    climate: { progressives: 4.0, urban: 2.0, college: 1.0, rural: -2.0, farmers: -2.0 },
+    energy: { rural: 2.0, smallbusiness: 1.5, union: 1.0, urban: -1.5, progressives: -2.0 },
+    economy: { noncollege: 1.5, suburban: 1.0, rural: 1.0, union: 1.0, smallbusiness: 1.0, college: 0.5 },
+    immigration: { hispanic: 3.0, asian: 1.5, urban: 1.0, rural: -2.0, evangelical: -1.0 },
+    healthcare: { seniors: 2.0, women: 1.5, urban: 1.0, rural: 1.0, smallbusiness: -1.0 },
+    guns: { rural: 2.0, evangelical: 1.5, urban: -1.5, suburban: -1.0 },
+    abortion: { women: 2.5, secular: 2.0, evangelical: -2.5, rural: -1.0 },
+    criminal: { black: 2.0, urban: 1.5, rural: -1.0, suburban: -0.5 },
+    lgbtq: { lgbtq_community: 2.5, urban: 1.0, suburban: 0.5, evangelical: -2.0 },
+    govspend: { rural: 3.5, noncollege: 2.0, smallbusiness: 2.0, suburban: 1.0 }
+};
+
+const ISSUE_SYNERGY_EFFECTS = [
+    {
+        issues: ['climate', 'labor'],
+        threshold: -4,
+        effects: { union: 1.5, progressives: 1.5, urban: 1.0 }
+    },
+    {
+        issues: ['taxation', 'economy'],
+        threshold: 4,
+        effects: { smallbusiness: 1.5, suburban: 1.0, whitecollar: 0.8 }
+    },
+    {
+        issues: ['immigration', 'economy'],
+        threshold: -3,
+        effects: { hispanic: 1.0, asian: 0.8, urban: 0.6 }
+    }
+];
+
+const ISSUE_COALITION_CONFLICTS = [
+    {
+        label: 'Union vs. Business Coalition Tension',
+        issues: [{ id: 'labor', max: -4 }, { id: 'taxation', min: 4 }]
+    },
+    {
+        label: 'Climate vs. Energy Coalition Tension',
+        issues: [{ id: 'climate', max: -4 }, { id: 'energy', min: 4 }]
+    },
+    {
+        label: 'Social Liberties vs. Religious Base Tension',
+        issues: [{ id: 'abortion', max: -4 }, { id: 'guns', max: -3 }]
+    }
+];
+
 // Candidate issue positions are defined in candidates.js (CANDIDATE_POSITIONS)

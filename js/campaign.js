@@ -277,6 +277,12 @@ var Campaign = {
             // Open speech modal to select issue
             app.openSpeechModal();
             return;
+        } else if (action === 'field') {
+            app.openFieldModal();
+            return;
+        } else if (action === 'digital') {
+            app.openDigitalModal();
+            return;
         }
     },
 

@@ -19,6 +19,13 @@ var Counties = {
     CALIBRATION_DISTANCE_MILES: 2445,
     ALASKA_MAP_SCALE_FACTOR: 0.35,
     HAWAII_STATE_FIPS: '15',
+    DEMOGRAPHIC_POOL_GROUPS: [
+        'black', 'hispanic', 'asian', 'native', 'white',
+        'urban', 'suburban', 'rural',
+        'union', 'college', 'noncollege',
+        'bluecollar', 'whitecollar', 'smallbusiness',
+        'youth', 'seniors'
+    ],
     
     // Normalize FIPS code by ensuring it's a 5-digit string with leading zeros
     // Ensures consistent FIPS format (e.g., "04013", "01001")
@@ -168,6 +175,196 @@ var Counties = {
             }
         }
         return null;
+    },
+
+    getBaseTurnoutRate: function(county) {
+        if (typeof Election !== 'undefined' && typeof Election.getCountyTurnoutRate === 'function') {
+            return Election.getCountyTurnoutRate(county);
+        }
+        return 0.56;
+    },
+
+    getPartyTurnoutMultipliers: function(county) {
+        var turnout = county && county.turnout ? county.turnout : null;
+        var playerTurnout = turnout && turnout.player ? turnout.player : 1.0;
+        var demTurnout = turnout && turnout.demOpponent ? turnout.demOpponent : 1.0;
+        var repTurnout = turnout && turnout.repOpponent ? turnout.repOpponent : 1.0;
+        var thirdTurnout = turnout && turnout.thirdParty ? turnout.thirdParty : 0.7;
+
+        var multipliers = { D: demTurnout, R: repTurnout, G: thirdTurnout, L: thirdTurnout, PSL: thirdTurnout, I: thirdTurnout };
+        if (gameData.selectedParty === 'D') multipliers.D = playerTurnout;
+        if (gameData.selectedParty === 'R') multipliers.R = playerTurnout;
+        if (gameData.selectedParty === 'G') multipliers.G = playerTurnout;
+        if (gameData.selectedParty === 'L') multipliers.L = playerTurnout;
+        if (gameData.selectedParty === 'PSL') multipliers.PSL = playerTurnout;
+        if (gameData.selectedParty === 'I') multipliers.I = playerTurnout;
+
+        return multipliers;
+    },
+
+    getCountyGroupShare: function(county, groupId) {
+        if (!county) return 0;
+        var normalizedGroup = groupId || '';
+        var igKey = (typeof _mapGroupToIgKey !== 'undefined') ? _mapGroupToIgKey(normalizedGroup) : normalizedGroup;
+
+        if (igKey) {
+            return _getCountyIgValue(county, igKey);
+        }
+
+        if (normalizedGroup === 'urban') return _getCountyTierGroupWeight(county, 'urban');
+        if (normalizedGroup === 'suburban') return _getCountyTierGroupWeight(county, 'suburban');
+        if (normalizedGroup === 'rural') return _getCountyTierGroupWeight(county, 'rural');
+        if (normalizedGroup === 'noncollege') return Math.max(0, 1 - _getCountyIgValue(county, 'college'));
+        if (normalizedGroup === 'youth') return _getCountyIgValue(county, 'youth');
+        if (normalizedGroup === 'seniors') return _getCountyIgValue(county, 'seniors');
+        if (normalizedGroup === 'white') {
+            var nonWhite = _getCountyIgValue(county, 'black') + _getCountyIgValue(county, 'hispanic') +
+                _getCountyIgValue(county, 'asian') + _getCountyIgValue(county, 'native') + _getCountyIgValue(county, 'pacific');
+            return Math.max(0, Math.min(1, 1 - nonWhite));
+        }
+
+        if (typeof calculateCompositeTag === 'function') {
+            var compositeShare = calculateCompositeTag(normalizedGroup, 1, county);
+            if (typeof compositeShare === 'number') {
+                return Math.max(0, Math.min(1, compositeShare));
+            }
+        }
+
+        return 0;
+    },
+
+    getCountyDemographicWeights: function(county) {
+        var groups = this.DEMOGRAPHIC_POOL_GROUPS;
+        var weights = [];
+        for (var i = 0; i < groups.length; i++) {
+            var groupId = groups[i];
+            var share = this.getCountyGroupShare(county, groupId);
+            if (share > 0) {
+                weights.push({ id: groupId, share: share });
+            }
+        }
+        return weights;
+    },
+
+    getGroupSupportByParty: function(groupId, county) {
+        var support = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+        var groupSupport = gameData.interestGroupSupport && gameData.interestGroupSupport[groupId] ? gameData.interestGroupSupport[groupId] : null;
+        var activeCandidates = (typeof _buildActiveCandidatesList === 'function') ? _buildActiveCandidatesList() : [];
+
+        if (groupSupport && activeCandidates.length) {
+            for (var i = 0; i < activeCandidates.length; i++) {
+                var cand = activeCandidates[i];
+                if (groupSupport[cand.id] !== undefined) {
+                    support[cand.voteKey] = groupSupport[cand.id];
+                }
+            }
+        }
+
+        if (!groupSupport || !activeCandidates.length || (support.D + support.R + support.G + support.L + support.PSL + support.I) <= 0) {
+            if (INTEREST_GROUPS[groupId] && INTEREST_GROUPS[groupId].support) {
+                var baseSupport = INTEREST_GROUPS[groupId].support;
+                support.D = baseSupport.D || 0;
+                support.R = baseSupport.R || 0;
+                support.G = baseSupport.G || 0;
+                support.L = baseSupport.L || 0;
+                support.PSL = baseSupport.PSL || 0;
+                support.I = baseSupport.I || 0;
+            } else if (county && county.v) {
+                support.D = county.v.D || 0;
+                support.R = county.v.R || 0;
+                support.G = county.v.G || 0;
+                support.L = county.v.L || 0;
+                support.PSL = county.v.PSL || 0;
+                support.I = county.v.I || 0;
+            }
+        }
+
+        if (!gameData.thirdPartiesEnabled) {
+            support.G = 0; support.L = 0; support.PSL = 0; support.I = 0;
+        }
+
+        var totalSupport = support.D + support.R + support.G + support.L + support.PSL + support.I;
+        if (totalSupport <= 0) {
+            support.D = 50;
+            support.R = 50;
+            support.G = 0;
+            support.L = 0;
+            support.PSL = 0;
+            support.I = 0;
+            totalSupport = 100;
+        }
+
+        for (var key in support) {
+            support[key] = (support[key] / totalSupport) * 100;
+        }
+
+        return support;
+    },
+
+    calculateCountyVoteTotals: function(county, options) {
+        var opts = options || {};
+        var reportingFactor = opts.reportingFactor !== undefined ? opts.reportingFactor : 1;
+        var decidedMultiplier = opts.decidedMultiplier !== undefined ? opts.decidedMultiplier : 1;
+        var errorFactor = opts.errorFactor !== undefined ? opts.errorFactor : 1;
+
+        var baseTurnout = this.getBaseTurnoutRate(county);
+        var voterPool = (county && county.p ? county.p : 0) * baseTurnout * decidedMultiplier * reportingFactor * errorFactor;
+        if (voterPool <= 0) {
+            return { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+        }
+
+        var groupWeights = this.getCountyDemographicWeights(county);
+        var turnoutMultipliers = this.getPartyTurnoutMultipliers(county);
+        var totals = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+        var totalWeight = 0;
+
+        for (var i = 0; i < groupWeights.length; i++) {
+            var groupId = groupWeights[i].id;
+            var share = groupWeights[i].share;
+            var groupTurnout = (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined)
+                ? gameData.interestGroupTurnout[groupId] : 1.0;
+            totalWeight += share * groupTurnout;
+        }
+
+        if (totalWeight <= 0) {
+            var fallbackSupport = this.getGroupSupportByParty('default', county);
+            var fallbackTotal = 0;
+            for (var key in fallbackSupport) {
+                fallbackTotal += fallbackSupport[key];
+            }
+            for (var party in totals) {
+                totals[party] = voterPool * ((fallbackSupport[party] || 0) / (fallbackTotal || 1));
+            }
+            return totals;
+        }
+
+        for (var j = 0; j < groupWeights.length; j++) {
+            var group = groupWeights[j];
+            var groupId = group.id;
+            var groupShare = group.share;
+            var turnoutIndex = (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined)
+                ? gameData.interestGroupTurnout[groupId] : 1.0;
+            var groupWeight = groupShare * turnoutIndex;
+            if (groupWeight <= 0) continue;
+
+            var groupPool = voterPool * (groupWeight / totalWeight);
+            var support = this.getGroupSupportByParty(groupId, county);
+            var supportWeights = {};
+            var supportTotal = 0;
+            for (var partyKey in support) {
+                var weight = (support[partyKey] || 0) * (turnoutMultipliers[partyKey] || 1.0);
+                supportWeights[partyKey] = weight;
+                supportTotal += weight;
+            }
+
+            if (supportTotal <= 0) continue;
+
+            for (var p in totals) {
+                totals[p] += groupPool * (supportWeights[p] / supportTotal);
+            }
+        }
+
+        return totals;
     },
     
     applyRallySpillover: function(targetCountyID) {
@@ -469,12 +666,9 @@ var Counties = {
                 var path = document.getElementById('c' + paddedFips);
                 
                 if (path && county.v) {
-                    // Calculate margin based on votes with correct turnout
-                    var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
-                    var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
-                    
-                    var demVotes = (county.v.D || 0) * demTurnout;
-                    var repVotes = (county.v.R || 0) * repTurnout;
+                    var totals = this.calculateCountyVoteTotals(county, { reportingFactor: 1, decidedMultiplier: 1, errorFactor: 1 });
+                    var demVotes = totals.D || 0;
+                    var repVotes = totals.R || 0;
                     var total = demVotes + repVotes;
                     
                     if (total > 0) {
@@ -559,9 +753,9 @@ var Counties = {
             // Top row: Back to Map and Rally
             // Bottom row: Speech (full width)
             actionGrid.innerHTML = 
-                '<button class="act-btn" onclick="app.closeCountyView()"><span>🗺️</span><span>BACK TO MAP</span></button>' +
-                '<button class="act-btn" onclick="app.countyRally()"><span>🎤</span><span>RALLY</span></button>' +
-                '<button class="act-btn" onclick="app.countySpeech()" style="grid-column: 1 / -1;"><span>🎙️</span><span>SPEECH</span></button>';
+                '<button class="act-btn" onclick="app.closeCountyView()"><span><i class="fa-solid fa-map"></i></span><span>BACK TO MAP</span></button>' +
+                '<button class="act-btn" onclick="app.countyRally()"><span><i class="fa-solid fa-bullhorn"></i></span><span>RALLY</span></button>' +
+                '<button class="act-btn" onclick="app.countySpeech()" style="grid-column: 1 / -1;"><span><i class="fa-solid fa-microphone"></i></span><span>SPEECH</span></button>';
         }
     },
     
@@ -643,25 +837,16 @@ var Counties = {
                     // Calculate effective vote percentages (excluding undecided)
                     var undecidedPct = county.undecided || 0;
                     var decidedMultiplier = (100 - undecidedPct) / 100;
-                    
-                    // Use correct turnout for each party
-                    var demTurnout = gameData.selectedParty === 'D' ? (county.turnout.player || 1.0) : (county.turnout.demOpponent || 1.0);
-                    var repTurnout = gameData.selectedParty === 'R' ? (county.turnout.player || 1.0) : (county.turnout.repOpponent || 1.0);
-                    var thirdPartyTurnout = county.turnout.thirdParty || 0.7;
-                    
-                    // Calculate votes: percentage * population * decided_multiplier * turnout
-                    var demVotes = (county.v.D || 0) * county.p / 100 * decidedMultiplier * demTurnout;
-                    var repVotes = (county.v.R || 0) * county.p / 100 * decidedMultiplier * repTurnout;
-                    
-                    // Include Third Party votes (G, L, I, and PSL)
-                    var thirdVotes = 0;
-                    if (gameData.thirdPartiesEnabled) {
-                        thirdVotes = ((county.v.G || 0) + (county.v.L || 0) + (county.v.I || 0) + (county.v.PSL || 0)) * county.p / 100 * decidedMultiplier * thirdPartyTurnout;
-                    }
-                    
-                    totalDemVotes += demVotes;
-                    totalRepVotes += repVotes;
-                    totalThirdPartyVotes += thirdVotes;
+
+                    var totals = this.calculateCountyVoteTotals(county, {
+                        reportingFactor: 1,
+                        decidedMultiplier: decidedMultiplier,
+                        errorFactor: 1
+                    });
+
+                    totalDemVotes += totals.D || 0;
+                    totalRepVotes += totals.R || 0;
+                    totalThirdPartyVotes += (totals.G || 0) + (totals.L || 0) + (totals.I || 0) + (totals.PSL || 0);
                 }
             }
         }
@@ -699,12 +884,9 @@ var Counties = {
         var tooltip = document.getElementById('map-tooltip');
         if (!tooltip) return;
         
-        // Use correct turnout for each party
-        var demTurnout = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
-        var repTurnout = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
-        
-        var demVotes = (county.v.D || 0) * demTurnout;
-        var repVotes = (county.v.R || 0) * repTurnout;
+        var totals = this.calculateCountyVoteTotals(county, { reportingFactor: 1, decidedMultiplier: 1, errorFactor: 1 });
+        var demVotes = totals.D || 0;
+        var repVotes = totals.R || 0;
         var total = demVotes + repVotes;
         
         var marginText = 'N/A';

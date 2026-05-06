@@ -56,11 +56,18 @@ var Election = {
 
         // Initialize county-level reporting data with staggered schedules
         if (typeof Counties !== 'undefined' && Counties.countyData) {
+            var stateExpectedTotals = {};
             for (var fips in Counties.countyData) {
                 var county = Counties.countyData[fips];
                 county.reportedPct = 0;
                 county.reportedVotes = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
                 county.marginOfError = null;
+                county.pollsClosed = false;
+                county.pollCloseTime = null;
+                county.reportingSchedule = [];
+                county.nextBatchIndex = 0;
+                county.reportingProfile = null;
+                county.expectedVotes = 0;
 
                 // Find this county's state
                 var cfips = fips.padStart(5, '0');
@@ -69,27 +76,23 @@ var Election = {
                 for (var sc in STATES) {
                     if (STATES[sc].fips === cStateFips) { cStateCode = sc; break; }
                 }
-                var cCloseTime = cStateCode ? (POLL_CLOSE_TIMES[cStateCode] || 20) : 20;
+                var cCloseTime = this.getCountyPollCloseTime(cfips, cStateCode);
+                county.pollCloseTime = cCloseTime;
 
-                // Deterministic pseudo-random based on FIPS to keep elections reproducible
-                var fipsNum = parseInt(cfips, 10) || 0;
-                var rng1 = ((fipsNum * 7919 + 13) % 997) / 997;  // 0–1
-                var rng2 = ((fipsNum * 6271 + 31) % 983) / 983;
+                county.reportingProfile = this.getReportingProfile(county);
+                county.reportingSchedule = this.buildCountyReportingSchedule(county, cCloseTime, cfips);
+                county.nextBatchIndex = 0;
+                county.expectedVotes = this.getCountyExpectedVotes(county);
 
-                var isUrban = county.t === 'Urban';
-                var isRural = county.t === 'Rural';
+                if (cStateCode) {
+                    stateExpectedTotals[cStateCode] = (stateExpectedTotals[cStateCode] || 0) + county.expectedVotes;
+                }
+            }
 
-                // Urban counties start reporting later (crowds, machines, logistics)
-                var startDelay = isUrban ? (0.6 + rng1 * 2.8)
-                               : isRural  ? (rng1 * 0.9)
-                                          : (0.1 + rng1 * 1.4);
-                county.reportingStart = cCloseTime + startDelay;
-
-                // Urban counties take longer to count all their ballots
-                var duration = isUrban ? (2.5 + rng2 * 3.5)
-                             : isRural  ? (0.4 + rng2 * 1.6)
-                                        : (1.0 + rng2 * 2.0);
-                county.reportingDuration = duration;
+            for (var stateCode in stateExpectedTotals) {
+                if (gameData.states[stateCode]) {
+                    gameData.states[stateCode].expectedVotes = stateExpectedTotals[stateCode];
+                }
             }
         }
 
@@ -100,6 +103,7 @@ var Election = {
             s.called = false;
             s.calledFor = null;
             s.countSpeed = 1.0;
+            s.pollsClosed = false;
 
             // Close margin states count slower
             if (Math.abs(s.margin) < 3) {
@@ -139,24 +143,35 @@ var Election = {
 
             for (var fips in Counties.countyData) {
                 var county = Counties.countyData[fips];
+                var cfips = fips.padStart(5, '0');
+                var cStateFips = cfips.substring(0, 2);
 
-                // Each county starts at its own time and reports over its own duration
-                if (this.time < county.reportingStart) continue;
-                if (county.reportedPct >= 100) continue;
+                if (this.time < county.pollCloseTime) continue;
 
-                var elapsed = this.time - county.reportingStart;
-                var duration = county.reportingDuration || 2;
-                var progress = elapsed / duration;
+                if (!county.pollsClosed) {
+                    county.pollsClosed = true;
+                    var stateCode = this.getStateCodeFromFips(cStateFips);
+                    if (stateCode && gameData.states[stateCode]) {
+                        if (!gameData.states[stateCode].pollsClosed) {
+                            gameData.states[stateCode].pollsClosed = true;
+                            this.pulseState(stateCode);
+                        }
+                    }
+                }
 
-                // Catch-up logic: accelerate counties that haven't finished at late hours
-                if (this.time > 24.5) progress = Math.max(progress, 0.55);
-                if (this.time > 25.5) progress = Math.max(progress, 0.82);
-                if (this.time > 26.5) progress = 1.0;
+                if (county.reportedPct < 100 && county.reportingSchedule && county.reportingSchedule.length) {
+                    while (county.nextBatchIndex < county.reportingSchedule.length &&
+                           this.time >= county.reportingSchedule[county.nextBatchIndex].time) {
+                        county.reportedPct = Math.min(100, county.reportedPct + county.reportingSchedule[county.nextBatchIndex].pct);
+                        county.nextBatchIndex += 1;
+                    }
+                }
 
-                county.reportedPct = Math.min(100, progress * 100);
+                if (this.time > 26.5 && county.reportedPct < 100) {
+                    county.reportedPct = 100;
+                }
 
-                // Calculate county reported votes once it starts reporting
-                if (county.v) {
+                if (county.reportedPct > 0) {
                     if (!county.marginOfError) {
                         county.marginOfError = (Math.random() - 0.5) * 4; // ±2%
                     }
@@ -169,9 +184,6 @@ var Election = {
                     county.reportedVotes = this.calculateCountyReportedVotes(county, reportingFactor, decidedMultiplier, errorFactor);
                 }
 
-                // Track which states need aggregation this tick
-                var cfips = fips.padStart(5, '0');
-                var cStateFips = cfips.substring(0, 2);
                 stateAggregateSeen[cStateFips] = true;
             }
 
@@ -350,38 +362,23 @@ var Election = {
     },
 
     calculateCountyReportedVotes: function(county, reportingFactor, decidedMultiplier, errorFactor) {
-        var turnoutMultipliers = {
-            D: gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0),
-            R: gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0),
-            G: gameData.selectedParty === 'G' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7),
-            L: gameData.selectedParty === 'L' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7),
-            PSL: gameData.selectedParty === 'PSL' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.7),
-            I: gameData.selectedParty === 'I' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.thirdParty) || 0.6)
-        };
-
-        var adjustedShares = Election.applyInterestGroupAdjustments(county);
-        var weightedShares = {
-            D: Math.max(0, (adjustedShares.D || 0) * turnoutMultipliers.D),
-            R: Math.max(0, (adjustedShares.R || 0) * turnoutMultipliers.R),
-            G: gameData.thirdPartiesEnabled ? Math.max(0, (adjustedShares.G || 0) * turnoutMultipliers.G) : 0,
-            L: gameData.thirdPartiesEnabled ? Math.max(0, (adjustedShares.L || 0) * turnoutMultipliers.L) : 0,
-            PSL: gameData.thirdPartiesEnabled ? Math.max(0, (adjustedShares.PSL || 0) * turnoutMultipliers.PSL) : 0,
-            I: gameData.thirdPartiesEnabled ? Math.max(0, (adjustedShares.I || 0) * turnoutMultipliers.I) : 0
-        };
-
-        var totalWeightedShare = weightedShares.D + weightedShares.R + weightedShares.G + weightedShares.L + weightedShares.PSL + weightedShares.I;
-        if (totalWeightedShare <= 0) {
+        if (typeof Counties === 'undefined' || !Counties.calculateCountyVoteTotals) {
             return { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
         }
 
-        var voterPool = this.getCountyVoterPool(county, reportingFactor, decidedMultiplier, errorFactor);
+        var totals = Counties.calculateCountyVoteTotals(county, {
+            reportingFactor: reportingFactor,
+            decidedMultiplier: decidedMultiplier,
+            errorFactor: errorFactor
+        });
+
         return {
-            D: Math.floor(voterPool * (weightedShares.D / totalWeightedShare)),
-            R: Math.floor(voterPool * (weightedShares.R / totalWeightedShare)),
-            G: Math.floor(voterPool * (weightedShares.G / totalWeightedShare)),
-            L: Math.floor(voterPool * (weightedShares.L / totalWeightedShare)),
-            PSL: Math.floor(voterPool * (weightedShares.PSL / totalWeightedShare)),
-            I: Math.floor(voterPool * (weightedShares.I / totalWeightedShare))
+            D: Math.floor(totals.D || 0),
+            R: Math.floor(totals.R || 0),
+            G: Math.floor(totals.G || 0),
+            L: Math.floor(totals.L || 0),
+            PSL: Math.floor(totals.PSL || 0),
+            I: Math.floor(totals.I || 0)
         };
     },
 
@@ -399,6 +396,7 @@ var Election = {
         var totalI = 0;
         var totalReportedPct = 0;
         var countyCount = 0;
+        var totalReportedVotes = 0;
         
         for (var fips in Counties.countyData) {
             var paddedFips = fips.padStart(5, '0');
@@ -411,6 +409,8 @@ var Election = {
                 totalPSL += county.reportedVotes.PSL || 0;
                 totalI += county.reportedVotes.I || 0;
                 totalReportedPct += county.reportedPct || 0;
+                totalReportedVotes += (county.reportedVotes.D || 0) + (county.reportedVotes.R || 0) + (county.reportedVotes.G || 0) +
+                    (county.reportedVotes.L || 0) + (county.reportedVotes.PSL || 0) + (county.reportedVotes.I || 0);
                 countyCount++;
             }
         }
@@ -422,8 +422,12 @@ var Election = {
         state.reportedVotes.PSL = totalPSL;
         state.reportedVotes.I = totalI;
         
-        // State reporting percentage is average of county reporting percentages
-        state.reportedPct = countyCount > 0 ? totalReportedPct / countyCount : 0;
+        if (state.expectedVotes && state.expectedVotes > 0) {
+            state.reportedPct = Math.min(100, (totalReportedVotes / state.expectedVotes) * 100);
+        } else {
+            // State reporting percentage is average of county reporting percentages
+            state.reportedPct = countyCount > 0 ? totalReportedPct / countyCount : 0;
+        }
     },
 
     updateNationalPopularVote: function() {
