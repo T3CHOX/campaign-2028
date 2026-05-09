@@ -106,7 +106,14 @@ var Campaign = {
         
         var s = gameData.states[code];
         document.getElementById('sp-name').innerText = s.name;
-        document.getElementById('sp-ev').innerText = s.ev + ' EV';
+        var evLabel = s.ev + ' EV';
+        if ((code === 'NE' || code === 'ME') && typeof Counties !== 'undefined' && Counties.calculateStateElectoralAllocation) {
+            var split = Counties.calculateStateElectoralAllocation(code, { useReportedVotes: false });
+            if (split && split.isSplitState) {
+                evLabel = s.ev + ' EV (' + split.statewideWinner + '+' + split.statewideEV + ' statewide)';
+            }
+        }
+        document.getElementById('sp-ev').innerText = evLabel;
         
         // Build ranked candidate list for the state
         var pollByParty = Utils.getStatePollingByParty(code);
@@ -167,6 +174,14 @@ var Campaign = {
         var repEV = 0;
         for (var code in gameData.states) {
             var s = gameData.states[code];
+            if (typeof Counties !== 'undefined' && Counties.calculateStateElectoralAllocation) {
+                var projected = Counties.calculateStateElectoralAllocation(code, { useReportedVotes: false });
+                if (projected && projected.allocation) {
+                    demEV += projected.allocation.D || 0;
+                    repEV += projected.allocation.R || 0;
+                    continue;
+                }
+            }
             if (s.margin > 0) {
                 demEV += s.ev;
             } else {

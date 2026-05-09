@@ -263,6 +263,7 @@
                     <button class="mode-btn" id="mode-projected" onclick="app.election.setMapMode('projected')">PROJECTED WINNER</button>
                     <button class="mode-btn hidden" id="mode-shift2024" onclick="app.election.setMapMode('shift2024')">📊 2024 SHIFT</button>
                 </div>
+                <button class="mode-btn" onclick="app.election.toggleThirdPartyTracker()">3RD PARTY TRACKER</button>
                 <div id="flip-legend-hint" class="hidden">⬦ diagonal stripes = flipped from 2024</div>
             </div>
         </header>
@@ -318,6 +319,14 @@
                 </div>
 
                 <aside id="election-sidebar">
+                        <div id="polls-closing-panel">
+                            <h4>POLLS CLOSING NEXT</h4>
+                            <div id="polls-closing-next"></div>
+                        </div>
+                        <div id="third-party-tracker-panel" class="hidden">
+                            <h4>THIRD PARTY TRACKER</h4>
+                            <div id="third-party-tracker-body"></div>
+                        </div>
                         <div id="election-state-info" class="hidden">
                             <!-- Dynamically populated by Election.selectState() -->
                         </div>

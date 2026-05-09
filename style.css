@@ -1105,6 +1105,7 @@ body {
 
 #election-screen {
     background:  #0a0a0a;
+    position: relative;
 }
 
 .election-header {
@@ -1204,6 +1205,7 @@ body {
 .election-header-right {
     display: flex;
     align-items: center;
+    gap: 10px;
 }
 
 .map-mode-toggle {
@@ -1241,6 +1243,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    padding-bottom: 86px;
 }
 
 .election-ev-banner {
@@ -1370,8 +1373,12 @@ body {
 .national-popular-vote-ticker {
     background: linear-gradient(180deg, #101216 0%, #0c0e12 100%);
     border-top: 1px solid #2b2f38;
-    border-bottom: 1px solid #2b2f38;
     padding: 8px 20px 10px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
 }
 
 .npv-header {
@@ -1402,6 +1409,58 @@ body {
     grid-template-columns: 1fr auto auto;
     gap: 8px;
     align-items: center;
+}
+
+.npv-row-leading {
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+#polls-closing-panel,
+#third-party-tracker-panel {
+    padding: 12px 15px;
+    border-bottom: 1px solid #333333;
+    background: #1a1a1a;
+}
+
+#polls-closing-panel h4,
+#third-party-tracker-panel h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    color: #bbbbbb;
+}
+
+.next-close-row,
+.third-tracker-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: #d0d0d0;
+    padding: 3px 0;
+}
+
+.third-tracker-state-title {
+    margin-top: 8px;
+    color: #888888;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.next-close-empty {
+    color: #888888;
+    font-size: 0.8rem;
+}
+
+#election-map-svg path.state-pulse {
+    animation: statePulse 0.8s ease-in-out 2;
+}
+
+@keyframes statePulse {
+    0% { filter: brightness(1); stroke-width: 1px; }
+    50% { filter: brightness(1.45); stroke-width: 3px; }
+    100% { filter: brightness(1); stroke-width: 1px; }
 }
 
 .npv-name {
@@ -2554,6 +2613,44 @@ body {
     line-height: 1.8;
     margin-bottom: 15px;
     font-size: 1.05rem;
+}
+
+.coalition-table {
+    border: 1px solid #333333;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.coalition-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 0.8fr 0.8fr 0.8fr 0.8fr 0.6fr;
+    gap: 8px;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    border-top: 1px solid #2a2a2a;
+    align-items: center;
+}
+
+.coalition-row.coalition-head {
+    background: #222831;
+    border-top: none;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #e2e7f2;
+}
+
+.district-analysis-block {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.district-analysis-row {
+    color: #cccccc;
+    font-size: 0.85rem;
+    margin-top: 4px;
 }
 
 .result-buttons {

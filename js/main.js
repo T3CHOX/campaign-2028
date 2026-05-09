@@ -1127,8 +1127,20 @@ var app = {
         
         // Electoral projection
         var demEV = 0, repEV = 0;
+        var splitNotes = [];
         for (var code2 in gameData.states) {
             var state = gameData.states[code2];
+            if (typeof Counties !== 'undefined' && Counties.calculateStateElectoralAllocation) {
+                var projectedAllocation = Counties.calculateStateElectoralAllocation(code2, { useReportedVotes: false });
+                if (projectedAllocation && projectedAllocation.allocation) {
+                    demEV += projectedAllocation.allocation.D || 0;
+                    repEV += projectedAllocation.allocation.R || 0;
+                    if ((code2 === 'ME' || code2 === 'NE') && projectedAllocation.isSplitState) {
+                        splitNotes.push(code2 + ': D+' + (projectedAllocation.allocation.D || 0) + ', R+' + (projectedAllocation.allocation.R || 0));
+                    }
+                    continue;
+                }
+            }
             if (state.margin > 0) demEV += state.ev;
             else repEV += state.ev;
         }
@@ -1136,6 +1148,7 @@ var app = {
         document.getElementById('electoral-projection-display').innerHTML = 
             '<div class="vote-row"><span style="color: #00AEF3;">Democrat</span><span>' + demEV + ' EV</span></div>' +
             '<div class="vote-row"><span style="color: #E81B23;">Republican</span><span>' + repEV + ' EV</span></div>' +
+            (splitNotes.length ? '<div style="margin-top: 8px; color: #9aa3b7; font-size: 0.8rem;">' + splitNotes.join(' | ') + '</div>' : '') +
             '<div style="margin-top: 15px; text-align: center; font-size: 1.1rem; color: #ffd700;">Needed to Win: 270 EV</div>';
         
         // Toss-up states

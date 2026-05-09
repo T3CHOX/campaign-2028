@@ -224,7 +224,6 @@ var Utils = {
             var deltaClass = item.delta > 0.05 ? 'cpl-delta-pos' : (item.delta < -0.05 ? 'cpl-delta-neg' : 'cpl-delta-neu');
 
             html += '<div class="cpl-row">';
-            html += '<span class="cpl-rank">' + (i + 1) + '</span>';
             html += '<img class="cpl-avatar" src="' + imgSrc + '" onerror="this.src=\'images/scenario.jpg\'" alt="" style="border-color:' + partyColor + ';">';
             html += '<div class="cpl-info">';
             html += '<div class="cpl-name">' + formattedName + '</div>';

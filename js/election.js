@@ -29,6 +29,14 @@ var TURNOUT_MODEL = {
     MAX_TURNOUT: 0.65
 };
 
+var DEFAULT_EXPECTED_TURNOUT_RATE = 0.56;
+var COALITION_BASE_TURNOUT_PCT = 60;
+var DEFAULT_INTEREST_GROUP_TURNOUT_MULTIPLIER = 1;
+var VICTORY_CLEAR_EV_THRESHOLD = 300;
+var VICTORY_LANDSLIDE_EV_THRESHOLD = 350;
+var VICTORY_CLEAR_MARGIN_THRESHOLD = 30;
+var VICTORY_LANDSLIDE_MARGIN_THRESHOLD = 80;
+
 var Election = {
     time: 17.5,
     speed: 1,
@@ -42,6 +50,7 @@ var Election = {
     allVotesCounted: false,
     nationalPopularVotes: { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 },
     totalReportedVotes: 0,
+    stateCallAllocations: {},
 
     start: function() {
         var self = this;
@@ -53,6 +62,7 @@ var Election = {
         this.allVotesCounted = false;
         this.nationalPopularVotes = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
         this.totalReportedVotes = 0;
+        this.stateCallAllocations = {};
 
         // Initialize county-level reporting data with staggered schedules
         if (typeof Counties !== 'undefined' && Counties.countyData) {
@@ -125,6 +135,7 @@ var Election = {
         this.loadElectionMap();
         this.updateNationalPopularVote();
         this.updateDisplay();
+        this.updatePollClosingsNext();
 
         if (this.interval) clearInterval(this.interval);
         this.interval = setInterval(function() {
@@ -217,51 +228,20 @@ var Election = {
             var s = gameData.states[code];
 
             if (!s.called && s.reportedPct > 0) {
-                var total = s.reportedVotes.D + s.reportedVotes.R + (s.reportedVotes.G || 0) + (s.reportedVotes.L || 0);
-                var currentMargin = total > 0 ? ((s.reportedVotes.D - s.reportedVotes.R) / total) * 100 : 0;
-
-                var isVeryCloseCall = Math.abs(s.margin) < 0.5;
-                var isCloseCall = Math.abs(s.margin) < 1.0;
-
-                // Must call at 100% reporting
-                if (s.reportedPct >= 99.9) {
+                var callCheck = this.canCallStateMathematically(code, s);
+                if (callCheck.canCall) {
                     s.called = true;
-                    s.calledFor = this.getStateWinner(s);
-                    this.awardEV(s);
-                    this.addFeedItem(s.name + ' called for ' + this.getPartyLabel(s.calledFor) + ' (' + s.ev + ' EV)');
+                    s.calledFor = callCheck.calledFor;
+                    this.awardEV(s, callCheck.allocation);
+                    this.stateCallAllocations[code] = callCheck.allocation;
+                    this.addFeedItem(callCheck.message || (s.name + ' called for ' + this.getPartyLabel(s.calledFor) + ' (' + s.ev + ' EV)'));
                     this.addRaceCall(code, s.calledFor);
-                }
-                // Very close (< 0.5%): need ≥ 98% before calling
-                else if (isVeryCloseCall && s.reportedPct >= 98) {
-                    s.called = true;
-                    s.calledFor = this.getStateWinner(s);
-                    this.awardEV(s);
-                    this.addFeedItem(s.name + ' called for ' + this.getPartyLabel(s.calledFor) + ' (' + s.ev + ' EV) [EXTREMELY CLOSE]');
-                    this.addRaceCall(code, s.calledFor);
-                }
-                // Close (0.5–1.0%): need ≥ 95% before calling
-                else if (isCloseCall && !isVeryCloseCall && s.reportedPct >= 95) {
-                    s.called = true;
-                    s.calledFor = this.getStateWinner(s);
-                    this.awardEV(s);
-                    this.addFeedItem(s.name + ' called for ' + this.getPartyLabel(s.calledFor) + ' (' + s.ev + ' EV)');
-                    this.addRaceCall(code, s.calledFor);
-                }
-                // Large margin: can call early once the math is clear
-                else if (!isCloseCall && s.reportedPct >= 40) {
-                    var threshold = 100 - s.reportedPct;
-                    if (Math.abs(currentMargin) > threshold + 8) {
-                        s.called = true;
-                        s.calledFor = this.getStateWinner(s);
-                        this.awardEV(s);
-                        this.addFeedItem(s.name + ' called for ' + this.getPartyLabel(s.calledFor) + ' (' + s.ev + ' EV)');
-                        this.addRaceCall(code, s.calledFor);
-                    }
                 }
             }
         }
 
         this.updateDisplay();
+        this.updatePollClosingsNext();
         this.colorElectionMap();
 
         // Update county map view if it is open
@@ -300,15 +280,18 @@ var Election = {
         document.getElementById('elec-bar-rep').style.width = repWidth + '%';
         
         // If third parties are enabled and have EVs, show them
-        if (gameData.thirdPartiesEnabled && this.thirdPartyEV > 0) {
-            var thirdPartyBar = document.getElementById('elec-bar-third');
-            if (thirdPartyBar) {
+        var thirdPartyBar = document.getElementById('elec-bar-third');
+        if (thirdPartyBar) {
+            if (gameData.thirdPartiesEnabled && this.thirdPartyEV > 0) {
                 var thirdWidth = (this.thirdPartyEV / 538) * 100;
                 thirdPartyBar.style.width = thirdWidth + '%';
                 thirdPartyBar.style.display = 'block';
+            } else {
+                thirdPartyBar.style.display = 'none';
             }
         }
         this.updateNationalPopularVoteDisplay();
+        this.updateThirdPartyTracker();
     },
 
     getCountyTurnoutRate: function(county) {
@@ -470,7 +453,8 @@ var Election = {
             var row = rows[i];
             var pct = totalVotes > 0 ? ((row.votes / totalVotes) * 100).toFixed(1) : '0.0';
             if (!gameData.thirdPartiesEnabled && row.party !== 'D' && row.party !== 'R') continue;
-            html += '<div class=\"national-popular-vote-row\">' +
+            var leaderClass = i === 0 ? ' npv-row-leading' : '';
+            html += '<div class=\"national-popular-vote-row' + leaderClass + '\">' +
                 '<span class=\"npv-name\" style=\"color:' + row.color + '\">' + row.name + '</span>' +
                 '<span class=\"npv-votes\">' + row.votes.toLocaleString() + '</span>' +
                 '<span class=\"npv-percent\">' + pct + '%</span>' +
@@ -500,8 +484,14 @@ var Election = {
         return votes[0].party;
     },
 
-    // Award electoral votes to the winning party
-    awardEV: function(state) {
+    // Award electoral votes to the winning party or split-state allocation
+    awardEV: function(state, allocation) {
+        if (allocation) {
+            this.demEV += allocation.D || 0;
+            this.repEV += allocation.R || 0;
+            this.thirdPartyEV += (allocation.G || 0) + (allocation.L || 0) + (allocation.PSL || 0) + (allocation.I || 0);
+            return;
+        }
         if (state.calledFor === 'D') {
             this.demEV += state.ev;
         } else if (state.calledFor === 'R') {
@@ -611,6 +601,211 @@ var Election = {
     getPartyColor: function(partyCode) {
         if (PARTIES[partyCode]) return PARTIES[partyCode].color;
         return '#888888';
+    },
+
+    getStateCodeFromFips: function(stateFips) {
+        for (var code in STATES) {
+            if (STATES[code] && STATES[code].fips === stateFips) return code;
+        }
+        return null;
+    },
+
+    getCountyPollCloseTime: function(fips, stateCode) {
+        var paddedFips = (fips ? String(fips) : '').padStart(5, '0');
+        if (typeof COUNTY_POLL_CLOSE_OVERRIDES !== 'undefined' && COUNTY_POLL_CLOSE_OVERRIDES[paddedFips] !== undefined) {
+            return COUNTY_POLL_CLOSE_OVERRIDES[paddedFips];
+        }
+        return POLL_CLOSE_TIMES[stateCode] !== undefined ? POLL_CLOSE_TIMES[stateCode] : 20;
+    },
+
+    getReportingProfile: function(county) {
+        var pop = county && county.p ? county.p : 0;
+        var countyType = county && county.t ? county.t : '';
+        if (pop >= 1000000 || countyType === 'Highly Urban') {
+            return { type: 'large-urban', minPct: 20, maxPct: 35, minGap: 0.35, maxGap: 0.7 };
+        }
+        if (pop >= 100000 || countyType === 'Urban/Dense Suburban' || countyType === 'Suburban/Mixed') {
+            return { type: 'medium', minPct: 10, maxPct: 15, minGap: 0.2, maxGap: 0.45 };
+        }
+        return { type: 'small-rural', minPct: 3, maxPct: 7, minGap: 0.12, maxGap: 0.3 };
+    },
+
+    buildCountyReportingSchedule: function(county, pollCloseTime) {
+        var profile = county.reportingProfile || this.getReportingProfile(county);
+        var schedule = [];
+        var totalPct = 0;
+        var t = pollCloseTime;
+
+        while (totalPct < 100) {
+            var remaining = 100 - totalPct;
+            var pct = profile.minPct + Math.random() * (profile.maxPct - profile.minPct);
+            if (remaining <= profile.maxPct + 2) {
+                pct = remaining;
+            } else {
+                pct = Math.min(remaining, Math.max(1, pct + (Math.random() * 6 - 3)));
+            }
+            totalPct += pct;
+            t += profile.minGap + Math.random() * (profile.maxGap - profile.minGap);
+            schedule.push({ time: t, pct: pct });
+        }
+        return schedule;
+    },
+
+    getCountyExpectedVotes: function(county) {
+        if (typeof Counties !== 'undefined' && Counties.getCountyVotesForAllocation) {
+            var totals = Counties.getCountyVotesForAllocation(county, false);
+            return (totals.D || 0) + (totals.R || 0) + (totals.G || 0) + (totals.L || 0) + (totals.PSL || 0) + (totals.I || 0);
+        }
+        var pop = county && county.p ? county.p : 0;
+        return Math.max(0, pop * DEFAULT_EXPECTED_TURNOUT_RATE);
+    },
+
+    pulseState: function(stateCode) {
+        var path = document.querySelector('#election-map-svg #' + stateCode);
+        if (!path) return;
+        path.classList.add('state-pulse');
+        setTimeout(function() {
+            path.classList.remove('state-pulse');
+        }, 1600);
+    },
+
+    canCallStateMathematically: function(stateCode, state) {
+        var votes = state.reportedVotes || {};
+        var parties = ['D', 'R', 'G', 'L', 'PSL', 'I'];
+        var ordered = [];
+        var totalReported = 0;
+        for (var i = 0; i < parties.length; i++) {
+            var p = parties[i];
+            var count = votes[p] || 0;
+            totalReported += count;
+            ordered.push({ party: p, count: count });
+        }
+        ordered.sort(function(a, b) { return b.count - a.count; });
+        var leader = ordered[0];
+        var runnerUp = ordered[1] || { party: 'R', count: 0 };
+
+        var expectedVotes = state.expectedVotes || totalReported;
+        var remainingVotes = Math.max(0, expectedVotes - totalReported);
+        var remainingPct = expectedVotes > 0 ? (remainingVotes / expectedVotes) * 100 : 0;
+        var mathematicalLock = leader.count > (runnerUp.count + remainingVotes);
+
+        if (!mathematicalLock && state.reportedPct < 99.9) {
+            return { canCall: false };
+        }
+        if (state.reportedPct < 99.9 && remainingPct > 30) {
+            return { canCall: false };
+        }
+
+        var allocationResult = null;
+        if (typeof Counties !== 'undefined' && Counties.calculateStateElectoralAllocation) {
+            allocationResult = Counties.calculateStateElectoralAllocation(stateCode, { useReportedVotes: true });
+        }
+        var calledFor = allocationResult && allocationResult.calledFor ? allocationResult.calledFor : leader.party;
+        var callMessage = this.formatSplitCallMessage(stateCode, calledFor, allocationResult);
+
+        return {
+            canCall: true,
+            calledFor: calledFor,
+            allocation: allocationResult ? allocationResult.allocation : null,
+            message: callMessage
+        };
+    },
+
+    formatSplitCallMessage: function(stateCode, calledFor, allocationResult) {
+        var state = gameData.states[stateCode];
+        if (!state) return '';
+        if (!allocationResult || !allocationResult.isSplitState) {
+            return state.name + ' called for ' + this.getPartyLabel(calledFor) + ' (' + state.ev + ' EV)';
+        }
+        var alloc = allocationResult.allocation || {};
+        var parts = [];
+        if ((alloc.D || 0) > 0) parts.push('D+' + (alloc.D || 0));
+        if ((alloc.R || 0) > 0) parts.push('R+' + (alloc.R || 0));
+        if ((alloc.G || 0) > 0) parts.push('G+' + (alloc.G || 0));
+        if ((alloc.L || 0) > 0) parts.push('L+' + (alloc.L || 0));
+        if ((alloc.I || 0) > 0) parts.push('I+' + (alloc.I || 0));
+        if ((alloc.PSL || 0) > 0) parts.push('PSL+' + (alloc.PSL || 0));
+        return state.name + ' called for ' + this.getPartyLabel(calledFor) + ' (' + parts.join(', ') + ')';
+    },
+
+    updatePollClosingsNext: function() {
+        var container = document.getElementById('polls-closing-next');
+        if (!container || !Counties || !Counties.countyData) return;
+        var now = this.time;
+        var buckets = {};
+        for (var fips in Counties.countyData) {
+            var county = Counties.countyData[fips];
+            var closeTime = county.pollCloseTime;
+            if (closeTime === undefined || closeTime < now) continue;
+            var key = closeTime.toFixed(2);
+            if (!buckets[key]) buckets[key] = 0;
+            buckets[key] += 1;
+        }
+        var times = Object.keys(buckets).map(function(k) { return parseFloat(k); }).sort(function(a, b) { return a - b; }).slice(0, 3);
+        if (!times.length) {
+            container.innerHTML = '<div class="next-close-empty">All polls closed</div>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < times.length; i++) {
+            var t = times[i];
+            var count = buckets[t.toFixed(2)];
+            html += '<div class="next-close-row"><span>' + Utils.formatTime(t) + ' ET</span><span>' + count + ' counties</span></div>';
+        }
+        container.innerHTML = html;
+    },
+
+    toggleThirdPartyTracker: function() {
+        var panel = document.getElementById('third-party-tracker-panel');
+        if (!panel) return;
+        panel.classList.toggle('hidden');
+        if (!panel.classList.contains('hidden')) {
+            this.updateThirdPartyTracker();
+        }
+    },
+
+    updateThirdPartyTracker: function() {
+        var body = document.getElementById('third-party-tracker-body');
+        if (!body) return;
+        if (!gameData.thirdPartiesEnabled) {
+            body.innerHTML = '<div class="next-close-empty">Third-party tracking is disabled.</div>';
+            return;
+        }
+
+        var parties = ['G', 'L', 'I', 'PSL'];
+        var rows = [];
+        var total = this.totalReportedVotes || 0;
+        for (var i = 0; i < parties.length; i++) {
+            var p = parties[i];
+            var v = this.nationalPopularVotes[p] || 0;
+            rows.push({ party: p, votes: v, pct: total > 0 ? (v / total) * 100 : 0 });
+        }
+        rows.sort(function(a, b) { return b.votes - a.votes; });
+
+        var html = '<div class="third-tracker-national">';
+        for (var r = 0; r < rows.length; r++) {
+            var row = rows[r];
+            html += '<div class="third-tracker-row"><span style="color:' + this.getPartyColor(row.party) + '">' + this.getPartyLabel(row.party) +
+                '</span><span>' + row.votes.toLocaleString() + ' (' + row.pct.toFixed(1) + '%)</span></div>';
+        }
+        html += '</div>';
+
+        html += '<div class="third-tracker-state-title">Top third-party states</div>';
+        var stateRows = [];
+        for (var code in gameData.states) {
+            var s = gameData.states[code];
+            var stateThird = (s.reportedVotes.G || 0) + (s.reportedVotes.L || 0) + (s.reportedVotes.I || 0) + (s.reportedVotes.PSL || 0);
+            var stateTotal = stateThird + (s.reportedVotes.D || 0) + (s.reportedVotes.R || 0);
+            if (stateTotal <= 0) continue;
+            stateRows.push({ code: code, share: (stateThird / stateTotal) * 100, votes: stateThird });
+        }
+        stateRows.sort(function(a, b) { return b.share - a.share; });
+        for (var si = 0; si < Math.min(8, stateRows.length); si++) {
+            var sr = stateRows[si];
+            html += '<div class="third-tracker-row"><span>' + sr.code + '</span><span>' + sr.share.toFixed(1) + '% (' + sr.votes.toLocaleString() + ')</span></div>';
+        }
+
+        body.innerHTML = html;
     },
 
     loadElectionMap: function() {
@@ -745,9 +940,14 @@ var Election = {
         html += '<h2>' + s.name + '</h2>';
         html += '<span class="elec-ev-badge">' + s.ev + ' EV</span>';
         html += '</div>';
+        if ((code === 'NE' || code === 'ME') && this.stateCallAllocations[code]) {
+            var splitAlloc = this.stateCallAllocations[code];
+            html += '<div class="elec-reporting">Split EV: D+' + (splitAlloc.D || 0) + ' | R+' + (splitAlloc.R || 0) + ' | 3rd+' +
+                ((splitAlloc.G || 0) + (splitAlloc.L || 0) + (splitAlloc.I || 0) + (splitAlloc.PSL || 0)) + '</div>';
+        }
         html += '<div class="elec-reporting"><span id="elec-pct-reporting">' + Math.floor(s.reportedPct) + '%</span> Reporting</div>';
         html += Utils.buildElectionRankedListHTML(s.reportedVotes, s.reportedPct, s.ev, projStatus);
-        html += '<button class="county-drill-btn" onclick="Election.openCountyView(\'' + code + '\')">📊 VIEW COUNTY RESULTS</button>';
+        html += '<button class="county-drill-btn" onclick="Election.openCountyView(\'' + code + '\')">VIEW COUNTY RESULTS</button>';
 
         container.innerHTML = html;
     },
@@ -805,6 +1005,112 @@ var Election = {
         document.getElementById('winner-party').innerText = partyLabel;
         document.getElementById('winner-ev-count').innerText = evCount;
         document.getElementById('winner-overlay').classList.remove('hidden');
+    },
+
+    buildVictoryNarrative: function(tickets, winnerEV, loserEV) {
+        var winnerParty = tickets[0].party;
+        var winnerName = tickets[0].ticket && tickets[0].ticket.pres ? tickets[0].ticket.pres.name : this.getPartyLabel(winnerParty);
+        var margin = winnerEV - loserEV;
+        var pvWinner = this.nationalPopularVotes.D >= this.nationalPopularVotes.R ? 'D' : 'R';
+        var wonPopular = winnerParty === pvWinner;
+
+        var style = 'narrow';
+        if (winnerEV >= VICTORY_LANDSLIDE_EV_THRESHOLD || margin >= VICTORY_LANDSLIDE_MARGIN_THRESHOLD) style = 'landslide';
+        else if (winnerEV >= VICTORY_CLEAR_EV_THRESHOLD || margin >= VICTORY_CLEAR_MARGIN_THRESHOLD) style = 'clear';
+
+        if (winnerParty !== 'D' && winnerParty !== 'R') {
+            return winnerName + ' delivered a historic third-party breakthrough, converting outsider energy into an Electoral College victory and forcing a major coalition realignment.';
+        }
+        if (style === 'landslide') {
+            return winnerName + ' secured a commanding Electoral College victory, building a broad coalition that overwhelmed the opposition across multiple regions.';
+        }
+        if (style === 'clear' && wonPopular) {
+            return winnerName + ' won with a clear Electoral and popular-vote mandate, combining turnout strength with favorable county-level demographic shifts.';
+        }
+        if (style === 'clear' && !wonPopular) {
+            return winnerName + ' won the Electoral College despite trailing nationally in the popular vote, showing how regional efficiency can outweigh raw vote totals.';
+        }
+        return winnerName + ' eked out a narrow win in a razor-tight map, where turnout and late-reporting county batches made the decisive difference.';
+    },
+
+    buildCoalitionBreakdownHTML: function() {
+        if (!Counties || !Counties.countyData || !Counties.getCountyGroupShare) return '';
+        var groups = Counties.DEMOGRAPHIC_POOL_GROUPS || [];
+        var totalPop = 0;
+        for (var fips in Counties.countyData) {
+            totalPop += Counties.countyData[fips].p || 0;
+        }
+        if (totalPop <= 0 || !groups.length) return '';
+
+        var rows = [];
+        for (var i = 0; i < groups.length; i++) {
+            var groupId = groups[i];
+            var weightedPop = 0;
+            for (var cfips in Counties.countyData) {
+                var county = Counties.countyData[cfips];
+                var share = Counties.getCountyGroupShare(county, groupId) || 0;
+                weightedPop += (county.p || 0) * share;
+            }
+            var nationalPct = (weightedPop / totalPop) * 100;
+            var support = Counties.getGroupSupportByParty(groupId, null);
+            rows.push({
+                id: groupId,
+                popPct: nationalPct,
+                d: support.D || 0,
+                r: support.R || 0,
+                third: (support.G || 0) + (support.L || 0) + (support.I || 0) + (support.PSL || 0),
+                turnout: ((gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId]) || DEFAULT_INTEREST_GROUP_TURNOUT_MULTIPLIER) * COALITION_BASE_TURNOUT_PCT,
+                change: ((gameData.interestGroupChanges && gameData.interestGroupChanges[groupId] && gameData.interestGroupChanges[groupId][gameData.candidate && gameData.candidate.id]) || 0)
+            });
+        }
+        rows.sort(function(a, b) { return b.popPct - a.popPct; });
+
+        var html = '<div class="campaign-summary"><h2>COALITION BREAKDOWN</h2><div class="coalition-table">';
+        html += '<div class="coalition-row coalition-head"><span>Group</span><span>National %</span><span>Dem</span><span>Rep</span><span>3rd</span><span>Turnout</span><span>Δ</span></div>';
+        for (var r = 0; r < Math.min(rows.length, 10); r++) {
+            var row = rows[r];
+            html += '<div class="coalition-row"><span>' + row.id.toUpperCase() + '</span><span>' + row.popPct.toFixed(1) + '%</span><span>' +
+                row.d.toFixed(1) + '%</span><span>' + row.r.toFixed(1) + '%</span><span>' + row.third.toFixed(1) +
+                '%</span><span>' + row.turnout.toFixed(0) + '%</span><span>' + (row.change >= 0 ? '+' : '') + row.change.toFixed(1) + '</span></div>';
+        }
+        html += '</div></div>';
+        return html;
+    },
+
+    buildDistrictAnalysisHTML: function() {
+        if (!Counties || !Counties.calculateStateElectoralAllocation) return '';
+        var states = ['ME', 'NE'];
+        var html = '<div class="campaign-summary"><h2>DISTRICT ANALYSIS</h2>';
+        for (var i = 0; i < states.length; i++) {
+            var code = states[i];
+            var result = Counties.calculateStateElectoralAllocation(code, { useReportedVotes: true });
+            if (!result || !result.isSplitState) continue;
+            html += '<div class="district-analysis-block"><strong>' + code + '</strong> ';
+            html += '(Statewide: ' + this.getPartyLabel(result.statewideWinner) + ' +' + (result.statewideEV || 2) + ' EV)';
+            for (var d = 0; d < result.districtResults.length; d++) {
+                var dr = result.districtResults[d];
+                html += '<div class="district-analysis-row">' + dr.district + ': ' + this.getPartyLabel(dr.winner) + ' wins 1 EV</div>';
+            }
+            html += '</div>';
+        }
+        html += '</div>';
+        return html;
+    },
+
+    buildSpoilerAnalysisHTML: function() {
+        if (!gameData.thirdPartiesEnabled) return '';
+        var dem = this.nationalPopularVotes.D || 0;
+        var rep = this.nationalPopularVotes.R || 0;
+        var third = (this.nationalPopularVotes.G || 0) + (this.nationalPopularVotes.L || 0) + (this.nationalPopularVotes.I || 0) + (this.nationalPopularVotes.PSL || 0);
+        var major = dem + rep;
+        if (major <= 0 || third <= 0) return '';
+        var demNoThird = dem + (third * (dem / major));
+        var repNoThird = rep + (third * (rep / major));
+        var html = '<div class="campaign-summary"><h2>VOTE SPLIT ESTIMATE</h2>';
+        html += '<p>If third-party ballots redistributed proportionally to major-party shares: ';
+        html += 'Democrats ' + Math.round(demNoThird).toLocaleString() + ' vs Republicans ' + Math.round(repNoThird).toLocaleString() + '.</p>';
+        html += '</div>';
+        return html;
     },
 
     showFinalResults: function() {
@@ -879,31 +1185,18 @@ var Election = {
         // Campaign summary
         resultsHTML += '<div class="campaign-summary">';
         resultsHTML += '<h2>CAMPAIGN SUMMARY</h2>';
-        
-        if (isPlayerWinner) {
-            resultsHTML += '<p>After a hard-fought campaign, you have emerged victorious! ';
-            resultsHTML += 'Your strategic decisions, tireless campaigning, and connection with voters ';
-            resultsHTML += 'across the nation have culminated in this historic win.</p>';
-            resultsHTML += '<p>As you prepare to take office, the American people look to you with ';
-            resultsHTML += 'hope and expectation. Your journey from candidate to President-elect ';
-            resultsHTML += 'has been nothing short of remarkable.</p>';
-        } else {
-            resultsHTML += '<p>Despite your best efforts, the election has gone to your opponent. ';
-            resultsHTML += 'While this outcome is not what you hoped for, you ran a spirited campaign ';
-            resultsHTML += 'and made your voice heard across the nation.</p>';
-            resultsHTML += '<p>Sometimes victory doesn\'t come on the first try. Take what you\'ve ';
-            resultsHTML += 'learned from this experience and consider what you might do differently ';
-            resultsHTML += 'in the future.</p>';
-        }
-        
+        resultsHTML += '<p>' + this.buildVictoryNarrative(tickets, winnerEV, loserEV) + '</p>';
         resultsHTML += '</div>';
-        
+        resultsHTML += this.buildCoalitionBreakdownHTML();
+        resultsHTML += this.buildDistrictAnalysisHTML();
+        resultsHTML += this.buildSpoilerAnalysisHTML();
+
         // Buttons
         resultsHTML += '<div class="result-buttons">';
         resultsHTML += '<button class="result-btn" onclick="Election.toggleResultsView()">VIEW ELECTION NIGHT</button>';
         resultsHTML += '<button class="result-btn" onclick="location.reload()">NEW CAMPAIGN</button>';
         resultsHTML += '</div>';
-        
+
         resultsHTML += '</div>';
         
         // Create or update the final results overlay
@@ -997,9 +1290,12 @@ var Election = {
             
             // Call the state if not already called
             if (!s.called) {
+                var allocationResult = (typeof Counties !== 'undefined' && Counties.calculateStateElectoralAllocation)
+                    ? Counties.calculateStateElectoralAllocation(code, { useReportedVotes: true }) : null;
                 s.called = true;
-                s.calledFor = this.getStateWinner(s);
-                this.awardEV(s);
+                s.calledFor = allocationResult && allocationResult.calledFor ? allocationResult.calledFor : this.getStateWinner(s);
+                this.awardEV(s, allocationResult ? allocationResult.allocation : null);
+                this.stateCallAllocations[code] = allocationResult ? allocationResult.allocation : null;
             }
         }
         this.updateNationalPopularVote();

@@ -236,6 +236,54 @@ const COUNTY_POLL_CLOSE_OVERRIDES = {
     '48229': 21
 };
 
+// Split-county shares and baseline D/R values mirror the product requirements
+// for ME/NE district simulation and are used as district-level anchor PVIs.
+const SPLIT_ELECTORAL_RULES = {
+    NE: {
+        statewideEV: 2,
+        defaultDistrict: 'NE-3',
+        countyDistrictMap: {
+            '31055': 'NE-1', // Douglas
+            '31025': 'NE-1', // Cass
+            '31053': 'NE-1', // Dodge
+            '31155': 'NE-1', // Saunders
+            '31177': 'NE-1', // Washington
+            '31109': 'NE-2', // Lancaster
+            '31001': 'NE-2', // Adams
+            '31019': 'NE-2', // Buffalo
+            '31079': 'NE-2', // Hall
+            '31181': 'NE-2'  // Webster
+        },
+        splitCounties: {
+            '31173': [ // Thurston
+                { district: 'NE-3', share: 0.963, baseline: { D: 47.59, R: 52.41 } },
+                { district: 'NE-1', share: 0.037, baseline: { D: 27.73, R: 72.27 } }
+            ],
+            '31153': [ // Sarpy
+                { district: 'NE-1', share: 0.389, baseline: { D: 44.26, R: 55.74 } },
+                { district: 'NE-2', share: 0.611, baseline: { D: 40.45, R: 55.74 } }
+            ]
+        }
+    },
+    ME: {
+        statewideEV: 2,
+        defaultDistrict: 'ME-2',
+        countyDistrictMap: {
+            '23031': 'ME-1', // York
+            '23005': 'ME-1', // Cumberland
+            '23023': 'ME-1', // Sagadahoc
+            '23015': 'ME-1', // Lincoln
+            '23013': 'ME-1'  // Knox
+        },
+        splitCounties: {
+            '23011': [ // Kennebec
+                { district: 'ME-1', share: 0.62, baseline: { D: 52.7, R: 47.3 } },
+                { district: 'ME-2', share: 0.38, baseline: { D: 44.34, R: 55.66 } }
+            ]
+        }
+    }
+};
+
 var gameData = {
     currentDate: new Date("2028-07-04"),
     electionDay: new Date("2028-11-03"),
