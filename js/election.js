@@ -29,6 +29,14 @@ var TURNOUT_MODEL = {
     MAX_TURNOUT: 0.65
 };
 
+var DEFAULT_EXPECTED_TURNOUT_RATE = 0.56;
+var COALITION_BASE_TURNOUT_PCT = 60;
+var DEFAULT_INTEREST_GROUP_TURNOUT_MULTIPLIER = 1;
+var VICTORY_CLEAR_EV_THRESHOLD = 300;
+var VICTORY_LANDSLIDE_EV_THRESHOLD = 350;
+var VICTORY_CLEAR_MARGIN_THRESHOLD = 30;
+var VICTORY_LANDSLIDE_MARGIN_THRESHOLD = 80;
+
 var Election = {
     time: 17.5,
     speed: 1,
@@ -603,7 +611,7 @@ var Election = {
     },
 
     getCountyPollCloseTime: function(fips, stateCode) {
-        var paddedFips = String(fips || '').padStart(5, '0');
+        var paddedFips = (fips ? String(fips) : '').padStart(5, '0');
         if (typeof COUNTY_POLL_CLOSE_OVERRIDES !== 'undefined' && COUNTY_POLL_CLOSE_OVERRIDES[paddedFips] !== undefined) {
             return COUNTY_POLL_CLOSE_OVERRIDES[paddedFips];
         }
@@ -649,7 +657,7 @@ var Election = {
             return (totals.D || 0) + (totals.R || 0) + (totals.G || 0) + (totals.L || 0) + (totals.PSL || 0) + (totals.I || 0);
         }
         var pop = county && county.p ? county.p : 0;
-        return Math.max(0, pop * 0.56);
+        return Math.max(0, pop * DEFAULT_EXPECTED_TURNOUT_RATE);
     },
 
     pulseState: function(stateCode) {
@@ -1007,8 +1015,8 @@ var Election = {
         var wonPopular = winnerParty === pvWinner;
 
         var style = 'narrow';
-        if (winnerEV >= 350 || margin >= 80) style = 'landslide';
-        else if (winnerEV >= 300 || margin >= 30) style = 'clear';
+        if (winnerEV >= VICTORY_LANDSLIDE_EV_THRESHOLD || margin >= VICTORY_LANDSLIDE_MARGIN_THRESHOLD) style = 'landslide';
+        else if (winnerEV >= VICTORY_CLEAR_EV_THRESHOLD || margin >= VICTORY_CLEAR_MARGIN_THRESHOLD) style = 'clear';
 
         if (winnerParty !== 'D' && winnerParty !== 'R') {
             return winnerName + ' delivered a historic third-party breakthrough, converting outsider energy into an Electoral College victory and forcing a major coalition realignment.';
@@ -1051,7 +1059,7 @@ var Election = {
                 d: support.D || 0,
                 r: support.R || 0,
                 third: (support.G || 0) + (support.L || 0) + (support.I || 0) + (support.PSL || 0),
-                turnout: ((gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId]) || 1) * 60,
+                turnout: ((gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId]) || DEFAULT_INTEREST_GROUP_TURNOUT_MULTIPLIER) * COALITION_BASE_TURNOUT_PCT,
                 change: ((gameData.interestGroupChanges && gameData.interestGroupChanges[groupId] && gameData.interestGroupChanges[groupId][gameData.candidate && gameData.candidate.id]) || 0)
             });
         }

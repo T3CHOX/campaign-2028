@@ -236,6 +236,8 @@ const COUNTY_POLL_CLOSE_OVERRIDES = {
     '48229': 21
 };
 
+// Split-county shares and baseline D/R values mirror the product requirements
+// for ME/NE district simulation and are used as district-level anchor PVIs.
 const SPLIT_ELECTORAL_RULES = {
     NE: {
         statewideEV: 2,

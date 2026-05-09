@@ -639,8 +639,8 @@ var Counties = {
                 stateVotes = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
                 var stateFipsSimple = STATES[stateCode] ? STATES[stateCode].fips : null;
                 for (var f in this.countyData) {
-                    var pf = String(f).padStart(5, '0');
-                    if (stateFipsSimple && pf.substring(0, 2) === stateFipsSimple) {
+                    var paddedFipsSimple = (f ? String(f) : '').padStart(5, '0');
+                    if (stateFipsSimple && paddedFipsSimple.substring(0, 2) === stateFipsSimple) {
                         var cVotes = this.getCountyVotesForAllocation(this.countyData[f], false);
                         for (var p = 0; p < parties.length; p++) {
                             stateVotes[parties[p]] += cVotes[parties[p]] || 0;
@@ -682,7 +682,7 @@ var Counties = {
         var statewideVotes = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
         for (var fips in this.countyData) {
-            var paddedFips = String(fips).padStart(5, '0');
+            var paddedFips = (fips ? String(fips) : '').padStart(5, '0');
             if (!stateFips || paddedFips.substring(0, 2) !== stateFips) continue;
             var county = this.countyData[fips];
             var countyVotes = this.getCountyVotesForAllocation(county, useReportedVotes);
