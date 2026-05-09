@@ -495,6 +495,255 @@ var Counties = {
             county.v.PSL = 0;
         }
     },
+
+    getPartyVoteKeys: function() {
+        return ['D', 'R', 'G', 'L', 'PSL', 'I'];
+    },
+
+    getCountyVotesForAllocation: function(county, useReportedVotes) {
+        var parties = this.getPartyVoteKeys();
+        var votes = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+
+        if (useReportedVotes && county && county.reportedVotes) {
+            for (var i = 0; i < parties.length; i++) {
+                votes[parties[i]] = Math.max(0, county.reportedVotes[parties[i]] || 0);
+            }
+            return votes;
+        }
+
+        if (!county) return votes;
+        var undecidedPct = county.undecided || 0;
+        var decidedMultiplier = (100 - undecidedPct) / 100;
+        var totals = this.calculateCountyVoteTotals(county, {
+            reportingFactor: 1,
+            decidedMultiplier: decidedMultiplier,
+            errorFactor: 1
+        });
+
+        for (var j = 0; j < parties.length; j++) {
+            votes[parties[j]] = Math.max(0, totals[parties[j]] || 0);
+        }
+        return votes;
+    },
+
+    getLeadingPartyFromVotes: function(votes) {
+        var parties = this.getPartyVoteKeys();
+        var winner = parties[0];
+        var winnerVotes = votes[winner] || 0;
+        for (var i = 1; i < parties.length; i++) {
+            var p = parties[i];
+            var val = votes[p] || 0;
+            if (val > winnerVotes) {
+                winner = p;
+                winnerVotes = val;
+            }
+        }
+        return winner;
+    },
+
+    normalizeVoteShareMap: function(voteShares) {
+        var parties = this.getPartyVoteKeys();
+        var total = 0;
+        for (var i = 0; i < parties.length; i++) {
+            var p = parties[i];
+            voteShares[p] = Math.max(0, voteShares[p] || 0);
+            total += voteShares[p];
+        }
+        if (total <= 0) {
+            voteShares.D = 50;
+            voteShares.R = 50;
+            voteShares.G = 0;
+            voteShares.L = 0;
+            voteShares.PSL = 0;
+            voteShares.I = 0;
+            return voteShares;
+        }
+        for (var j = 0; j < parties.length; j++) {
+            var party = parties[j];
+            voteShares[party] = (voteShares[party] / total) * 100;
+        }
+        return voteShares;
+    },
+
+    buildSplitSegmentShares: function(county, countyVotes, segmentBaseline) {
+        var parties = this.getPartyVoteKeys();
+        var currentTotal = 0;
+        for (var i = 0; i < parties.length; i++) {
+            currentTotal += countyVotes[parties[i]] || 0;
+        }
+
+        var currentShare = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+        if (currentTotal > 0) {
+            for (var j = 0; j < parties.length; j++) {
+                var p = parties[j];
+                currentShare[p] = ((countyVotes[p] || 0) / currentTotal) * 100;
+            }
+        }
+
+        var baseCounty = county && county.originalV ? county.originalV : (county && county.v ? county.v : { D: 50, R: 50 });
+        var baseCountyTotal = 0;
+        for (var k = 0; k < parties.length; k++) {
+            baseCountyTotal += baseCounty[parties[k]] || 0;
+        }
+        var baseCountyShare = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+        if (baseCountyTotal > 0) {
+            for (var m = 0; m < parties.length; m++) {
+                var p2 = parties[m];
+                baseCountyShare[p2] = ((baseCounty[p2] || 0) / baseCountyTotal) * 100;
+            }
+        } else {
+            baseCountyShare.D = 50;
+            baseCountyShare.R = 50;
+        }
+
+        var segmentShares = {
+            D: (segmentBaseline && segmentBaseline.D) || 50,
+            R: (segmentBaseline && segmentBaseline.R) || 50,
+            G: 0, L: 0, PSL: 0, I: 0
+        };
+
+        var deltaD = currentShare.D - baseCountyShare.D;
+        var deltaR = currentShare.R - baseCountyShare.R;
+        segmentShares.D += deltaD;
+        segmentShares.R += deltaR;
+
+        var majorSum = Math.max(0, segmentShares.D) + Math.max(0, segmentShares.R);
+        var remainingThird = Math.max(0, 100 - majorSum);
+        var thirdCurrent = (currentShare.G || 0) + (currentShare.L || 0) + (currentShare.PSL || 0) + (currentShare.I || 0);
+        if (thirdCurrent > 0) {
+            segmentShares.G = remainingThird * ((currentShare.G || 0) / thirdCurrent);
+            segmentShares.L = remainingThird * ((currentShare.L || 0) / thirdCurrent);
+            segmentShares.PSL = remainingThird * ((currentShare.PSL || 0) / thirdCurrent);
+            segmentShares.I = remainingThird * ((currentShare.I || 0) / thirdCurrent);
+        } else {
+            segmentShares.D += remainingThird * 0.5;
+            segmentShares.R += remainingThird * 0.5;
+        }
+
+        return this.normalizeVoteShareMap(segmentShares);
+    },
+
+    calculateStateElectoralAllocation: function(stateCode, options) {
+        var opts = options || {};
+        var useReportedVotes = !!opts.useReportedVotes;
+        var parties = this.getPartyVoteKeys();
+        var state = gameData.states[stateCode];
+        if (!state) return null;
+
+        var rule = (typeof SPLIT_ELECTORAL_RULES !== 'undefined') ? SPLIT_ELECTORAL_RULES[stateCode] : null;
+        var allocation = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+
+        if (!rule) {
+            var stateVotes = this.getCountyVotesForAllocation({ reportedVotes: state.reportedVotes, undecided: 0, v: null }, true);
+            if (!useReportedVotes) {
+                stateVotes = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+                var stateFipsSimple = STATES[stateCode] ? STATES[stateCode].fips : null;
+                for (var f in this.countyData) {
+                    var pf = String(f).padStart(5, '0');
+                    if (stateFipsSimple && pf.substring(0, 2) === stateFipsSimple) {
+                        var cVotes = this.getCountyVotesForAllocation(this.countyData[f], false);
+                        for (var p = 0; p < parties.length; p++) {
+                            stateVotes[parties[p]] += cVotes[parties[p]] || 0;
+                        }
+                    }
+                }
+            }
+            var simpleWinner = this.getLeadingPartyFromVotes(stateVotes);
+            allocation[simpleWinner] = state.ev;
+            return {
+                allocation: allocation,
+                calledFor: simpleWinner,
+                statewideWinner: simpleWinner,
+                statewideVotes: stateVotes,
+                districtResults: [],
+                isSplitState: false
+            };
+        }
+
+        var districtVotes = {};
+        var districtOrder = [];
+        for (var districtId in rule.countyDistrictMap) {
+            var mappedDistrict = rule.countyDistrictMap[districtId];
+            if (districtOrder.indexOf(mappedDistrict) === -1) districtOrder.push(mappedDistrict);
+        }
+        for (var splitCountyFips in rule.splitCounties) {
+            var segments = rule.splitCounties[splitCountyFips];
+            for (var si = 0; si < segments.length; si++) {
+                if (districtOrder.indexOf(segments[si].district) === -1) districtOrder.push(segments[si].district);
+            }
+        }
+        if (rule.defaultDistrict && districtOrder.indexOf(rule.defaultDistrict) === -1) {
+            districtOrder.push(rule.defaultDistrict);
+        }
+        for (var d = 0; d < districtOrder.length; d++) {
+            districtVotes[districtOrder[d]] = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+        }
+
+        var statewideVotes = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+        var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
+        for (var fips in this.countyData) {
+            var paddedFips = String(fips).padStart(5, '0');
+            if (!stateFips || paddedFips.substring(0, 2) !== stateFips) continue;
+            var county = this.countyData[fips];
+            var countyVotes = this.getCountyVotesForAllocation(county, useReportedVotes);
+
+            for (var p1 = 0; p1 < parties.length; p1++) {
+                statewideVotes[parties[p1]] += countyVotes[parties[p1]] || 0;
+            }
+
+            if (rule.splitCounties && rule.splitCounties[paddedFips]) {
+                var countyTotalVotes = 0;
+                for (var p2 = 0; p2 < parties.length; p2++) countyTotalVotes += countyVotes[parties[p2]] || 0;
+                var splitSegments = rule.splitCounties[paddedFips];
+                for (var segIdx = 0; segIdx < splitSegments.length; segIdx++) {
+                    var seg = splitSegments[segIdx];
+                    var segmentVotesTotal = countyTotalVotes * seg.share;
+                    var segmentShares = this.buildSplitSegmentShares(county, countyVotes, seg.baseline);
+                    if (!districtVotes[seg.district]) {
+                        districtVotes[seg.district] = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+                    }
+                    for (var p3 = 0; p3 < parties.length; p3++) {
+                        var key = parties[p3];
+                        districtVotes[seg.district][key] += segmentVotesTotal * ((segmentShares[key] || 0) / 100);
+                    }
+                }
+                continue;
+            }
+
+            var district = (rule.countyDistrictMap && rule.countyDistrictMap[paddedFips]) || rule.defaultDistrict;
+            if (!districtVotes[district]) {
+                districtVotes[district] = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
+            }
+            for (var p4 = 0; p4 < parties.length; p4++) {
+                var partyKey = parties[p4];
+                districtVotes[district][partyKey] += countyVotes[partyKey] || 0;
+            }
+        }
+
+        var districtResults = [];
+        for (var districtName in districtVotes) {
+            var districtWinner = this.getLeadingPartyFromVotes(districtVotes[districtName]);
+            allocation[districtWinner] += 1;
+            districtResults.push({
+                district: districtName,
+                winner: districtWinner,
+                votes: districtVotes[districtName]
+            });
+        }
+
+        var statewideWinner = this.getLeadingPartyFromVotes(statewideVotes);
+        allocation[statewideWinner] += rule.statewideEV;
+
+        return {
+            allocation: allocation,
+            calledFor: statewideWinner,
+            statewideWinner: statewideWinner,
+            statewideVotes: statewideVotes,
+            districtResults: districtResults,
+            isSplitState: true,
+            statewideEV: rule.statewideEV
+        };
+    },
     
     // Open county view for a state
     openCountyView: function(stateCode) {
