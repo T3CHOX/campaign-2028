@@ -117,20 +117,15 @@ var Utils = {
             var county = Counties.countyData[fips];
             if (!county.v || !county.p) continue;
 
-            var demTurnout   = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
-            var repTurnout   = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
-            var thirdTurnout = (county.turnout && county.turnout.thirdParty) || 0.7;
             var decided      = (100 - (county.undecided || 0)) / 100;
-            var pop = county.p;
+            var countyTotals = Counties.calculateCountyVoteTotals(county, { reportingFactor: 1, decidedMultiplier: decided, errorFactor: 1 });
 
-            totals.D += (county.v.D || 0) * pop / 100 * decided * demTurnout;
-            totals.R += (county.v.R || 0) * pop / 100 * decided * repTurnout;
-            if (gameData.thirdPartiesEnabled) {
-                totals.G   += (county.v.G   || 0) * pop / 100 * decided * thirdTurnout;
-                totals.L   += (county.v.L   || 0) * pop / 100 * decided * thirdTurnout;
-                totals.I   += (county.v.I   || 0) * pop / 100 * decided * thirdTurnout;
-                totals.PSL += (county.v.PSL || 0) * pop / 100 * decided * thirdTurnout;
-            }
+            totals.D += countyTotals.D || 0;
+            totals.R += countyTotals.R || 0;
+            totals.G += countyTotals.G || 0;
+            totals.L += countyTotals.L || 0;
+            totals.I += countyTotals.I || 0;
+            totals.PSL += countyTotals.PSL || 0;
         }
 
         var totalVotes = totals.D + totals.R + totals.G + totals.L + totals.I + totals.PSL;
@@ -148,19 +143,8 @@ var Utils = {
     getCountyPollingByParty: function(county) {
         if (!county || !county.v) return null;
 
-        var demTurnout   = gameData.selectedParty === 'D' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.demOpponent) || 1.0);
-        var repTurnout   = gameData.selectedParty === 'R' ? ((county.turnout && county.turnout.player) || 1.0) : ((county.turnout && county.turnout.repOpponent) || 1.0);
-        var thirdTurnout = (county.turnout && county.turnout.thirdParty) || 0.7;
         var decided      = (100 - (county.undecided || 0)) / 100;
-
-        var totals = {
-            D:   (county.v.D   || 0) * decided * demTurnout,
-            R:   (county.v.R   || 0) * decided * repTurnout,
-            G:   gameData.thirdPartiesEnabled ? (county.v.G   || 0) * decided * thirdTurnout : 0,
-            L:   gameData.thirdPartiesEnabled ? (county.v.L   || 0) * decided * thirdTurnout : 0,
-            I:   gameData.thirdPartiesEnabled ? (county.v.I   || 0) * decided * thirdTurnout : 0,
-            PSL: gameData.thirdPartiesEnabled ? (county.v.PSL || 0) * decided * thirdTurnout : 0
-        };
+        var totals = Counties.calculateCountyVoteTotals(county, { reportingFactor: 1, decidedMultiplier: decided, errorFactor: 1 });
 
         var totalVotes = totals.D + totals.R + totals.G + totals.L + totals.I + totals.PSL;
         if (totalVotes <= 0) return null;
@@ -240,7 +224,6 @@ var Utils = {
             var deltaClass = item.delta > 0.05 ? 'cpl-delta-pos' : (item.delta < -0.05 ? 'cpl-delta-neg' : 'cpl-delta-neu');
 
             html += '<div class="cpl-row">';
-            html += '<span class="cpl-rank">' + (i + 1) + '</span>';
             html += '<img class="cpl-avatar" src="' + imgSrc + '" onerror="this.src=\'images/scenario.jpg\'" alt="" style="border-color:' + partyColor + ';">';
             html += '<div class="cpl-info">';
             html += '<div class="cpl-name">' + formattedName + '</div>';

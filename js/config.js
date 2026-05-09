@@ -96,6 +96,194 @@ const POLL_CLOSE_TIMES = {
     "ID": 23, "OR": 23, "WA": 23, "AK": 25
 };
 
+const COUNTY_POLL_CLOSE_OVERRIDES = {
+    '12005': 20,
+    '12013': 20,
+    '12033': 20,
+    '12045': 20,
+    '12059': 20,
+    '12063': 20,
+    '12091': 20,
+    '12113': 20,
+    '12131': 20,
+    '12133': 20,
+    '16001': 22,
+    '16003': 22,
+    '16005': 22,
+    '16007': 22,
+    '16011': 22,
+    '16013': 22,
+    '16015': 22,
+    '16019': 22,
+    '16023': 22,
+    '16025': 22,
+    '16027': 22,
+    '16029': 22,
+    '16031': 22,
+    '16033': 22,
+    '16037': 22,
+    '16039': 22,
+    '16041': 22,
+    '16043': 22,
+    '16045': 22,
+    '16047': 22,
+    '16051': 22,
+    '16053': 22,
+    '16059': 22,
+    '16063': 22,
+    '16065': 22,
+    '16067': 22,
+    '16071': 22,
+    '16073': 22,
+    '16075': 22,
+    '16077': 22,
+    '16081': 22,
+    '16083': 22,
+    '16085': 22,
+    '16087': 22,
+    '18051': 19,
+    '18073': 19,
+    '18089': 19,
+    '18091': 19,
+    '18111': 19,
+    '18125': 19,
+    '18127': 19,
+    '18129': 19,
+    '18147': 19,
+    '18163': 19,
+    '18173': 19,
+    '20071': 22,
+    '20075': 22,
+    '20181': 22,
+    '20199': 22,
+    '21001': 19,
+    '21003': 19,
+    '21007': 19,
+    '21009': 19,
+    '21027': 19,
+    '21031': 19,
+    '21033': 19,
+    '21035': 19,
+    '21039': 19,
+    '21047': 19,
+    '21053': 19,
+    '21055': 19,
+    '21057': 19,
+    '21059': 19,
+    '21061': 19,
+    '21075': 19,
+    '21083': 19,
+    '21085': 19,
+    '21087': 19,
+    '21091': 19,
+    '21099': 19,
+    '21101': 19,
+    '21105': 19,
+    '21107': 19,
+    '21139': 19,
+    '21141': 19,
+    '21143': 19,
+    '21145': 19,
+    '21149': 19,
+    '21157': 19,
+    '21169': 19,
+    '21171': 19,
+    '21177': 19,
+    '21183': 19,
+    '21207': 19,
+    '21213': 19,
+    '21219': 19,
+    '21221': 19,
+    '21225': 19,
+    '21227': 19,
+    '21231': 19,
+    '21233': 19,
+    '26043': 21,
+    '26053': 21,
+    '26071': 21,
+    '26109': 21,
+    '38001': 22,
+    '38007': 22,
+    '38011': 22,
+    '38025': 22,
+    '38033': 22,
+    '38037': 22,
+    '38041': 22,
+    '38053': 22,
+    '38057': 22,
+    '38059': 22,
+    '38065': 22,
+    '38087': 22,
+    '38089': 22,
+    '41045': 22,
+    '46007': 22,
+    '46019': 22,
+    '46031': 22,
+    '46033': 22,
+    '46041': 22,
+    '46047': 22,
+    '46055': 22,
+    '46063': 22,
+    '46071': 22,
+    '46081': 22,
+    '46093': 22,
+    '46102': 22,
+    '46103': 22,
+    '46105': 22,
+    '46117': 22,
+    '46137': 22,
+    '48141': 21,
+    '48229': 21
+};
+
+// Split-county shares and baseline D/R values mirror the product requirements
+// for ME/NE district simulation and are used as district-level anchor PVIs.
+const SPLIT_ELECTORAL_RULES = {
+    NE: {
+        statewideEV: 2,
+        defaultDistrict: 'NE-3',
+        countyDistrictMap: {
+            '31055': 'NE-1', // Douglas
+            '31025': 'NE-1', // Cass
+            '31053': 'NE-1', // Dodge
+            '31155': 'NE-1', // Saunders
+            '31177': 'NE-1', // Washington
+            '31109': 'NE-2', // Lancaster
+            '31001': 'NE-2', // Adams
+            '31019': 'NE-2', // Buffalo
+            '31079': 'NE-2', // Hall
+            '31181': 'NE-2'  // Webster
+        },
+        splitCounties: {
+            '31173': [ // Thurston
+                { district: 'NE-3', share: 0.963, baseline: { D: 47.59, R: 52.41 } },
+                { district: 'NE-1', share: 0.037, baseline: { D: 27.73, R: 72.27 } }
+            ],
+            '31153': [ // Sarpy
+                { district: 'NE-1', share: 0.389, baseline: { D: 44.26, R: 55.74 } },
+                { district: 'NE-2', share: 0.611, baseline: { D: 40.45, R: 55.74 } }
+            ]
+        }
+    },
+    ME: {
+        statewideEV: 2,
+        defaultDistrict: 'ME-2',
+        countyDistrictMap: {
+            '23031': 'ME-1', // York
+            '23005': 'ME-1', // Cumberland
+            '23023': 'ME-1', // Sagadahoc
+            '23015': 'ME-1', // Lincoln
+            '23013': 'ME-1'  // Knox
+        },
+        splitCounties: {
+            '23011': [ // Kennebec
+                { district: 'ME-1', share: 0.62, baseline: { D: 52.7, R: 47.3 } },
+                { district: 'ME-2', share: 0.38, baseline: { D: 44.34, R: 55.66 } }
+            ]
+        }
+    }
+};
+
 var gameData = {
     currentDate: new Date("2028-07-04"),
     electionDay: new Date("2028-11-03"),
@@ -119,6 +307,7 @@ var gameData = {
     // Interest group support tracking
     interestGroupSupport: {},  // Will store support % for each candidate per group
     interestGroupChanges: {},   // Will store last turn's changes for display
+    interestGroupBaseSupport: {}, // Baseline support before issue modifiers
     interestGroupTurnout: {},   // Per-group turnout propensity (1.0 = baseline 100%)
     // Pending campaign actions queue (applied on turn submission)
     pendingActions: [],  // Array of {type, state, countyId, issueId, intensity, cost}
@@ -134,6 +323,7 @@ var PERSUASION_CONSTANTS = {
     BASE_PERSUASION_AD: 0.02,           // Base margin shift per ad intensity point
     BASE_PERSUASION_SPEECH: 0.015,      // Base margin shift per speech intensity point
     BASE_PERSUASION_RALLY: 0.01,        // Base margin shift per rally (kept for compatibility)
+    BASE_PERSUASION_DIGITAL: 0.012,     // Base margin shift per digital intensity point
     
     // Speech localized multiplier (county where speech occurs)
     SPEECH_LOCAL_MULTIPLIER: 2.5,       // 2.5x effect in the specific county
@@ -149,14 +339,28 @@ var PERSUASION_CONSTANTS = {
     AD_TURNOUT_BOOST: 0.005,            // Small turnout boost per ad
     SPEECH_TURNOUT_BOOST: 0.01,         // Moderate turnout boost per speech
     RALLY_TURNOUT_BOOST: 0.05,          // Large turnout boost per rally
+    FIELD_TURNOUT_BOOST: 0.08,          // Strong turnout boost per field action
+    DIGITAL_TURNOUT_BOOST: 0.03,        // Digital turnout boost per action
     
     // Cost structure
     AD_BASE_COST: 3.0,                  // Base cost in millions
     SPEECH_BASE_COST: 0.5,              // Base cost in millions
     RALLY_COST: 1.0,                    // Rally cost
+    FIELD_BASE_COST: 2.5,               // Field operations cost
+    DIGITAL_BASE_COST: 1.5,             // Digital campaign cost
     
     // Energy costs
     AD_ENERGY_COST: 0,                  // Ads don't require candidate presence
     SPEECH_ENERGY_COST: 1,              // Speeches require candidate
-    RALLY_ENERGY_COST: 2                // Rallies require significant energy
+    RALLY_ENERGY_COST: 2,               // Rallies require significant energy
+    FIELD_ENERGY_COST: 1,               // Field ops require staff energy
+    DIGITAL_ENERGY_COST: 0              // Digital campaigns are staff-driven
 };
+
+const TARGETABLE_GROUPS = [
+    'black', 'hispanic', 'asian', 'native',
+    'urban', 'suburban', 'rural',
+    'union', 'college', 'noncollege',
+    'bluecollar', 'whitecollar', 'smallbusiness',
+    'youth', 'seniors'
+];

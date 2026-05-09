@@ -115,6 +115,10 @@ var Persuasion = {
                 this.applySpeechAction(action);
             } else if (action.type === 'RALLY') {
                 this.applyRallyAction(action);
+            } else if (action.type === 'FIELD') {
+                this.applyFieldAction(action);
+            } else if (action.type === 'DIGITAL') {
+                this.applyDigitalAction(action);
             }
         }
         
@@ -123,6 +127,10 @@ var Persuasion = {
             if (typeof Counties !== 'undefined') {
                 Counties.updateStateFromCounties(code);
             }
+        }
+
+        if (typeof recomputeInterestGroupSupport === 'function') {
+            recomputeInterestGroupSupport();
         }
         
         // Clear queue
@@ -235,6 +243,50 @@ var Persuasion = {
             if (paddedFips.substring(0, 2) === stateFips) {
                 var county = Counties.countyData[fips];
                 this.applyTurnoutBoost(county, PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST);
+            }
+        }
+    },
+
+    // Apply a FIELD action (targeted turnout boost by demographic group)
+    applyFieldAction: function(action) {
+        var stateCode = action.state;
+        var groupId = action.groupId;
+        var intensity = action.intensity || 1;
+
+        var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
+        if (!stateFips || !Counties || !Counties.countyData) return;
+
+        for (var fips in Counties.countyData) {
+            var paddedFips = fips.padStart(5, '0');
+            if (paddedFips.substring(0, 2) === stateFips) {
+                var county = Counties.countyData[fips];
+                var groupShare = Counties.getCountyGroupShare ? Counties.getCountyGroupShare(county, groupId) : 0;
+                if (groupShare <= 0) continue;
+                var turnoutBoost = PERSUASION_CONSTANTS.FIELD_TURNOUT_BOOST * intensity * groupShare;
+                this.applyTurnoutBoost(county, turnoutBoost);
+            }
+        }
+    },
+
+    // Apply a DIGITAL action (targeted persuasion + turnout)
+    applyDigitalAction: function(action) {
+        var stateCode = action.state;
+        var groupId = action.groupId;
+        var intensity = action.intensity || 1;
+
+        var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
+        if (!stateFips || !Counties || !Counties.countyData) return;
+
+        for (var fips in Counties.countyData) {
+            var paddedFips = fips.padStart(5, '0');
+            if (paddedFips.substring(0, 2) === stateFips) {
+                var county = Counties.countyData[fips];
+                var groupShare = Counties.getCountyGroupShare ? Counties.getCountyGroupShare(county, groupId) : 0;
+                if (groupShare <= 0) continue;
+
+                var delta = PERSUASION_CONSTANTS.BASE_PERSUASION_DIGITAL * intensity * groupShare;
+                this.applyMarginShift(county, delta);
+                this.applyTurnoutBoost(county, PERSUASION_CONSTANTS.DIGITAL_TURNOUT_BOOST * intensity * groupShare);
             }
         }
     },
@@ -366,19 +418,23 @@ var Persuasion = {
             return "No actions queued";
         }
         
-        var ads = 0, speeches = 0, rallies = 0;
+        var ads = 0, speeches = 0, rallies = 0, fields = 0, digitals = 0;
         
         for (var i = 0; i < gameData.pendingActions.length; i++) {
             var action = gameData.pendingActions[i];
             if (action.type === 'AD') ads++;
             else if (action.type === 'SPEECH') speeches++;
             else if (action.type === 'RALLY') rallies++;
+            else if (action.type === 'FIELD') fields++;
+            else if (action.type === 'DIGITAL') digitals++;
         }
         
         var parts = [];
         if (ads > 0) parts.push(ads + ' ad' + (ads > 1 ? 's' : ''));
         if (speeches > 0) parts.push(speeches + ' speech' + (speeches > 1 ? 'es' : ''));
         if (rallies > 0) parts.push(rallies + ' rall' + (rallies > 1 ? 'ies' : 'y'));
+        if (fields > 0) parts.push(fields + ' field op' + (fields > 1 ? 's' : ''));
+        if (digitals > 0) parts.push(digitals + ' digital');
         
         return parts.join(', ') + ' queued';
     }
