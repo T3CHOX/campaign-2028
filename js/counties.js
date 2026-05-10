@@ -249,39 +249,54 @@ var Counties = {
     getGroupSupportByParty: function(groupId, county) {
         var support = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
         var groupSupport = gameData.interestGroupSupport && gameData.interestGroupSupport[groupId] ? gameData.interestGroupSupport[groupId] : null;
+        var baselineSupport = gameData.interestGroupBaseSupport && gameData.interestGroupBaseSupport[groupId] ? gameData.interestGroupBaseSupport[groupId] : null;
         var activeCandidates = (typeof _buildActiveCandidatesList === 'function') ? _buildActiveCandidatesList() : [];
 
-        if (groupSupport && activeCandidates.length) {
+        if (county && county.v) {
+            support.D = county.v.D || 0;
+            support.R = county.v.R || 0;
+            support.G = county.v.G || 0;
+            support.L = county.v.L || 0;
+            support.PSL = county.v.PSL || 0;
+            support.I = county.v.I || 0;
+        } else if (INTEREST_GROUPS[groupId] && INTEREST_GROUPS[groupId].support) {
+            var baseSupport = INTEREST_GROUPS[groupId].support;
+            support.D = baseSupport.D || 0;
+            support.R = baseSupport.R || 0;
+            support.G = baseSupport.G || 0;
+            support.L = baseSupport.L || 0;
+            support.PSL = baseSupport.PSL || 0;
+            support.I = baseSupport.I || 0;
+        } else if (groupSupport && activeCandidates.length) {
             for (var i = 0; i < activeCandidates.length; i++) {
                 var cand = activeCandidates[i];
                 if (groupSupport[cand.id] !== undefined) {
                     support[cand.voteKey] = groupSupport[cand.id];
                 }
             }
+            baselineSupport = null;
         }
 
-        if (!groupSupport || !activeCandidates.length || (support.D + support.R + support.G + support.L + support.PSL + support.I) <= 0) {
-            if (INTEREST_GROUPS[groupId] && INTEREST_GROUPS[groupId].support) {
-                var baseSupport = INTEREST_GROUPS[groupId].support;
-                support.D = baseSupport.D || 0;
-                support.R = baseSupport.R || 0;
-                support.G = baseSupport.G || 0;
-                support.L = baseSupport.L || 0;
-                support.PSL = baseSupport.PSL || 0;
-                support.I = baseSupport.I || 0;
-            } else if (county && county.v) {
-                support.D = county.v.D || 0;
-                support.R = county.v.R || 0;
-                support.G = county.v.G || 0;
-                support.L = county.v.L || 0;
-                support.PSL = county.v.PSL || 0;
-                support.I = county.v.I || 0;
+        // Apply interest-group shifts as deltas so county baselines remain intact.
+        if (groupSupport && baselineSupport && activeCandidates.length) {
+            for (var j = 0; j < activeCandidates.length; j++) {
+                var cand = activeCandidates[j];
+                var currentSupport = groupSupport[cand.id];
+                var candidateBaseSupport = baselineSupport[cand.id];
+                if (currentSupport === undefined || candidateBaseSupport === undefined) continue;
+                var delta = currentSupport - candidateBaseSupport;
+                if (!isFinite(delta) || delta === 0) continue;
+                support[cand.voteKey] = Math.max(0, (support[cand.voteKey] || 0) + delta);
             }
         }
 
         if (!gameData.thirdPartiesEnabled) {
             support.G = 0; support.L = 0; support.PSL = 0; support.I = 0;
         }
+
+        Object.keys(support).forEach(function(key) {
+            support[key] = Math.max(0, support[key]);
+        });
 
         var totalSupport = support.D + support.R + support.G + support.L + support.PSL + support.I;
         if (totalSupport <= 0) {
@@ -294,9 +309,9 @@ var Counties = {
             totalSupport = 100;
         }
 
-        for (var key in support) {
+        Object.keys(support).forEach(function(key) {
             support[key] = (support[key] / totalSupport) * 100;
-        }
+        });
 
         return support;
     },
