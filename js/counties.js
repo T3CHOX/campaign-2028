@@ -283,9 +283,9 @@ var Counties = {
             for (var j = 0; j < activeCandidates.length; j++) {
                 var cand = activeCandidates[j];
                 var currentSupport = groupSupport[cand.id];
-                var baseSupport = baselineSupport[cand.id];
-                if (currentSupport === undefined || baseSupport === undefined) continue;
-                var delta = currentSupport - baseSupport;
+                var candidateBaseSupport = baselineSupport[cand.id];
+                if (currentSupport === undefined || candidateBaseSupport === undefined) continue;
+                var delta = currentSupport - candidateBaseSupport;
                 if (!isFinite(delta) || delta === 0) continue;
                 support[cand.voteKey] = (support[cand.voteKey] || 0) + delta;
             }
@@ -295,9 +295,9 @@ var Counties = {
             support.G = 0; support.L = 0; support.PSL = 0; support.I = 0;
         }
 
-        for (var key in support) {
+        Object.keys(support).forEach(function(key) {
             support[key] = Math.max(0, support[key]);
-        }
+        });
 
         var totalSupport = support.D + support.R + support.G + support.L + support.PSL + support.I;
         if (totalSupport <= 0) {
@@ -310,9 +310,9 @@ var Counties = {
             totalSupport = 100;
         }
 
-        for (var key in support) {
+        Object.keys(support).forEach(function(key) {
             support[key] = (support[key] / totalSupport) * 100;
-        }
+        });
 
         return support;
     },
