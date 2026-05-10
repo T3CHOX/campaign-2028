@@ -251,7 +251,6 @@ var Counties = {
         var groupSupport = gameData.interestGroupSupport && gameData.interestGroupSupport[groupId] ? gameData.interestGroupSupport[groupId] : null;
         var baselineSupport = gameData.interestGroupBaseSupport && gameData.interestGroupBaseSupport[groupId] ? gameData.interestGroupBaseSupport[groupId] : null;
         var activeCandidates = (typeof _buildActiveCandidatesList === 'function') ? _buildActiveCandidatesList() : [];
-        var usingGroupSupportBase = false;
 
         if (county && county.v) {
             support.D = county.v.D || 0;
@@ -269,17 +268,17 @@ var Counties = {
             support.PSL = baseSupport.PSL || 0;
             support.I = baseSupport.I || 0;
         } else if (groupSupport && activeCandidates.length) {
-            usingGroupSupportBase = true;
             for (var i = 0; i < activeCandidates.length; i++) {
                 var cand = activeCandidates[i];
                 if (groupSupport[cand.id] !== undefined) {
                     support[cand.voteKey] = groupSupport[cand.id];
                 }
             }
+            baselineSupport = null;
         }
 
         // Apply interest-group shifts as deltas so county baselines remain intact.
-        if (!usingGroupSupportBase && groupSupport && baselineSupport && activeCandidates.length) {
+        if (groupSupport && baselineSupport && activeCandidates.length) {
             for (var j = 0; j < activeCandidates.length; j++) {
                 var cand = activeCandidates[j];
                 var currentSupport = groupSupport[cand.id];
@@ -287,7 +286,7 @@ var Counties = {
                 if (currentSupport === undefined || candidateBaseSupport === undefined) continue;
                 var delta = currentSupport - candidateBaseSupport;
                 if (!isFinite(delta) || delta === 0) continue;
-                support[cand.voteKey] = (support[cand.voteKey] || 0) + delta;
+                support[cand.voteKey] = Math.max(0, (support[cand.voteKey] || 0) + delta);
             }
         }
 
