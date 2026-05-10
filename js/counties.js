@@ -249,7 +249,7 @@ var Counties = {
     getGroupSupportByParty: function(groupId, county) {
         var support = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
         var groupSupport = gameData.interestGroupSupport && gameData.interestGroupSupport[groupId] ? gameData.interestGroupSupport[groupId] : null;
-        var groupBaselineSupport = gameData.interestGroupBaseSupport && gameData.interestGroupBaseSupport[groupId] ? gameData.interestGroupBaseSupport[groupId] : null;
+        var baselineSupport = gameData.interestGroupBaseSupport && gameData.interestGroupBaseSupport[groupId] ? gameData.interestGroupBaseSupport[groupId] : null;
         var activeCandidates = (typeof _buildActiveCandidatesList === 'function') ? _buildActiveCandidatesList() : [];
         var usingGroupSupportBase = false;
 
@@ -279,13 +279,15 @@ var Counties = {
         }
 
         // Apply interest-group shifts as deltas so county baselines remain intact.
-        if (!usingGroupSupportBase && groupSupport && groupBaselineSupport && activeCandidates.length) {
+        if (!usingGroupSupportBase && groupSupport && baselineSupport && activeCandidates.length) {
             for (var j = 0; j < activeCandidates.length; j++) {
-                var candDelta = activeCandidates[j];
-                if (groupSupport[candDelta.id] === undefined || groupBaselineSupport[candDelta.id] === undefined) continue;
-                var delta = groupSupport[candDelta.id] - groupBaselineSupport[candDelta.id];
+                var cand = activeCandidates[j];
+                var currentSupport = groupSupport[cand.id];
+                var baseSupport = baselineSupport[cand.id];
+                if (currentSupport === undefined || baseSupport === undefined) continue;
+                var delta = currentSupport - baseSupport;
                 if (!isFinite(delta) || delta === 0) continue;
-                support[candDelta.voteKey] = (support[candDelta.voteKey] || 0) + delta;
+                support[cand.voteKey] = (support[cand.voteKey] || 0) + delta;
             }
         }
 
