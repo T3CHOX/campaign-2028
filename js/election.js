@@ -1402,6 +1402,10 @@ var Election = {
                     self.data2024[fips5] = -perPointDiff * 100;
                 }
                 console.log('✓ 2024 election data loaded: ' + Object.keys(self.data2024).length + ' counties');
+                var shift24Btn = document.getElementById('mode-shift2024');
+                if (shift24Btn && Object.keys(self.data2024).length > 0 && self.allVotesCounted) {
+                    shift24Btn.classList.remove('hidden');
+                }
             }
         };
         xhr.send();

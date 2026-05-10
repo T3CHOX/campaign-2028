@@ -249,9 +249,27 @@ var Counties = {
     getGroupSupportByParty: function(groupId, county) {
         var support = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
         var groupSupport = gameData.interestGroupSupport && gameData.interestGroupSupport[groupId] ? gameData.interestGroupSupport[groupId] : null;
+        var groupBaseSupport = gameData.interestGroupBaseSupport && gameData.interestGroupBaseSupport[groupId] ? gameData.interestGroupBaseSupport[groupId] : null;
         var activeCandidates = (typeof _buildActiveCandidatesList === 'function') ? _buildActiveCandidatesList() : [];
+        var usingGroupSupportBase = false;
 
-        if (groupSupport && activeCandidates.length) {
+        if (county && county.v) {
+            support.D = county.v.D || 0;
+            support.R = county.v.R || 0;
+            support.G = county.v.G || 0;
+            support.L = county.v.L || 0;
+            support.PSL = county.v.PSL || 0;
+            support.I = county.v.I || 0;
+        } else if (INTEREST_GROUPS[groupId] && INTEREST_GROUPS[groupId].support) {
+            var baseSupport = INTEREST_GROUPS[groupId].support;
+            support.D = baseSupport.D || 0;
+            support.R = baseSupport.R || 0;
+            support.G = baseSupport.G || 0;
+            support.L = baseSupport.L || 0;
+            support.PSL = baseSupport.PSL || 0;
+            support.I = baseSupport.I || 0;
+        } else if (groupSupport && activeCandidates.length) {
+            usingGroupSupportBase = true;
             for (var i = 0; i < activeCandidates.length; i++) {
                 var cand = activeCandidates[i];
                 if (groupSupport[cand.id] !== undefined) {
@@ -260,27 +278,22 @@ var Counties = {
             }
         }
 
-        if (!groupSupport || !activeCandidates.length || (support.D + support.R + support.G + support.L + support.PSL + support.I) <= 0) {
-            if (INTEREST_GROUPS[groupId] && INTEREST_GROUPS[groupId].support) {
-                var baseSupport = INTEREST_GROUPS[groupId].support;
-                support.D = baseSupport.D || 0;
-                support.R = baseSupport.R || 0;
-                support.G = baseSupport.G || 0;
-                support.L = baseSupport.L || 0;
-                support.PSL = baseSupport.PSL || 0;
-                support.I = baseSupport.I || 0;
-            } else if (county && county.v) {
-                support.D = county.v.D || 0;
-                support.R = county.v.R || 0;
-                support.G = county.v.G || 0;
-                support.L = county.v.L || 0;
-                support.PSL = county.v.PSL || 0;
-                support.I = county.v.I || 0;
+        if (!usingGroupSupportBase && groupSupport && groupBaseSupport && activeCandidates.length) {
+            for (var j = 0; j < activeCandidates.length; j++) {
+                var candDelta = activeCandidates[j];
+                if (groupSupport[candDelta.id] === undefined || groupBaseSupport[candDelta.id] === undefined) continue;
+                var delta = groupSupport[candDelta.id] - groupBaseSupport[candDelta.id];
+                if (!isFinite(delta) || delta === 0) continue;
+                support[candDelta.voteKey] = (support[candDelta.voteKey] || 0) + delta;
             }
         }
 
         if (!gameData.thirdPartiesEnabled) {
             support.G = 0; support.L = 0; support.PSL = 0; support.I = 0;
+        }
+
+        for (var key in support) {
+            support[key] = Math.max(0, support[key]);
         }
 
         var totalSupport = support.D + support.R + support.G + support.L + support.PSL + support.I;
