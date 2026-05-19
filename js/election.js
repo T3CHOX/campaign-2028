@@ -1624,21 +1624,29 @@ var Election = {
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 var lines = xhr.responseText.split('\n');
+                // Columns: year, state, state_po, county_name, county_fips, office, candidate, party, candidatevotes, totalvotes, version, mode
+                var COL_YEAR = 0;
+                var COL_FIPS = 4;
+                var COL_PARTY = 7;
+                var COL_VOTES = 8;
+                var COL_TOTAL = 9;
+                var PARTY_DEM = 'DEMOCRAT';
+                var PARTY_REP = 'REPUBLICAN';
                 var yearAggregates = {};
                 for (var i = 1; i < lines.length; i++) {
                     var line = lines[i].trim();
                     if (!line) continue;
                     var parts = self.parseCsvLine(line);
                     if (parts.length < 12) continue;
-                    var year = parseInt(parts[0], 10);
-                    var fips5 = self.normalizeFipsCode(parts[4]);
+                    var year = parseInt(parts[COL_YEAR], 10);
+                    var fips5 = self.normalizeFipsCode(parts[COL_FIPS]);
                     if (!year || !fips5) continue;
-                    var party = (parts[7] || '').replace(/"/g, '').trim().toUpperCase();
-                    var votes = parseFloat(parts[8]);
-                    var totalVotes = parseFloat(parts[9]);
+                    var party = (parts[COL_PARTY] || '').replace(/"/g, '').trim().toUpperCase();
+                    var votes = parseFloat(parts[COL_VOTES]);
+                    var totalVotes = parseFloat(parts[COL_TOTAL]);
                     if (!isFinite(votes) || !isFinite(totalVotes) || totalVotes <= 0) continue;
                     // Historical shift compares major-party margins (D vs R) for consistency with simulator results.
-                    if (party !== 'DEMOCRAT' && party !== 'REPUBLICAN') continue;
+                    if (party !== PARTY_DEM && party !== PARTY_REP) continue;
 
                     if (!yearAggregates[year]) yearAggregates[year] = {};
                     if (!yearAggregates[year][fips5]) {
@@ -1646,8 +1654,8 @@ var Election = {
                     }
                     var rec = yearAggregates[year][fips5];
                     rec.total = totalVotes;
-                    if (party === 'DEMOCRAT') rec.d += votes;
-                    if (party === 'REPUBLICAN') rec.r += votes;
+                    if (party === PARTY_DEM) rec.d += votes;
+                    if (party === PARTY_REP) rec.r += votes;
                 }
 
                 for (var yr in yearAggregates) {
@@ -1660,6 +1668,7 @@ var Election = {
                         var rec = countyData[fips];
                         if (!rec || !isFinite(rec.total) || rec.total <= 0) continue;
                         // CSV structure provides one row per party per county-year, aggregated to compute D vs R margin.
+                        // Positive margins indicate a Democratic advantage (Dem minus Rep).
                         var margin = ((rec.d - rec.r) / rec.total) * 100;
                         margins[fips] = margin;
                     }
@@ -1739,7 +1748,7 @@ var Election = {
     // Compute current-election margin vs selected historical year for a county
     computeCountyShiftForYear: function(fips, year) {
         var fips5 = String(fips || '').padStart(5, '0');
-        if (this.allVotesCounted && this.shiftCountyCache[year] && this.shiftCountyCache[year][fips5] !== undefined) {
+        if (this.allVotesCounted && this.shiftCountyCache[year] && this.shiftCountyCache[year].hasOwnProperty(fips5)) {
             return this.shiftCountyCache[year][fips5];
         }
         var margin = this.getHistoricalMargin(year, fips5);
@@ -1761,7 +1770,7 @@ var Election = {
     computeStateShiftForYear: function(stateCode, year) {
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
         if (!stateFips || !Counties.countyData) return null;
-        if (this.allVotesCounted && this.shiftStateCache[year] && this.shiftStateCache[year][stateCode] !== undefined) {
+        if (this.allVotesCounted && this.shiftStateCache[year] && this.shiftStateCache[year].hasOwnProperty(stateCode)) {
             return this.shiftStateCache[year][stateCode];
         }
         var weightedShift = 0;
