@@ -1659,7 +1659,7 @@ var Election = {
                         if (!countyData.hasOwnProperty(fips)) continue;
                         var rec = countyData[fips];
                         if (!rec || !isFinite(rec.total) || rec.total <= 0) continue;
-                        // CSV structure is expected to provide one row per party per county-year.
+                        // CSV structure provides one row per party per county-year, aggregated to compute D vs R margin.
                         var margin = ((rec.d - rec.r) / rec.total) * 100;
                         margins[fips] = margin;
                     }
