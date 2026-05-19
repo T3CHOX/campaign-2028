@@ -43,6 +43,7 @@ var Election = {
     paused: false,
     interval: null,
     mapMode: 'leader',
+    analysisMode: false,
     demEV: 0,
     repEV: 0,
     thirdPartyEV: 0,
@@ -51,6 +52,14 @@ var Election = {
     nationalPopularVotes: { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 },
     totalReportedVotes: 0,
     stateCallAllocations: {},
+    historicalMargins: {},
+    historicalYears: [],
+    selectedShiftYear: 2024,
+    historicalDataLoaded: false,
+    preAnalysisPaused: false,
+    preAnalysisMapMode: 'leader',
+    shiftStateCache: {},
+    shiftCountyCache: {},
 
     start: function() {
         var self = this;
@@ -63,6 +72,17 @@ var Election = {
         this.nationalPopularVotes = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
         this.totalReportedVotes = 0;
         this.stateCallAllocations = {};
+        this.analysisMode = false;
+        this.preAnalysisPaused = false;
+        this.preAnalysisMapMode = 'leader';
+        this.selectedShiftYear = 2024;
+        this.historicalMargins = {};
+        this.historicalYears = [];
+        this.historicalDataLoaded = false;
+        this.shiftStateCache = {};
+        this.shiftCountyCache = {};
+
+        this.resetAnalysisUI();
 
         // Initialize county-level reporting data with staggered schedules
         if (typeof Counties !== 'undefined' && Counties.countyData) {
@@ -131,6 +151,8 @@ var Election = {
 
         // Load 2024 election data for shift map mode
         this.load2024Data();
+        this.loadHistoricalData();
+        this.populateAnalysisYearSelect();
 
         this.loadElectionMap();
         this.updateNationalPopularVote();
@@ -887,10 +909,11 @@ var Election = {
             var path = document.querySelector('#election-map-svg #' + code);
             if (!path) continue;
 
-            if (this.mapMode === 'shift2024') {
-                if (s.reportedPct > 0 && Object.keys(this.data2024).length > 0) {
-                    var shift = this.computeStateShift(code);
-                    path.style.fill = Utils.getShiftColor(shift);
+            if (this.isShiftMapMode()) {
+                var shiftYear = this.getActiveShiftYear();
+                if (s.reportedPct > 0 && this.historicalMargins[shiftYear]) {
+                    var shift = this.computeStateShiftForYear(code, shiftYear);
+                    path.style.fill = shift === null ? '#444444' : Utils.getShiftColor(shift);
                 } else {
                     path.style.fill = '#444444';
                 }
@@ -1193,6 +1216,7 @@ var Election = {
 
         // Buttons
         resultsHTML += '<div class="result-buttons">';
+        resultsHTML += '<button class="result-btn" onclick="Election.enterAnalysisMode()">OPEN ANALYSIS CENTER</button>';
         resultsHTML += '<button class="result-btn" onclick="Election.toggleResultsView()">VIEW ELECTION NIGHT</button>';
         resultsHTML += '<button class="result-btn" onclick="location.reload()">NEW CAMPAIGN</button>';
         resultsHTML += '</div>';
@@ -1215,6 +1239,8 @@ var Election = {
         if (shift24Btn && Object.keys(this.data2024).length > 0) {
             shift24Btn.classList.remove('hidden');
         }
+        var analysisBtn = document.getElementById('analysis-open-btn');
+        if (analysisBtn) analysisBtn.classList.remove('hidden');
     },
     
     toggleResultsView: function() {
@@ -1258,6 +1284,86 @@ var Election = {
         var flipHint = document.getElementById('flip-legend-hint');
         if (flipHint) flipHint.classList.toggle('hidden', mode !== 'projected');
         this.colorElectionMap();
+        if (gameData.electionCountyViewState) {
+            this.updateCountyViewTitle(gameData.electionCountyViewState);
+        }
+    },
+
+    resetAnalysisUI: function() {
+        var screen = document.getElementById('election-screen');
+        if (screen) screen.classList.remove('analysis-mode');
+        var controls = document.getElementById('analysis-controls');
+        if (controls) controls.classList.add('hidden');
+        var analysisBtn = document.getElementById('analysis-open-btn');
+        if (analysisBtn) analysisBtn.classList.add('hidden');
+        var banner = document.querySelector('.election-banner');
+        if (banner) banner.innerText = 'ELECTION NIGHT IN AMERICA';
+    },
+
+    enterAnalysisMode: function() {
+        if (this.analysisMode) return;
+        this.analysisMode = true;
+        this.preAnalysisPaused = this.paused;
+        this.preAnalysisMapMode = this.mapMode;
+        this.paused = true;
+
+        var pauseBtn = document.getElementById('btn-pause');
+        if (pauseBtn) pauseBtn.innerText = '▶️';
+
+        var screen = document.getElementById('election-screen');
+        if (screen) screen.classList.add('analysis-mode');
+        var controls = document.getElementById('analysis-controls');
+        if (controls) controls.classList.remove('hidden');
+        var analysisBtn = document.getElementById('analysis-open-btn');
+        if (analysisBtn) analysisBtn.classList.add('hidden');
+        var banner = document.querySelector('.election-banner');
+        if (banner) banner.innerText = 'ELECTION ANALYSIS CENTER';
+
+        var overlay = document.getElementById('final-results-overlay');
+        if (overlay) overlay.classList.add('hidden');
+
+        if (gameData.electionCountyViewState) {
+            this.closeCountyView();
+        }
+
+        this.setMapMode('shiftHistorical');
+        this.populateAnalysisYearSelect();
+    },
+
+    exitAnalysisMode: function() {
+        if (!this.analysisMode) return;
+        this.analysisMode = false;
+        this.paused = this.preAnalysisPaused;
+        var pauseBtn = document.getElementById('btn-pause');
+        if (pauseBtn) pauseBtn.innerText = this.paused ? '▶️' : '⏸️';
+        var screen = document.getElementById('election-screen');
+        if (screen) screen.classList.remove('analysis-mode');
+        var controls = document.getElementById('analysis-controls');
+        if (controls) controls.classList.add('hidden');
+        var analysisBtn = document.getElementById('analysis-open-btn');
+        if (analysisBtn && this.allVotesCounted) analysisBtn.classList.remove('hidden');
+        var banner = document.querySelector('.election-banner');
+        if (banner) banner.innerText = 'ELECTION NIGHT IN AMERICA';
+
+        this.setMapMode(this.preAnalysisMapMode || 'leader');
+    },
+
+    setAnalysisYear: function(yearValue) {
+        var year = parseInt(yearValue, 10);
+        if (!year) return;
+        this.selectedShiftYear = year;
+        var select = document.getElementById('analysis-year-select');
+        if (select && select.value !== String(year)) {
+            select.value = String(year);
+        }
+        if (this.analysisMode && this.mapMode !== 'shiftHistorical') {
+            this.setMapMode('shiftHistorical');
+        }
+        this.colorElectionMap();
+        if (gameData.electionCountyViewState) {
+            this.updateCountyElectionColors();
+            this.updateCountyViewTitle(gameData.electionCountyViewState);
+        }
     },
     
     skipToEnd: function() {
@@ -1322,6 +1428,17 @@ var Election = {
         var tooltip = document.getElementById('map-tooltip');
         if (!tooltip) return;
 
+        if (this.isShiftMapMode()) {
+            var shiftYear = this.getActiveShiftYear();
+            var shift = this.computeStateShiftForYear(code, shiftYear);
+            var shiftLabel = this.getShiftLabelHtml(shift);
+            tooltip.innerHTML = '<strong>' + s.name + '</strong><br>' + shiftLabel + '<br><span style="color:#888">Shift vs ' + shiftYear + '</span>';
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY - 10) + 'px';
+            return;
+        }
+
         var total = (s.reportedVotes.D || 0) + (s.reportedVotes.R || 0) +
                     (s.reportedVotes.G || 0) + (s.reportedVotes.L || 0);
         var pctMargin = total > 0 ? ((s.reportedVotes.D - s.reportedVotes.R) / total) * 100 : 0;
@@ -1348,6 +1465,17 @@ var Election = {
         var tooltip = document.getElementById('map-tooltip');
         if (!tooltip) return;
 
+        if (this.isShiftMapMode()) {
+            var shiftYear = this.getActiveShiftYear();
+            var shift = this.computeCountyShiftForYear(fips, shiftYear);
+            var shiftLabel = this.getShiftLabelHtml(shift);
+            tooltip.innerHTML = '<strong>' + (county.n || 'County') + '</strong><br>' + shiftLabel + '<br><span style="color:#888">Shift vs ' + shiftYear + '</span>';
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY - 10) + 'px';
+            return;
+        }
+
         var rVotes = county.reportedVotes || {};
         var total = (rVotes.D || 0) + (rVotes.R || 0) + (rVotes.G || 0) + (rVotes.L || 0);
         var pctMargin = total > 0 ? ((rVotes.D - rVotes.R) / total) * 100 : 0;
@@ -1369,6 +1497,175 @@ var Election = {
     hideMapTooltip: function() {
         var tooltip = document.getElementById('map-tooltip');
         if (tooltip) tooltip.style.display = 'none';
+    },
+
+    // ─── Historical shift helpers ───────────────────────────────────────────────
+
+    parseCsvLine: function(line) {
+        var result = [];
+        var current = '';
+        var inQuotes = false;
+        for (var i = 0; i < line.length; i++) {
+            var char = line.charAt(i);
+            if (char === '"') {
+                if (inQuotes && line.charAt(i + 1) === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        result.push(current);
+        return result;
+    },
+
+    addHistoricalYear: function(year) {
+        if (!year) return;
+        if (this.historicalYears.indexOf(year) === -1) {
+            this.historicalYears.push(year);
+            this.historicalYears.sort(function(a, b) { return b - a; });
+        }
+    },
+
+    populateAnalysisYearSelect: function() {
+        var select = document.getElementById('analysis-year-select');
+        if (!select) return;
+        select.innerHTML = '';
+        if (!this.historicalYears.length) {
+            var loadingOption = document.createElement('option');
+            loadingOption.value = '';
+            loadingOption.text = 'Loading...';
+            select.appendChild(loadingOption);
+            select.disabled = true;
+            return;
+        }
+        select.disabled = false;
+        for (var i = 0; i < this.historicalYears.length; i++) {
+            var year = this.historicalYears[i];
+            var option = document.createElement('option');
+            option.value = year;
+            option.text = String(year);
+            select.appendChild(option);
+        }
+        if (this.historicalYears.indexOf(this.selectedShiftYear) === -1) {
+            this.selectedShiftYear = this.historicalYears[0];
+        }
+        select.value = String(this.selectedShiftYear);
+        if (this.analysisMode && this.isShiftMapMode()) {
+            this.setAnalysisYear(this.selectedShiftYear);
+        }
+    },
+
+    getActiveShiftYear: function() {
+        if (this.mapMode === 'shift2024') return 2024;
+        return this.selectedShiftYear || 2024;
+    },
+
+    isShiftMapMode: function() {
+        return this.mapMode === 'shift2024' || this.mapMode === 'shiftHistorical';
+    },
+
+    getHistoricalMargin: function(year, fips) {
+        var yearData = this.historicalMargins[year];
+        if (!yearData) return null;
+        var fips5 = String(fips || '').padStart(5, '0');
+        if (!fips5) return null;
+        if (yearData[fips5] === undefined) return null;
+        return yearData[fips5];
+    },
+
+    getCandidateNameForParty: function(party) {
+        if (party === gameData.selectedParty && gameData.candidate) {
+            return gameData.candidate.name;
+        }
+        if (party === 'D' && gameData.demTicket && gameData.demTicket.pres) {
+            return gameData.demTicket.pres.name;
+        }
+        if (party === 'R' && gameData.repTicket && gameData.repTicket.pres) {
+            return gameData.repTicket.pres.name;
+        }
+        return this.getPartyLabel(party);
+    },
+
+    getShiftLabelHtml: function(shift) {
+        if (shift === null || shift === undefined || !isFinite(shift)) {
+            return '<span style="color:#888888">NO DATA</span>';
+        }
+        var absShift = Math.abs(shift);
+        if (absShift < 0.05) {
+            return '<span style="color:#cccccc">EVEN</span>';
+        }
+        var party = shift > 0 ? 'D' : 'R';
+        var color = this.getPartyColor(party);
+        var candidateName = this.getCandidateNameForParty(party);
+        return '<span style="color:' + color + '; font-weight: bold;">' + candidateName + ' +' + absShift.toFixed(1) + '</span>';
+    },
+
+    loadHistoricalData: function() {
+        if (this.historicalDataLoaded) return;
+        var self = this;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'counties/2000-2020-countypres.csv', true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var lines = xhr.responseText.split('\n');
+                var yearAggregates = {};
+                for (var i = 1; i < lines.length; i++) {
+                    var line = lines[i].trim();
+                    if (!line) continue;
+                    var parts = self.parseCsvLine(line);
+                    if (parts.length < 12) continue;
+                    var year = parseInt(parts[0], 10);
+                    var rawFips = (parts[4] || '').replace(/"/g, '').trim();
+                    var party = (parts[7] || '').replace(/"/g, '').trim().toUpperCase();
+                    var votes = parseFloat(parts[8]);
+                    var totalVotes = parseFloat(parts[9]);
+                    if (!year || !rawFips || !isFinite(votes) || !isFinite(totalVotes) || totalVotes <= 0) continue;
+                    if (party !== 'DEMOCRAT' && party !== 'REPUBLICAN') continue;
+
+                    var fips5 = String(parseInt(rawFips, 10)).padStart(5, '0');
+                    if (!yearAggregates[year]) yearAggregates[year] = {};
+                    if (!yearAggregates[year][fips5]) {
+                        yearAggregates[year][fips5] = { d: 0, r: 0, total: totalVotes };
+                    }
+                    var rec = yearAggregates[year][fips5];
+                    rec.total = totalVotes;
+                    if (party === 'DEMOCRAT') rec.d += votes;
+                    if (party === 'REPUBLICAN') rec.r += votes;
+                }
+
+                for (var yr in yearAggregates) {
+                    if (!yearAggregates.hasOwnProperty(yr)) continue;
+                    var yearNum = parseInt(yr, 10);
+                    var margins = {};
+                    var countyData = yearAggregates[yr];
+                    for (var fips in countyData) {
+                        if (!countyData.hasOwnProperty(fips)) continue;
+                        var rec = countyData[fips];
+                        if (!rec || !isFinite(rec.total) || rec.total <= 0) continue;
+                        var margin = ((rec.d - rec.r) / rec.total) * 100;
+                        margins[fips] = margin;
+                    }
+                    self.historicalMargins[yearNum] = margins;
+                    self.addHistoricalYear(yearNum);
+                }
+
+                self.historicalDataLoaded = true;
+                console.log('✓ Historical election data loaded: ' + self.historicalYears.length + ' cycles');
+                self.populateAnalysisYearSelect();
+                if (self.analysisMode && self.isShiftMapMode()) {
+                    self.colorElectionMap();
+                    if (gameData.electionCountyViewState) self.updateCountyElectionColors();
+                }
+            }
+        };
+        xhr.send();
     },
 
     // ─── 2024 Shift helpers ─────────────────────────────────────────────────────
@@ -1401,10 +1698,17 @@ var Election = {
                     var fips5 = String(parseInt(rawFips, 10)).padStart(5, '0');
                     self.data2024[fips5] = -perPointDiff * 100;
                 }
+                self.historicalMargins[2024] = self.data2024;
+                self.addHistoricalYear(2024);
                 console.log('✓ 2024 election data loaded: ' + Object.keys(self.data2024).length + ' counties');
                 var shift24Btn = document.getElementById('mode-shift2024');
                 if (shift24Btn && Object.keys(self.data2024).length > 0 && self.allVotesCounted) {
                     shift24Btn.classList.remove('hidden');
+                }
+                self.populateAnalysisYearSelect();
+                if (self.analysisMode && self.isShiftMapMode()) {
+                    self.colorElectionMap();
+                    if (gameData.electionCountyViewState) self.updateCountyElectionColors();
                 }
             }
         };
@@ -1413,38 +1717,64 @@ var Election = {
 
     // Compute current-election margin vs 2024 for a county (positive = D shift)
     computeCountyShift: function(fips) {
-        var fips5 = fips.padStart(5, '0');
-        var margin2024 = this.data2024[fips5];
-        if (margin2024 === undefined) return 0;
-        var county = Counties.countyData[fips];
-        if (!county || !county.reportedVotes) return 0;
-        var total = (county.reportedVotes.D || 0) + (county.reportedVotes.R || 0);
-        if (total <= 0) return 0;
-        var curMargin = ((county.reportedVotes.D - county.reportedVotes.R) / total) * 100;
-        return curMargin - margin2024;
+        return this.computeCountyShiftForYear(fips, 2024);
     },
-
+    
     // Population-weighted state shift from 2024
     computeStateShift: function(stateCode) {
+        return this.computeStateShiftForYear(stateCode, 2024);
+    },
+
+    // Compute current-election margin vs selected historical year for a county
+    computeCountyShiftForYear: function(fips, year) {
+        var fips5 = String(fips || '').padStart(5, '0');
+        if (this.allVotesCounted && this.shiftCountyCache[year] && this.shiftCountyCache[year][fips5] !== undefined) {
+            return this.shiftCountyCache[year][fips5];
+        }
+        var margin = this.getHistoricalMargin(year, fips5);
+        if (margin === null) return null;
+        var county = Counties.countyData[fips];
+        if (!county || !county.reportedVotes) return null;
+        var total = (county.reportedVotes.D || 0) + (county.reportedVotes.R || 0);
+        if (total <= 0) return null;
+        var curMargin = ((county.reportedVotes.D - county.reportedVotes.R) / total) * 100;
+        var shift = curMargin - margin;
+        if (this.allVotesCounted) {
+            if (!this.shiftCountyCache[year]) this.shiftCountyCache[year] = {};
+            this.shiftCountyCache[year][fips5] = shift;
+        }
+        return shift;
+    },
+
+    // Population-weighted state shift from selected historical year
+    computeStateShiftForYear: function(stateCode, year) {
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
-        if (!stateFips || !Counties.countyData) return 0;
+        if (!stateFips || !Counties.countyData) return null;
+        if (this.allVotesCounted && this.shiftStateCache[year] && this.shiftStateCache[year][stateCode] !== undefined) {
+            return this.shiftStateCache[year][stateCode];
+        }
         var weightedShift = 0;
         var totalPop = 0;
         for (var fips in Counties.countyData) {
             var paddedFips = fips.padStart(5, '0');
             if (paddedFips.substring(0, 2) !== stateFips) continue;
-            var margin2024 = this.data2024[paddedFips];
-            if (margin2024 === undefined) continue;
+            var margin = this.getHistoricalMargin(year, paddedFips);
+            if (margin === null) continue;
             var county = Counties.countyData[fips];
             if (!county.reportedVotes) continue;
             var total = (county.reportedVotes.D || 0) + (county.reportedVotes.R || 0);
             if (total <= 0) continue;
             var curMargin = ((county.reportedVotes.D - county.reportedVotes.R) / total) * 100;
             var pop = county.p || 1;
-            weightedShift += (curMargin - margin2024) * pop;
+            weightedShift += (curMargin - margin) * pop;
             totalPop += pop;
         }
-        return totalPop > 0 ? weightedShift / totalPop : 0;
+        var stateShift = totalPop > 0 ? weightedShift / totalPop : null;
+        if (this.allVotesCounted) {
+            if (!this.shiftStateCache[year]) this.shiftStateCache[year] = {};
+            this.shiftStateCache[year][stateCode] = stateShift;
+        }
+        return stateShift;
     },
 
     // ─── Integrated county view (no modal overlay) ───────────────────────────
@@ -1460,8 +1790,7 @@ var Election = {
         if (nationalWrapper) nationalWrapper.classList.add('hidden');
         if (cvWrapper) cvWrapper.classList.remove('hidden');
 
-        var titleEl = document.getElementById('election-cv-title');
-        if (titleEl) titleEl.innerText = (state ? state.name.toUpperCase() : stateCode) + ' — COUNTY RESULTS';
+        this.updateCountyViewTitle(stateCode);
 
         this.loadCountyElectionMap(stateCode);
     },
@@ -1478,6 +1807,19 @@ var Election = {
             this.countyMapUpdateInterval = null;
         }
         this.hideMapTooltip();
+    },
+
+    updateCountyViewTitle: function(stateCode) {
+        var state = gameData.states[stateCode];
+        var titleEl = document.getElementById('election-cv-title');
+        if (!titleEl) return;
+        var baseTitle = (state ? state.name.toUpperCase() : stateCode);
+        if (this.isShiftMapMode()) {
+            var year = this.getActiveShiftYear();
+            titleEl.innerText = baseTitle + ' — COUNTY SHIFT VS ' + year;
+        } else {
+            titleEl.innerText = baseTitle + ' — COUNTY RESULTS';
+        }
     },
 
     loadCountyElectionMap: function(stateCode) {
@@ -1546,14 +1888,16 @@ var Election = {
                         wrapper.innerHTML = '<div class="county-map-loading">No counties found for this state.</div>';
                     } else {
                         self.focusOnStateCounties(svg, stateFips, stateCountyPaths);
-                        if (self.countyMapUpdateInterval) clearInterval(self.countyMapUpdateInterval);
-                        self.countyMapUpdateInterval = setInterval(function() {
-                            if (!document.getElementById('county-election-map-svg')) {
-                                clearInterval(self.countyMapUpdateInterval);
-                                return;
-                            }
-                            self.updateCountyElectionColors();
-                        }, 500);
+                        if (!self.analysisMode) {
+                            if (self.countyMapUpdateInterval) clearInterval(self.countyMapUpdateInterval);
+                            self.countyMapUpdateInterval = setInterval(function() {
+                                if (!document.getElementById('county-election-map-svg')) {
+                                    clearInterval(self.countyMapUpdateInterval);
+                                    return;
+                                }
+                                self.updateCountyElectionColors();
+                            }, 500);
+                        }
                     }
                 } else {
                     wrapper.innerHTML = '<div class="county-map-loading">Could not load county map.</div>';
@@ -1575,10 +1919,11 @@ var Election = {
         var demVotes = county.reportedVotes.D || 0;
         var repVotes = county.reportedVotes.R || 0;
 
-        if (this.mapMode === 'shift2024') {
-            if (county.reportedPct > 0 && Object.keys(this.data2024).length > 0) {
-                var shift = this.computeCountyShift(fips);
-                path.style.fill = Utils.getShiftColor(shift);
+        if (this.isShiftMapMode()) {
+            var shiftYear = this.getActiveShiftYear();
+            if (county.reportedPct > 0 && this.historicalMargins[shiftYear]) {
+                var shift = this.computeCountyShiftForYear(fips, shiftYear);
+                path.style.fill = shift === null ? '#2a2a2a' : Utils.getShiftColor(shift);
             } else {
                 path.style.fill = '#2a2a2a';
             }

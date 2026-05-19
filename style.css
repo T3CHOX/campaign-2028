@@ -1238,6 +1238,82 @@ body {
     color: white;
 }
 
+#election-screen.analysis-mode .election-banner {
+    background: var(--forward-gold);
+    color: #111111;
+    animation: none;
+}
+
+#election-screen.analysis-mode .election-time-display,
+#election-screen.analysis-mode .time-controls,
+#election-screen.analysis-mode .map-mode-toggle,
+#election-screen.analysis-mode #flip-legend-hint,
+#election-screen.analysis-mode #analysis-open-btn,
+#election-screen.analysis-mode #third-party-tracker-btn,
+#election-screen.analysis-mode #polls-closing-panel,
+#election-screen.analysis-mode #third-party-tracker-panel,
+#election-screen.analysis-mode #election-feed,
+#election-screen.analysis-mode #race-calls {
+    display: none;
+}
+
+.analysis-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1b1b1b;
+    border: 1px solid #333333;
+    padding: 6px 10px;
+    border-radius: 6px;
+    flex-wrap: wrap;
+}
+
+.analysis-controls-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--forward-gold);
+}
+
+#analysis-year-select {
+    background: #111111;
+    color: #f1f1f1;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+}
+
+.analysis-legend {
+    display: flex;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: #cccccc;
+    align-items: center;
+}
+
+.analysis-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.analysis-legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid #222222;
+    display: inline-block;
+}
+
+.analysis-legend-swatch.dem {
+    background: #3399ff;
+}
+
+.analysis-legend-swatch.rep {
+    background: #ff6666;
+}
+
 .election-main {
     flex: 1;
     display: flex;
