@@ -1529,7 +1529,7 @@ var Election = {
         var cleaned = (rawFips || '').replace(/"/g, '').trim();
         if (!cleaned) return '';
         var parsed = parseInt(cleaned, 10);
-        if (!isFinite(parsed)) return '';
+        if (isNaN(parsed)) return '';
         return String(parsed).padStart(5, '0');
     },
 
@@ -1632,10 +1632,11 @@ var Election = {
                     if (parts.length < 12) continue;
                     var year = parseInt(parts[0], 10);
                     var fips5 = self.normalizeFipsCode(parts[4]);
+                    if (!year || !fips5) continue;
                     var party = (parts[7] || '').replace(/"/g, '').trim().toUpperCase();
                     var votes = parseFloat(parts[8]);
                     var totalVotes = parseFloat(parts[9]);
-                    if (!year || !fips5 || !isFinite(votes) || !isFinite(totalVotes) || totalVotes <= 0) continue;
+                    if (!isFinite(votes) || !isFinite(totalVotes) || totalVotes <= 0) continue;
                     if (party !== 'DEMOCRAT' && party !== 'REPUBLICAN') continue;
 
                     if (!yearAggregates[year]) yearAggregates[year] = {};
