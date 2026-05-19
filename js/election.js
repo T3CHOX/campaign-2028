@@ -1525,6 +1525,14 @@ var Election = {
         return result;
     },
 
+    normalizeFipsCode: function(rawFips) {
+        var cleaned = (rawFips || '').replace(/"/g, '').trim();
+        if (!cleaned) return '';
+        var parsed = parseInt(cleaned, 10);
+        if (!isFinite(parsed)) return '';
+        return String(parsed).padStart(5, '0');
+    },
+
     addHistoricalYear: function(year) {
         if (!year) return;
         if (this.historicalYears.indexOf(year) === -1) {
@@ -1607,6 +1615,7 @@ var Election = {
         return '<span style="color:' + color + '; font-weight: bold;">' + candidateName + ' +' + absShift.toFixed(1) + '</span>';
     },
 
+    // Load 2000-2020 county presidential results (2024 handled separately)
     loadHistoricalData: function() {
         if (this.historicalDataLoaded) return;
         var self = this;
@@ -1622,14 +1631,13 @@ var Election = {
                     var parts = self.parseCsvLine(line);
                     if (parts.length < 12) continue;
                     var year = parseInt(parts[0], 10);
-                    var rawFips = (parts[4] || '').replace(/"/g, '').trim();
+                    var fips5 = self.normalizeFipsCode(parts[4]);
                     var party = (parts[7] || '').replace(/"/g, '').trim().toUpperCase();
                     var votes = parseFloat(parts[8]);
                     var totalVotes = parseFloat(parts[9]);
-                    if (!year || !rawFips || !isFinite(votes) || !isFinite(totalVotes) || totalVotes <= 0) continue;
+                    if (!year || !fips5 || !isFinite(votes) || !isFinite(totalVotes) || totalVotes <= 0) continue;
                     if (party !== 'DEMOCRAT' && party !== 'REPUBLICAN') continue;
 
-                    var fips5 = String(parseInt(rawFips, 10)).padStart(5, '0');
                     if (!yearAggregates[year]) yearAggregates[year] = {};
                     if (!yearAggregates[year][fips5]) {
                         yearAggregates[year][fips5] = { d: 0, r: 0, total: totalVotes };
@@ -1687,15 +1695,13 @@ var Election = {
                     if (!line) continue;
                     var parts = line.split(',');
                     if (parts.length < 10) continue;
-                    var rawFips = (parts[1] || '').replace(/"/g, '').trim();
+                    var fips5 = self.normalizeFipsCode(parts[1]);
                     // CSV per_point_diff = (votes_gop - votes_dem) / total_votes stored as a
                     // decimal fraction, e.g. 0.46 means GOP led by 46 percentage points.
                     // We multiply by 100 to convert to percentage-point scale and negate so that
                     // positive values represent a Dem-favoring margin (matching game convention).
                     var perPointDiff = parseFloat(parts[9]);
-                    if (!rawFips || isNaN(perPointDiff)) continue;
-                    // Normalise to 5-digit FIPS with leading zeros
-                    var fips5 = String(parseInt(rawFips, 10)).padStart(5, '0');
+                    if (!fips5 || isNaN(perPointDiff)) continue;
                     self.data2024[fips5] = -perPointDiff * 100;
                 }
                 self.historicalMargins[2024] = self.data2024;
