@@ -263,7 +263,18 @@
                     <button class="mode-btn" id="mode-projected" onclick="app.election.setMapMode('projected')">PROJECTED WINNER</button>
                     <button class="mode-btn hidden" id="mode-shift2024" onclick="app.election.setMapMode('shift2024')">📊 2024 SHIFT</button>
                 </div>
-                <button class="mode-btn" onclick="app.election.toggleThirdPartyTracker()">3RD PARTY TRACKER</button>
+                <button class="mode-btn hidden" id="analysis-open-btn" onclick="app.election.enterAnalysisMode()">ANALYSIS CENTER</button>
+                <div id="analysis-controls" class="analysis-controls hidden">
+                    <div class="analysis-controls-title">ANALYSIS CENTER</div>
+                    <label for="analysis-year-select">Compare to:</label>
+                    <select id="analysis-year-select" aria-label="Select election year to compare" onchange="app.election.setAnalysisYear(this.value)"></select>
+                    <div class="analysis-legend">
+                        <span class="analysis-legend-item"><span class="analysis-legend-swatch dem"></span>Shift toward Democrats</span>
+                        <span class="analysis-legend-item"><span class="analysis-legend-swatch rep"></span>Shift toward Republicans</span>
+                    </div>
+                    <button class="mode-btn" id="analysis-back-btn" onclick="app.election.exitAnalysisMode()">BACK TO ELECTION NIGHT</button>
+                </div>
+                <button class="mode-btn" id="third-party-tracker-btn" onclick="app.election.toggleThirdPartyTracker()">3RD PARTY TRACKER</button>
                 <div id="flip-legend-hint" class="hidden">⬦ diagonal stripes = flipped from 2024</div>
             </div>
         </header>

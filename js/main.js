@@ -1854,7 +1854,10 @@ var app = {
         setSpeed: function(s) { Election.setSpeed(s); },
         setMapMode: function(m) { Election.setMapMode(m); },
         skipToEnd: function() { Election.skipToEnd(); },
-        closeWinnerOverlay: function() { Election.closeWinnerOverlay(); }
+        closeWinnerOverlay: function() { Election.closeWinnerOverlay(); },
+        enterAnalysisMode: function() { Election.enterAnalysisMode(); },
+        exitAnalysisMode: function() { Election.exitAnalysisMode(); },
+        setAnalysisYear: function(y) { Election.setAnalysisYear(y); }
     }
 };
 
