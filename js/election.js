@@ -1637,6 +1637,7 @@ var Election = {
                     var votes = parseFloat(parts[8]);
                     var totalVotes = parseFloat(parts[9]);
                     if (!isFinite(votes) || !isFinite(totalVotes) || totalVotes <= 0) continue;
+                    // Historical shift compares major-party margins (D vs R) for consistency with simulator results.
                     if (party !== 'DEMOCRAT' && party !== 'REPUBLICAN') continue;
 
                     if (!yearAggregates[year]) yearAggregates[year] = {};
@@ -1658,6 +1659,7 @@ var Election = {
                         if (!countyData.hasOwnProperty(fips)) continue;
                         var rec = countyData[fips];
                         if (!rec || !isFinite(rec.total) || rec.total <= 0) continue;
+                        // CSV structure is expected to provide one row per party per county-year.
                         var margin = ((rec.d - rec.r) / rec.total) * 100;
                         margins[fips] = margin;
                     }
@@ -1672,6 +1674,8 @@ var Election = {
                     self.colorElectionMap();
                     if (gameData.electionCountyViewState) self.updateCountyElectionColors();
                 }
+            } else if (xhr.readyState === 4) {
+                console.warn('⚠️ Failed to load historical county results (2000-2020).');
             }
         };
         xhr.send();
