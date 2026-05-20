@@ -220,54 +220,195 @@ const INTEREST_GROUPS = {
 const PACS = {
     bigoil: {
         name: 'Big Oil & Gas',
+        category: 'Industry',
         priority_issue: 'energy',
         desired_position: 7, // Pro-fossil fuels
         contribution: 25, // $25M
-        description: 'Opposes climate regulations, supports fossil fuel expansion'
+        description: 'Opposes climate regulations, supports fossil fuel expansion',
+        vulnerability: {
+            id: 'oil-money',
+            label: 'Oil money attack',
+            risk: 0.18,
+            credibility: -0.05,
+            turnoutHits: { progressives: -0.06, urban: -0.03 },
+            story: 'Opposition media highlights fossil fuel money ties.'
+        }
     },
     unions: {
         name: 'AFL-CIO (Labor Unions)',
+        category: 'Labor',
         priority_issue: 'labor',
         desired_position: -6, // Pro-labor
         contribution: 20,
-        description: 'Supports workers\' rights, union protections, higher wages'
+        description: 'Supports workers\' rights, union protections, higher wages',
+        vulnerability: {
+            id: 'labor-boss',
+            label: 'Union boss backlash',
+            risk: 0.12,
+            credibility: -0.03,
+            turnoutHits: { smallbusiness: -0.04, suburban: -0.02 },
+            story: 'Opponents frame the campaign as captured by union bosses.'
+        }
     },
     nra: {
         name: 'NRA (Gun Rights)',
+        category: 'Grassroots',
         priority_issue: 'guns',
         desired_position: 8, // Pro-gun rights
         contribution: 18,
-        description: 'Opposes all gun control measures, protects Second Amendment'
+        description: 'Opposes all gun control measures, protects Second Amendment',
+        vulnerability: {
+            id: 'gun-lobby',
+            label: 'Gun lobby headline',
+            risk: 0.16,
+            credibility: -0.04,
+            turnoutHits: { suburban: -0.05, women: -0.04 },
+            story: 'Gun lobby donations trigger suburban backlash.'
+        }
     },
     plannedparenthood: {
         name: 'Planned Parenthood',
+        category: 'Grassroots',
         priority_issue: 'abortion',
         desired_position: -7, // Pro-choice
         contribution: 15,
-        description: 'Protects reproductive rights and access to abortion'
+        description: 'Protects reproductive rights and access to abortion',
+        vulnerability: {
+            id: 'abortion-rights',
+            label: 'Abortion rights controversy',
+            risk: 0.14,
+            credibility: -0.03,
+            turnoutHits: { evangelical: -0.06, rural: -0.03 },
+            story: 'Social conservatives attack the campaign over abortion funding.'
+        }
     },
     techindustry: {
         name: 'Tech Industry PAC',
+        category: 'Industry',
         priority_issue: 'immigration',
         desired_position: -4, // Pro-immigration
         contribution: 30,
-        description: 'Supports H1B visas and skilled immigration'
+        description: 'Supports H1B visas and skilled immigration',
+        vulnerability: {
+            id: 'tech-money',
+            label: 'Tech billionaire ties',
+            risk: 0.12,
+            credibility: -0.02,
+            turnoutHits: { bluecollar: -0.03 },
+            story: 'Opponents tie the campaign to Silicon Valley elites.'
+        }
     },
     wallstreet: {
         name: 'Wall Street PAC',
+        category: 'Wall Street',
         priority_issue: 'taxation',
         desired_position: 6, // Low taxes
         contribution: 35,
-        description: 'Opposes wealth taxes and capital gains increases'
+        description: 'Opposes wealth taxes and capital gains increases',
+        vulnerability: {
+            id: 'wall-street',
+            label: 'Wall Street capture',
+            risk: 0.18,
+            credibility: -0.05,
+            turnoutHits: { progressives: -0.05, union: -0.04 },
+            story: 'Wall Street donor coverage undermines populist appeal.'
+        }
     },
     environmental: {
         name: 'Environmental Defense Fund',
+        category: 'Grassroots',
         priority_issue: 'climate',
         desired_position: -8, // Pro-environment
         contribution: 12,
-        description: 'Supports aggressive climate action and clean energy'
+        description: 'Supports aggressive climate action and clean energy',
+        vulnerability: {
+            id: 'green-agenda',
+            label: 'Green agenda backlash',
+            risk: 0.1,
+            credibility: -0.02,
+            turnoutHits: { farmers: -0.03, rural: -0.03 },
+            story: 'Opponents warn climate donors threaten rural jobs.'
+        }
     }
 };
+
+// Coalition breakpoints for loyalty/turnout collapse
+const COALITION_BREAKPOINTS = {
+    progressives: {
+        label: 'Progressives',
+        parties: ['D', 'G', 'PSL'],
+        requirements: [
+            { issue: 'climate', max: -6, label: '65%+ climate investment' },
+            { issue: 'healthcare', max: -4, label: 'Public option or better' }
+        ],
+        warningWeeks: 2,
+        collapseWeeks: 4,
+        riskLeak: 0.08,
+        collapseLeak: 0.22,
+        leakTo: { G: 0.6, PSL: 0.4 }
+    },
+    union: {
+        label: 'Union Workers',
+        parties: ['D'],
+        requirements: [
+            { issue: 'labor', max: -3, label: 'Union-first labor policy' }
+        ],
+        warningWeeks: 2,
+        collapseWeeks: 4,
+        riskLeak: 0.06,
+        collapseLeak: 0.18,
+        leakTo: { G: 0.4, PSL: 0.3, R: 0.3 }
+    },
+    evangelical: {
+        label: 'Evangelicals',
+        parties: ['R'],
+        requirements: [
+            { issue: 'abortion', min: 4, label: 'Abortion restrictions' },
+            { issue: 'lgbtq', min: 2, label: 'Religious carve-outs' }
+        ],
+        warningWeeks: 2,
+        collapseWeeks: 3,
+        riskLeak: 0.06,
+        collapseLeak: 0.18,
+        leakTo: { L: 0.6, I: 0.4 }
+    },
+    smallbusiness: {
+        label: 'Small Business',
+        parties: ['R'],
+        requirements: [
+            { issue: 'taxation', min: 4, label: 'Pro-growth tax cuts' }
+        ],
+        warningWeeks: 2,
+        collapseWeeks: 4,
+        riskLeak: 0.05,
+        collapseLeak: 0.16,
+        leakTo: { L: 0.5, I: 0.5 }
+    },
+    muslim: {
+        label: 'Muslim Voters',
+        parties: ['D', 'G', 'PSL'],
+        requirements: [
+            { issue: 'israel', max: -3, label: 'Ceasefire-forward stance' }
+        ],
+        warningWeeks: 2,
+        collapseWeeks: 3,
+        riskLeak: 0.07,
+        collapseLeak: 0.2,
+        leakTo: { G: 0.5, PSL: 0.5 }
+    }
+};
+
+// Cross-pressure penalties when courting opposing coalitions
+const COALITION_CROSS_PRESSURES = [
+    {
+        id: 'secular-backlash',
+        label: 'Evangelical backlash to secular messaging',
+        triggerIssue: 'lgbtq',
+        triggerMax: -6,
+        targetGroup: 'evangelical',
+        penalty: 0.06
+    }
+];
 
 // State demographic compositions (% of each group)
 const STATE_DEMOGRAPHICS = {

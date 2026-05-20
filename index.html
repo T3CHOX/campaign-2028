@@ -152,6 +152,10 @@
                     <span class="money" id="hud-funds">$0.0M</span>
                 </div>
                 <div class="stat-group">
+                    <label>CREDIBILITY</label>
+                    <span class="credibility" id="hud-credibility">100%</span>
+                </div>
+                <div class="stat-group">
                     <label>DATE</label>
                     <span class="date-display" id="hud-date">JUL 4</span>
                 </div>
@@ -497,7 +501,23 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Fundraising Modal -->
+    <div id="fundraise-modal" class="hidden">
+        <div class="modal-box fundraise-modal-box">
+            <div class="modal-header">
+                <h2 id="fundraise-modal-title">DONOR MEETING</h2>
+                <button class="modal-close-btn" onclick="app.closeFundraiseModal()">×</button>
+            </div>
+            <div id="fundraise-modal-subtitle" class="fundraise-subtitle"></div>
+            <div id="fundraise-options" class="fundraise-options"></div>
+            <div class="fundraise-actions">
+                <button id="fundraise-bundler-btn" class="fundraise-bundler-btn" onclick="app.acceptBundlerDeal()">ACCEPT BOTH (BUNDLER)</button>
+                <button class="fundraise-decline-btn" onclick="app.declineFundraise()">DECLINE</button>
+            </div>
+        </div>
+    </div>
+
     <!-- PAC Endorsement Modal -->
     <div id="pac-modal" class="hidden">
         <div class="modal-box pac-modal-box">

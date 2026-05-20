@@ -201,6 +201,10 @@ var Campaign = {
         document.getElementById('hud-party-name').innerText = PARTIES[gameData.selectedParty].name.toUpperCase();
         document.getElementById('hud-funds').innerText = '$' + gameData.funds.toFixed(1) + 'M';
         document.getElementById('hud-date').innerText = Utils.formatDate(gameData.currentDate);
+        var cred = document.getElementById('hud-credibility');
+        if (cred) {
+            cred.innerText = Math.round((gameData.credibility || 1.0) * 100) + '%';
+        }
         
         var energyHtml = '';
         for (var i = 0; i < gameData.maxEnergy; i++) {
@@ -217,42 +221,10 @@ var Campaign = {
         var s = gameData.states[gameData.selectedState];
         
         if (action === 'fundraise') {
-            // Fundraising applies immediately (not queued)
-            if (gameData.energy < 1) return Utils.showToast("Not enough energy!");
-            
-            // Advanced fundraising formula
-            var baseAmount = STATE_FUNDRAISING_POTENTIAL[gameData.selectedState] || 2.0;
-            
-            // Party alignment bonus
-            var alignmentBonus = 1.0;
-            if ((gameData.selectedParty === 'D' && s.margin > 0) || 
-                (gameData.selectedParty === 'R' && s.margin < 0)) {
-                alignmentBonus = 1.3; // Fundraising in friendly state
-            } else if ((gameData.selectedParty === 'D' && s.margin < -10) ||
-                       (gameData.selectedParty === 'R' && s.margin > 10)) {
-                alignmentBonus = 0.7; // Fundraising in hostile state
+            if (typeof app !== 'undefined' && app.openFundraiseModal) {
+                app.openFundraiseModal();
             }
-            
-            // Candidate charisma modifier
-            var charismaModifier = gameData.candidate.funds ? (gameData.candidate.funds / 60) : 1.0;
-            
-            // Fatigue penalty
-            var fatiguePenalty = Math.max(0.5, 1.0 - ((s.fundraisingVisits || 0) * 0.1));
-            
-            // Calculate final amount with randomness
-            var raised = baseAmount * alignmentBonus * charismaModifier * fatiguePenalty;
-            raised *= (0.8 + Math.random() * 0.4); // ±20% variance
-            
-            gameData.funds += raised;
-            s.fundraisingVisits = (s.fundraisingVisits || 0) + 1;
-            gameData.energy -= 1;
-            
-            var message = 'Raised $' + raised.toFixed(1) + 'M in ' + s.name;
-            Utils.addLog(message);
-            this.updateHUD();
-            this.clickState(gameData.selectedState);
-            Utils.showToast(message);
-            
+            return;
         } else if (action === 'rally') {
             // Queue rally action
             if (gameData.energy < PERSUASION_CONSTANTS.RALLY_ENERGY_COST) {
@@ -452,6 +424,13 @@ var Campaign = {
         // Process undecided voters
         this.processUndecidedVoters();
         
+        if (typeof updateCoalitionLoyalty === 'function') {
+            updateCoalitionLoyalty();
+        }
+        if (typeof this.processMediaVulnerabilities === 'function') {
+            this.processMediaVulnerabilities();
+        }
+
         // Recompute live interest group support after all changes
         if (typeof recomputeInterestGroupSupport !== 'undefined') {
             recomputeInterestGroupSupport();
@@ -465,6 +444,10 @@ var Campaign = {
         }
         
         this.opponentTurn();
+
+        if (gameData.playerPressure) {
+            gameData.playerPressure = {};
+        }
         
         if (gameData.currentDate >= gameData.electionDay) {
             Utils.addLog("Election Day has arrived!");
@@ -567,6 +550,59 @@ var Campaign = {
         for (var code in gameData.states) {
             Counties.updateStateFromCounties(code);
         }
+    },
+
+    processMediaVulnerabilities: function() {
+        if (!gameData.mediaVulnerabilities || !gameData.mediaVulnerabilities.length) return;
+        if (typeof Utils === 'undefined') return;
+
+        var updated = [];
+        var triggeredAny = false;
+
+        for (var i = 0; i < gameData.mediaVulnerabilities.length; i++) {
+            var vuln = gameData.mediaVulnerabilities[i];
+            if (!vuln || vuln.risk === undefined) {
+                updated.push(vuln);
+                continue;
+            }
+            if (vuln.triggered) {
+                updated.push(vuln);
+                continue;
+            }
+            if (Math.random() < vuln.risk) {
+                triggeredAny = true;
+                vuln.triggered = true;
+                if (typeof CREDIBILITY_CONSTANTS !== 'undefined' && vuln.credibility) {
+                    gameData.credibility = Math.max(CREDIBILITY_CONSTANTS.MIN,
+                        Math.min(CREDIBILITY_CONSTANTS.MAX, (gameData.credibility || 1.0) + vuln.credibility));
+                }
+                if (vuln.turnoutHits && typeof initInterestGroupTurnout === 'function') {
+                    initInterestGroupTurnout();
+                    for (var groupId in vuln.turnoutHits) {
+                        var hit = vuln.turnoutHits[groupId];
+                        gameData.issueTurnout[groupId] = Math.max(BUFF_CONSTANTS.MIN_GROUP_TURNOUT,
+                            Math.min(BUFF_CONSTANTS.MAX_GROUP_TURNOUT, (gameData.issueTurnout[groupId] || 1.0) + hit));
+                    }
+                    if (typeof recomputeCoalitionTurnout === 'function') {
+                        recomputeCoalitionTurnout();
+                    }
+                    if (typeof Counties !== 'undefined' && Counties.updateStateFromCounties) {
+                        for (var sc in gameData.states) {
+                            Counties.updateStateFromCounties(sc);
+                        }
+                    }
+                }
+                Utils.addLog('MEDIA HIT: ' + (vuln.story || vuln.label));
+                Utils.showToast('Media hit: ' + (vuln.label || 'Breaking story'));
+            }
+            updated.push(vuln);
+        }
+
+        if (triggeredAny && typeof Campaign !== 'undefined') {
+            Campaign.updateHUD();
+            Campaign.colorMap();
+        }
+        gameData.mediaVulnerabilities = updated;
     },
 
     opponentTurn: function() {

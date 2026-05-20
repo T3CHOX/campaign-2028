@@ -309,6 +309,15 @@ var gameData = {
     interestGroupChanges: {},   // Will store last turn's changes for display
     interestGroupBaseSupport: {}, // Baseline support before issue modifiers
     interestGroupTurnout: {},   // Per-group turnout propensity (1.0 = baseline 100%)
+    issueTurnout: {},           // Issue-driven turnout propensity (before coalition multipliers)
+    coalitionStatus: {},        // Per-group loyalty tracking
+    coalitionAlerts: [],        // Active coalition warnings
+    credibility: 1.0,           // Messaging credibility multiplier
+    messageStreak: 0,
+    lastMessageIssue: null,
+    mediaVulnerabilities: [],   // Active media vulnerabilities from fundraising
+    currentFundraiseMeeting: null,
+    playerPressure: {},         // Player action pressure per state
     // Pending campaign actions queue (applied on turn submission)
     pendingActions: [],  // Array of {type, state, countyId, issueId, intensity, cost}
     turnPressure: {},     // Track cumulative pressure per state+issue for diminishing returns
@@ -355,6 +364,32 @@ var PERSUASION_CONSTANTS = {
     RALLY_ENERGY_COST: 2,               // Rallies require significant energy
     FIELD_ENERGY_COST: 1,               // Field ops require staff energy
     DIGITAL_ENERGY_COST: 0              // Digital campaigns are staff-driven
+};
+
+// Credibility + fundraising tuning
+var CREDIBILITY_CONSTANTS = {
+    MIN: 0.7,
+    MAX: 1.15,
+    STREAK_BONUS: 0.015,
+    SWAP_PENALTY: 0.02,
+    SHIFT_PENALTY: 0.03
+};
+
+var FUNDRAISE_CONSTANTS = {
+    BUNDLER_CHANCE: 0.3,
+    MAX_OPTIONS: 3,
+    MEETING_ENERGY_COST: 1,
+    MEETING_BASE_VARIANCE: 0.2,
+    BUNDLER_CREDIBILITY_PENALTY: 0.06,
+    BUNDLER_TURNOUT_PENALTY: -0.05
+};
+
+var COALITION_CONSTANTS = {
+    RECOVERY_RATE: 0.04,
+    DECAY_BASE: 0.05,
+    DECAY_ESCALATION: 0.02,
+    AT_RISK_LOYALTY: 0.82,
+    COLLAPSE_LOYALTY: 0.65
 };
 
 const TARGETABLE_GROUPS = [
