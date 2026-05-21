@@ -484,6 +484,100 @@ var Counties = {
             scaleFactor: scaleFactor
         };
     },
+
+    applyOpponentRallySpillover: function(targetCountyID, party) {
+        var targetFips = this.normalizeFips(targetCountyID);
+        var targetCounty = this.countyData[targetFips];
+        if (!targetCounty) return null;
+
+        if (!this.hasRallyDistanceRatios()) {
+            this.initializeRallyDistanceRatios();
+        }
+        if (!this.hasRallyDistanceRatios()) return null;
+
+        var targetCentroid = this.getCountyCentroid(targetFips);
+        if (!targetCentroid) return null;
+
+        var baseBoost = (typeof PERSUASION_CONSTANTS !== 'undefined' && typeof PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST === 'number')
+            ? PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST
+            : 0.05;
+        var candidates = [];
+        var totalRawTurnout = 0;
+
+        for (var fips in this.countyData) {
+            var county = this.countyData[fips];
+            var normalizedFips = this.normalizeFips(fips);
+            var stateFips = normalizedFips.substring(0, 2);
+
+            if (stateFips === this.HAWAII_STATE_FIPS) continue;
+
+            var centroid = this.getCountyCentroid(normalizedFips);
+            if (!centroid) continue;
+
+            var milesPerPixel = this.getMilesPerPixelRatio(stateFips);
+            if (!milesPerPixel) continue;
+
+            var pixelDistance = this.getPixelDistance(targetCentroid, centroid);
+            var distanceMiles = pixelDistance * milesPerPixel;
+            if (distanceMiles > this.RALLY_RADIUS_MILES) continue;
+
+            var decay = Math.max(0, 1 - (distanceMiles / this.RALLY_RADIUS_MILES));
+            var provisionalBoost = baseBoost * decay;
+            var rawTurnout = (county.p || 0) * provisionalBoost;
+            if (rawTurnout <= 0) continue;
+
+            candidates.push({
+                fips: normalizedFips,
+                stateFips: stateFips,
+                county: county,
+                provisionalBoost: provisionalBoost,
+                rawTurnout: rawTurnout
+            });
+            totalRawTurnout += rawTurnout;
+        }
+
+        var scaleFactor = 1;
+        if (totalRawTurnout > this.MAX_RALLY_ATTENDANCE) {
+            scaleFactor = this.MAX_RALLY_ATTENDANCE / totalRawTurnout;
+        }
+
+        var totalAppliedRawTurnout = 0;
+        var affectedStates = {};
+        var turnoutKey = party === 'D' ? 'demOpponent' : (party === 'R' ? 'repOpponent' : 'thirdParty');
+        var defaultTurnout = party === 'D' || party === 'R' ? this.DEFAULT_MAJOR_PARTY_TURNOUT : this.DEFAULT_THIRD_PARTY_TURNOUT;
+
+        for (var i = 0; i < candidates.length; i++) {
+            var entry = candidates[i];
+            var countyEntry = entry.county;
+            if (!countyEntry.turnout) {
+                countyEntry.turnout = {
+                    player: this.DEFAULT_MAJOR_PARTY_TURNOUT,
+                    demOpponent: this.DEFAULT_MAJOR_PARTY_TURNOUT,
+                    repOpponent: this.DEFAULT_MAJOR_PARTY_TURNOUT,
+                    thirdParty: this.DEFAULT_THIRD_PARTY_TURNOUT
+                };
+            }
+
+            var scaledBoost = entry.provisionalBoost * scaleFactor;
+            totalAppliedRawTurnout += entry.rawTurnout * scaleFactor;
+
+            countyEntry.turnout[turnoutKey] = Math.min(
+                this.MAX_TURNOUT_MULTIPLIER,
+                (countyEntry.turnout[turnoutKey] || defaultTurnout) + scaledBoost
+            );
+
+            var stateCode = this.getStateCodeFromFips(entry.stateFips);
+            if (stateCode) affectedStates[stateCode] = true;
+        }
+
+        return {
+            countyCount: candidates.length,
+            totalRawTurnout: totalRawTurnout,
+            totalAppliedRawTurnout: totalAppliedRawTurnout,
+            scaleFactor: scaleFactor,
+            affectedStates: affectedStates
+        };
+    },
     
     // Apply third-party toggle - redistribute or include third-party votes
     applyThirdPartyToggle: function(county) {
@@ -1050,6 +1144,10 @@ var Counties = {
         }
         
         Campaign.saveState();
+        var rallyStateCode = this.getStateCodeFromFips(normalizedFips.substring(0, 2));
+        if (typeof recordPlayerPressure === 'function' && rallyStateCode) {
+            recordPlayerPressure(rallyStateCode, 'RALLY', 1);
+        }
         
         var county = this.countyData[normalizedFips];
         var spilloverResult = this.applyRallySpillover(normalizedFips);
@@ -1215,7 +1313,7 @@ var Counties = {
         var actionGrid = document.querySelector('.action-grid');
         if (actionGrid) {
             actionGrid.innerHTML = 
-                '<button class="act-btn" onclick="app.handleAction(\'fundraise\')"><span>💰</span><span>FUNDRAISE</span></button>' +
+                '<button class="act-btn" onclick="app.handleAction(\'fundraise\')"><span><i class="fa-solid fa-sack-dollar"></i></span><span>FUNDRAISE</span></button>' +
                 '<button class="act-btn" onclick="app.handleAction(\'ad\')"><span>📺</span><span>AD BLITZ</span></button>' +
                 '<button class="act-btn" onclick="app.openStateBio()"><span>📖</span><span>INTEL</span></button>' +
                 '<button class="act-btn" onclick="app.openCountyView()"><span>🗺️</span><span>BREAKDOWN</span></button>' +
@@ -1286,6 +1384,14 @@ var Counties = {
         
         // Get candidate's position on this issue
         var candidatePos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[issueId]) || 0;
+
+        var stateCode = this.getStateCodeFromFips(normalizedFips.substring(0, 2));
+        if (typeof updateMessagingConsistency === 'function') {
+            updateMessagingConsistency(issueId, 1);
+        }
+        if (typeof recordPlayerPressure === 'function' && stateCode) {
+            recordPlayerPressure(stateCode, 'SPEECH', 1);
+        }
         
         // Small voter count increase in this county (2-5%)
         var voterBoost = 0.02 + Math.random() * 0.03;

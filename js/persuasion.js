@@ -149,6 +149,13 @@ var Persuasion = {
         var stateCode = action.state;
         var issueId = action.issueId;
         var intensity = action.intensity || 1;
+
+        if (typeof updateMessagingConsistency === 'function') {
+            updateMessagingConsistency(issueId, intensity);
+        }
+        if (typeof recordPlayerPressure === 'function') {
+            recordPlayerPressure(stateCode, 'AD', intensity);
+        }
         
         // Get state FIPS for county iteration
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
@@ -192,6 +199,13 @@ var Persuasion = {
         var countyId = action.countyId;
         var issueId = action.issueId;
         var intensity = action.intensity || 1;
+
+        if (typeof updateMessagingConsistency === 'function') {
+            updateMessagingConsistency(issueId, intensity);
+        }
+        if (typeof recordPlayerPressure === 'function') {
+            recordPlayerPressure(stateCode, 'SPEECH', intensity);
+        }
         
         // Get state FIPS
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
@@ -236,6 +250,10 @@ var Persuasion = {
         var stateCode = action.state;
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
         if (!stateFips || !Counties || !Counties.countyData) return;
+
+        if (typeof recordPlayerPressure === 'function') {
+            recordPlayerPressure(stateCode, 'RALLY', 1);
+        }
         
         // Rallies don't use issue-based persuasion, just turnout
         for (var fips in Counties.countyData) {
@@ -337,6 +355,11 @@ var Persuasion = {
         
         // Apply saturation
         totalDelta *= saturation;
+
+        // Apply credibility multiplier
+        if (typeof gameData !== 'undefined' && typeof gameData.credibility === 'number') {
+            totalDelta *= gameData.credibility;
+        }
         
         // Apply localized multiplier if this is a speech in this county
         if (isLocal) {
