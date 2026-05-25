@@ -303,7 +303,7 @@ Node.js utility to merge rural-percentage CSV data into `counties/county_data.js
 - `loadCountyMap(stateCode)`: Loads SVG county map and sets handlers.
   - Inline handlers: `xhr.onreadystatechange`, `path.onclick`, `path.onmousemove`, `path.onmouseleave`.
 - `focusOnStateCounties(svg, stateFips)`: Sets viewBox to the selected state.
-- `normalizeFips(fips)` (second): Alternate pad implementation (overrides earlier).
+- `normalizeFips(fips)` (second): Alternate pad implementation that overrides the earlier entry (legacy duplication; consider consolidating if unintended).
 - `colorCountyMap()`: Colors counties by margin.
 - `selectCounty(fips)`: Updates sidebar for selected county.
 - `rallyInCounty(fips)`: Runs county rally, applies spillover.
@@ -465,12 +465,6 @@ Node.js utility to merge rural-percentage CSV data into `counties/county_data.js
 **Other:**
 - `document.addEventListener('DOMContentLoaded', ...)` calls `initGameData()` on page load.
 
-### js/interestGroups.js
-(See **Interest Groups** section above for data. This file contains data-only definitions, no functions.)
-
-### js/issues.js
-(See **Issues** section above for data. This file contains data-only definitions, no functions.)
-
 ---
 
 ## Notes on Data + Assets
@@ -478,4 +472,3 @@ Node.js utility to merge rural-percentage CSV data into `counties/county_data.js
 - **County data** (`county_data.json`) is the runtime truth for margins, turnout, and interest-group weights.
 - **Historical CSVs** power the election-night shift analysis and historical comparison views.
 - **Images** are referenced by candidate IDs and party codes; keep names consistent with `CANDIDATES`/`VPS`.
-
