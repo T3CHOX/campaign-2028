@@ -896,7 +896,7 @@ function initInterestGroupTurnout() {
     for (var groupId in INTEREST_GROUPS) {
         var baseline = (typeof BASE_TURNOUT_RATES !== 'undefined' && BASE_TURNOUT_RATES[groupId] !== undefined)
             ? BASE_TURNOUT_RATES[groupId]
-            : 0.6;
+            : (typeof DEFAULT_INTEREST_GROUP_TURNOUT_RATE !== 'undefined' ? DEFAULT_INTEREST_GROUP_TURNOUT_RATE : 0.6);
         if (!gameData.interestGroupTurnout[groupId]) {
             gameData.interestGroupTurnout[groupId] = baseline;
         }

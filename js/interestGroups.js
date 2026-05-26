@@ -229,7 +229,7 @@ const INTEREST_GROUPS = {
 };
 
 // Baseline turnout rates (share of voting-eligible citizens who vote)
-const BASE_TURNOUT_RATES = {
+var BASE_TURNOUT_RATES = {
     white: 0.71,
     black: 0.62,
     hispanic: 0.54,

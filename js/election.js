@@ -30,8 +30,9 @@ var TURNOUT_MODEL = {
 };
 
 var DEFAULT_EXPECTED_TURNOUT_RATE = 0.56;
+// Coalition turnout is stored as a 0-1 rate; multiply by this for display.
 var COALITION_BASE_TURNOUT_PCT = 100;
-var DEFAULT_INTEREST_GROUP_TURNOUT_MULTIPLIER = 0.6;
+var DEFAULT_INTEREST_GROUP_TURNOUT_RATE = 0.6;
 var VICTORY_CLEAR_EV_THRESHOLD = 300;
 var VICTORY_LANDSLIDE_EV_THRESHOLD = 350;
 var VICTORY_CLEAR_MARGIN_THRESHOLD = 30;
@@ -1131,7 +1132,7 @@ var Election = {
                 d: support.D || 0,
                 r: support.R || 0,
                 third: (support.G || 0) + (support.L || 0) + (support.I || 0) + (support.PSL || 0),
-                turnout: ((gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId]) || DEFAULT_INTEREST_GROUP_TURNOUT_MULTIPLIER) * COALITION_BASE_TURNOUT_PCT,
+                turnout: ((gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId]) || DEFAULT_INTEREST_GROUP_TURNOUT_RATE) * COALITION_BASE_TURNOUT_PCT,
                 change: ((gameData.interestGroupChanges && gameData.interestGroupChanges[groupId] && gameData.interestGroupChanges[groupId][gameData.candidate && gameData.candidate.id]) || 0)
             });
         }
