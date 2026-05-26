@@ -253,12 +253,47 @@ var Counties = {
         var activeCandidates = (typeof _buildActiveCandidatesList === 'function') ? _buildActiveCandidatesList() : [];
 
         if (county && county.v) {
-            support.D = county.v.D || 0;
-            support.R = county.v.R || 0;
-            support.G = county.v.G || 0;
-            support.L = county.v.L || 0;
-            support.PSL = county.v.PSL || 0;
-            support.I = county.v.I || 0;
+            var countySupport = {
+                D: county.v.D || 0,
+                R: county.v.R || 0,
+                G: county.v.G || 0,
+                L: county.v.L || 0,
+                PSL: county.v.PSL || 0,
+                I: county.v.I || 0
+            };
+            var anchored = false;
+            if (INTEREST_GROUPS[groupId] && INTEREST_GROUPS[groupId].support) {
+                var otherCount = 0;
+                for (var ac = 0; ac < activeCandidates.length; ac++) {
+                    if (activeCandidates[ac].voteKey !== 'D' && activeCandidates[ac].voteKey !== 'R') otherCount++;
+                }
+                var staticBase = INTEREST_GROUPS[groupId].support;
+                support.D = ((staticBase.D || 0) * 0.72) + (countySupport.D * 0.28);
+                support.R = ((staticBase.R || 0) * 0.72) + (countySupport.R * 0.28);
+                var staticOther = staticBase.I || 0;
+                support.G = countySupport.G * 0.28;
+                support.L = countySupport.L * 0.28;
+                support.PSL = countySupport.PSL * 0.28;
+                support.I = countySupport.I * 0.28;
+                if (otherCount > 0) {
+                    var staticOtherSlice = (staticOther * 0.72) / otherCount;
+                    for (var ao = 0; ao < activeCandidates.length; ao++) {
+                        var voteKey = activeCandidates[ao].voteKey;
+                        if (voteKey !== 'D' && voteKey !== 'R') {
+                            support[voteKey] = (support[voteKey] || 0) + staticOtherSlice;
+                        }
+                    }
+                }
+                anchored = true;
+            }
+            if (!anchored) {
+                support.D = countySupport.D;
+                support.R = countySupport.R;
+                support.G = countySupport.G;
+                support.L = countySupport.L;
+                support.PSL = countySupport.PSL;
+                support.I = countySupport.I;
+            }
         } else if (INTEREST_GROUPS[groupId] && INTEREST_GROUPS[groupId].support) {
             var baseSupport = INTEREST_GROUPS[groupId].support;
             support.D = baseSupport.D || 0;
@@ -1042,9 +1077,9 @@ var Counties = {
                             if (Math.abs(margin) < 2) {
                                 path.style.fill = '#808080';
                             } else if (margin > 0) {
-                                path.style.fill = margin > 10 ? '#0284c7' : '#7dd3fc';
+                                path.style.fill = margin > 10 ? '#0055a6' : '#91d7fb';
                             } else {
-                                path.style.fill = margin < -10 ? '#be123c' : '#fda4af';
+                                path.style.fill = margin < -10 ? '#940c14' : '#ff8b7d';
                             }
                         }
                     }
@@ -1097,7 +1132,7 @@ var Counties = {
             else if (turnoutBoost > 0.08) turnoutText = 'Good';
             else if (turnoutBoost > 0.03) turnoutText = 'Moderate';
             
-            issuesList.innerHTML = '<div style="background: #152033; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (turnoutBoost > 0.1 ? '#22C55E' : '#CBD5E1') + '">' + turnoutText + '</span></div>';
+            issuesList.innerHTML = '<div style="background: #2a2a2a; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (turnoutBoost > 0.1 ? '#198754' : '#ccc') + '">' + turnoutText + '</span></div>';
             issuesList.innerHTML += '<div style="background: #2a2a2a; padding: 8px; border-radius: 4px;"><strong>Type:</strong> ' + (county.t || 'Unknown') + '</div>';
         }
         
@@ -1261,7 +1296,7 @@ var Counties = {
             
             // Always show exact margin, no "TOSS-UP" label
             marginText = (margin > 0 ? 'D+' : 'R+') + Math.abs(margin).toFixed(1);
-            color = margin > 0 ? '#38BDF8' : '#FB7185';
+            color = margin > 0 ? '#00AEF3' : '#E81B23';
         }
         
         // Determine proper suffix based on state

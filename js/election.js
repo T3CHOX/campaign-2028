@@ -852,11 +852,11 @@ var Election = {
                         svg.insertBefore(defs, svg.firstChild);
                     }
                     var flipColors = {
-                        D: { base: '#38BDF8', dark: '#075985' },
-                        R: { base: '#FB7185', dark: '#9f1239' },
-                        G: { base: '#22C55E', dark: '#166534' },
-                        L: { base: '#F59E0B', dark: '#92400e' },
-                        I: { base: '#A78BFA', dark: '#5b21b6' }
+                        D: { base: '#00AEF3', dark: '#00577a' },
+                        R: { base: '#E81B23', dark: '#830f14' },
+                        G: { base: '#198754', dark: '#0c4729' },
+                        L: { base: '#fd7e14', dark: '#884208' },
+                        I: { base: '#adb5bd', dark: '#555b61' }
                     };
                     for (var pCode in flipColors) {
                         var fc = flipColors[pCode];

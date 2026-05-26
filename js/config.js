@@ -3,12 +3,12 @@
    ============================================ */
 
 const PARTIES = {
-    D: { name: "Democratic Party", shortName: "Democrat", color: "#38BDF8", desc: "The Democratic Party stands as the center-left pillar of American politics. Rooted in the New Deal tradition and evolved through the Civil Rights era, today's Democrats champion expanded healthcare access, climate action, social equity, and robust worker protections. The party draws strength from a diverse coalition of urban professionals, minority communities, labor unions, and younger voters who believe government can be a force for positive change." },
-    R: { name: "Republican Party", shortName: "Republican", color: "#FB7185", desc: "The Republican Party, shaped by Reaganism and the MAGA movement, stands as the voice of conservative America. Republicans champion free markets, lower taxes, strong national defense, traditional values, and border security. The party's base spans rural communities, evangelical Christians, small business owners, and working-class voters who distrust big government and embrace American exceptionalism." },
-    G: { name: "Green Party", shortName: "Green", color: "#22C55E", desc: "The Green Party stands at the radical intersection of environmentalism and social justice. Greens advocate for a Green New Deal, universal healthcare, criminal justice reform, and a complete overhaul of America's fossil fuel economy. While operating on the political margins, the Greens serve as the conscience of the left, pushing the envelope on climate policy and corporate accountability." },
-    L: { name: "Libertarian Party", shortName: "Libertarian", color: "#F59E0B", desc: "The Libertarian Party is America's third-largest political party, committed to maximizing individual liberty and minimizing government interference. Libertarians support free markets, civil liberties, non-interventionism abroad, and personal freedom on all social issues. Their philosophy of 'fiscally conservative, socially liberal' draws supporters disenchanted with both major parties' appetite for government power." },
-    I: { name: "Independent", shortName: "Independent", color: "#A78BFA", desc: "Running as an Independent represents the ultimate political outsider campaign. Unbound by party orthodoxy, an Independent candidate must build a coalition from scratch, appealing across traditional party lines. Independents face enormous structural barriers—ballot access, debate exclusion, media skepticism—but in a polarized era, a credible Independent can reshape the national conversation and, in rare circumstances, win it all." },
-    PSL: { name: "Party for Socialism and Liberation", shortName: "PSL", color: "#EF4444", desc: "The Party for Socialism and Liberation is a revolutionary socialist organization fighting for a future free from exploitation, oppression, and war. The PSL champions a working-class government, an end to racism and all forms of discrimination, and a socialist reorganization of the economy. Drawing on the Marxist-Leninist tradition, the PSL organizes communities of color, labor, and the poor to challenge corporate power and U.S. imperialism." }
+    D: { name: "Democratic Party", shortName: "Democrat", color: "#00AEF3", desc: "The Democratic Party stands as the center-left pillar of American politics. Rooted in the New Deal tradition and evolved through the Civil Rights era, today's Democrats champion expanded healthcare access, climate action, social equity, and robust worker protections. The party draws strength from a diverse coalition of urban professionals, minority communities, labor unions, and younger voters who believe government can be a force for positive change." },
+    R: { name: "Republican Party", shortName: "Republican", color: "#E81B23", desc: "The Republican Party, shaped by Reaganism and the MAGA movement, stands as the voice of conservative America. Republicans champion free markets, lower taxes, strong national defense, traditional values, and border security. The party's base spans rural communities, evangelical Christians, small business owners, and working-class voters who distrust big government and embrace American exceptionalism." },
+    G: { name: "Green Party", shortName: "Green", color: "#198754", desc: "The Green Party stands at the radical intersection of environmentalism and social justice. Greens advocate for a Green New Deal, universal healthcare, criminal justice reform, and a complete overhaul of America's fossil fuel economy. While operating on the political margins, the Greens serve as the conscience of the left, pushing the envelope on climate policy and corporate accountability." },
+    L: { name: "Libertarian Party", shortName: "Libertarian", color: "#fd7e14", desc: "The Libertarian Party is America's third-largest political party, committed to maximizing individual liberty and minimizing government interference. Libertarians support free markets, civil liberties, non-interventionism abroad, and personal freedom on all social issues. Their philosophy of 'fiscally conservative, socially liberal' draws supporters disenchanted with both major parties' appetite for government power." },
+    I: { name: "Independent", shortName: "Independent", color: "#9B59B6", desc: "Running as an Independent represents the ultimate political outsider campaign. Unbound by party orthodoxy, an Independent candidate must build a coalition from scratch, appealing across traditional party lines. Independents face enormous structural barriers—ballot access, debate exclusion, media skepticism—but in a polarized era, a credible Independent can reshape the national conversation and, in rare circumstances, win it all." },
+    PSL: { name: "Party for Socialism and Liberation", shortName: "PSL", color: "#CC0000", desc: "The Party for Socialism and Liberation is a revolutionary socialist organization fighting for a future free from exploitation, oppression, and war. The PSL champions a working-class government, an end to racism and all forms of discrimination, and a socialist reorganization of the economy. Drawing on the Marxist-Leninist tradition, the PSL organizes communities of color, labor, and the poor to challenge corporate power and U.S. imperialism." }
 };
 
 const ISSUES = [
@@ -308,6 +308,7 @@ var gameData = {
     interestGroupSupport: {},  // Will store support % for each candidate per group
     interestGroupChanges: {},   // Will store last turn's changes for display
     interestGroupBaseSupport: {}, // Baseline support before issue modifiers
+    campaignGroupMomentum: {},  // Campaign-action relationship deltas by group/candidate
     interestGroupTurnout: {},   // Per-group turnout propensity (1.0 = baseline 100%)
     issueTurnout: {},           // Issue-driven turnout propensity (before coalition multipliers)
     coalitionStatus: {},        // Per-group loyalty tracking
@@ -393,9 +394,12 @@ var COALITION_CONSTANTS = {
 };
 
 const TARGETABLE_GROUPS = [
-    'black', 'hispanic', 'asian', 'native',
+    'white', 'black', 'hispanic', 'asian', 'native',
     'urban', 'suburban', 'rural',
     'union', 'college', 'noncollege',
     'bluecollar', 'whitecollar', 'smallbusiness',
-    'youth', 'seniors'
+    'tech', 'farmers', 'military',
+    'evangelical', 'catholic', 'jewish', 'muslim', 'secular',
+    'progressives', 'libertarians', 'maga', 'centrists',
+    'youth', 'seniors', 'women', 'lgbtq_community'
 ];

@@ -777,6 +777,111 @@ function _computeIssueGroupModifiers(candidate) {
     return modifiers;
 }
 
+var CANDIDATE_GROUP_MOD_ALIASES = {
+    lgbtq: ['lgbtq_community'],
+    latino: ['hispanic'],
+    veterans: ['military'],
+    suburban_college: ['suburban', 'college'],
+    suburban_women: ['suburban', 'women'],
+    suburban_moderates: ['suburban', 'centrists'],
+    suburban_conservative: ['suburban', 'centrists'],
+    midwest_noncollege: ['noncollege', 'bluecollar', 'union'],
+    progressive_left: ['progressives'],
+    rural_whites: ['rural', 'white'],
+    business_community: ['smallbusiness', 'whitecollar'],
+    donor_class: ['whitecollar', 'smallbusiness'],
+    donor_conservative: ['smallbusiness', 'whitecollar'],
+    tech_conservative: ['tech', 'whitecollar'],
+    antiestablishment: ['centrists', 'libertarians'],
+    donor_antiestablishment: ['libertarians', 'centrists'],
+    hardcore_right: ['maga'],
+    hard_right: ['maga'],
+    online_right: ['maga', 'youth'],
+    online_militant: ['progressives', 'youth'],
+    antiwar_left: ['progressives', 'muslim'],
+    environmentalists: ['progressives', 'college', 'youth'],
+    antiwar_independents: ['centrists', 'muslim'],
+    independents: ['centrists'],
+    moderates: ['centrists'],
+    moderate_dems: ['centrists', 'suburban'],
+    college_liberals: ['college', 'progressives'],
+    institutional_dems: ['whitecollar', 'college'],
+    high_info_swing: ['college', 'centrists'],
+    media_consumers: ['youth', 'college'],
+    alternative_media: ['youth', 'libertarians'],
+    public_health_professionals: ['college', 'whitecollar'],
+    latino_left: ['hispanic', 'progressives'],
+    labor_left: ['union', 'progressives'],
+    national_security_hawks: ['military', 'whitecollar']
+};
+
+function _getCandidateGroupModifier(candidate, groupId) {
+    if (!candidate) return 0;
+    var total = 0;
+    total += _sumCandidateGroupMods(candidate.groupBoosts, groupId);
+    total += _sumCandidateGroupMods(candidate.groupDebuffs, groupId);
+    return total * 0.45;
+}
+
+function _sumCandidateGroupMods(mods, groupId) {
+    if (!mods) return 0;
+    var total = 0;
+    for (var rawKey in mods) {
+        var normalized = _normalizeGroupTag(rawKey);
+        normalized = GROUP_TAG_ALIASES[normalized] || normalized;
+        var targets = CANDIDATE_GROUP_MOD_ALIASES[normalized] || [normalized];
+        for (var i = 0; i < targets.length; i++) {
+            if (targets[i] === groupId) {
+                total += mods[rawKey];
+            }
+        }
+    }
+    return total;
+}
+
+function initCampaignGroupMomentum() {
+    if (!gameData.campaignGroupMomentum) {
+        gameData.campaignGroupMomentum = {};
+    }
+    if (typeof INTEREST_GROUPS === 'undefined') return;
+    for (var groupId in INTEREST_GROUPS) {
+        if (!gameData.campaignGroupMomentum[groupId]) {
+            gameData.campaignGroupMomentum[groupId] = {};
+        }
+    }
+}
+
+function addCampaignGroupMomentum(groupId, candidateId, delta) {
+    if (!groupId || !candidateId || !isFinite(delta) || delta === 0) return;
+    if (!gameData.campaignGroupMomentum) initCampaignGroupMomentum();
+    if (!gameData.campaignGroupMomentum[groupId]) {
+        gameData.campaignGroupMomentum[groupId] = {};
+    }
+    var current = gameData.campaignGroupMomentum[groupId][candidateId] || 0;
+    gameData.campaignGroupMomentum[groupId][candidateId] = Math.max(-12, Math.min(12, current + delta));
+}
+
+function applyCampaignGroupSwing(groupId, delta) {
+    if (!gameData.candidate) return;
+    addCampaignGroupMomentum(groupId, gameData.candidate.id, delta);
+}
+
+function _getStaticGroupSupportForParty(groupId, partyKey, activeCandidates) {
+    if (!INTEREST_GROUPS[groupId] || !INTEREST_GROUPS[groupId].support) return null;
+    var support = INTEREST_GROUPS[groupId].support;
+    if (partyKey === 'D' || partyKey === 'R') {
+        return support[partyKey] !== undefined ? support[partyKey] : null;
+    }
+    var otherShare = support.I || 0;
+    var otherCount = 0;
+    for (var i = 0; i < activeCandidates.length; i++) {
+        if (activeCandidates[i].voteKey !== 'D' && activeCandidates[i].voteKey !== 'R') {
+            otherCount++;
+        }
+    }
+    return otherCount > 0 ? otherShare / otherCount : 0;
+}
+
 // Initialize per-group turnout tracking (baseline 1.0 = 100%)
 function initInterestGroupTurnout() {
     if (!gameData.interestGroupTurnout) {
@@ -785,6 +890,7 @@ function initInterestGroupTurnout() {
     if (!gameData.issueTurnout) {
         gameData.issueTurnout = {};
     }
+    initCampaignGroupMomentum();
     if (typeof INTEREST_GROUPS === 'undefined') return;
     for (var groupId in INTEREST_GROUPS) {
         if (!gameData.interestGroupTurnout[groupId]) {
@@ -985,6 +1091,8 @@ function initializeInterestGroupSupport() {
     gameData.interestGroupSupport = {};
     gameData.interestGroupChanges = {};
     gameData.interestGroupBaseSupport = {};
+    gameData.campaignGroupMomentum = {};
+    initCampaignGroupMomentum();
     // Actual values are populated by recomputeInterestGroupSupport() which is called
     // right after applyCandidateBuffs() in startGame, once county data is loaded.
 }
@@ -1001,9 +1109,12 @@ function recomputeInterestGroupSupport() {
 
     var candidateById = _buildCandidateByIdMap();
     var issueModifiersByCandidate = {};
+    var candidateGroupModifiersByCandidate = {};
     for (var ciMod = 0; ciMod < activeCandidates.length; ciMod++) {
         var candMod = activeCandidates[ciMod];
-        issueModifiersByCandidate[candMod.id] = _computeIssueGroupModifiers(candidateById[candMod.id]);
+        var candidateObj = candidateById[candMod.id];
+        issueModifiersByCandidate[candMod.id] = _computeIssueGroupModifiers(candidateObj);
+        candidateGroupModifiersByCandidate[candMod.id] = candidateObj || null;
     }
 
     for (var groupId in INTEREST_GROUPS) {
@@ -1077,12 +1188,20 @@ function recomputeInterestGroupSupport() {
         var supportTotal = 0;
         for (var ci4 = 0; ci4 < activeCandidates.length; ci4++) {
             var cand4 = activeCandidates[ci4];
-            var baseSupport = totalWeightedVotes > 0
+            var countyDerivedSupport = totalWeightedVotes > 0
                 ? (candWeightedVotes[cand4.id] || 0) / totalWeightedVotes * 100
                 : 0;
+            var staticSupport = _getStaticGroupSupportForParty(groupId, cand4.voteKey, activeCandidates);
+            var baseSupport = staticSupport !== null
+                ? (staticSupport * 0.68) + (countyDerivedSupport * 0.32)
+                : countyDerivedSupport;
             gameData.interestGroupBaseSupport[groupId][cand4.id] = baseSupport;
             var issueDelta = (issueModifiersByCandidate[cand4.id] && issueModifiersByCandidate[cand4.id][groupId]) || 0;
-            var adjusted = Math.max(0, baseSupport + issueDelta);
+            var candidateDelta = _getCandidateGroupModifier(candidateGroupModifiersByCandidate[cand4.id], groupId);
+            var campaignDelta = (gameData.campaignGroupMomentum &&
+                gameData.campaignGroupMomentum[groupId] &&
+                gameData.campaignGroupMomentum[groupId][cand4.id]) || 0;
+            var adjusted = Math.max(0, baseSupport + issueDelta + candidateDelta + campaignDelta);
             updatedSupport[cand4.id] = adjusted;
             supportTotal += adjusted;
         }
@@ -1650,8 +1769,8 @@ var app = {
         var repPct = (totalVotes.R / total * 100).toFixed(1);
         
         document.getElementById('popular-vote-display').innerHTML = 
-            '<div class="vote-row"><span style="color: #38BDF8;">Democrat</span><span>' + demPct + '%</span></div>' +
-            '<div class="vote-row"><span style="color: #FB7185;">Republican</span><span>' + repPct + '%</span></div>';
+            '<div class="vote-row"><span style="color: #00AEF3;">Democrat</span><span>' + demPct + '%</span></div>' +
+            '<div class="vote-row"><span style="color: #E81B23;">Republican</span><span>' + repPct + '%</span></div>';
         
         // Electoral projection
         var demEV = 0, repEV = 0;
@@ -1674,10 +1793,10 @@ var app = {
         }
         
         document.getElementById('electoral-projection-display').innerHTML = 
-            '<div class="vote-row"><span style="color: #38BDF8;">Democrat</span><span>' + demEV + ' EV</span></div>' +
-            '<div class="vote-row"><span style="color: #FB7185;">Republican</span><span>' + repEV + ' EV</span></div>' +
+            '<div class="vote-row"><span style="color: #00AEF3;">Democrat</span><span>' + demEV + ' EV</span></div>' +
+            '<div class="vote-row"><span style="color: #E81B23;">Republican</span><span>' + repEV + ' EV</span></div>' +
             (splitNotes.length ? '<div style="margin-top: 8px; color: #9aa3b7; font-size: 0.8rem;">' + splitNotes.join(' | ') + '</div>' : '') +
-            '<div style="margin-top: 15px; text-align: center; font-size: 1.1rem; color: #F8C471;">Needed to Win: 270 EV</div>';
+            '<div style="margin-top: 15px; text-align: center; font-size: 1.1rem; color: #ffd700;">Needed to Win: 270 EV</div>';
         
         // Toss-up states
         var tossupHtml = '';
@@ -1798,6 +1917,9 @@ var app = {
 
         if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(action)) {
             var groupName = INTEREST_GROUPS[groupId] ? INTEREST_GROUPS[groupId].name : groupId;
+            var state = gameData.states[gameData.selectedState];
+            state.lastCampaignDate = new Date(gameData.currentDate);
+            state.campaignActionsCount = (state.campaignActionsCount || 0) + 1;
             Utils.showToast("Field ops queued: " + groupName);
             Utils.addLog("Queued field ops targeting " + groupName + " in " + gameData.states[gameData.selectedState].name);
             this.updateQueuedAdsDisplay();
@@ -1833,6 +1955,9 @@ var app = {
 
         if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(action)) {
             var groupName = INTEREST_GROUPS[groupId] ? INTEREST_GROUPS[groupId].name : groupId;
+            var state = gameData.states[gameData.selectedState];
+            state.lastCampaignDate = new Date(gameData.currentDate);
+            state.campaignActionsCount = (state.campaignActionsCount || 0) + 1;
             Utils.showToast("Digital campaign queued: " + groupName);
             Utils.addLog("Queued digital campaign targeting " + groupName + " in " + gameData.states[gameData.selectedState].name);
             this.updateQueuedAdsDisplay();
@@ -1895,6 +2020,9 @@ var app = {
         if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(action)) {
             var issue = CORE_ISSUES.find(function(i) { return i.id === issueId; });
             var issueName = issue ? issue.name : issueId;
+            var state = gameData.states[gameData.selectedState];
+            state.lastCampaignDate = new Date(gameData.currentDate);
+            state.campaignActionsCount = (state.campaignActionsCount || 0) + 1;
             Utils.showToast("Ad queued: " + issueName + " (Intensity: " + intensity + ")");
             Utils.addLog("Queued ad on " + issueName + " in " + gameData.states[gameData.selectedState].name);
             this.updateQueuedAdsDisplay();
@@ -2255,7 +2383,7 @@ var app = {
                     // Show per-group turnout (if tracked)
                     if (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined) {
                         var turnoutPct = Math.round(gameData.interestGroupTurnout[groupId] * 100);
-                        var turnoutColor = turnoutPct >= 110 ? '#22C55E' : (turnoutPct <= 90 ? '#FB7185' : '#CBD5E1');
+                        var turnoutColor = turnoutPct >= 110 ? '#198754' : (turnoutPct <= 90 ? '#E81B23' : '#ccc');
                         html += '<div class="ig-turnout" style="font-size:0.75em; color:' + turnoutColor + '; margin-bottom:4px;">Turnout: ' + turnoutPct + '%</div>';
                     }
                     
@@ -2396,12 +2524,12 @@ var app = {
     // Helper to get party color
     getPartyColor: function(party) {
         var colors = {
-            'D': '#38BDF8',
-            'R': '#FB7185',
-            'G': '#22C55E',
-            'L': '#F59E0B',
-            'I': '#A78BFA',
-            'PSL': '#EF4444'
+            'D': '#00AEF3',
+            'R': '#E81B23',
+            'G': '#198754',
+            'L': '#fd7e14',
+            'I': '#9B59B6',
+            'PSL': '#CC0000'
         };
         return colors[party] || '#888';
     },

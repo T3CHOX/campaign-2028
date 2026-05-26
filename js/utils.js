@@ -27,19 +27,31 @@ var Utils = {
     },
 
     getMarginColor: function(margin) {
-        if (margin > 25) return "#075985";
-        if (margin > 15) return "#0369a1";
-        if (margin > 10) return "#0284c7";
-        if (margin > 5) return "#0ea5e9";
-        if (margin > 2) return "#7dd3fc";
-        if (margin > 0.5) return "#bae6fd";
-        if (margin > -0.5) return "#e5edf5";
-        if (margin > -2) return "#fecdd3";
-        if (margin > -5) return "#fda4af";
-        if (margin > -10) return "#fb7185";
-        if (margin > -15) return "#e11d48";
-        if (margin > -25) return "#be123c";
-        return "#881337";
+        if (margin > 35) return "#00152e";
+        if (margin > 25) return "#00264d";
+        if (margin > 18) return "#003d7a";
+        if (margin > 12) return "#0055a6";
+        if (margin > 8) return "#0077d9";
+        if (margin > 5) return "#1395e8";
+        if (margin > 3) return "#33a9f5";
+        if (margin > 2) return "#66bff7";
+        if (margin > 1) return "#91d7fb";
+        if (margin > 0.5) return "#b7e8ff";
+        if (margin > 0.25) return "#d4f2ff";
+        if (margin > 0.1) return "#edfaff";
+        if (margin > -0.1) return "#f7f2e7";
+        if (margin > -0.25) return "#fff0ec";
+        if (margin > -0.5) return "#ffd8d2";
+        if (margin > -1) return "#ffb7ad";
+        if (margin > -2) return "#ff8b7d";
+        if (margin > -3) return "#ff6258";
+        if (margin > -5) return "#f04444";
+        if (margin > -8) return "#d9272e";
+        if (margin > -12) return "#b9151d";
+        if (margin > -18) return "#940c14";
+        if (margin > -25) return "#73070e";
+        if (margin > -35) return "#520409";
+        return "#310105";
     },
 
     formatDate: function(date) {

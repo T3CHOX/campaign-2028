@@ -4851,3 +4851,301 @@ input:focus-visible,
         border-bottom: 1px solid var(--line-soft);
     }
 }
+
+
+/* ============================================================
+   RETRO BROADCAST REVISION
+   Warm 2010s election-night studio: graphite, chrome, red ticker.
+   ============================================================ */
+
+:root {
+    --bg-dark: #080706;
+    --panel-bg: #171514;
+    --surface-0: #080706;
+    --surface-1: #11100f;
+    --surface-2: #1a1715;
+    --surface-3: #25211f;
+    --surface-glass: rgba(24, 22, 20, 0.9);
+    --surface-raised: rgba(29, 26, 24, 0.96);
+    --line-soft: rgba(232, 221, 205, 0.18);
+    --line-strong: rgba(244, 234, 216, 0.34);
+    --text-white: #fff8ee;
+    --text-muted: #aa9d8c;
+    --text-soft: #e0d2be;
+    --accent-cyan: #d71920;
+    --accent-gold: #f4c15d;
+    --accent-emerald: #198754;
+    --danger-soft: #E81B23;
+    --dem-blue: #00AEF3;
+    --rep-red: #E81B23;
+    --forward-gold: #F2C75C;
+    --psl-red: #CC0000;
+    --independent-purple: #9B59B6;
+    --green-party: #198754;
+    --libertarian-orange: #fd7e14;
+    --gold: #ffd700;
+    --green-success: #198754;
+    --font-ui: 'Inter', 'Roboto', system-ui, sans-serif;
+    --font-display: 'Newsreader', 'Merriweather', Georgia, serif;
+}
+
+body {
+    background:
+        radial-gradient(circle at 50% -10%, rgba(244, 193, 93, 0.16), transparent 28rem),
+        linear-gradient(115deg, rgba(215, 25, 32, 0.08), transparent 34%),
+        linear-gradient(180deg, #080706 0%, #151210 48%, #070605 100%);
+}
+
+body::before {
+    background-image:
+        linear-gradient(rgba(244, 234, 216, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(244, 234, 216, 0.025) 1px, transparent 1px),
+        linear-gradient(115deg, transparent 0 48%, rgba(215, 25, 32, 0.06) 49% 51%, transparent 52%);
+    background-size: 48px 48px, 48px 48px, 220px 220px;
+}
+
+#intro-screen,
+.party-select-container,
+.party-page-body {
+    background:
+        radial-gradient(circle at 50% -8%, rgba(244, 193, 93, 0.18), transparent 28rem),
+        linear-gradient(115deg, rgba(215, 25, 32, 0.1), transparent 38%),
+        linear-gradient(180deg, #080706 0%, #151210 52%, #070605 100%);
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+.party-panel:focus-visible,
+.candidate-tile:focus-visible {
+    outline-color: #f4c15d;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(215,25,32,0.72), rgba(244,193,93,0.62));
+    border-color: rgba(20, 17, 14, 0.95);
+}
+
+.intro-content,
+.modal-box,
+.speech-modal-box,
+.fundraise-modal-box,
+.pac-modal-box,
+.interest-groups-box,
+.national-modal-box,
+.issues-modal-box,
+#sidebar,
+#election-sidebar,
+#state-panel,
+#empty-msg,
+#election-state-info,
+#polls-closing-panel,
+#third-party-tracker-panel,
+#election-feed,
+#race-calls,
+.ad-campaign-tile,
+.issues-list,
+#log-feed,
+.national-section,
+.fundraise-option,
+.pac-card,
+.ig-card,
+.final-results-content,
+.candidate-tile,
+.party-panel {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.01)),
+        linear-gradient(145deg, rgba(33, 29, 26, 0.98), rgba(13, 11, 10, 0.98));
+    border-color: rgba(244, 234, 216, 0.18);
+    box-shadow: 0 18px 52px rgba(0, 0, 0, 0.46), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.news-header,
+.hud-header,
+.election-header,
+.party-page-footer,
+.election-ev-banner,
+.national-popular-vote-ticker {
+    background:
+        linear-gradient(90deg, rgba(215, 25, 32, 0.2), transparent 28%),
+        linear-gradient(180deg, rgba(38, 34, 30, 0.98), rgba(12, 10, 9, 0.98));
+    border-color: rgba(244, 193, 93, 0.24);
+}
+
+.breaking-banner,
+.election-banner,
+.winner-banner,
+.result-banner.win {
+    background: linear-gradient(90deg, #7a0509, #d71920 46%, #7a0509);
+    border: 1px solid rgba(244, 193, 93, 0.5);
+    border-radius: 3px;
+    color: #fff8ee;
+    box-shadow: 0 12px 32px rgba(215, 25, 32, 0.32);
+}
+
+.main-title,
+.section-title,
+.logo,
+.network-bug {
+    text-shadow: 0 3px 0 rgba(0,0,0,0.8), 0 18px 40px rgba(215, 25, 32, 0.18);
+}
+
+.section-title::after,
+.progress-bar-bg,
+.ev-progress-bar,
+.elec-results-bar,
+.cpl-bar-wrap,
+.elec-cpl-bar-wrap {
+    background: linear-gradient(90deg, #2b2926, #645747, #2b2926);
+}
+
+.start-btn,
+.next-turn-btn,
+.queue-ad-btn,
+.pp-continue-btn:not(:disabled),
+.result-btn,
+.fundraise-bundler-btn,
+.winner-close-btn {
+    background: linear-gradient(180deg, #f7d27b, #c98720);
+    color: #130e08 !important;
+    border: 1px solid rgba(255, 241, 190, 0.72);
+    border-radius: 4px;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.45);
+}
+
+.start-btn:hover,
+.next-turn-btn:hover,
+.queue-ad-btn:hover,
+.pp-continue-btn:not(:disabled):hover,
+.result-btn:hover,
+.winner-close-btn:hover {
+    background: linear-gradient(180deg, #ffe59f, #d71920);
+    color: #fff8ee !important;
+}
+
+.pp-back-btn,
+.back-btn,
+.undo-btn,
+.interest-groups-btn,
+.time-btn,
+.mode-btn,
+.ig-tab,
+.county-back-btn,
+.county-drill-btn,
+.election-cv-back-btn,
+.modal-box button,
+.fundraise-decline-btn,
+.act-btn {
+    background: linear-gradient(180deg, rgba(50, 45, 40, 0.96), rgba(18, 16, 14, 0.98));
+    border-color: rgba(244, 234, 216, 0.22);
+    color: var(--text-soft);
+    border-radius: 3px;
+}
+
+.time-btn.active,
+.mode-btn.active,
+.ig-tab.active,
+#mode-shift2024.active {
+    background: linear-gradient(180deg, #d71920, #7a0509);
+    color: #fff8ee;
+    border-color: rgba(244, 193, 93, 0.5);
+}
+
+.candidate-tiles-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    align-items: stretch;
+    max-width: 1500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.candidate-tile {
+    width: 100%;
+    min-height: 520px;
+}
+
+.candidate-tile-img {
+    height: 310px;
+    object-position: center top;
+    border-bottom: 4px solid var(--tile-party-color, #d71920);
+}
+
+.candidate-tile-body {
+    padding: 18px 20px 20px;
+}
+
+.candidate-tile-name {
+    font-size: 1.25rem;
+}
+
+.candidate-tile-desc {
+    font-size: 0.82rem;
+}
+
+.party-page-banner {
+    background:
+        linear-gradient(90deg, rgba(215, 25, 32, 0.16), transparent 42%),
+        linear-gradient(135deg, rgba(34,30,27,0.98), rgba(10,9,8,0.96)) !important;
+}
+
+#map-container,
+#election-map-container,
+#county-map-container,
+#election-county-map-container,
+#election-county-view-wrapper {
+    background:
+        radial-gradient(circle at 50% 48%, rgba(244, 193, 93, 0.08), transparent 38rem),
+        linear-gradient(145deg, rgba(16, 13, 11, 0.98), rgba(4, 4, 4, 0.96));
+}
+
+#us-map-svg path,
+#election-map-svg path,
+#county-election-map-svg path {
+    stroke: rgba(250, 244, 232, 0.86);
+}
+
+#us-map-svg path:hover,
+#us-map-svg path.selected,
+#election-map-svg path:hover,
+#county-election-map-svg path:hover {
+    stroke: #ffd700 !important;
+}
+
+.divider,
+.ev-marker,
+.analysis-controls-title {
+    background: linear-gradient(180deg, #f7d27b, #c98720);
+    color: #130e08;
+}
+
+.dem-score,
+.ev-dem .ev-count,
+.elec-winner-dem,
+.elec-proj-called-dem {
+    color: #00AEF3 !important;
+}
+
+.rep-score,
+.ev-rep .ev-count,
+.elec-winner-rep,
+.elec-proj-called-rep {
+    color: #E81B23 !important;
+}
+
+.ev-fill-dem,
+.elec-bar-dem {
+    background: linear-gradient(90deg, #003d7a, #00AEF3);
+}
+
+.ev-fill-rep,
+.elec-bar-rep {
+    background: linear-gradient(90deg, #73070e, #E81B23);
+}
+
+@media (min-width: 1200px) {
+    .party-page-selection {
+        padding-left: 44px;
+        padding-right: 44px;
+    }
+}

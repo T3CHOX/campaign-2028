@@ -85,7 +85,7 @@ var Campaign = {
         tooltip.innerHTML = 
             '<span class="tooltip-title">' + state.name + '</span>' +
             '<div class="tooltip-divider"></div>' +
-            '<span class="tooltip-leader" style="color: ' + (state.margin > 0 ? '#38BDF8' : '#FB7185') + '">' + leaning + '</span>' +
+            '<span class="tooltip-leader" style="color: ' + (state.margin > 0 ? '#00AEF3' : '#E81B23') + '">' + leaning + '</span>' +
             '<span class="tooltip-stats">' + state.ev + ' Electoral Votes</span>';
         tooltip.style.display = 'block';
         tooltip.style.left = (e.clientX + 15) + 'px';
@@ -138,7 +138,7 @@ var Campaign = {
         
         var issuesList = document.getElementById('sp-issues-list');
         issuesList.innerHTML = '';
-        issuesList.innerHTML += '<div style="background: #152033; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (totalBoost > 0.1 ? '#22C55E' : '#CBD5E1') + '">' + turnoutText + '</span></div>';
+        issuesList.innerHTML += '<div style="background: #2a2a2a; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (totalBoost > 0.1 ? '#198754' : '#ccc') + '">' + turnoutText + '</span></div>';
         
         // Use CORE_ISSUES if available, otherwise fallback to old ISSUES
         var issueSource = (typeof CORE_ISSUES !== 'undefined') ? CORE_ISSUES : ISSUES;
@@ -192,7 +192,7 @@ var Campaign = {
         document.getElementById('score-rep').innerText = repEV;
         
         var demPct = (demEV / 538) * 100;
-        document.getElementById('ev-bar').style.background = 'linear-gradient(to right, #38BDF8 ' + demPct + '%, #FB7185 ' + demPct + '%)';
+        document.getElementById('ev-bar').style.background = 'linear-gradient(to right, #00AEF3 ' + demPct + '%, #E81B23 ' + demPct + '%)';
     },
 
     updateHUD: function() {
@@ -358,7 +358,7 @@ var Campaign = {
         document.getElementById('bio-title').innerText = s.name + ' - Intelligence Report';
         document.getElementById('bio-content').innerHTML = 
             '<div class="bio-stat"><strong>Electoral Votes:</strong> ' + s.ev + '</div>' +
-            '<div class="bio-stat"><strong>Current Polling:</strong> <span style="color: ' + (s.margin > 0 ?  '#38BDF8' : '#FB7185') + '">' + leaning + '</span></div>' +
+            '<div class="bio-stat"><strong>Current Polling:</strong> <span style="color: ' + (s.margin > 0 ?  '#00AEF3' : '#E81B23') + '">' + leaning + '</span></div>' +
             '<div class="bio-stat"><strong>Last Campaigned:</strong> ' + lastCampaignText + '</div>' +
             '<div class="bio-stat"><strong>Ad Spending:</strong> $' + (s.adSpent || 0).toFixed(1) + 'M</div>' +
             this.getInterestGroupBreakdown(gameData.selectedState);
