@@ -191,6 +191,13 @@ var Persuasion = {
         if (typeof updateGroupTurnoutFromIssue !== 'undefined') {
             updateGroupTurnoutFromIssue(issueId, gameData.selectedParty, intensity);
         }
+        this.applyIssueGroupMomentum(issueId, intensity, 0.18);
+        this.recordAppliedActionMetric(action, {
+            issueId: issueId,
+            turnoutKey: issueId,
+            turnoutDelta: PERSUASION_CONSTANTS.AD_TURNOUT_BOOST * intensity,
+            spend: action.cost && action.cost.funds ? action.cost.funds : 0
+        });
     },
     
     // Apply a SPEECH action (county-specific with statewide effect)
@@ -245,6 +252,12 @@ var Persuasion = {
         if (typeof updateGroupTurnoutFromIssue !== 'undefined') {
             updateGroupTurnoutFromIssue(issueId, gameData.selectedParty, intensity);
         }
+        this.applyIssueGroupMomentum(issueId, intensity, 0.28);
+        this.recordAppliedActionMetric(action, {
+            issueId: issueId,
+            turnoutKey: issueId,
+            turnoutDelta: PERSUASION_CONSTANTS.SPEECH_TURNOUT_BOOST * intensity
+        });
     },
     applyRallyAction: function(action) {
         var stateCode = action.state;
@@ -255,14 +268,20 @@ var Persuasion = {
             recordPlayerPressure(stateCode, 'RALLY', 1);
         }
         
-        // Rallies don't use issue-based persuasion, just turnout
+        var rallyDelta = PERSUASION_CONSTANTS.BASE_PERSUASION_RALLY;
         for (var fips in Counties.countyData) {
             var paddedFips = fips.padStart(5, '0');
             if (paddedFips.substring(0, 2) === stateFips) {
                 var county = Counties.countyData[fips];
                 this.applyTurnoutBoost(county, PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST);
+                this.applyMarginShift(county, rallyDelta);
             }
         }
+        this.applyRallyGroupMomentum(stateCode);
+        this.recordAppliedActionMetric(action, {
+            turnoutKey: 'rally',
+            turnoutDelta: PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST
+        });
     },
 
     // Apply a FIELD action (targeted turnout boost by demographic group)
@@ -284,6 +303,13 @@ var Persuasion = {
                 this.applyTurnoutBoost(county, turnoutBoost);
             }
         }
+        this.applyTargetGroupMomentum(groupId, intensity * 0.65);
+        this.boostGroupTurnout(groupId, BUFF_CONSTANTS.GROUP_TURNOUT_RATE * intensity * 2.5);
+        this.recordAppliedActionMetric(action, {
+            groupId: groupId,
+            turnoutKey: groupId,
+            turnoutDelta: PERSUASION_CONSTANTS.FIELD_TURNOUT_BOOST * intensity
+        });
     },
 
     // Apply a DIGITAL action (targeted persuasion + turnout)
@@ -307,6 +333,13 @@ var Persuasion = {
                 this.applyTurnoutBoost(county, PERSUASION_CONSTANTS.DIGITAL_TURNOUT_BOOST * intensity * groupShare);
             }
         }
+        this.applyTargetGroupMomentum(groupId, intensity * 0.45);
+        this.boostGroupTurnout(groupId, BUFF_CONSTANTS.GROUP_TURNOUT_RATE * intensity * 1.5);
+        this.recordAppliedActionMetric(action, {
+            groupId: groupId,
+            turnoutKey: groupId,
+            turnoutDelta: PERSUASION_CONSTANTS.DIGITAL_TURNOUT_BOOST * intensity
+        });
     },
     
     // Calculate persuasion delta for a single county based on interest group composition
@@ -356,9 +389,9 @@ var Persuasion = {
         // Apply saturation
         totalDelta *= saturation;
 
-        // Apply credibility multiplier
-        if (typeof gameData !== 'undefined' && typeof gameData.credibility === 'number') {
-            totalDelta *= gameData.credibility;
+        // Apply favorability multiplier. Neutral is 50%; strong favorability adds persuasion.
+        if (typeof Campaign !== 'undefined' && Campaign.getFavorability) {
+            totalDelta *= 0.75 + Campaign.getFavorability();
         }
         
         // Apply localized multiplier if this is a speech in this county
@@ -415,8 +448,12 @@ var Persuasion = {
         }
         // Third parties: apply smaller effect
         else {
-            // Third party campaigns have minimal persuasion effect
-            // They mainly build their own support rather than shifting D-R
+            var thirdDelta = delta * 0.55;
+            if (county.v[playerParty] !== undefined) {
+                county.v[playerParty] = Math.min(35, Math.max(0, county.v[playerParty] + thirdDelta));
+                county.v.D = Math.max(1, (county.v.D || 0) - thirdDelta * 0.45);
+                county.v.R = Math.max(1, (county.v.R || 0) - thirdDelta * 0.45);
+            }
         }
     },
     
@@ -433,6 +470,90 @@ var Persuasion = {
         } else {
             county.turnout.thirdParty = Math.min(1.3, (county.turnout.thirdParty || 0.7) + (boostAmount * 0.5));
         }
+    },
+
+    recordAppliedActionMetric: function(action, details) {
+        if (!action || !action.state || !gameData.states[action.state]) return;
+        var state = gameData.states[action.state];
+        if (!state.actionMetrics) {
+            state.actionMetrics = { AD: 0, SPEECH: 0, RALLY: 0, FIELD: 0, DIGITAL: 0 };
+        }
+        state.actionMetrics[action.type] = (state.actionMetrics[action.type] || 0) + 1;
+        if (!state.turnoutBoosts) state.turnoutBoosts = {};
+        var turnoutKey = (details && details.turnoutKey) || action.groupId || action.issueId || action.type.toLowerCase();
+        var turnoutDelta = (details && details.turnoutDelta) || 0;
+        if (turnoutKey && turnoutDelta) {
+            state.turnoutBoosts[turnoutKey] = (state.turnoutBoosts[turnoutKey] || 0) + turnoutDelta;
+        }
+        if (details && details.spend) {
+            state.adSpent = (state.adSpent || 0) + details.spend;
+        }
+    },
+
+    applyIssueGroupMomentum: function(issueId, intensity, scale) {
+        if (typeof applyCampaignGroupSwing !== 'function' || !gameData.candidate) return;
+        if (typeof INTEREST_GROUPS === 'undefined') return;
+        for (var groupId in INTEREST_GROUPS) {
+            var importance = this.getGroupIssueImportance(groupId, issueId);
+            if (importance <= 0.2) continue;
+            var alignment = this.calculateAlignment(gameData.candidate.id, groupId, issueId);
+            var delta = (alignment - 0.45) * importance * (intensity || 1) * (scale || 0.2);
+            applyCampaignGroupSwing(groupId, delta);
+        }
+    },
+
+    applyTargetGroupMomentum: function(groupId, delta) {
+        if (typeof applyCampaignGroupSwing !== 'function' || !groupId) return;
+        applyCampaignGroupSwing(groupId, delta);
+    },
+
+    boostGroupTurnout: function(groupId, delta) {
+        if (!groupId || !isFinite(delta)) return;
+        if (!gameData.issueTurnout && typeof initInterestGroupTurnout === 'function') {
+            initInterestGroupTurnout();
+        }
+        if (!gameData.issueTurnout) return;
+        gameData.issueTurnout[groupId] = Math.max(BUFF_CONSTANTS.MIN_GROUP_TURNOUT,
+            Math.min(BUFF_CONSTANTS.MAX_GROUP_TURNOUT, (gameData.issueTurnout[groupId] || 1.0) + delta));
+        if (typeof recomputeCoalitionTurnout === 'function') {
+            recomputeCoalitionTurnout();
+        }
+    },
+
+    applyRallyGroupMomentum: function(stateCode) {
+        if (typeof applyCampaignGroupSwing !== 'function') return;
+        var topGroups = this.getStateTopTargetGroups(stateCode, 3);
+        for (var i = 0; i < topGroups.length; i++) {
+            applyCampaignGroupSwing(topGroups[i].id, 0.22 * (1 - (i * 0.18)));
+        }
+    },
+
+    getStateTopTargetGroups: function(stateCode, limit) {
+        var groups = (typeof TARGETABLE_GROUPS !== 'undefined') ? TARGETABLE_GROUPS : [];
+        var scored = [];
+        for (var i = 0; i < groups.length; i++) {
+            var groupId = groups[i];
+            var share = this.getStateGroupShare(stateCode, groupId);
+            if (share > 0) scored.push({ id: groupId, share: share });
+        }
+        scored.sort(function(a, b) { return b.share - a.share; });
+        return scored.slice(0, limit || 3);
+    },
+
+    getStateGroupShare: function(stateCode, groupId) {
+        if (!STATES[stateCode] || !Counties || !Counties.countyData || !Counties.getCountyGroupShare) return 0;
+        var stateFips = STATES[stateCode].fips;
+        var weightedShare = 0;
+        var totalPop = 0;
+        for (var fips in Counties.countyData) {
+            var paddedFips = fips.padStart(5, '0');
+            if (paddedFips.substring(0, 2) !== stateFips) continue;
+            var county = Counties.countyData[fips];
+            var pop = county.p || 0;
+            weightedShare += pop * Counties.getCountyGroupShare(county, groupId);
+            totalPop += pop;
+        }
+        return totalPop > 0 ? weightedShare / totalPop : 0;
     },
     
     // Get display info for pending actions

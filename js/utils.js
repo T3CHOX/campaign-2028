@@ -27,20 +27,31 @@ var Utils = {
     },
 
     getMarginColor: function(margin) {
-        // Improved coloring with white at 0.0%
-        if (margin > 25) return "#00264d"; // Very dark blue
-        if (margin > 15) return "#003d7a"; // Darker blue
-        if (margin > 10) return "#0055a6"; // Dark blue
-        if (margin > 5) return "#0077d9"; // Medium blue
-        if (margin > 2) return "#3399ff"; // Light blue
-        if (margin > 0.5) return "#66b3ff"; // Very light blue
-        if (margin > -0.5) return "#ffffff"; // White (neutral/tied)
-        if (margin > -2) return "#ff9999"; // Very light red
-        if (margin > -5) return "#ff6666"; // Light red
-        if (margin > -10) return "#ff3333"; // Medium red
-        if (margin > -15) return "#d90000"; // Dark red
-        if (margin > -25) return "#a60000"; // Darker red
-        return "#730000"; // Very dark red
+        if (margin > 35) return "#00152e";
+        if (margin > 25) return "#00264d";
+        if (margin > 18) return "#003d7a";
+        if (margin > 12) return "#0055a6";
+        if (margin > 8) return "#0077d9";
+        if (margin > 5) return "#1395e8";
+        if (margin > 3) return "#33a9f5";
+        if (margin > 2) return "#66bff7";
+        if (margin > 1) return "#91d7fb";
+        if (margin > 0.5) return "#b7e8ff";
+        if (margin > 0.25) return "#d4f2ff";
+        if (margin > 0.1) return "#edfaff";
+        if (margin > -0.1) return "#f7f2e7";
+        if (margin > -0.25) return "#fff0ec";
+        if (margin > -0.5) return "#ffd8d2";
+        if (margin > -1) return "#ffb7ad";
+        if (margin > -2) return "#ff8b7d";
+        if (margin > -3) return "#ff6258";
+        if (margin > -5) return "#f04444";
+        if (margin > -8) return "#d9272e";
+        if (margin > -12) return "#b9151d";
+        if (margin > -18) return "#940c14";
+        if (margin > -25) return "#73070e";
+        if (margin > -35) return "#520409";
+        return "#310105";
     },
 
     formatDate: function(date) {

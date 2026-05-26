@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Decision 2028 | Campaign Simulator</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,700;6..72,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body>
@@ -152,8 +152,8 @@
                     <span class="money" id="hud-funds">$0.0M</span>
                 </div>
                 <div class="stat-group">
-                    <label>CREDIBILITY</label>
-                    <span class="credibility" id="hud-credibility">100%</span>
+                    <label>FAVORABILITY</label>
+                    <span class="favorability" id="hud-favorability">50%</span>
                 </div>
                 <div class="stat-group">
                     <label>DATE</label>
@@ -165,6 +165,15 @@
 
         <div class="game-area">
             <div id="map-container">
+                <div class="campaign-map-mode-toggle">
+                    <button class="mode-btn active" id="campaign-mode-margin" onclick="app.setCampaignMapMode('margin')">LEAN</button>
+                    <button class="mode-btn" id="campaign-mode-ev" onclick="app.setCampaignMapMode('ev')">EV</button>
+                    <button class="mode-btn" id="campaign-mode-density" onclick="app.setCampaignMapMode('density')">DENSITY</button>
+                    <button class="mode-btn" id="campaign-mode-turnout" onclick="app.setCampaignMapMode('turnout')">TURNOUT</button>
+                    <button class="mode-btn" id="campaign-mode-playerTurnout" onclick="app.setCampaignMapMode('playerTurnout')">PLAYER</button>
+                    <button class="mode-btn" id="campaign-mode-opponentTurnout" onclick="app.setCampaignMapMode('opponentTurnout')">OPPONENT</button>
+                    <button class="mode-btn" id="campaign-mode-favorability" onclick="app.setCampaignMapMode('favorability')">FAVORABILITY</button>
+                </div>
                 <div id="us-map-wrapper"></div>
                 <div id="county-view-wrapper" class="hidden">
                     <div id="county-view-header">
@@ -258,7 +267,7 @@
                     <button class="time-btn" id="btn-2x" onclick="app.election.setSpeed(2)">2×</button>
                     <button class="time-btn" id="btn-5x" onclick="app.election.setSpeed(5)">5×</button>
                     <button class="time-btn" id="btn-10x" onclick="app.election.setSpeed(10)">10×</button>
-                    <button class="time-btn" id="btn-skip" onclick="app.election.skipToEnd()" style="background: #ffd700; color: #000; font-weight: bold;">⏭️ SKIP</button>
+                    <button class="time-btn" id="btn-skip" onclick="app.election.skipToEnd()">⏭️ SKIP</button>
                 </div>
             </div>
             <div class="election-header-right">
@@ -301,7 +310,7 @@
                     </div>
                     <div class="ev-labels">
                         <span>0</span>
-                        <span class="hidden" style="color: #198754; font-weight: bold;"><span id="elec-third-ev">0</span> 3rd</span>
+                        <span class="hidden third-ev-label"><span id="elec-third-ev">0</span> 3rd</span>
                         <span>538</span>
                     </div>
                 </div>

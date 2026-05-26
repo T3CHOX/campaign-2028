@@ -116,7 +116,7 @@ var OpponentAI = {
         var actions = [];
         var personality = this.getPersonality(opponentParty);
         var strategy = this.determineStrategy(opponentParty, personality);
-        var numActions = Math.floor(stamina * 0.75);
+        var numActions = Math.max(1, Math.min(3, Math.floor(stamina * 0.35)));
 
         if (Math.random() < personality.vpPressureChance) {
             this.applyVpPressure(opponentParty);
@@ -126,7 +126,8 @@ var OpponentAI = {
         var overcommitState = Math.random() < personality.mistakeChance ? this.pickHopelessState(opponentParty) : null;
 
         for (var i = 0; i < numActions; i++) {
-            var action = this.chooseAction(strategy, opponentParty, personality, overcommitState || focusState);
+            var targetState = overcommitState || (i === 0 ? focusState : this.pickStateByStrategy(strategy, opponentParty));
+            var action = this.chooseAction(strategy, opponentParty, personality, targetState);
             actions.push(action);
             this.executeAction(action, opponentParty);
         }
@@ -143,10 +144,9 @@ var OpponentAI = {
         var rallyBias = personality.rallyBias || 0.5;
         var actionType = Math.random() < rallyBias ? 'rally' : 'ad';
 
-        if (actionType === 'rally' && typeof Counties !== 'undefined' && Counties.countyData &&
-            Math.random() < (personality.countyRallyBias || 0)) {
+        if (typeof Counties !== 'undefined' && Counties.countyData) {
             return {
-                type: 'county_rally',
+                type: actionType === 'rally' ? 'county_rally' : 'county_ad',
                 state: targetState,
                 county: this.pickPriorityCounty(targetState, party)
             };
@@ -326,58 +326,52 @@ var OpponentAI = {
             return;
         }
 
-        if (action.type === 'rally') {
-            if (typeof Counties !== 'undefined' && Counties.countyData) {
-                var stateFips = STATES[action.state] ? STATES[action.state].fips : null;
-                if (stateFips) {
-                    for (var fips in Counties.countyData) {
-                        var paddedFips = fips.padStart(5, '0');
-                        if (paddedFips.substring(0, 2) === stateFips) {
-                            var county = Counties.countyData[fips];
-                            if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
-                            var countyRallyBoost = 0.03 + Math.random() * 0.05;
-                            if (party === 'D') {
-                                county.turnout.demOpponent = Math.min(1.3, (county.turnout.demOpponent || 1.0) + countyRallyBoost);
-                            } else if (party === 'R') {
-                                county.turnout.repOpponent = Math.min(1.3, (county.turnout.repOpponent || 1.0) + countyRallyBoost);
-                            } else {
-                                county.turnout.thirdParty = Math.min(1.3, (county.turnout.thirdParty || 0.7) + (countyRallyBoost * 0.15));
-                            }
-                        }
+        if (action.type === 'county_ad') {
+            if (typeof Counties !== 'undefined' && Counties.applyOpponentAdSpillover && action.county) {
+                var adSpill = Counties.applyOpponentAdSpillover(action.county, party);
+                if (adSpill && adSpill.affectedStates) {
+                    for (var adStateCode in adSpill.affectedStates) {
+                        Counties.updateStateFromCounties(adStateCode);
                     }
-                    Counties.updateStateFromCounties(action.state);
+                }
+            }
+            var adTicketPres = party === 'D' ? gameData.demTicket.pres : gameData.repTicket.pres;
+            if (adTicketPres) {
+                Utils.addLog('OPPONENT UPDATE: ' + adTicketPres.name + ' ran a targeted media buy in ' + s.name);
+            }
+            return;
+        }
+
+        if (action.type === 'rally') {
+            var fallbackCounty = this.pickPriorityCounty(action.state, party);
+            if (fallbackCounty && typeof Counties !== 'undefined' && Counties.applyOpponentRallySpillover) {
+                var fallbackSpill = Counties.applyOpponentRallySpillover(fallbackCounty, party);
+                if (fallbackSpill && fallbackSpill.affectedStates) {
+                    for (var fallbackStateCode in fallbackSpill.affectedStates) {
+                        Counties.updateStateFromCounties(fallbackStateCode);
+                    }
                 }
             }
             var rallyPres = party === 'D' ? gameData.demTicket.pres : gameData.repTicket.pres;
             if (rallyPres) {
-                Utils.addLog('OPPONENT UPDATE: ' + rallyPres.name + ' held rally in ' + s.name);
+                Utils.addLog('OPPONENT UPDATE: ' + rallyPres.name + ' held a regional rally in ' + s.name);
             }
             return;
         }
 
         if (action.type === 'ad') {
-            if (typeof Counties !== 'undefined' && Counties.countyData) {
-                var fipsState = STATES[action.state] ? STATES[action.state].fips : null;
-                if (fipsState) {
-                    for (var cfips in Counties.countyData) {
-                        var padded = cfips.padStart(5, '0');
-                        if (padded.substring(0, 2) === fipsState) {
-                            var cty = Counties.countyData[cfips];
-                            if (!cty.turnout) cty.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
-                            var countyAdBoost = 0.005 + Math.random() * 0.005;
-                            if (party === 'D') {
-                                cty.turnout.demOpponent = Math.min(1.3, (cty.turnout.demOpponent || 1.0) + countyAdBoost);
-                            } else if (party === 'R') {
-                                cty.turnout.repOpponent = Math.min(1.3, (cty.turnout.repOpponent || 1.0) + countyAdBoost);
-                            }
-                        }
+            var fallbackAdCounty = this.pickPriorityCounty(action.state, party);
+            if (fallbackAdCounty && typeof Counties !== 'undefined' && Counties.applyOpponentAdSpillover) {
+                var fallbackAdSpill = Counties.applyOpponentAdSpillover(fallbackAdCounty, party);
+                if (fallbackAdSpill && fallbackAdSpill.affectedStates) {
+                    for (var fallbackAdStateCode in fallbackAdSpill.affectedStates) {
+                        Counties.updateStateFromCounties(fallbackAdStateCode);
                     }
-                    Counties.updateStateFromCounties(action.state);
                 }
             }
             var adPres = party === 'D' ? gameData.demTicket.pres : gameData.repTicket.pres;
             if (adPres) {
-                Utils.addLog('OPPONENT UPDATE: ' + adPres.name + ' ran ad blitz in ' + s.name);
+                Utils.addLog('OPPONENT UPDATE: ' + adPres.name + ' ran a targeted media buy in ' + s.name);
             }
             return;
         }
