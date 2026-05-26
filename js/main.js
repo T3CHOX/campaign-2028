@@ -78,6 +78,7 @@ function startGame() {
     if (typeof updateCoalitionLoyalty === 'function') {
         updateCoalitionLoyalty();
     }
+    gameData.favorability = FAVORABILITY_CONSTANTS.BASE;
     gameData.credibility = 1.0;
     gameData.messageStreak = 0;
     gameData.lastMessageIssue = null;
@@ -1067,12 +1068,14 @@ function updateMessagingConsistency(issueId, intensity) {
     if (!issueId) return;
     if (gameData.lastMessageIssue === issueId) {
         gameData.messageStreak = (gameData.messageStreak || 0) + 1;
-        gameData.credibility = Math.min(CREDIBILITY_CONSTANTS.MAX,
-            (gameData.credibility || 1.0) + (CREDIBILITY_CONSTANTS.STREAK_BONUS * (intensity || 1)));
+        if (typeof Campaign !== 'undefined' && Campaign.adjustFavorability) {
+            Campaign.adjustFavorability(FAVORABILITY_CONSTANTS.STREAK_BONUS * (intensity || 1), null);
+        }
     } else {
         gameData.messageStreak = 0;
-        gameData.credibility = Math.max(CREDIBILITY_CONSTANTS.MIN,
-            (gameData.credibility || 1.0) - (CREDIBILITY_CONSTANTS.SWAP_PENALTY * (intensity || 1)));
+        if (typeof Campaign !== 'undefined' && Campaign.adjustFavorability) {
+            Campaign.adjustFavorability(-(FAVORABILITY_CONSTANTS.SWAP_PENALTY * (intensity || 1)), null);
+        }
     }
     gameData.lastMessageIssue = issueId;
 }
@@ -1375,7 +1378,7 @@ function addMediaVulnerability(pac) {
         id: vuln.id,
         label: vuln.label,
         risk: vuln.risk,
-        credibility: vuln.credibility,
+        favorability: vuln.favorability !== undefined ? vuln.favorability : vuln.credibility,
         turnoutHits: vuln.turnoutHits || {},
         story: vuln.story,
         source: pac.name,
@@ -1416,6 +1419,7 @@ function applyPacCommitment(pacId) {
 var app = {
     goToScreen: function(id) { Screens.goTo(id); },
     selParty: function(code) { Screens.selectParty(code); },
+    setCampaignMapMode: function(mode) { if (typeof Campaign !== 'undefined') Campaign.setMapMode(mode); },
     setThirdParties: function(enabled) {
         gameData.thirdPartiesEnabled = enabled;
         var panels = document.querySelectorAll('.party-panel-minor');
@@ -1511,9 +1515,8 @@ var app = {
         }
         gameData.funds += totalRaised;
 
-        if (typeof CREDIBILITY_CONSTANTS !== 'undefined') {
-            gameData.credibility = Math.max(CREDIBILITY_CONSTANTS.MIN,
-                (gameData.credibility || 1.0) - FUNDRAISE_CONSTANTS.BUNDLER_CREDIBILITY_PENALTY);
+        if (typeof Campaign !== 'undefined' && Campaign.adjustFavorability) {
+            Campaign.adjustFavorability(-FUNDRAISE_CONSTANTS.BUNDLER_CREDIBILITY_PENALTY, 'bundler backlash');
         }
         if (meeting.conflictGroups && meeting.conflictGroups.length) {
             initInterestGroupTurnout();
@@ -1527,7 +1530,7 @@ var app = {
             }
         }
 
-        Utils.addLog('Bundler event accepted: +' + totalRaised.toFixed(1) + 'M (credibility hit)');
+        Utils.addLog('Bundler event accepted: +' + totalRaised.toFixed(1) + 'M (favorability hit)');
         Utils.showToast('Bundler haul: +$' + totalRaised.toFixed(1) + 'M');
         this.finalizeFundraise();
     },
@@ -1603,12 +1606,12 @@ var app = {
         var issuesHtml = '';
         var categories = ['Economic', 'Social', 'Healthcare', 'Environment', 'Foreign', 'Governance'];
 
-        // Credibility + vulnerability status
-        var credibilityPct = Math.round((gameData.credibility || 1.0) * 100);
+        // Favorability + vulnerability status
+        var favorabilityPct = Math.round((typeof Campaign !== 'undefined' && Campaign.getFavorability ? Campaign.getFavorability() : (gameData.favorability || 0.5)) * 100);
         issuesHtml += '<div class="credibility-panel">';
-        issuesHtml += '<div class="credibility-title">MESSAGE CREDIBILITY</div>';
-        issuesHtml += '<div class="credibility-value">' + credibilityPct + '%</div>';
-        issuesHtml += '<div class="credibility-subtitle">Consistency boosts persuasion; contradictions invite penalties.</div>';
+        issuesHtml += '<div class="credibility-title">CAMPAIGN FAVORABILITY</div>';
+        issuesHtml += '<div class="credibility-value">' + favorabilityPct + '%</div>';
+        issuesHtml += '<div class="credibility-subtitle">Public approval changes with consistency, issue shifts, donors, media hits, and coalition pressure.</div>';
         issuesHtml += '</div>';
 
         if (gameData.mediaVulnerabilities && gameData.mediaVulnerabilities.length) {
@@ -1722,6 +1725,7 @@ var app = {
                     
                     issuesHtml += '</div>'; // close issue-scale
                     issuesHtml += '<div class="issue-labels"><span>Progressive (-10)</span><span>Center (0)</span><span>Conservative (+10)</span></div>';
+                    issuesHtml += '<div class="issue-impact-row">' + this.getIssueImpactSummary(issue.id) + '</div>';
                     
                     // Add shift position button if not locked
                     if (!isLocked) {
@@ -1736,6 +1740,20 @@ var app = {
         }
         
         document.getElementById('issues-scales').innerHTML = issuesHtml;
+    },
+
+    getIssueImpactSummary: function(issueId) {
+        var impacts = [];
+        if (typeof INTEREST_GROUPS !== 'undefined') {
+            for (var groupId in INTEREST_GROUPS) {
+                var group = INTEREST_GROUPS[groupId];
+                if (group.priorities && group.priorities.indexOf(issueId) !== -1) {
+                    impacts.push(group.name);
+                }
+            }
+        }
+        if (!impacts.length) return '<strong>Moves:</strong> low-salience voters and local persuasion only';
+        return '<strong>Moves:</strong> ' + impacts.slice(0, 5).join(', ') + (impacts.length > 5 ? ' +' + (impacts.length - 5) + ' more' : '');
     },
     openNationalOverview: function() {
         document.getElementById('national-modal').classList.remove('hidden');
@@ -2222,16 +2240,7 @@ var app = {
             return;
         }
         
-        // Calculate credibility penalty using constant
-        var credibilityPenalty = shift * GAME_CONSTANTS.CREDIBILITY_PENALTY_MULTIPLIER;
-        
-        // Apply debuff across counties (statewide credibility hit)
-        if (typeof Counties !== 'undefined' && Counties.countyData && typeof Persuasion !== 'undefined') {
-            var penaltyDelta = gameData.selectedParty === 'D' ? -credibilityPenalty : (gameData.selectedParty === 'R' ? credibilityPenalty : 0);
-            for (var fips in Counties.countyData) {
-                Persuasion.applyMarginShift(Counties.countyData[fips], penaltyDelta);
-            }
-        }
+        var favorabilityPenalty = shift * GAME_CONSTANTS.FAVORABILITY_PENALTY_MULTIPLIER;
         
         // Update position
         if (!gameData.candidate.issuePositions) {
@@ -2239,13 +2248,16 @@ var app = {
         }
         gameData.candidate.issuePositions[issueId] = newPos;
 
-        if (typeof CREDIBILITY_CONSTANTS !== 'undefined') {
-            gameData.credibility = Math.max(CREDIBILITY_CONSTANTS.MIN,
-                Math.min(CREDIBILITY_CONSTANTS.MAX, (gameData.credibility || 1.0) - (shift * CREDIBILITY_CONSTANTS.SHIFT_PENALTY)));
+        if (typeof Campaign !== 'undefined' && Campaign.adjustFavorability) {
+            Campaign.adjustFavorability(-favorabilityPenalty, 'position shift on ' + issue.name);
         }
 
-        Utils.addLog("Shifted position on " + issue.name + " to " + newPos + " (credibility penalty: -" + credibilityPenalty.toFixed(1) + ")");
-        Utils.showToast("Position shifted! Credibility penalty applied.");
+        if (typeof Persuasion !== 'undefined' && Persuasion.applyIssueGroupMomentum) {
+            Persuasion.applyIssueGroupMomentum(issueId, shift, 0.12);
+        }
+
+        Utils.addLog("Shifted position on " + issue.name + " to " + newPos + " (favorability -" + Math.round(favorabilityPenalty * 100) + ")");
+        Utils.showToast("Position shifted; favorability and issue coalitions updated.");
 
         if (typeof updateCoalitionLoyalty === 'function') {
             updateCoalitionLoyalty();
@@ -2369,7 +2381,7 @@ var app = {
                     var groupId = groups[i].id;
                     var group = groups[i].group;
                     
-                    html += '<div class="ig-card">';
+                    html += '<div class="ig-card" onclick="app.openInterestGroupDetail(\'' + groupId + '\')">';
                     
                     // Placeholder for logo/image
                     html += '<div class="ig-logo-placeholder">👥</div>';
@@ -2404,6 +2416,78 @@ var app = {
         }
         
         document.getElementById('interest-groups-grid').innerHTML = html;
+    },
+
+    openInterestGroupDetail: function(groupId) {
+        var group = INTEREST_GROUPS[groupId];
+        if (!group) return;
+        var modal = document.getElementById('interest-group-detail-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'interest-group-detail-modal';
+            modal.className = 'hidden';
+            modal.innerHTML = '<div class="modal-box interest-group-detail-box"><div class="modal-header"><h2 id="ig-detail-title"></h2><button class="modal-close-btn" onclick="app.closeInterestGroupDetail()">×</button></div><div id="ig-detail-content"></div></div>';
+            document.body.appendChild(modal);
+        }
+        document.getElementById('ig-detail-title').innerText = group.name;
+        document.getElementById('ig-detail-content').innerHTML = this.renderInterestGroupDetail(groupId);
+        modal.classList.remove('hidden');
+    },
+
+    closeInterestGroupDetail: function() {
+        var modal = document.getElementById('interest-group-detail-modal');
+        if (modal) modal.classList.add('hidden');
+    },
+
+    renderInterestGroupDetail: function(groupId) {
+        var group = INTEREST_GROUPS[groupId];
+        var html = '<div class="ig-detail-grid">';
+        html += '<div class="ig-detail-card"><strong>Category</strong><span>' + group.category + '</span></div>';
+        html += '<div class="ig-detail-card"><strong>Turnout</strong><span>' + Math.round(((gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId]) || 1) * 100) + '%</span></div>';
+        html += '<div class="ig-detail-card"><strong>Baseline lean</strong><span>' + ((group.baseline || 0) > 0 ? 'R+' : ((group.baseline || 0) < 0 ? 'D+' : 'EVEN')) + Math.abs(group.baseline || 0) + '</span></div>';
+        var status = gameData.coalitionStatus && gameData.coalitionStatus[groupId];
+        html += '<div class="ig-detail-card"><strong>Coalition</strong><span>' + (status ? (status.collapsed ? 'Collapsed' : (status.atRisk ? 'At risk' : 'Stable')) : 'Stable') + '</span></div>';
+        html += '</div>';
+        html += '<h3>Candidate trend</h3><div class="ig-detail-support">' + this.renderCandidateSupport(groupId) + '</div>';
+        html += '<h3>Top issue levers</h3><div class="ig-detail-tags">';
+        var priorities = group.priorities || [];
+        for (var i = 0; i < priorities.length; i++) {
+            var issue = CORE_ISSUES.find(function(entry) { return entry.id === priorities[i]; });
+            html += '<span class="issue-tag">' + (issue ? issue.name : priorities[i]) + '</span>';
+        }
+        html += '</div>';
+        if (status && (status.unmet && status.unmet.length || status.crossPressures && status.crossPressures.length)) {
+            html += '<div class="coalition-alert-inline">Pressure: ' +
+                (status.unmet || []).concat(status.crossPressures || []).join(', ') + '</div>';
+        }
+        html += '<h3>Where this group matters</h3><div class="ig-detail-tags">' + this.getInterestGroupGeography(groupId) + '</div>';
+        return html;
+    },
+
+    getInterestGroupGeography: function(groupId) {
+        if (typeof Counties === 'undefined' || !Counties.countyData || !Counties.getCountyGroupShare) return 'County data not loaded';
+        var stateShares = {};
+        var statePops = {};
+        for (var fips in Counties.countyData) {
+            var county = Counties.countyData[fips];
+            var padded = fips.padStart(5, '0');
+            var stateCode = null;
+            for (var code in STATES) {
+                if (STATES[code].fips === padded.substring(0, 2)) { stateCode = code; break; }
+            }
+            if (!stateCode) continue;
+            var pop = county.p || 0;
+            stateShares[stateCode] = (stateShares[stateCode] || 0) + (pop * Counties.getCountyGroupShare(county, groupId));
+            statePops[stateCode] = (statePops[stateCode] || 0) + pop;
+        }
+        var ranked = [];
+        for (var sc in stateShares) {
+            if (statePops[sc] > 0) ranked.push({ code: sc, share: stateShares[sc] / statePops[sc] });
+        }
+        ranked.sort(function(a, b) { return b.share - a.share; });
+        return ranked.slice(0, 6).map(function(item) {
+            return '<span class="issue-tag">' + item.code + ' ' + Math.round(item.share * 100) + '%</span>';
+        }).join('');
     },
     
     // Helper function to render candidate support for a group

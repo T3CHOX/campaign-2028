@@ -243,7 +243,7 @@ const PACS = {
             id: 'oil-money',
             label: 'Oil money attack',
             risk: 0.18,
-            credibility: -0.05,
+            favorability: -0.05,
             turnoutHits: { progressives: -0.06, urban: -0.03 },
             story: 'Opposition media highlights fossil fuel money ties.'
         }
@@ -259,7 +259,7 @@ const PACS = {
             id: 'labor-boss',
             label: 'Union boss backlash',
             risk: 0.12,
-            credibility: -0.03,
+            favorability: -0.03,
             turnoutHits: { smallbusiness: -0.04, suburban: -0.02 },
             story: 'Opponents frame the campaign as captured by union bosses.'
         }
@@ -275,7 +275,7 @@ const PACS = {
             id: 'gun-lobby',
             label: 'Gun lobby headline',
             risk: 0.16,
-            credibility: -0.04,
+            favorability: -0.04,
             turnoutHits: { suburban: -0.05, women: -0.04 },
             story: 'Gun lobby donations trigger suburban backlash.'
         }
@@ -291,7 +291,7 @@ const PACS = {
             id: 'abortion-rights',
             label: 'Abortion rights controversy',
             risk: 0.14,
-            credibility: -0.03,
+            favorability: -0.03,
             turnoutHits: { evangelical: -0.06, rural: -0.03 },
             story: 'Social conservatives attack the campaign over abortion funding.'
         }
@@ -307,7 +307,7 @@ const PACS = {
             id: 'tech-money',
             label: 'Tech billionaire ties',
             risk: 0.12,
-            credibility: -0.02,
+            favorability: -0.02,
             turnoutHits: { bluecollar: -0.03 },
             story: 'Opponents tie the campaign to Silicon Valley elites.'
         }
@@ -323,7 +323,7 @@ const PACS = {
             id: 'wall-street',
             label: 'Wall Street capture',
             risk: 0.18,
-            credibility: -0.05,
+            favorability: -0.05,
             turnoutHits: { progressives: -0.05, union: -0.04 },
             story: 'Wall Street donor coverage undermines populist appeal.'
         }
@@ -339,7 +339,7 @@ const PACS = {
             id: 'green-agenda',
             label: 'Green agenda backlash',
             risk: 0.1,
-            credibility: -0.02,
+            favorability: -0.02,
             turnoutHits: { farmers: -0.03, rural: -0.03 },
             story: 'Opponents warn climate donors threaten rural jobs.'
         }

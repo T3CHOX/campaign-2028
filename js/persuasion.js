@@ -389,9 +389,9 @@ var Persuasion = {
         // Apply saturation
         totalDelta *= saturation;
 
-        // Apply credibility multiplier
-        if (typeof gameData !== 'undefined' && typeof gameData.credibility === 'number') {
-            totalDelta *= gameData.credibility;
+        // Apply favorability multiplier. Neutral is 50%; strong favorability adds persuasion.
+        if (typeof Campaign !== 'undefined' && Campaign.getFavorability) {
+            totalDelta *= 0.75 + Campaign.getFavorability();
         }
         
         // Apply localized multiplier if this is a speech in this county

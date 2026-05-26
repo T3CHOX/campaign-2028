@@ -313,7 +313,8 @@ var gameData = {
     issueTurnout: {},           // Issue-driven turnout propensity (before coalition multipliers)
     coalitionStatus: {},        // Per-group loyalty tracking
     coalitionAlerts: [],        // Active coalition warnings
-    credibility: 1.0,           // Messaging credibility multiplier
+    favorability: 0.5,          // Voter favorability, 0.0-1.0
+    credibility: 1.0,           // Legacy alias for older save/UI paths
     messageStreak: 0,
     lastMessageIssue: null,
     mediaVulnerabilities: [],   // Active media vulnerabilities from fundraising
@@ -368,13 +369,15 @@ var PERSUASION_CONSTANTS = {
 };
 
 // Credibility + fundraising tuning
-var CREDIBILITY_CONSTANTS = {
-    MIN: 0.7,
-    MAX: 1.15,
+var FAVORABILITY_CONSTANTS = {
+    MIN: 0.25,
+    MAX: 0.75,
+    BASE: 0.5,
     STREAK_BONUS: 0.015,
     SWAP_PENALTY: 0.02,
     SHIFT_PENALTY: 0.03
 };
+var CREDIBILITY_CONSTANTS = FAVORABILITY_CONSTANTS;
 
 var FUNDRAISE_CONSTANTS = {
     BUNDLER_CHANCE: 0.3,

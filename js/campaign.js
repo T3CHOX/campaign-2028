@@ -6,10 +6,30 @@
 var GAME_CONSTANTS = {
     PAC_OFFER_CHANCE: 0.2,
     PAC_OFFER_DELAY: 1000,
-    CREDIBILITY_PENALTY_MULTIPLIER: 0.5
+    FAVORABILITY_PENALTY_MULTIPLIER: 0.012
 };
 
 var Campaign = {
+    mapMode: 'margin',
+    getStateActionGridHTML: function() {
+        return '' +
+            '<button class="act-btn" onclick="app.handleAction(\'fundraise\')"><span><i class="fa-solid fa-sack-dollar"></i></span><span>FUNDRAISE</span></button>' +
+            '<button class="act-btn" onclick="app.handleAction(\'rally\')"><span><i class="fa-solid fa-bullhorn"></i></span><span>RALLY</span></button>' +
+            '<button class="act-btn" onclick="app.handleAction(\'field\')"><span><i class="fa-solid fa-people-group"></i></span><span>FIELD OPS</span></button>' +
+            '<button class="act-btn" onclick="app.handleAction(\'digital\')"><span><i class="fa-solid fa-laptop"></i></span><span>DIGITAL</span></button>' +
+            '<button class="act-btn" onclick="app.openStateBio()"><span><i class="fa-solid fa-book-open"></i></span><span>INTEL</span></button>' +
+            '<button class="act-btn" onclick="app.openCountyView()"><span><i class="fa-solid fa-map"></i></span><span>BREAKDOWN</span></button>' +
+            '<button class="act-btn" onclick="app.openIssuesPanel()"><span><i class="fa-solid fa-chart-line"></i></span><span>ISSUES</span></button>' +
+            '<button class="act-btn" onclick="app.handleAction(\'speech\')"><span><i class="fa-solid fa-microphone"></i></span><span>SPEECH</span></button>';
+    },
+
+    restoreStateActionGrid: function() {
+        var actionGrid = document.querySelector('.action-grid');
+        if (actionGrid) actionGrid.innerHTML = this.getStateActionGridHTML();
+        var adTile = document.querySelector('.ad-campaign-tile');
+        if (adTile) adTile.classList.remove('hidden');
+    },
+
     initMap: function() {
         var wrapper = document.getElementById('us-map-wrapper');
         wrapper.innerHTML = '<div class="loading-map">Loading map...</div>';
@@ -163,10 +183,90 @@ var Campaign = {
             var s = gameData.states[code];
             var path = document.getElementById(code);
             if (path) {
-                path.style.fill = Utils.getMarginColor(s.margin);
+                path.style.fill = this.getStateMapColor(code, s);
             }
         }
         this.updateScore();
+    },
+
+    setMapMode: function(mode) {
+        this.mapMode = mode || 'margin';
+        var buttons = document.querySelectorAll('.campaign-map-mode-toggle .mode-btn');
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].classList.remove('active');
+        }
+        var active = document.getElementById('campaign-mode-' + this.mapMode);
+        if (active) active.classList.add('active');
+        this.colorMap();
+        if (typeof Counties !== 'undefined' && gameData.inCountyView && Counties.colorCountyMap) {
+            Counties.colorCountyMap();
+        }
+    },
+
+    getStateMapColor: function(code, state) {
+        var mode = this.mapMode || 'margin';
+        if (mode === 'margin') return Utils.getMarginColor(state.margin);
+        if (mode === 'ev') return this.getGoldScaleColor((state.ev || 0) / 54);
+        if (mode === 'density') return this.getGoldScaleColor(this.getStatePopulationDensityIndex(code));
+        if (mode === 'turnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'all'));
+        if (mode === 'playerTurnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'player'));
+        if (mode === 'opponentTurnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'opponent'));
+        if (mode === 'favorability') return this.getFavorabilityColor(this.getFavorability());
+        return Utils.getMarginColor(state.margin);
+    },
+
+    getGoldScaleColor: function(index) {
+        var v = Math.max(0, Math.min(1, index || 0));
+        var colors = ['#2b2114', '#5a3516', '#8f541d', '#c98720', '#f4c15d'];
+        return colors[Math.min(colors.length - 1, Math.floor(v * colors.length))];
+    },
+
+    getFavorabilityColor: function(value) {
+        var v = Math.max(0, Math.min(1, value || 0.5));
+        if (v < 0.35) return '#7a0509';
+        if (v < 0.45) return '#d71920';
+        if (v < 0.55) return '#f4c15d';
+        if (v < 0.65) return '#7fbf6e';
+        return '#198754';
+    },
+
+    getStatePopulationDensityIndex: function(code) {
+        if (!STATES[code] || !Counties || !Counties.countyData) return 0;
+        var stateFips = STATES[code].fips;
+        var pop = 0;
+        var countyCount = 0;
+        for (var fips in Counties.countyData) {
+            var padded = fips.padStart(5, '0');
+            if (padded.substring(0, 2) !== stateFips) continue;
+            pop += Counties.countyData[fips].p || 0;
+            countyCount++;
+        }
+        return Math.min(1, pop / Math.max(1, countyCount) / 900000);
+    },
+
+    getStateTurnoutIndex: function(code, type) {
+        if (!STATES[code] || !Counties || !Counties.countyData) return 0;
+        var stateFips = STATES[code].fips;
+        var total = 0;
+        var weight = 0;
+        for (var fips in Counties.countyData) {
+            var padded = fips.padStart(5, '0');
+            if (padded.substring(0, 2) !== stateFips) continue;
+            var county = Counties.countyData[fips];
+            var pop = county.p || 0;
+            var turnout = county.turnout || {};
+            var val = 1;
+            if (type === 'player') val = turnout.player || 1;
+            else if (type === 'opponent') {
+                val = gameData.selectedParty === 'D' ? (turnout.repOpponent || 1) : (turnout.demOpponent || 1);
+            } else {
+                val = Math.max(turnout.player || 1, turnout.demOpponent || 1, turnout.repOpponent || 1, turnout.thirdParty || 0.7);
+            }
+            total += pop * val;
+            weight += pop;
+        }
+        if (weight <= 0) return 0;
+        return Math.max(0, Math.min(1, ((total / weight) - 0.7) / 0.6));
     },
 
     updateScore: function() {
@@ -201,9 +301,9 @@ var Campaign = {
         document.getElementById('hud-party-name').innerText = PARTIES[gameData.selectedParty].name.toUpperCase();
         document.getElementById('hud-funds').innerText = '$' + gameData.funds.toFixed(1) + 'M';
         document.getElementById('hud-date').innerText = Utils.formatDate(gameData.currentDate);
-        var cred = document.getElementById('hud-credibility');
-        if (cred) {
-            cred.innerText = Math.round((gameData.credibility || 1.0) * 100) + '%';
+        var fav = document.getElementById('hud-favorability') || document.getElementById('hud-credibility');
+        if (fav) {
+            fav.innerText = Math.round(this.getFavorability() * 100) + '%';
         }
         
         var energyHtml = '';
@@ -211,6 +311,25 @@ var Campaign = {
             energyHtml += '<div class="energy-pip ' + (i < gameData.energy ? 'active' : '') + '"></div>';
         }
         document.getElementById('hud-energy').innerHTML = energyHtml;
+    },
+
+    getFavorability: function() {
+        if (typeof gameData.favorability !== 'number') {
+            gameData.favorability = typeof gameData.credibility === 'number'
+                ? Math.max(0, Math.min(1, (gameData.credibility - 0.7) / 0.45))
+                : FAVORABILITY_CONSTANTS.BASE;
+        }
+        return Math.max(FAVORABILITY_CONSTANTS.MIN, Math.min(FAVORABILITY_CONSTANTS.MAX, gameData.favorability));
+    },
+
+    adjustFavorability: function(delta, reason) {
+        gameData.favorability = Math.max(FAVORABILITY_CONSTANTS.MIN,
+            Math.min(FAVORABILITY_CONSTANTS.MAX, this.getFavorability() + delta));
+        gameData.credibility = 0.7 + (gameData.favorability * 0.45);
+        if (reason && typeof Utils !== 'undefined') {
+            Utils.addLog('Favorability ' + (delta >= 0 ? '+' : '') + Math.round(delta * 100) + ': ' + reason);
+        }
+        this.updateHUD();
     },
 
     handleAction: function(action) {
@@ -572,9 +691,8 @@ var Campaign = {
             if (Math.random() < vuln.risk) {
                 triggeredAny = true;
                 vuln.triggered = true;
-                if (typeof CREDIBILITY_CONSTANTS !== 'undefined' && vuln.credibility) {
-                    gameData.credibility = Math.max(CREDIBILITY_CONSTANTS.MIN,
-                        Math.min(CREDIBILITY_CONSTANTS.MAX, (gameData.credibility || 1.0) + vuln.credibility));
+                if (typeof FAVORABILITY_CONSTANTS !== 'undefined' && vuln.favorability) {
+                    this.adjustFavorability(vuln.favorability, vuln.label);
                 }
                 if (vuln.turnoutHits && typeof initInterestGroupTurnout === 'function') {
                     initInterestGroupTurnout();

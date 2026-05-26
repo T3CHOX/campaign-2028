@@ -5164,3 +5164,95 @@ input:focus-visible,
     font-weight: 700;
     letter-spacing: 0.03em;
 }
+
+
+/* Campaign map modes and interest-group detail polish */
+.campaign-map-mode-toggle {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 25;
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid rgba(244, 193, 93, 0.28);
+    border-radius: 5px;
+    background: rgba(15, 12, 10, 0.86);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.favorability {
+    color: #f4c15d;
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+.issue-impact-row {
+    margin-top: 8px;
+    color: var(--text-soft);
+    font-size: 0.78rem;
+    line-height: 1.35;
+}
+
+#interest-group-detail-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 6500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(3, 2, 2, 0.72);
+    backdrop-filter: blur(10px);
+}
+
+#interest-group-detail-modal.hidden { display: none; }
+
+.interest-group-detail-box {
+    max-width: 760px;
+    max-height: 84vh;
+    overflow-y: auto;
+}
+
+.ig-card {
+    cursor: pointer;
+}
+
+.ig-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.ig-detail-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(244, 234, 216, 0.14);
+    border-radius: 6px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.ig-detail-card strong,
+#ig-detail-content h3 {
+    color: #f4c15d;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+}
+
+.ig-detail-card span {
+    color: #fff8ee;
+    font-weight: 800;
+}
+
+.ig-detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 16px;
+}
