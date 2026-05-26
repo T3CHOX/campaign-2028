@@ -309,8 +309,8 @@ var gameData = {
     interestGroupChanges: {},   // Will store last turn's changes for display
     interestGroupBaseSupport: {}, // Baseline support before issue modifiers
     campaignGroupMomentum: {},  // Campaign-action relationship deltas by group/candidate
-    interestGroupTurnout: {},   // Per-group turnout propensity (1.0 = baseline 100%)
-    issueTurnout: {},           // Issue-driven turnout propensity (before coalition multipliers)
+    interestGroupTurnout: {},   // Per-group turnout rate (0-1 baseline before multipliers)
+    issueTurnout: {},           // Issue-driven turnout rate (before coalition multipliers)
     coalitionStatus: {},        // Per-group loyalty tracking
     coalitionAlerts: [],        // Active coalition warnings
     favorability: 0.5,          // Voter favorability, 0.0-1.0

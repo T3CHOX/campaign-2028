@@ -228,6 +228,40 @@ const INTEREST_GROUPS = {
     }
 };
 
+// Baseline turnout rates (share of voting-eligible citizens who vote)
+const BASE_TURNOUT_RATES = {
+    white: 0.71,
+    black: 0.62,
+    hispanic: 0.54,
+    asian: 0.59,
+    native: 0.52,
+    evangelical: 0.80,
+    catholic: 0.66,
+    jewish: 0.76,
+    muslim: 0.61,
+    secular: 0.68,
+    bluecollar: 0.56,
+    whitecollar: 0.74,
+    smallbusiness: 0.76,
+    union: 0.68,
+    tech: 0.73,
+    farmers: 0.75,
+    military: 0.70,
+    college: 0.80,
+    noncollege: 0.56,
+    suburban: 0.69,
+    urban: 0.61,
+    rural: 0.66,
+    youth: 0.50,
+    seniors: 0.74,
+    progressives: 0.78,
+    libertarians: 0.67,
+    maga: 0.82,
+    centrists: 0.63,
+    lgbtq_community: 0.71,
+    women: 0.66
+};
+
 // Candidate/VP group modifiers are embedded directly in CANDIDATES and VPS entries as groupBoosts/groupDebuffs.
 
 // PAC definitions

@@ -883,7 +883,7 @@ function _getStaticGroupSupportForParty(groupId, partyKey, activeCandidates) {
     return otherCount > 0 ? otherShare / otherCount : 0;
 }
 
-// Initialize per-group turnout tracking (baseline 1.0 = 100%)
+// Initialize per-group turnout tracking (baseline is turnout rate, 0-1)
 function initInterestGroupTurnout() {
     if (!gameData.interestGroupTurnout) {
         gameData.interestGroupTurnout = {};
@@ -894,11 +894,14 @@ function initInterestGroupTurnout() {
     initCampaignGroupMomentum();
     if (typeof INTEREST_GROUPS === 'undefined') return;
     for (var groupId in INTEREST_GROUPS) {
+        var baseline = (typeof BASE_TURNOUT_RATES !== 'undefined' && BASE_TURNOUT_RATES[groupId] !== undefined)
+            ? BASE_TURNOUT_RATES[groupId]
+            : 0.6;
         if (!gameData.interestGroupTurnout[groupId]) {
-            gameData.interestGroupTurnout[groupId] = 1.0;
+            gameData.interestGroupTurnout[groupId] = baseline;
         }
         if (!gameData.issueTurnout[groupId]) {
-            gameData.issueTurnout[groupId] = 1.0;
+            gameData.issueTurnout[groupId] = baseline;
         }
     }
 }
