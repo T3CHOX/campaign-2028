@@ -2429,18 +2429,29 @@ var app = {
                 });
             }
         }
+
+        var displayTotal = 0;
+        for (var totalIdx = 0; totalIdx < candidates.length; totalIdx++) {
+            displayTotal += Math.max(0, candidates[totalIdx].support || 0);
+        }
+        if (displayTotal > 0) {
+            for (var normIdx = 0; normIdx < candidates.length; normIdx++) {
+                candidates[normIdx].displaySupport = Math.max(0, candidates[normIdx].support || 0) / displayTotal * 100;
+            }
+        }
         
         // Sort by support descending
-        candidates.sort(function(a, b) { return b.support - a.support; });
+        candidates.sort(function(a, b) { return (b.displaySupport || b.support) - (a.displaySupport || a.support); });
         
         // Find max support for underlining
-        var maxSupport = candidates.length > 0 ? candidates[0].support : 0;
+        var maxSupport = candidates.length > 0 ? (candidates[0].displaySupport || candidates[0].support) : 0;
         
         // Render each candidate
         for (var i = 0; i < candidates.length; i++) {
             var cand = candidates[i];
+            var displaySupport = cand.displaySupport !== undefined ? cand.displaySupport : cand.support;
             var partyColor = this.getPartyColor(cand.party);
-            var isLeader = (Math.abs(cand.support - maxSupport) < 0.01);
+            var isLeader = (Math.abs(displaySupport - maxSupport) < 0.01);
             
             html += '<div class="candidate-support-row">';
             
@@ -2459,7 +2470,7 @@ var app = {
             if (isLeader) {
                 supportStyle += ' text-decoration: underline; font-weight: bold;';
             }
-            html += '<span class="candidate-support-pct" style="' + supportStyle + '">' + cand.support.toFixed(1) + '%</span>';
+            html += '<span class="candidate-support-pct" style="' + supportStyle + '">' + displaySupport.toFixed(1) + '%</span>';
             
             // Change indicator (very small, color coded)
             if (cand.change !== 0) {
