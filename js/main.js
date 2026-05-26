@@ -1155,6 +1155,8 @@ function recomputeInterestGroupSupport() {
                 groupShare = 0.51;
             } else if (groupId === 'bluecollar' && county.ig && county.ig.college !== undefined) {
                 groupShare = ((100 - county.ig.college) / 100) * 0.6;
+            } else if (typeof Counties.getCountyGroupShare === 'function') {
+                groupShare = Counties.getCountyGroupShare(county, groupId);
             } else {
                 continue; // Cannot map this group to county data
             }
