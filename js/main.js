@@ -1650,8 +1650,8 @@ var app = {
         var repPct = (totalVotes.R / total * 100).toFixed(1);
         
         document.getElementById('popular-vote-display').innerHTML = 
-            '<div class="vote-row"><span style="color: #00AEF3;">Democrat</span><span>' + demPct + '%</span></div>' +
-            '<div class="vote-row"><span style="color: #E81B23;">Republican</span><span>' + repPct + '%</span></div>';
+            '<div class="vote-row"><span style="color: #38BDF8;">Democrat</span><span>' + demPct + '%</span></div>' +
+            '<div class="vote-row"><span style="color: #FB7185;">Republican</span><span>' + repPct + '%</span></div>';
         
         // Electoral projection
         var demEV = 0, repEV = 0;
@@ -1674,10 +1674,10 @@ var app = {
         }
         
         document.getElementById('electoral-projection-display').innerHTML = 
-            '<div class="vote-row"><span style="color: #00AEF3;">Democrat</span><span>' + demEV + ' EV</span></div>' +
-            '<div class="vote-row"><span style="color: #E81B23;">Republican</span><span>' + repEV + ' EV</span></div>' +
+            '<div class="vote-row"><span style="color: #38BDF8;">Democrat</span><span>' + demEV + ' EV</span></div>' +
+            '<div class="vote-row"><span style="color: #FB7185;">Republican</span><span>' + repEV + ' EV</span></div>' +
             (splitNotes.length ? '<div style="margin-top: 8px; color: #9aa3b7; font-size: 0.8rem;">' + splitNotes.join(' | ') + '</div>' : '') +
-            '<div style="margin-top: 15px; text-align: center; font-size: 1.1rem; color: #ffd700;">Needed to Win: 270 EV</div>';
+            '<div style="margin-top: 15px; text-align: center; font-size: 1.1rem; color: #F8C471;">Needed to Win: 270 EV</div>';
         
         // Toss-up states
         var tossupHtml = '';
@@ -2255,7 +2255,7 @@ var app = {
                     // Show per-group turnout (if tracked)
                     if (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined) {
                         var turnoutPct = Math.round(gameData.interestGroupTurnout[groupId] * 100);
-                        var turnoutColor = turnoutPct >= 110 ? '#198754' : (turnoutPct <= 90 ? '#E81B23' : '#ccc');
+                        var turnoutColor = turnoutPct >= 110 ? '#22C55E' : (turnoutPct <= 90 ? '#FB7185' : '#CBD5E1');
                         html += '<div class="ig-turnout" style="font-size:0.75em; color:' + turnoutColor + '; margin-bottom:4px;">Turnout: ' + turnoutPct + '%</div>';
                     }
                     
@@ -2396,12 +2396,12 @@ var app = {
     // Helper to get party color
     getPartyColor: function(party) {
         var colors = {
-            'D': '#00AEF3',
-            'R': '#E81B23',
-            'G': '#198754',
-            'L': '#fd7e14',
-            'I': '#9B59B6',
-            'PSL': '#CC0000'
+            'D': '#38BDF8',
+            'R': '#FB7185',
+            'G': '#22C55E',
+            'L': '#F59E0B',
+            'I': '#A78BFA',
+            'PSL': '#EF4444'
         };
         return colors[party] || '#888';
     },

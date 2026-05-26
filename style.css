@@ -3984,3 +3984,870 @@ body {
     margin-top: 2px;
     letter-spacing: 0.3px;
 }
+
+
+/* ============================================================
+   STRATEGIC COMMAND THEME 2028
+   ============================================================ */
+
+:root {
+    --bg-dark: #070b14;
+    --panel-bg: #101827;
+    --surface-0: #070b14;
+    --surface-1: #0b1220;
+    --surface-2: #111827;
+    --surface-3: #172033;
+    --surface-glass: rgba(15, 23, 42, 0.82);
+    --surface-raised: rgba(17, 24, 39, 0.94);
+    --line-soft: rgba(148, 163, 184, 0.18);
+    --line-strong: rgba(226, 232, 240, 0.24);
+    --text-white: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-soft: #cbd5e1;
+    --accent-cyan: #38bdf8;
+    --accent-gold: #f8c471;
+    --accent-emerald: #22c55e;
+    --danger-soft: #fb7185;
+    --dem-blue: #38bdf8;
+    --rep-red: #fb7185;
+    --forward-gold: #f8c471;
+    --psl-red: #ef4444;
+    --independent-purple: #a78bfa;
+    --green-party: #22c55e;
+    --libertarian-orange: #f59e0b;
+    --gold: #f8c471;
+    --green-success: #22c55e;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 22px;
+    --shadow-panel: 0 24px 80px rgba(0, 0, 0, 0.42);
+    --shadow-card: 0 16px 46px rgba(0, 0, 0, 0.34);
+    --font-ui: 'Inter', 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display: 'Newsreader', 'Merriweather', Georgia, serif;
+}
+
+body {
+    font-family: var(--font-ui);
+    background:
+        radial-gradient(circle at 20% 0%, rgba(56, 189, 248, 0.14), transparent 28rem),
+        radial-gradient(circle at 82% 8%, rgba(251, 113, 133, 0.12), transparent 30rem),
+        linear-gradient(135deg, #050814 0%, #0b1220 45%, #101827 100%);
+    color: var(--text-white);
+    letter-spacing: -0.01em;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(circle at center, black, transparent 76%);
+}
+
+.screen {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+}
+
+button,
+select,
+input {
+    font-family: var(--font-ui);
+}
+
+button {
+    border-radius: var(--radius-sm);
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+.party-panel:focus-visible,
+.candidate-tile:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 3px;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.7);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(56,189,248,0.55), rgba(248,196,113,0.55));
+    border-radius: 999px;
+    border: 2px solid rgba(15, 23, 42, 0.9);
+}
+
+.blue,
+.highlight,
+.dem-score,
+.ev-dem .ev-count,
+.elec-winner-dem,
+.elec-proj-called-dem {
+    color: var(--dem-blue) !important;
+}
+
+.red,
+.red-text,
+.rep-score,
+.ev-rep .ev-count,
+.elec-winner-rep,
+.elec-proj-called-rep {
+    color: var(--rep-red) !important;
+}
+
+.gray,
+.subtitle,
+.cand-party,
+.stat-group label,
+.pp-step-indicator,
+.party-page-header-info {
+    color: var(--text-muted) !important;
+}
+
+.main-title,
+.logo,
+.section-title,
+.modal-box h2,
+.state-header-box h2,
+.elec-state-header h2,
+.party-panel-name,
+.party-banner-name,
+.party-page-selection-title,
+.candidate-tile-name,
+.bug-text,
+.bug-year,
+.result-title,
+#election-cv-title,
+.county-detail-header h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+}
+
+#intro-screen {
+    background:
+        radial-gradient(circle at 50% 28%, rgba(56, 189, 248, 0.24), transparent 25rem),
+        radial-gradient(circle at 72% 64%, rgba(248, 196, 113, 0.14), transparent 28rem),
+        linear-gradient(135deg, #040712 0%, #0b1220 55%, #111827 100%);
+}
+
+.intro-content {
+    max-width: 980px;
+    padding: 64px;
+    border: 1px solid var(--line-soft);
+    border-radius: 34px;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.72), rgba(8, 13, 24, 0.52));
+    box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255,255,255,0.08);
+    backdrop-filter: blur(18px);
+}
+
+.breaking-banner,
+.election-banner {
+    background: linear-gradient(90deg, var(--rep-red), #f43f5e);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 999px;
+    box-shadow: 0 12px 36px rgba(251, 113, 133, 0.28);
+}
+
+.main-title {
+    font-size: clamp(4rem, 8vw, 8rem);
+    text-shadow: 0 18px 60px rgba(56, 189, 248, 0.22);
+}
+
+.subtitle {
+    font-size: 1.25rem;
+    letter-spacing: 0.02em;
+}
+
+.start-btn,
+.next-turn-btn,
+.queue-ad-btn,
+.pp-continue-btn:not(:disabled),
+.result-btn,
+.fundraise-bundler-btn,
+.winner-close-btn {
+    border: 1px solid rgba(255,255,255,0.18);
+    background: linear-gradient(135deg, var(--accent-cyan), #2563eb);
+    color: #06101f !important;
+    border-radius: 999px;
+    box-shadow: 0 14px 34px rgba(56, 189, 248, 0.26);
+    font-weight: 900;
+}
+
+.start-btn:hover,
+.next-turn-btn:hover,
+.queue-ad-btn:hover,
+.pp-continue-btn:not(:disabled):hover,
+.result-btn:hover,
+.winner-close-btn:hover {
+    background: linear-gradient(135deg, #7dd3fc, var(--accent-gold));
+    color: #06101f !important;
+    transform: translateY(-2px);
+    box-shadow: 0 20px 48px rgba(56, 189, 248, 0.34);
+}
+
+.news-header,
+.hud-header,
+.election-header,
+.party-page-footer,
+#county-view-header,
+#election-county-header,
+.election-cv-header {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(8, 13, 24, 0.94));
+    border-color: var(--line-soft);
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(18px);
+}
+
+.news-header,
+.hud-header,
+.election-header {
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.logo {
+    font-size: 1.7rem;
+}
+
+.section-title {
+    color: var(--text-white);
+    border: 0;
+    padding: 0;
+    margin-bottom: 34px;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+}
+
+.section-title::after {
+    content: "";
+    display: block;
+    width: 86px;
+    height: 3px;
+    margin: 14px auto 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-gold));
+}
+
+.party-select-container,
+.party-page-body {
+    background:
+        radial-gradient(circle at 12% 12%, rgba(56,189,248,0.10), transparent 26rem),
+        radial-gradient(circle at 86% 18%, rgba(251,113,133,0.08), transparent 30rem);
+}
+
+.party-layout-grid {
+    max-width: 1220px;
+    gap: 22px;
+}
+
+.party-panel {
+    border: 1px solid var(--party-color);
+    border-radius: var(--radius-lg);
+    background:
+        linear-gradient(145deg, rgba(255,255,255,0.04), rgba(15, 23, 42, 0.88)),
+        var(--surface-2);
+    box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.party-panel:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 24px 70px rgba(0,0,0,0.38), 0 0 0 1px var(--party-color), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.party-panel-img-wrap {
+    background:
+        radial-gradient(circle at 50% 18%, rgba(255,255,255,0.12), transparent 60%),
+        linear-gradient(145deg, rgba(15,23,42,0.18), rgba(2,6,23,0.86));
+}
+
+.party-panel[data-party="D"] .party-panel-img-wrap { background: radial-gradient(circle at 50% 18%, rgba(56,189,248,0.28), transparent 60%), linear-gradient(145deg, rgba(15,23,42,0.18), rgba(2,6,23,0.86)); }
+.party-panel[data-party="R"] .party-panel-img-wrap { background: radial-gradient(circle at 50% 18%, rgba(251,113,133,0.28), transparent 60%), linear-gradient(145deg, rgba(15,23,42,0.18), rgba(2,6,23,0.86)); }
+.party-panel[data-party="G"] .party-panel-img-wrap { background: radial-gradient(circle at 50% 18%, rgba(34,197,94,0.28), transparent 60%), linear-gradient(145deg, rgba(15,23,42,0.18), rgba(2,6,23,0.86)); }
+.party-panel[data-party="L"] .party-panel-img-wrap { background: radial-gradient(circle at 50% 18%, rgba(245,158,11,0.28), transparent 60%), linear-gradient(145deg, rgba(15,23,42,0.18), rgba(2,6,23,0.86)); }
+.party-panel[data-party="I"] .party-panel-img-wrap { background: radial-gradient(circle at 50% 18%, rgba(167,139,250,0.28), transparent 60%), linear-gradient(145deg, rgba(15,23,42,0.18), rgba(2,6,23,0.86)); }
+.party-panel[data-party="PSL"] .party-panel-img-wrap { background: radial-gradient(circle at 50% 18%, rgba(239,68,68,0.28), transparent 60%), linear-gradient(145deg, rgba(15,23,42,0.18), rgba(2,6,23,0.86)); }
+
+.party-panel-overlay {
+    background: linear-gradient(to top, rgba(2, 6, 23, 0.96) 72%, rgba(2, 6, 23, 0.45));
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.party-panel-name {
+    text-shadow: none;
+}
+
+.party-panel-desc,
+.party-banner-desc,
+.candidate-tile-desc,
+.pac-desc,
+.campaign-summary p {
+    color: var(--text-soft);
+}
+
+.hard-mode-tag,
+.ig-risk-badge {
+    background: rgba(251, 113, 133, 0.14);
+    border: 1px solid rgba(251, 113, 133, 0.36);
+    color: #fecdd3;
+}
+
+.third-party-toggle-bar,
+.candidate-badge,
+.analysis-controls,
+.national-popular-vote-row,
+.cpl-row,
+.elec-cpl-row,
+.elec-proj-status,
+.district-analysis-block,
+.result-ticket,
+.campaign-summary,
+.coalition-table,
+.county-detail-overlay {
+    background: var(--surface-glass);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.toggle-label {
+    color: var(--text-soft);
+}
+
+.toggle-label input[type="checkbox"] {
+    accent-color: var(--accent-cyan);
+}
+
+.party-page-banner {
+    min-height: 250px;
+    border-bottom: 1px solid var(--line-soft);
+    background:
+        radial-gradient(circle at 8% 12%, rgba(255,255,255,0.12), transparent 18rem),
+        linear-gradient(135deg, rgba(15,23,42,0.92), rgba(8,13,24,0.86)) !important;
+}
+
+.party-banner-left {
+    border-right: 1px solid var(--line-soft);
+}
+
+.party-banner-logo {
+    filter: drop-shadow(0 18px 34px rgba(0,0,0,0.42));
+}
+
+.party-page-selection-title {
+    border: 0;
+    color: var(--text-white) !important;
+    font-size: 1.8rem;
+}
+
+.candidate-tiles-row {
+    gap: 24px;
+}
+
+.candidate-tile {
+    background: linear-gradient(180deg, rgba(20, 30, 49, 0.98), rgba(11, 18, 32, 0.98));
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+}
+
+.candidate-tile:hover,
+.candidate-tile.selected {
+    border-color: var(--tile-party-color, var(--accent-cyan));
+    transform: translateY(-8px);
+    box-shadow: 0 24px 58px rgba(0,0,0,0.42), 0 0 0 1px var(--tile-party-color, var(--accent-cyan));
+}
+
+.candidate-tile-img {
+    height: 178px;
+    filter: saturate(0.96) contrast(1.04);
+}
+
+.candidate-tile-body {
+    padding: 16px;
+}
+
+.candidate-tile-name {
+    font-size: 1rem;
+}
+
+.candidate-tile-state,
+.tile-stat-label,
+.tile-groups,
+.cpl-rank,
+.ev-labels,
+.elec-cpl-votes,
+.county-detail-meta {
+    color: var(--text-muted);
+}
+
+.tile-stat-val,
+.cpl-name,
+.elec-cpl-name,
+.npv-votes {
+    color: var(--text-white);
+}
+
+.stamina-pip,
+.energy-pip {
+    background: rgba(148, 163, 184, 0.24);
+    border-color: rgba(148, 163, 184, 0.22);
+}
+
+.stamina-pip.filled,
+.energy-pip.active {
+    background: var(--accent-gold);
+    box-shadow: 0 0 12px rgba(248, 196, 113, 0.55);
+    border-color: rgba(248, 196, 113, 0.8);
+}
+
+.pp-back-btn,
+.back-btn,
+.undo-btn,
+.interest-groups-btn,
+.time-btn,
+.mode-btn,
+.ig-tab,
+.county-back-btn,
+.county-drill-btn,
+.election-cv-back-btn,
+.modal-box button,
+.fundraise-decline-btn {
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid var(--line-soft);
+    color: var(--text-soft);
+    border-radius: 999px;
+}
+
+.pp-back-btn:hover,
+.back-btn:hover,
+.undo-btn:hover,
+.interest-groups-btn:hover,
+.time-btn:hover,
+.mode-btn:hover,
+.ig-tab:hover,
+.county-back-btn:hover,
+.county-drill-btn:hover,
+.election-cv-back-btn:hover,
+.modal-box button:hover,
+.fundraise-decline-btn:hover {
+    background: rgba(30, 41, 59, 0.92);
+    border-color: var(--accent-gold);
+    color: var(--text-white);
+}
+
+.time-btn.active,
+.mode-btn.active,
+.ig-tab.active,
+#mode-shift2024.active {
+    background: linear-gradient(135deg, var(--accent-cyan), #2563eb);
+    border-color: rgba(255,255,255,0.2);
+    color: #06101f;
+}
+
+#btn-skip,
+.third-ev-label {
+    color: #06101f !important;
+    font-weight: 900;
+}
+
+#btn-skip {
+    background: linear-gradient(135deg, var(--accent-gold), #f59e0b);
+}
+
+.hud-header {
+    min-height: 96px;
+    height: auto;
+    gap: 20px;
+}
+
+.hud-right {
+    gap: 12px;
+}
+
+#hud-img,
+.ev-candidate img,
+.ticket-pres img,
+.ticket-vp img,
+.cpl-avatar,
+.elec-cpl-avatar,
+.candidate-support-img {
+    border-color: rgba(255,255,255,0.78);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.34);
+}
+
+.ev-display {
+    gap: 24px;
+}
+
+.dem-score,
+.rep-score {
+    text-shadow: none;
+}
+
+.divider,
+.ev-marker,
+.ig-main-section-title,
+.ig-section-title,
+.ticket-header,
+.ticket-ev,
+.analysis-controls-title {
+    color: #06101f;
+    background: linear-gradient(135deg, var(--accent-gold), #f59e0b);
+    border-radius: 999px;
+    box-shadow: 0 10px 26px rgba(248,196,113,0.18);
+}
+
+.progress-bar-bg,
+.ev-progress-bar,
+.elec-results-bar,
+.cpl-bar-wrap,
+.elec-cpl-bar-wrap {
+    background: rgba(2, 6, 23, 0.72);
+    border: 1px solid var(--line-soft);
+    border-radius: 999px;
+}
+
+.ev-fill-dem,
+.elec-bar-dem {
+    background: linear-gradient(90deg, #075985, var(--dem-blue));
+}
+
+.ev-fill-rep,
+.elec-bar-rep {
+    background: linear-gradient(90deg, #9f1239, var(--rep-red));
+}
+
+.ev-fill-third {
+    background: linear-gradient(90deg, var(--accent-gold), #f59e0b);
+}
+
+.game-area,
+.election-content {
+    background: rgba(2, 6, 23, 0.36);
+}
+
+#map-container,
+#election-map-container,
+#county-map-container,
+#election-county-map-container,
+#election-county-view-wrapper {
+    background:
+        radial-gradient(circle at 50% 50%, rgba(56,189,248,0.08), transparent 38rem),
+        linear-gradient(145deg, rgba(8, 13, 24, 0.9), rgba(11, 18, 32, 0.92));
+}
+
+#us-map-wrapper svg,
+#election-map-wrapper svg,
+#county-election-map-svg {
+    filter: drop-shadow(0 24px 32px rgba(0,0,0,0.34));
+}
+
+#us-map-svg path,
+#election-map-svg path,
+#county-election-map-svg path {
+    stroke: rgba(248, 250, 252, 0.78);
+}
+
+#us-map-svg path:hover,
+#us-map-svg path.selected,
+#election-map-svg path:hover,
+#county-election-map-svg path:hover {
+    stroke: var(--accent-gold) !important;
+    filter: brightness(1.12) saturate(1.05);
+}
+
+#sidebar,
+#election-sidebar {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(8, 13, 24, 0.96));
+    border-left: 1px solid var(--line-soft);
+    box-shadow: -22px 0 46px rgba(0,0,0,0.22);
+}
+
+#state-panel,
+#empty-msg,
+#election-state-info,
+#polls-closing-panel,
+#third-party-tracker-panel,
+#election-feed,
+#race-calls,
+.ad-campaign-tile,
+.issues-list,
+#log-feed,
+.national-section,
+.fundraise-option,
+.pac-card,
+.ig-card,
+.final-results-content {
+    background: var(--surface-raised);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.state-header-box,
+.modal-header,
+.county-detail-header {
+    border-color: var(--line-soft);
+}
+
+.ev-badge,
+.elec-ev-badge,
+.issue-tag,
+.tossup-state-item,
+.npv-percent {
+    background: rgba(56, 189, 248, 0.10);
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    color: var(--text-soft);
+    border-radius: 999px;
+}
+
+.action-grid {
+    gap: 10px;
+}
+
+.act-btn {
+    background: linear-gradient(180deg, rgba(30,41,59,0.86), rgba(15,23,42,0.92));
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-md);
+    color: var(--text-soft);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.act-btn:hover {
+    background: linear-gradient(180deg, rgba(56,189,248,0.14), rgba(15,23,42,0.94));
+    border-color: rgba(56,189,248,0.48);
+    color: var(--text-white);
+    transform: translateY(-2px);
+}
+
+.act-btn span:first-child,
+.empty-icon {
+    color: var(--accent-gold);
+}
+
+.issue-dropdown,
+.intensity-dropdown,
+#analysis-year-select {
+    background: rgba(2, 6, 23, 0.76);
+    border: 1px solid var(--line-soft);
+    color: var(--text-white);
+    border-radius: var(--radius-sm);
+}
+
+.issue-dropdown:hover,
+.intensity-dropdown:hover,
+.issue-dropdown:focus,
+.intensity-dropdown:focus,
+#analysis-year-select:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+}
+
+#log-content p,
+#election-feed-content p,
+#race-calls-content p,
+.next-close-row,
+.third-tracker-row,
+.bio-stat,
+.coalition-row,
+.district-analysis-row {
+    border-color: var(--line-soft);
+    color: var(--text-soft);
+}
+
+#map-tooltip,
+#toast,
+.modal-box,
+.speech-modal-box,
+.fundraise-modal-box,
+.pac-modal-box,
+.interest-groups-box,
+.national-modal-box,
+.issues-modal-box {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(8, 13, 24, 0.98));
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-panel);
+    color: var(--text-white);
+    backdrop-filter: blur(18px);
+}
+
+#bio-modal,
+#interest-groups-modal,
+#national-modal,
+#speech-modal,
+#field-modal,
+#digital-modal,
+#fundraise-modal,
+#pac-modal,
+.issues-drawer,
+#final-results-overlay {
+    background: rgba(3, 7, 18, 0.78);
+    backdrop-filter: blur(12px);
+}
+
+.modal-box h2 {
+    border-color: var(--line-soft);
+    color: var(--text-white);
+}
+
+.modal-close-btn {
+    border-radius: 999px;
+}
+
+.interest-groups-tabs {
+    gap: 8px;
+}
+
+.ig-card:hover,
+.pac-card:hover,
+.fundraise-option:hover {
+    transform: translateY(-4px);
+    border-color: rgba(248,196,113,0.45);
+    box-shadow: 0 18px 44px rgba(0,0,0,0.32);
+}
+
+.pac-card {
+    background: linear-gradient(145deg, rgba(30, 58, 138, 0.45), rgba(15, 23, 42, 0.94));
+}
+
+.pac-name,
+.ig-section-title {
+    color: var(--accent-gold);
+}
+
+.ig-main-section-title,
+.ig-section-title {
+    display: inline-flex;
+    padding: 6px 14px;
+    background: rgba(248,196,113,0.12);
+    color: var(--accent-gold);
+    border: 1px solid rgba(248,196,113,0.28);
+}
+
+.election-header {
+    min-height: 88px;
+}
+
+.network-bug {
+    padding: 8px 12px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.04);
+}
+
+.election-time-display {
+    color: var(--text-white);
+    text-shadow: 0 12px 40px rgba(56,189,248,0.25);
+}
+
+.election-ev-banner,
+.national-popular-vote-ticker {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(8, 13, 24, 0.94));
+    border-color: var(--line-soft);
+}
+
+.national-popular-vote-ticker {
+    box-shadow: 0 -18px 46px rgba(0,0,0,0.3);
+}
+
+.npv-header,
+.ev-name {
+    color: var(--text-soft);
+}
+
+.winner-content,
+.final-results-content {
+    background:
+        radial-gradient(circle at 50% 0%, rgba(248,196,113,0.18), transparent 22rem),
+        linear-gradient(145deg, rgba(15,23,42,0.96), rgba(8,13,24,0.98));
+    border-color: rgba(248,196,113,0.45);
+}
+
+.winner-banner,
+.result-banner.win {
+    background: linear-gradient(135deg, var(--accent-gold), #f59e0b);
+    color: #06101f;
+}
+
+.result-banner.lose {
+    background: linear-gradient(135deg, var(--rep-red), #be123c);
+}
+
+.result-title,
+.ticket-header,
+.ticket-ev,
+#elec-pct-reporting,
+#election-cv-title,
+.county-detail-header h3 {
+    color: var(--accent-gold);
+}
+
+.ticket-header,
+.ticket-ev {
+    background: transparent;
+    box-shadow: none;
+}
+
+.elec-proj-called-dem {
+    background: rgba(56,189,248,0.14) !important;
+    border-color: rgba(56,189,248,0.36) !important;
+}
+
+.elec-proj-called-rep {
+    background: rgba(251,113,133,0.14) !important;
+    border-color: rgba(251,113,133,0.36) !important;
+}
+
+@media (max-width: 1100px) {
+    .hud-header,
+    .election-header {
+        flex-wrap: wrap;
+        padding: 14px 18px;
+    }
+
+    .hud-right,
+    .election-header-right {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .progress-bar-bg {
+        width: min(360px, 80vw);
+    }
+}
+
+@media (max-width: 820px) {
+    .intro-content {
+        padding: 34px 24px;
+        margin: 18px;
+    }
+
+    .party-layout-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .party-minor-col {
+        flex-direction: column;
+    }
+
+    .party-page-banner {
+        flex-direction: column;
+    }
+
+    .party-banner-left {
+        width: 100%;
+        border-right: 0;
+        border-bottom: 1px solid var(--line-soft);
+    }
+}

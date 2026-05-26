@@ -1042,9 +1042,9 @@ var Counties = {
                             if (Math.abs(margin) < 2) {
                                 path.style.fill = '#808080';
                             } else if (margin > 0) {
-                                path.style.fill = margin > 10 ? '#0066CC' : '#4d94ff';
+                                path.style.fill = margin > 10 ? '#0284c7' : '#7dd3fc';
                             } else {
-                                path.style.fill = margin < -10 ? '#CC0000' : '#ff4d4d';
+                                path.style.fill = margin < -10 ? '#be123c' : '#fda4af';
                             }
                         }
                     }
@@ -1097,7 +1097,7 @@ var Counties = {
             else if (turnoutBoost > 0.08) turnoutText = 'Good';
             else if (turnoutBoost > 0.03) turnoutText = 'Moderate';
             
-            issuesList.innerHTML = '<div style="background: #2a2a2a; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (turnoutBoost > 0.1 ? '#198754' : '#ccc') + '">' + turnoutText + '</span></div>';
+            issuesList.innerHTML = '<div style="background: #152033; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (turnoutBoost > 0.1 ? '#22C55E' : '#CBD5E1') + '">' + turnoutText + '</span></div>';
             issuesList.innerHTML += '<div style="background: #2a2a2a; padding: 8px; border-radius: 4px;"><strong>Type:</strong> ' + (county.t || 'Unknown') + '</div>';
         }
         
@@ -1261,7 +1261,7 @@ var Counties = {
             
             // Always show exact margin, no "TOSS-UP" label
             marginText = (margin > 0 ? 'D+' : 'R+') + Math.abs(margin).toFixed(1);
-            color = margin > 0 ? '#00AEF3' : '#E81B23';
+            color = margin > 0 ? '#38BDF8' : '#FB7185';
         }
         
         // Determine proper suffix based on state

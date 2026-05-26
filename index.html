@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Decision 2028 | Campaign Simulator</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,700;6..72,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body>
@@ -30,7 +30,7 @@
                 <!-- Left minor column: Green (top) + PSL (bottom) -->
                 <div class="party-minor-col party-minor-col-left">
                     <!-- Green Party Panel -->
-                    <div class="party-panel party-panel-minor" data-party="G" onclick="app.selParty('G')" style="--party-color: #198754;" id="panel-G">
+                    <div class="party-panel party-panel-minor" data-party="G" onclick="app.selParty('G')" style="--party-color: #22C55E;" id="panel-G">
                         <div class="party-panel-img-wrap">
                             <img src="images/party-grn.png" onerror="this.style.display='none'" alt="Green Party">
                         </div>
@@ -41,7 +41,7 @@
                         </div>
                     </div>
                     <!-- PSL Panel -->
-                    <div class="party-panel party-panel-minor" data-party="PSL" onclick="app.selParty('PSL')" style="--party-color: #CC0000;" id="panel-PSL">
+                    <div class="party-panel party-panel-minor" data-party="PSL" onclick="app.selParty('PSL')" style="--party-color: #EF4444;" id="panel-PSL">
                         <div class="party-panel-img-wrap">
                             <img src="images/party-psl.png" onerror="this.style.display='none'" alt="Party for Socialism and Liberation">
                         </div>
@@ -54,7 +54,7 @@
                 </div>
 
                 <!-- Democratic Party Panel (large) -->
-                <div class="party-panel party-panel-major" data-party="D" onclick="app.selParty('D')" style="--party-color: #00AEF3;">
+                <div class="party-panel party-panel-major" data-party="D" onclick="app.selParty('D')" style="--party-color: #38BDF8;">
                     <div class="party-panel-img-wrap">
                         <img src="images/party-dem.png" onerror="this.style.display='none'" alt="Democratic Party">
                     </div>
@@ -65,7 +65,7 @@
                 </div>
 
                 <!-- Republican Party Panel (large) -->
-                <div class="party-panel party-panel-major" data-party="R" onclick="app.selParty('R')" style="--party-color: #E81B23;">
+                <div class="party-panel party-panel-major" data-party="R" onclick="app.selParty('R')" style="--party-color: #FB7185;">
                     <div class="party-panel-img-wrap">
                         <img src="images/party-rep.png" onerror="this.style.display='none'" alt="Republican Party">
                     </div>
@@ -78,7 +78,7 @@
                 <!-- Right minor column: Libertarian (top) + Independent (bottom) -->
                 <div class="party-minor-col party-minor-col-right">
                     <!-- Libertarian Party Panel -->
-                    <div class="party-panel party-panel-minor" data-party="L" onclick="app.selParty('L')" style="--party-color: #fd7e14;" id="panel-L">
+                    <div class="party-panel party-panel-minor" data-party="L" onclick="app.selParty('L')" style="--party-color: #F59E0B;" id="panel-L">
                         <div class="party-panel-img-wrap">
                             <img src="images/party-lib.png" onerror="this.style.display='none'" alt="Libertarian Party">
                         </div>
@@ -89,7 +89,7 @@
                         </div>
                     </div>
                     <!-- Independent Panel -->
-                    <div class="party-panel party-panel-minor" data-party="I" onclick="app.selParty('I')" style="--party-color: #9B59B6;" id="panel-I">
+                    <div class="party-panel party-panel-minor" data-party="I" onclick="app.selParty('I')" style="--party-color: #A78BFA;" id="panel-I">
                         <div class="party-panel-img-wrap">
                             <img src="images/party-ind.png" onerror="this.style.display='none'" alt="Independent">
                         </div>
@@ -258,7 +258,7 @@
                     <button class="time-btn" id="btn-2x" onclick="app.election.setSpeed(2)">2×</button>
                     <button class="time-btn" id="btn-5x" onclick="app.election.setSpeed(5)">5×</button>
                     <button class="time-btn" id="btn-10x" onclick="app.election.setSpeed(10)">10×</button>
-                    <button class="time-btn" id="btn-skip" onclick="app.election.skipToEnd()" style="background: #ffd700; color: #000; font-weight: bold;">⏭️ SKIP</button>
+                    <button class="time-btn" id="btn-skip" onclick="app.election.skipToEnd()">⏭️ SKIP</button>
                 </div>
             </div>
             <div class="election-header-right">
@@ -301,7 +301,7 @@
                     </div>
                     <div class="ev-labels">
                         <span>0</span>
-                        <span class="hidden" style="color: #198754; font-weight: bold;"><span id="elec-third-ev">0</span> 3rd</span>
+                        <span class="hidden third-ev-label"><span id="elec-third-ev">0</span> 3rd</span>
                         <span>538</span>
                     </div>
                 </div>

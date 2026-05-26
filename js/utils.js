@@ -27,20 +27,19 @@ var Utils = {
     },
 
     getMarginColor: function(margin) {
-        // Improved coloring with white at 0.0%
-        if (margin > 25) return "#00264d"; // Very dark blue
-        if (margin > 15) return "#003d7a"; // Darker blue
-        if (margin > 10) return "#0055a6"; // Dark blue
-        if (margin > 5) return "#0077d9"; // Medium blue
-        if (margin > 2) return "#3399ff"; // Light blue
-        if (margin > 0.5) return "#66b3ff"; // Very light blue
-        if (margin > -0.5) return "#ffffff"; // White (neutral/tied)
-        if (margin > -2) return "#ff9999"; // Very light red
-        if (margin > -5) return "#ff6666"; // Light red
-        if (margin > -10) return "#ff3333"; // Medium red
-        if (margin > -15) return "#d90000"; // Dark red
-        if (margin > -25) return "#a60000"; // Darker red
-        return "#730000"; // Very dark red
+        if (margin > 25) return "#075985";
+        if (margin > 15) return "#0369a1";
+        if (margin > 10) return "#0284c7";
+        if (margin > 5) return "#0ea5e9";
+        if (margin > 2) return "#7dd3fc";
+        if (margin > 0.5) return "#bae6fd";
+        if (margin > -0.5) return "#e5edf5";
+        if (margin > -2) return "#fecdd3";
+        if (margin > -5) return "#fda4af";
+        if (margin > -10) return "#fb7185";
+        if (margin > -15) return "#e11d48";
+        if (margin > -25) return "#be123c";
+        return "#881337";
     },
 
     formatDate: function(date) {
