@@ -61,6 +61,7 @@ var Election = {
     preAnalysisMapMode: 'leader',
     shiftStateCache: {},
     shiftCountyCache: {},
+    countyWinners2024: {},
 
     start: function() {
         var self = this;
@@ -776,6 +777,9 @@ var Election = {
 
     getCounty2024Winner: function(fips) {
         var fips5 = String(fips || '').padStart(5, '0');
+        if (this.countyWinners2024 && this.countyWinners2024[fips5]) {
+            return this.countyWinners2024[fips5];
+        }
         var margin = this.getHistoricalMargin(2024, fips5);
         if (margin === null || margin === undefined) return null;
         if (margin > 0) return 'D';
@@ -1765,6 +1769,7 @@ var Election = {
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 self.data2024 = {};
+                self.countyWinners2024 = {};
                 var lines = xhr.responseText.split('\n');
                 // Columns: state_name,county_fips,county_name,votes_gop,votes_dem,
                 //          total_votes,diff,per_gop,per_dem,per_point_diff
@@ -1780,7 +1785,10 @@ var Election = {
                     // positive values represent a Dem-favoring margin (matching game convention).
                     var perPointDiff = parseFloat(parts[9]);
                     if (!fips5 || isNaN(perPointDiff)) continue;
-                    self.data2024[fips5] = -perPointDiff * 100;
+                    var margin = -perPointDiff * 100;
+                    self.data2024[fips5] = margin;
+                    if (margin > 0) self.countyWinners2024[fips5] = 'D';
+                    else if (margin < 0) self.countyWinners2024[fips5] = 'R';
                 }
                 self.historicalMargins[2024] = self.data2024;
                 self.addHistoricalYear(2024);
@@ -2049,6 +2057,13 @@ var Election = {
         }
 
         if (this.mapMode === 'projected') {
+            if (!county.called && county.reportedPct > 0) {
+                var countyCall = this.canCallCountyMathematically(county);
+                if (countyCall.canCall) {
+                    county.called = true;
+                    county.calledFor = countyCall.calledFor;
+                }
+            }
             if (county.called) {
                 var result2024 = this.getCounty2024Winner(fips);
                 var isFlip = result2024 && result2024 !== county.calledFor;

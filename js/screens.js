@@ -78,8 +78,7 @@ var Screens = {
         headerInfo.innerText = 'Step ' + stepNum + ' of ' + totalSteps;
 
         // Build banner HTML
-        var logoName = 'party-' + partyCode.toLowerCase() + '.png';
-        if (partyCode === 'I') logoName = 'party-ind.png';
+        var logoName = this._getPartyLogoFile(partyCode);
         var bannerHTML =
             '<div class="party-page-banner" style="background: linear-gradient(135deg, rgba(' + this._hexToRgb(color) + ',0.15) 0%, rgba(0,0,0,0.6) 100%); --party-banner-color: ' + color + ';">' +
                 '<div class="party-banner-left" style="background: rgba(' + this._hexToRgb(color) + ',0.08);">' +
@@ -191,12 +190,11 @@ var Screens = {
                 groupDebuffsText = '<div class="tile-groups tile-groups-debuff">⚠ ' + debuffKeys.map(function(k) { return k + ' ' + c.groupDebuffs[k]; }).join(', ') + '</div>';
             }
         }
+        var logoName = this._getPartyLogoFile(c.party);
         return '<div class="candidate-tile' + (selected ? ' selected' : '') + '" data-id="' + c.id + '" data-type="pres" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + c.party + '\', \'pres\')">' +
+            '<img class="candidate-tile-party-logo" src="images/' + logoName + '" onerror="this.style.display=\'none\'" alt="' + c.party + ' logo">' +
             '<img class="candidate-tile-img" src="' + c.img + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + c.name + '">' +
             '<div class="candidate-tile-body">' +
-                '<div class="candidate-tile-desc-wrapper">' +
-                    '<p class="candidate-tile-desc">' + (c.desc || '') + '</p>' +
-                '</div>' +
                 '<div class="candidate-tile-meta">' +
                     '<div class="candidate-tile-name">' + c.name + '</div>' +
                     '<div class="candidate-tile-state">🏠 ' + (c.homeState || '') + '</div>' +
@@ -208,6 +206,9 @@ var Screens = {
                     '</div>' +
                     groupBoostsText +
                     groupDebuffsText +
+                '</div>' +
+                '<div class="candidate-tile-desc-wrapper">' +
+                    '<p class="candidate-tile-desc">' + (c.desc || '') + '</p>' +
                 '</div>' +
             '</div>' +
         '</div>';
@@ -228,20 +229,34 @@ var Screens = {
                 groupDebuffsText = '<div class="tile-groups tile-groups-debuff">⚠ ' + debuffKeys.map(function(k) { return k + ' ' + v.groupDebuffs[k]; }).join(', ') + '</div>';
             }
         }
+        var logoName = this._getPartyLogoFile(v.party);
         return '<div class="candidate-tile" data-id="' + v.id + '" data-type="vp" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + v.party + '\', \'vp\')">' +
+            '<img class="candidate-tile-party-logo" src="images/' + logoName + '" onerror="this.style.display=\'none\'" alt="' + v.party + ' logo">' +
             '<img class="candidate-tile-img" src="' + (v.img || 'images/scenario.jpg') + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + v.name + '">' +
             '<div class="candidate-tile-body">' +
-                '<div class="candidate-tile-desc-wrapper">' +
-                    '<p class="candidate-tile-desc">' + (v.desc || '') + '</p>' +
-                '</div>' +
                 '<div class="candidate-tile-meta">' +
                     '<div class="candidate-tile-name">' + v.name + '</div>' +
                     '<div class="candidate-tile-state">🏠 ' + (v.state || v.homeState || '') + '</div>' +
                     groupBoostsText +
                     groupDebuffsText +
                 '</div>' +
+                '<div class="candidate-tile-desc-wrapper">' +
+                    '<p class="candidate-tile-desc">' + (v.desc || '') + '</p>' +
+                '</div>' +
             '</div>' +
         '</div>';
+    },
+
+    _getPartyLogoFile: function(partyCode) {
+        var logoMap = {
+            D: 'party-dem.png',
+            R: 'party-rep.png',
+            G: 'party-grn.png',
+            L: 'party-lib.png',
+            I: 'party-ind.png',
+            PSL: 'party-psl.png'
+        };
+        return logoMap[partyCode] || ('party-' + String(partyCode || '').toLowerCase() + '.png');
     },
 
     _hexToRgb: function(hex) {

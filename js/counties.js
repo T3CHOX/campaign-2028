@@ -1131,7 +1131,9 @@ var Counties = {
 
     getCountyMapModeColor: function(county) {
         var mode = (typeof Campaign !== 'undefined' && Campaign.mapMode) ? Campaign.mapMode : 'margin';
-        if (mode === 'density') return Campaign.getGoldScaleColor(Math.min(1, (county.p || 0) / 1500000));
+        if (mode === 'population' && typeof Campaign !== 'undefined') {
+            return Campaign.getGoldScaleColor(Campaign.getCountyPopulationIndex(county.p || 0));
+        }
         if (mode === 'turnout' || mode === 'playerTurnout' || mode === 'opponentTurnout') {
             var turnout = county.turnout || {};
             var val = 1;
@@ -1341,18 +1343,42 @@ var Counties = {
         var demVotes = totals.D || 0;
         var repVotes = totals.R || 0;
         var total = demVotes + repVotes;
-        
-        var marginText = 'N/A';
+        var mode = (typeof Campaign !== 'undefined' && Campaign.mapMode) ? Campaign.mapMode : 'margin';
+        var detailLine = '';
+        var subLine = '';
         var color = '#888';
         
-        if (total > 0) {
-            var demPct = (demVotes / total) * 100;
-            var repPct = (repVotes / total) * 100;
-            var margin = demPct - repPct;
-            
-            // Always show exact margin, no "TOSS-UP" label
-            marginText = (margin > 0 ? 'D+' : 'R+') + Math.abs(margin).toFixed(1);
-            color = margin > 0 ? '#00AEF3' : '#E81B23';
+        if (mode === 'margin') {
+            var marginText = 'N/A';
+            if (total > 0) {
+                var demPct = (demVotes / total) * 100;
+                var repPct = (repVotes / total) * 100;
+                var margin = demPct - repPct;
+                marginText = (margin > 0 ? 'D+' : 'R+') + Math.abs(margin).toFixed(1);
+                color = margin > 0 ? '#00AEF3' : '#E81B23';
+            }
+            detailLine = '<span class="tooltip-leader" style="color: ' + color + '">' + marginText + '</span>';
+        } else if (mode === 'ev') {
+            var stateCode = this.getStateCodeFromFips(this.normalizeFips(fips).substring(0, 2));
+            var ev = stateCode && gameData.states[stateCode] ? gameData.states[stateCode].ev : 0;
+            detailLine = '<span class="tooltip-leader">' + ev + ' Electoral Votes</span>';
+            subLine = '<span class="tooltip-stats">State total</span>';
+        } else if (mode === 'population') {
+            detailLine = '<span class="tooltip-leader">' + (county.p || 0).toLocaleString() + ' Population</span>';
+            subLine = '<span class="tooltip-stats">County population</span>';
+        } else if (mode === 'turnout' || mode === 'playerTurnout' || mode === 'opponentTurnout') {
+            var turnout = county.turnout || {};
+            var val = 1;
+            if (mode === 'playerTurnout') val = turnout.player || 1;
+            else if (mode === 'opponentTurnout') val = gameData.selectedParty === 'D' ? (turnout.repOpponent || 1) : (turnout.demOpponent || 1);
+            else val = Math.max(turnout.player || 1, turnout.demOpponent || 1, turnout.repOpponent || 1, turnout.thirdParty || 0.7);
+            var label = mode === 'turnout' ? 'Turnout' : (mode === 'playerTurnout' ? 'Player Turnout' : 'Opponent Turnout');
+            detailLine = '<span class="tooltip-leader">' + label + ': ' + val.toFixed(2) + 'x</span>';
+            subLine = '<span class="tooltip-stats">Turnout multiplier</span>';
+        } else if (mode === 'favorability') {
+            var fav = typeof Campaign !== 'undefined' ? Math.round(Campaign.getFavorability() * 100) : 0;
+            detailLine = '<span class="tooltip-leader">Favorability: ' + fav + '%</span>';
+            subLine = '<span class="tooltip-stats">National standing</span>';
         }
         
         // Determine proper suffix based on state
@@ -1374,10 +1400,11 @@ var Counties = {
             countyName = countyName + ' ' + suffix;
         }
         
-        tooltip.innerHTML = 
+        tooltip.innerHTML =
             '<span class="tooltip-title">' + countyName + '</span>' +
             '<div class="tooltip-divider"></div>' +
-            '<span class="tooltip-leader" style="color: ' + color + '">' + marginText + '</span>';
+            detailLine +
+            (subLine ? subLine : '');
         tooltip.style.display = 'block';
         tooltip.style.left = (e.clientX + 15) + 'px';
         tooltip.style.top = (e.clientY + 15) + 'px';
