@@ -15,6 +15,10 @@ var Campaign = {
     statePopulationCache: null,
     maxStatePopulation: 0,
     maxCountyPopulation: 0,
+    goldScaleColors: ['#2b2114', '#4b2d12', '#6b3f16', '#8c531b', '#b36f24', '#d6943e', '#f4c15d', '#fde7a1'],
+    populationLogOffset: 1,
+    mapPolarityGamma: 0.65,
+    mapPolarityContrast: 1.25,
     getStateActionGridHTML: function() {
         return '' +
             '<button class="act-btn" onclick="app.handleAction(\'fundraise\')"><span><i class="fa-solid fa-sack-dollar"></i></span><span>FUNDRAISE</span></button>' +
@@ -245,7 +249,7 @@ var Campaign = {
 
     getGoldScaleColor: function(index) {
         var v = this.applyMapPolarity(index);
-        var colors = ['#2b2114', '#4b2d12', '#6b3f16', '#8c531b', '#b36f24', '#d6943e', '#f4c15d', '#fde7a1'];
+        var colors = this.goldScaleColors || [];
         var scaled = v * (colors.length - 1);
         var low = Math.floor(scaled);
         var high = Math.min(colors.length - 1, low + 1);
@@ -301,7 +305,8 @@ var Campaign = {
 
     getPopulationIndex: function(population, maxPopulation) {
         if (!maxPopulation || maxPopulation <= 0) return 0;
-        var normalized = Math.log10((population || 0) + 1) / Math.log10(maxPopulation + 1);
+        var offset = this.populationLogOffset || 1;
+        var normalized = Math.log10((population || 0) + offset) / Math.log10(maxPopulation + offset);
         return Math.max(0, Math.min(1, normalized));
     },
 
@@ -354,8 +359,8 @@ var Campaign = {
 
     applyMapPolarity: function(value) {
         var v = Math.max(0, Math.min(1, value || 0));
-        var boosted = Math.pow(v, 0.65);
-        var contrasted = 0.5 + (boosted - 0.5) * 1.25;
+        var boosted = Math.pow(v, this.mapPolarityGamma || 0.65);
+        var contrasted = 0.5 + (boosted - 0.5) * (this.mapPolarityContrast || 1.25);
         return Math.max(0, Math.min(1, contrasted));
     },
 

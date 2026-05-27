@@ -62,6 +62,12 @@ var Counties = {
                     
                     // Initialize undecided percentage (15% of population)
                     c.undecided = (c.undecided !== undefined) ? c.undecided : 15.0;
+
+                    // Cache state code to avoid repeated FIPS parsing in tooltips
+                    var normalizedFips = Counties.normalizeFips(fips);
+                    if (normalizedFips) {
+                        c.stateCode = Counties.getStateCodeFromFips(normalizedFips.substring(0, 2));
+                    }
                     
                     // Apply third-party toggle logic
                     Counties.applyThirdPartyToggle(c);
@@ -1359,7 +1365,7 @@ var Counties = {
             }
             detailLine = '<span class="tooltip-leader" style="color: ' + color + '">' + marginText + '</span>';
         } else if (mode === 'ev') {
-            var stateCode = this.getStateCodeFromFips(this.normalizeFips(fips).substring(0, 2));
+            var stateCode = county.stateCode || this.getStateCodeFromFips(this.normalizeFips(fips).substring(0, 2));
             var ev = stateCode && gameData.states[stateCode] ? gameData.states[stateCode].ev : 0;
             detailLine = '<span class="tooltip-leader">' + ev + ' Electoral Votes</span>';
             subLine = '<span class="tooltip-stats">State total</span>';

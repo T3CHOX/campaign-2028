@@ -778,7 +778,7 @@ var Election = {
     getCounty2024Winner: function(fips) {
         var fips5 = String(fips || '').padStart(5, '0');
         if (this.countyWinners2024 && this.countyWinners2024[fips5]) {
-            return this.countyWinners2024[fips5];
+            return this.countyWinners2024[fips5] === 'T' ? null : this.countyWinners2024[fips5];
         }
         var margin = this.getHistoricalMargin(2024, fips5);
         if (margin === null || margin === undefined) return null;
@@ -1789,6 +1789,7 @@ var Election = {
                     self.data2024[fips5] = margin;
                     if (margin > 0) self.countyWinners2024[fips5] = 'D';
                     else if (margin < 0) self.countyWinners2024[fips5] = 'R';
+                    else self.countyWinners2024[fips5] = 'T';
                 }
                 self.historicalMargins[2024] = self.data2024;
                 self.addHistoricalYear(2024);
