@@ -11,6 +11,14 @@ var GAME_CONSTANTS = {
 
 var Campaign = {
     mapMode: 'margin',
+    populationCacheReady: false,
+    statePopulationCache: null,
+    maxStatePopulation: 0,
+    maxCountyPopulation: 0,
+    goldScaleColors: ['#2b2114', '#4b2d12', '#6b3f16', '#8c531b', '#b36f24', '#d6943e', '#f4c15d', '#fde7a1'],
+    populationLogOffset: 1,
+    mapPolarityGamma: 0.65,
+    mapPolarityContrast: 1.25,
     getStateActionGridHTML: function() {
         return '' +
             '<button class="act-btn" onclick="app.handleAction(\'fundraise\')"><span><i class="fa-solid fa-sack-dollar"></i></span><span>FUNDRAISE</span></button>' +
@@ -52,6 +60,7 @@ var Campaign = {
             recomputeInterestGroupSupport();
             
             // Update map colors after county data initializes state margins
+            Campaign.resetPopulationCaches();
             Campaign.colorMap();
         });
         
@@ -80,7 +89,7 @@ var Campaign = {
                                         Counties.openCountyView(c);
                                     }
                                 };
-                                path.onmousemove = function(e) { Campaign.showTooltip(e, gameData.states[c]); };
+                                path.onmousemove = function(e) { Campaign.showTooltip(e, c); };
                                 path.onmouseleave = function() { document.getElementById('map-tooltip').style.display = 'none'; };
                             })(code);
                         }
@@ -96,17 +105,42 @@ var Campaign = {
         xhr.send();
     },
 
-    showTooltip: function(e, state) {
+    showTooltip: function(e, code) {
+        var state = gameData.states[code];
+        if (!state) return;
         var tooltip = document.getElementById('map-tooltip');
-        var marginText = Math.abs(state.margin).toFixed(1);
-        // Always show exact margin, no "TOSS-UP" label
-        var leaning = (state.margin > 0 ? 'D+' : 'R+') + marginText;
-        
-        tooltip.innerHTML = 
+        var mode = this.mapMode || 'margin';
+        var detailLine = '';
+        var subLine = '';
+
+        if (mode === 'margin') {
+            var marginText = Math.abs(state.margin).toFixed(1);
+            var leaning = (state.margin > 0 ? 'D+' : 'R+') + marginText;
+            detailLine = '<span class="tooltip-leader" style="color: ' + (state.margin > 0 ? '#00AEF3' : '#E81B23') + '">' + leaning + '</span>';
+            subLine = '<span class="tooltip-stats">' + state.ev + ' Electoral Votes</span>';
+        } else if (mode === 'ev') {
+            detailLine = '<span class="tooltip-leader">' + state.ev + ' Electoral Votes</span>';
+            subLine = '<span class="tooltip-stats">Electoral votes</span>';
+        } else if (mode === 'population') {
+            var pop = this.getStatePopulationTotal(code);
+            detailLine = '<span class="tooltip-leader">' + pop.toLocaleString() + ' Population</span>';
+            subLine = '<span class="tooltip-stats">Population total</span>';
+        } else if (mode === 'turnout' || mode === 'playerTurnout' || mode === 'opponentTurnout') {
+            var avg = this.getStateTurnoutAverage(code, mode === 'turnout' ? 'all' : (mode === 'playerTurnout' ? 'player' : 'opponent'));
+            var label = mode === 'turnout' ? 'Turnout' : (mode === 'playerTurnout' ? 'Player Turnout' : 'Opponent Turnout');
+            detailLine = '<span class="tooltip-leader">' + label + ': ' + (avg ? avg.toFixed(2) + 'x' : '—') + '</span>';
+            subLine = '<span class="tooltip-stats">Turnout multiplier</span>';
+        } else if (mode === 'favorability') {
+            var fav = Math.round(this.getFavorability() * 100);
+            detailLine = '<span class="tooltip-leader">Favorability: ' + fav + '%</span>';
+            subLine = '<span class="tooltip-stats">National standing</span>';
+        }
+
+        tooltip.innerHTML =
             '<span class="tooltip-title">' + state.name + '</span>' +
             '<div class="tooltip-divider"></div>' +
-            '<span class="tooltip-leader" style="color: ' + (state.margin > 0 ? '#00AEF3' : '#E81B23') + '">' + leaning + '</span>' +
-            '<span class="tooltip-stats">' + state.ev + ' Electoral Votes</span>';
+            detailLine +
+            (subLine ? subLine : '');
         tooltip.style.display = 'block';
         tooltip.style.left = (e.clientX + 15) + 'px';
         tooltip.style.top = (e.clientY + 15) + 'px';
@@ -191,12 +225,10 @@ var Campaign = {
 
     setMapMode: function(mode) {
         this.mapMode = mode || 'margin';
-        var buttons = document.querySelectorAll('.campaign-map-mode-toggle .mode-btn');
-        for (var i = 0; i < buttons.length; i++) {
-            buttons[i].classList.remove('active');
+        var select = document.getElementById('campaign-mode-select');
+        if (select && select.value !== this.mapMode) {
+            select.value = this.mapMode;
         }
-        var active = document.getElementById('campaign-mode-' + this.mapMode);
-        if (active) active.classList.add('active');
         this.colorMap();
         if (typeof Counties !== 'undefined' && gameData.inCountyView && Counties.colorCountyMap) {
             Counties.colorCountyMap();
@@ -207,7 +239,7 @@ var Campaign = {
         var mode = this.mapMode || 'margin';
         if (mode === 'margin') return Utils.getMarginColor(state.margin);
         if (mode === 'ev') return this.getGoldScaleColor((state.ev || 0) / 54);
-        if (mode === 'density') return this.getGoldScaleColor(this.getStatePopulationDensityIndex(code));
+        if (mode === 'population') return this.getGoldScaleColor(this.getStatePopulationIndex(code));
         if (mode === 'turnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'all'));
         if (mode === 'playerTurnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'player'));
         if (mode === 'opponentTurnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'opponent'));
@@ -216,13 +248,17 @@ var Campaign = {
     },
 
     getGoldScaleColor: function(index) {
-        var v = Math.max(0, Math.min(1, index || 0));
-        var colors = ['#2b2114', '#5a3516', '#8f541d', '#c98720', '#f4c15d'];
-        return colors[Math.min(colors.length - 1, Math.floor(v * colors.length))];
+        var v = this.applyMapPolarity(index);
+        var colors = this.goldScaleColors || [];
+        var scaled = v * (colors.length - 1);
+        var low = Math.floor(scaled);
+        var high = Math.min(colors.length - 1, low + 1);
+        var t = scaled - low;
+        return this.blendHexColors(colors[low], colors[high], t);
     },
 
     getFavorabilityColor: function(value) {
-        var v = Math.max(0, Math.min(1, value || 0.5));
+        var v = this.applyMapPolarity(value || 0.5);
         if (v < 0.35) return '#7a0509';
         if (v < 0.45) return '#d71920';
         if (v < 0.55) return '#f4c15d';
@@ -230,21 +266,67 @@ var Campaign = {
         return '#198754';
     },
 
-    getStatePopulationDensityIndex: function(code) {
-        if (!STATES[code] || !Counties || !Counties.countyData) return 0;
-        var stateFips = STATES[code].fips;
-        var pop = 0;
-        var countyCount = 0;
-        for (var fips in Counties.countyData) {
-            var padded = fips.padStart(5, '0');
-            if (padded.substring(0, 2) !== stateFips) continue;
-            pop += Counties.countyData[fips].p || 0;
-            countyCount++;
-        }
-        return Math.min(1, pop / Math.max(1, countyCount) / 900000);
+    resetPopulationCaches: function() {
+        this.populationCacheReady = false;
+        this.statePopulationCache = null;
+        this.maxStatePopulation = 0;
+        this.maxCountyPopulation = 0;
     },
 
-    getStateTurnoutIndex: function(code, type) {
+    ensurePopulationCaches: function() {
+        if (this.populationCacheReady) return;
+        if (!Counties || !Counties.countyData) {
+            this.populationCacheReady = true;
+            return;
+        }
+        var stateByFips = {};
+        for (var code in STATES) {
+            if (STATES[code] && STATES[code].fips) {
+                stateByFips[STATES[code].fips] = code;
+            }
+        }
+        this.statePopulationCache = {};
+        this.maxStatePopulation = 0;
+        this.maxCountyPopulation = 0;
+        for (var fips in Counties.countyData) {
+            var county = Counties.countyData[fips];
+            var pop = county && county.p ? county.p : 0;
+            if (pop > this.maxCountyPopulation) this.maxCountyPopulation = pop;
+            var padded = fips.padStart(5, '0');
+            var stateCode = stateByFips[padded.substring(0, 2)];
+            if (!stateCode) continue;
+            this.statePopulationCache[stateCode] = (this.statePopulationCache[stateCode] || 0) + pop;
+            if (this.statePopulationCache[stateCode] > this.maxStatePopulation) {
+                this.maxStatePopulation = this.statePopulationCache[stateCode];
+            }
+        }
+        this.populationCacheReady = true;
+    },
+
+    getPopulationIndex: function(population, maxPopulation) {
+        if (!maxPopulation || maxPopulation <= 0) return 0;
+        var offset = this.populationLogOffset || 1;
+        var normalized = Math.log10((population || 0) + offset) / Math.log10(maxPopulation + offset);
+        return Math.max(0, Math.min(1, normalized));
+    },
+
+    getStatePopulationTotal: function(code) {
+        this.ensurePopulationCaches();
+        if (!this.statePopulationCache) return 0;
+        return this.statePopulationCache[code] || 0;
+    },
+
+    getStatePopulationIndex: function(code) {
+        this.ensurePopulationCaches();
+        return this.getPopulationIndex(this.getStatePopulationTotal(code), this.maxStatePopulation);
+    },
+
+    getCountyPopulationIndex: function(population) {
+        this.ensurePopulationCaches();
+        return this.getPopulationIndex(population, this.maxCountyPopulation);
+    },
+
+    getStateTurnoutAverage: function(code, type) {
         if (!STATES[code] || !Counties || !Counties.countyData) return 0;
         var stateFips = STATES[code].fips;
         var total = 0;
@@ -266,7 +348,43 @@ var Campaign = {
             weight += pop;
         }
         if (weight <= 0) return 0;
-        return Math.max(0, Math.min(1, ((total / weight) - 0.7) / 0.6));
+        return total / weight;
+    },
+
+    getStateTurnoutIndex: function(code, type) {
+        var avg = this.getStateTurnoutAverage(code, type);
+        if (!avg) return 0;
+        return Math.max(0, Math.min(1, (avg - 0.7) / 0.6));
+    },
+
+    applyMapPolarity: function(value) {
+        var v = Math.max(0, Math.min(1, value || 0));
+        var boosted = Math.pow(v, this.mapPolarityGamma || 0.65);
+        var contrasted = 0.5 + (boosted - 0.5) * (this.mapPolarityContrast || 1.25);
+        return Math.max(0, Math.min(1, contrasted));
+    },
+
+    blendHexColors: function(a, b, t) {
+        var hexToRgb = function(hex) {
+            var cleaned = hex.replace('#', '');
+            var num = parseInt(cleaned, 16);
+            return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+        };
+        var rgbToHex = function(rgb) {
+            var toHex = function(n) {
+                var h = n.toString(16);
+                return h.length === 1 ? '0' + h : h;
+            };
+            return '#' + toHex(rgb.r) + toHex(rgb.g) + toHex(rgb.b);
+        };
+        var c1 = hexToRgb(a || '#000000');
+        var c2 = hexToRgb(b || '#000000');
+        var mix = {
+            r: Math.round(c1.r + (c2.r - c1.r) * t),
+            g: Math.round(c1.g + (c2.g - c1.g) * t),
+            b: Math.round(c1.b + (c2.b - c1.b) * t)
+        };
+        return rgbToHex(mix);
     },
 
     updateScore: function() {

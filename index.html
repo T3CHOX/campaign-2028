@@ -166,13 +166,16 @@
         <div class="game-area">
             <div id="map-container">
                 <div class="campaign-map-mode-toggle">
-                    <button class="mode-btn active" id="campaign-mode-margin" onclick="app.setCampaignMapMode('margin')">LEAN</button>
-                    <button class="mode-btn" id="campaign-mode-ev" onclick="app.setCampaignMapMode('ev')">EV</button>
-                    <button class="mode-btn" id="campaign-mode-density" onclick="app.setCampaignMapMode('density')">DENSITY</button>
-                    <button class="mode-btn" id="campaign-mode-turnout" onclick="app.setCampaignMapMode('turnout')">TURNOUT</button>
-                    <button class="mode-btn" id="campaign-mode-playerTurnout" onclick="app.setCampaignMapMode('playerTurnout')">PLAYER</button>
-                    <button class="mode-btn" id="campaign-mode-opponentTurnout" onclick="app.setCampaignMapMode('opponentTurnout')">OPPONENT</button>
-                    <button class="mode-btn" id="campaign-mode-favorability" onclick="app.setCampaignMapMode('favorability')">FAVORABILITY</button>
+                    <label for="campaign-mode-select">MAP MODE</label>
+                    <select id="campaign-mode-select" class="campaign-mode-select" onchange="app.setCampaignMapMode(this.value)">
+                        <option value="margin" selected>LEAN</option>
+                        <option value="ev">EV</option>
+                        <option value="population">POPULATION</option>
+                        <option value="turnout">TURNOUT</option>
+                        <option value="playerTurnout">PLAYER</option>
+                        <option value="opponentTurnout">OPPONENT</option>
+                        <option value="favorability">FAVORABILITY</option>
+                    </select>
                 </div>
                 <div id="us-map-wrapper"></div>
                 <div id="county-view-wrapper" class="hidden">
@@ -287,7 +290,6 @@
                     </div>
                     <button class="mode-btn" id="analysis-back-btn" onclick="app.election.exitAnalysisMode()">BACK TO ELECTION NIGHT</button>
                 </div>
-                <button class="mode-btn" id="third-party-tracker-btn" onclick="app.election.toggleThirdPartyTracker()">3RD PARTY TRACKER</button>
             </div>
         </header>
 
@@ -582,4 +584,3 @@
 <script src="js/main.js"></script>
 </body>
 </html>
-
