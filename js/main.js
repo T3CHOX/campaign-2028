@@ -1423,6 +1423,22 @@ var app = {
     goToScreen: function(id) { Screens.goTo(id); },
     selParty: function(code) { Screens.selectParty(code); },
     setCampaignMapMode: function(mode) { if (typeof Campaign !== 'undefined') Campaign.setMapMode(mode); },
+    toggleTheme: function() {
+        var root = document.documentElement;
+        var current = root.getAttribute('data-theme') || 'dark';
+        var next = current === 'light' ? 'dark' : 'light';
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem('d2028-theme', next); } catch (e) {}
+    },
+    initTheme: function() {
+        var saved = null;
+        try { saved = localStorage.getItem('d2028-theme'); } catch (e) {}
+        if (saved === 'light' || saved === 'dark') {
+            document.documentElement.setAttribute('data-theme', saved);
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    },
     setThirdParties: function(enabled) {
         gameData.thirdPartiesEnabled = enabled;
         var panels = document.querySelectorAll('.party-panel-minor');
