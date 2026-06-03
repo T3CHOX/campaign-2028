@@ -7,17 +7,6 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,700;6..72,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <script>
-        (function() {
-            try {
-                var saved = localStorage.getItem('d2028-theme');
-                if (saved !== 'light' && saved !== 'dark') saved = 'dark';
-                document.documentElement.setAttribute('data-theme', saved);
-            } catch (e) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
 </head>
 <body>
 
@@ -405,6 +394,11 @@
 
     <div id="map-tooltip"></div>
     <div id="toast"></div>
+
+    <button id="global-theme-toggle" class="theme-toggle-btn floating-theme-toggle" type="button" onclick="app.toggleTheme()" aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
+        <i class="fa-solid fa-moon theme-icon-moon"></i>
+        <i class="fa-solid fa-sun theme-icon-sun"></i>
+    </button>
     
     <!-- Issues Panel Drawer -->
     <div id="issues-modal" class="hidden issues-drawer">
