@@ -305,9 +305,22 @@ var Campaign = {
 
     getPopulationIndex: function(population, maxPopulation) {
         if (!maxPopulation || maxPopulation <= 0) return 0;
-        var offset = this.populationLogOffset || 1;
-        var normalized = Math.log10((population || 0) + offset) / Math.log10(maxPopulation + offset);
-        return Math.max(0, Math.min(1, normalized));
+        // Polarize the scale: tiny-population areas should read clearly
+        // dark and only the densest hot spots (NYC, LA County, California,
+        // Texas) should glow brightly. The previous logarithmic scale
+        // compressed everything toward the top end, making low-population
+        // states like Wyoming look almost identical to California.
+        var pop = Math.max(0, population || 0);
+        var ratio = pop / maxPopulation;
+        // Aggressive gamma curve - emphasises the spread between low and
+        // high population while keeping the result inside [0, 1].
+        var polarized = Math.pow(ratio, 0.32);
+        // Lift the floor slightly so empty/tiny counties aren't pitch
+        // black, then keep a healthy ceiling so the brightest spots
+        // remain visibly distinct from the merely large.
+        var floor = 0.04;
+        var ceiling = 1.0;
+        return Math.max(0, Math.min(1, floor + polarized * (ceiling - floor)));
     },
 
     getStatePopulationTotal: function(code) {

@@ -1024,7 +1024,12 @@ var Election = {
         }
         html += '<div class="elec-reporting"><span id="elec-pct-reporting">' + Math.floor(s.reportedPct) + '%</span> Reporting</div>';
         html += Utils.buildElectionRankedListHTML(s.reportedVotes, s.reportedPct, s.ev, projStatus);
-        html += '<button class="county-drill-btn" onclick="Election.openCountyView(\'' + code + '\')">VIEW COUNTY RESULTS</button>';
+        var inCountyView = gameData.electionCountyViewState === code;
+        if (!inCountyView) {
+            html += '<button class="county-drill-btn" onclick="Election.openCountyView(\'' + code + '\')">VIEW COUNTY RESULTS</button>';
+        } else {
+            html += '<div class="elec-state-hint">Click any county for its breakdown.</div>';
+        }
 
         container.innerHTML = html;
     },

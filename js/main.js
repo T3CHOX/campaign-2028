@@ -2647,5 +2647,6 @@ var app = {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (app && app.initTheme) app.initTheme();
     initGameData();
 });
