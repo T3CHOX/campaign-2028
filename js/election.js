@@ -278,9 +278,15 @@ var Election = {
         this.updatePollClosingsNext();
         this.colorElectionMap();
 
-        // Update county map view if it is open
         if (gameData.electionCountyViewState) {
             this.updateCountyElectionColors();
+            if (gameData.electionSelectedCounty) {
+                this.showCountyDetail(gameData.electionSelectedCounty);
+            } else {
+                this.selectState(gameData.electionCountyViewState);
+            }
+        } else if (gameData.electionSelectedState && gameData.states[gameData.electionSelectedState]) {
+            this.selectState(gameData.electionSelectedState);
         }
 
         // Show winner overlay when someone reaches 270 and ALL votes are counted
@@ -884,6 +890,60 @@ var Election = {
         body.innerHTML = html;
     },
 
+    flipPatternPrefix: {
+        state: 'state',
+        county: 'county'
+    },
+
+    injectFlipPatterns: function(svg, scope, options) {
+        if (!svg) return;
+        var prefix = (this.flipPatternPrefix && this.flipPatternPrefix[scope]) || scope || 'flip';
+        var defs = svg.querySelector('defs');
+        if (!defs) {
+            defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            svg.insertBefore(defs, svg.firstChild);
+        }
+        var flipColors = {
+            D: { base: '#00AEF3', dark: '#00577a' },
+            R: { base: '#E81B23', dark: '#830f14' },
+            G: { base: '#198754', dark: '#0c4729' },
+            L: { base: '#fd7e14', dark: '#884208' },
+            I: { base: '#9B59B6', dark: '#4d2a5d' },
+            PSL: { base: '#CC0000', dark: '#6b0000' }
+        };
+        var stripeWidth = (options && options.stripeWidth) || 5;
+        var tileWidth = (options && options.tileWidth) || 10;
+        var tileHeight = (options && options.tileHeight) || 10;
+        for (var pCode in flipColors) {
+            var fc = flipColors[pCode];
+            var patternId = prefix + '-flip-pat-' + pCode;
+            if (svg.querySelector('#' + patternId)) continue;
+            var pat = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+            pat.setAttribute('id', patternId);
+            pat.setAttribute('patternUnits', 'userSpaceOnUse');
+            pat.setAttribute('width', tileWidth);
+            pat.setAttribute('height', tileHeight);
+            pat.setAttribute('patternTransform', 'rotate(45 0 0)');
+            var bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            bg.setAttribute('width', tileWidth);
+            bg.setAttribute('height', tileHeight);
+            bg.setAttribute('fill', fc.base);
+            var stripe = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            stripe.setAttribute('width', stripeWidth);
+            stripe.setAttribute('height', tileHeight);
+            stripe.setAttribute('fill', fc.dark);
+            pat.appendChild(bg);
+            pat.appendChild(stripe);
+            defs.appendChild(pat);
+        }
+    },
+
+    getFlipPatternFill: function(scope, party) {
+        if (!party) return null;
+        var prefix = (this.flipPatternPrefix && this.flipPatternPrefix[scope]) || scope || 'flip';
+        return 'url(#' + prefix + '-flip-pat-' + party + ')';
+    },
+
     loadElectionMap: function() {
         var self = this;
         var wrapper = document.getElementById('election-map-wrapper');
@@ -899,35 +959,7 @@ var Election = {
                 if (svg) {
                     svg.id = 'election-map-svg';
 
-                    // Inject diagonal-stripe flip patterns into SVG defs
-                    var defs = svg.querySelector('defs');
-                    if (!defs) {
-                        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-                        svg.insertBefore(defs, svg.firstChild);
-                    }
-                    var flipColors = {
-                        D: { base: '#00AEF3', dark: '#00577a' },
-                        R: { base: '#E81B23', dark: '#830f14' },
-                        G: { base: '#198754', dark: '#0c4729' },
-                        L: { base: '#fd7e14', dark: '#884208' },
-                        I: { base: '#adb5bd', dark: '#555b61' }
-                    };
-                    for (var pCode in flipColors) {
-                        var fc = flipColors[pCode];
-                        var pat = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
-                        pat.setAttribute('id', 'flip-pat-' + pCode);
-                        pat.setAttribute('patternUnits', 'userSpaceOnUse');
-                        pat.setAttribute('width', '10');
-                        pat.setAttribute('height', '10');
-                        pat.setAttribute('patternTransform', 'rotate(45 0 0)');
-                        // Alternating stripes: base color + darker shade
-                        var bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                        bg.setAttribute('width', '10'); bg.setAttribute('height', '10'); bg.setAttribute('fill', fc.base);
-                        var stripe = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                        stripe.setAttribute('width', '5'); stripe.setAttribute('height', '10'); stripe.setAttribute('fill', fc.dark);
-                        pat.appendChild(bg); pat.appendChild(stripe);
-                        defs.appendChild(pat);
-                    }
+                    self.injectFlipPatterns(svg, 'state');
 
                     var paths = svg.querySelectorAll('path');
                     for (var i = 0; i < paths.length; i++) {
@@ -973,11 +1005,10 @@ var Election = {
                 }
             } else if (this.mapMode === 'projected') {
                 if (s.called) {
-                    // Diagonal stripes for states that flipped from 2024 result
                     var result2024 = RESULTS_2024[code];
                     var isFlip = result2024 && result2024 !== s.calledFor;
                     path.style.fill = isFlip
-                        ? 'url(#flip-pat-' + s.calledFor + ')'
+                        ? this.getFlipPatternFill('state', s.calledFor)
                         : this.getPartyColor(s.calledFor);
                 } else {
                     path.style.fill = '#444444';
@@ -997,6 +1028,8 @@ var Election = {
 
     selectState: function(code) {
         var s = gameData.states[code];
+        if (!s) return;
+        gameData.electionSelectedState = code;
         var container = document.getElementById('election-state-info');
         container.classList.remove('hidden');
 
@@ -1024,7 +1057,12 @@ var Election = {
         }
         html += '<div class="elec-reporting"><span id="elec-pct-reporting">' + Math.floor(s.reportedPct) + '%</span> Reporting</div>';
         html += Utils.buildElectionRankedListHTML(s.reportedVotes, s.reportedPct, s.ev, projStatus);
-        html += '<button class="county-drill-btn" onclick="Election.openCountyView(\'' + code + '\')">VIEW COUNTY RESULTS</button>';
+        var inCountyView = gameData.electionCountyViewState === code;
+        if (!inCountyView) {
+            html += '<button class="county-drill-btn" onclick="Election.openCountyView(\'' + code + '\')">VIEW COUNTY RESULTS</button>';
+        } else {
+            html += '<div class="elec-state-hint">Click any county for its breakdown.</div>';
+        }
 
         container.innerHTML = html;
     },
@@ -1878,24 +1916,38 @@ var Election = {
     openCountyView: function(stateCode) {
         var self = this;
         gameData.electionCountyViewState = stateCode;
-        var state = gameData.states[stateCode];
+        gameData.electionSelectedCounty = null;
 
-        // Swap national map for county view inside the same container
         var nationalWrapper = document.getElementById('election-map-wrapper');
         var cvWrapper = document.getElementById('election-county-view-wrapper');
         if (nationalWrapper) nationalWrapper.classList.add('hidden');
-        if (cvWrapper) cvWrapper.classList.remove('hidden');
+        if (cvWrapper) {
+            cvWrapper.classList.remove('hidden');
+            cvWrapper.onclick = function(ev) {
+                var path = ev.target && ev.target.tagName === 'path' ? ev.target : null;
+                if (path && path.id && path.id.charAt(0) === 'c') return;
+                if (ev.target && (ev.target.closest && ev.target.closest('#election-county-header'))) return;
+                Election.showStateDetailFromCountyView(stateCode);
+            };
+        }
 
         this.updateCountyViewTitle(stateCode);
-
         this.loadCountyElectionMap(stateCode);
+
+        // Show the state's overall results in the sidebar by default
+        this.selectState(stateCode);
     },
 
     closeCountyView: function() {
+        var lastState = gameData.electionCountyViewState;
         gameData.electionCountyViewState = null;
+        gameData.electionSelectedCounty = null;
         var nationalWrapper = document.getElementById('election-map-wrapper');
         var cvWrapper = document.getElementById('election-county-view-wrapper');
-        if (cvWrapper) cvWrapper.classList.add('hidden');
+        if (cvWrapper) {
+            cvWrapper.classList.add('hidden');
+            cvWrapper.onclick = null;
+        }
         if (nationalWrapper) nationalWrapper.classList.remove('hidden');
 
         if (this.countyMapUpdateInterval) {
@@ -1903,6 +1955,11 @@ var Election = {
             this.countyMapUpdateInterval = null;
         }
         this.hideMapTooltip();
+
+        // Restore the previously-viewed state's results in the sidebar
+        if (lastState && gameData.states[lastState]) {
+            this.selectState(lastState);
+        }
     },
 
     updateCountyViewTitle: function(stateCode) {
@@ -1943,36 +2000,12 @@ var Election = {
                     svg.style.width = '100%';
                     svg.style.height = '100%';
 
-                    // Inject diagonal-stripe flip patterns into SVG defs
-                    var defs = svg.querySelector('defs');
-                    if (!defs) {
-                        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-                        svg.insertBefore(defs, svg.firstChild);
-                    }
-                    var flipColors = {
-                        D: { base: '#00AEF3', dark: '#00577a' },
-                        R: { base: '#E81B23', dark: '#830f14' },
-                        G: { base: '#198754', dark: '#0c4729' },
-                        L: { base: '#fd7e14', dark: '#884208' },
-                        I: { base: '#adb5bd', dark: '#555b61' },
-                        PSL: { base: '#CC0000', dark: '#6b0000' }
-                    };
-                    for (var pCode in flipColors) {
-                        var fc = flipColors[pCode];
-                        var pat = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
-                        pat.setAttribute('id', 'flip-pat-' + pCode);
-                        pat.setAttribute('patternUnits', 'userSpaceOnUse');
-                        pat.setAttribute('width', '10');
-                        pat.setAttribute('height', '10');
-                        pat.setAttribute('patternTransform', 'rotate(45 0 0)');
-                        // Alternating stripes: base color + darker shade
-                        var bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                        bg.setAttribute('width', '10'); bg.setAttribute('height', '10'); bg.setAttribute('fill', fc.base);
-                        var stripe = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                        stripe.setAttribute('width', '5'); stripe.setAttribute('height', '10'); stripe.setAttribute('fill', fc.dark);
-                        pat.appendChild(bg); pat.appendChild(stripe);
-                        defs.appendChild(pat);
-                    }
+                    // Smaller pattern tile so stripes are visible at county
+                    // zoom levels (uscountymap.svg has a much larger viewBox
+                    // than map.svg, so the default 10x10 user-space pattern
+                    // becomes a single-pixel speck that browsers may render
+                    // as a solid dark fill).
+                    self.injectFlipPatterns(svg, 'county', { stripeWidth: 1.2, tileWidth: 2.4, tileHeight: 2.4 });
 
                     var paths = svg.querySelectorAll('path');
                     var stateCountyPaths = [];
@@ -2069,7 +2102,7 @@ var Election = {
                 var result2024 = this.getCounty2024Winner(fips);
                 var isFlip = result2024 && result2024 !== county.calledFor;
                 path.style.fill = isFlip
-                    ? 'url(#flip-pat-' + county.calledFor + ')'
+                    ? this.getFlipPatternFill('county', county.calledFor)
                     : this.getPartyColor(county.calledFor);
             } else {
                 path.style.fill = '#2a2a2a';
@@ -2122,12 +2155,33 @@ var Election = {
         svg.setAttribute('viewBox', (minX - padX) + ' ' + (minY - padY) + ' ' + (maxX - minX + 2 * padX) + ' ' + (maxY - minY + 2 * padY));
     },
 
+    highlightSelectedCounty: function(fips) {
+        var svg = document.getElementById('county-election-map-svg');
+        if (!svg) return;
+        var prior = svg.querySelectorAll('path.county-selected');
+        for (var i = 0; i < prior.length; i++) prior[i].classList.remove('county-selected');
+        if (!fips) return;
+        var padded = String(fips).padStart(5, '0');
+        var sel = svg.querySelector('#c' + padded) || svg.querySelector('#c' + fips);
+        if (sel) sel.classList.add('county-selected');
+    },
+
+    // Render the county results into the right-side election sidebar
+    // (mirrors how the main simulator displays county info in its
+    // state panel). Clicking county SVG paths from the election map
+    // routes here instead of opening the old corner overlay.
     showCountyDetail: function(fips) {
-        var county = Counties.countyData[fips];
+        var county = Counties && Counties.countyData ? Counties.countyData[fips] : null;
         if (!county) return;
 
-        var rVotes = county.reportedVotes || { D: 0, R: 0, G: 0, L: 0 };
-        var totalVotes = (rVotes.D || 0) + (rVotes.R || 0) + (rVotes.G || 0) + (rVotes.L || 0);
+        gameData.electionSelectedCounty = fips;
+        this.highlightSelectedCounty(fips);
+
+        var container = document.getElementById('election-state-info');
+        if (!container) return;
+        container.classList.remove('hidden');
+
+        var rVotes = county.reportedVotes || { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
         var reportingPct = county.reportedPct || 0;
 
         var projStatus = null;
@@ -2142,31 +2196,42 @@ var Election = {
             projStatus = { text: 'REPORTING SOON', cssClass: '' };
         }
 
-        var html = '<div class="county-detail-panel">';
-        html += '<div class="county-detail-header">';
-        html += '<h3>' + (county.n || 'County') + '</h3>';
-        html += '<button onclick="Election.closeCountyDetail()" class="county-detail-close">✕</button>';
-        html += '</div>';
-        html += Utils.buildElectionRankedListHTML(rVotes, reportingPct, 0, projStatus);
-        html += '<div class="county-detail-meta">';
-        html += '<span>Population: ' + (county.p || 0).toLocaleString() + '</span>';
-        html += '<span>Type: ' + (county.t || '—') + '</span>';
-        html += '</div>';
-        html += '</div>';
+        var parentStateCode = gameData.electionCountyViewState || (county.stateCode || null);
+        var parentStateName = parentStateCode && gameData.states[parentStateCode] ? gameData.states[parentStateCode].name : '';
 
-        var overlay = document.getElementById('county-detail-overlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'county-detail-overlay';
-            overlay.className = 'county-detail-overlay';
-            document.getElementById('election-county-view-wrapper').appendChild(overlay);
+        var html = '<div class="elec-state-header">';
+        html += '<h2>' + (county.n || 'County') + '</h2>';
+        html += '<span class="elec-ev-badge">POP ' + (county.p || 0).toLocaleString() + '</span>';
+        html += '</div>';
+        if (parentStateName) {
+            html += '<div class="elec-county-parent">' + parentStateName.toUpperCase() + (county.t ? ' • ' + county.t : '') + '</div>';
+        } else if (county.t) {
+            html += '<div class="elec-county-parent">' + county.t + '</div>';
         }
-        overlay.innerHTML = html;
-        overlay.classList.remove('hidden');
+        html += '<div class="elec-reporting"><span id="elec-pct-reporting">' + Math.floor(reportingPct) + '%</span> Reporting</div>';
+        html += Utils.buildElectionRankedListHTML(rVotes, reportingPct, 0, projStatus);
+        if (parentStateCode) {
+            html += '<button class="county-drill-btn" onclick="Election.showStateDetailFromCountyView(\'' + parentStateCode + '\')">← BACK TO STATE RESULTS</button>';
+        }
+
+        container.innerHTML = html;
+    },
+
+    // Show the full state results in the sidebar while remaining in
+    // the county map view (triggered when the user clicks the map
+    // background outside any county path).
+    showStateDetailFromCountyView: function(stateCode) {
+        if (!stateCode) stateCode = gameData.electionCountyViewState;
+        if (!stateCode) return;
+        gameData.electionSelectedCounty = null;
+        this.highlightSelectedCounty(null);
+        this.selectState(stateCode);
     },
 
     closeCountyDetail: function() {
+        gameData.electionSelectedCounty = null;
+        this.highlightSelectedCounty(null);
         var overlay = document.getElementById('county-detail-overlay');
         if (overlay) overlay.classList.add('hidden');
-    },
+    }
 };
