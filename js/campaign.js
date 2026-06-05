@@ -19,6 +19,8 @@ var Campaign = {
     populationLogOffset: 1,
     mapPolarityGamma: 0.65,
     mapPolarityContrast: 1.25,
+    TURNOUT_RATE_MIN: 0.45,
+    TURNOUT_RATE_MAX: 0.8,
     getStateActionGridHTML: function() {
         return '' +
             '<button class="act-btn" onclick="app.handleAction(\'fundraise\')"><span><i class="fa-solid fa-sack-dollar"></i></span><span>FUNDRAISE</span></button>' +
@@ -128,8 +130,9 @@ var Campaign = {
         } else if (mode === 'turnout' || mode === 'playerTurnout' || mode === 'opponentTurnout') {
             var avg = this.getStateTurnoutAverage(code, mode === 'turnout' ? 'all' : (mode === 'playerTurnout' ? 'player' : 'opponent'));
             var label = mode === 'turnout' ? 'Turnout' : (mode === 'playerTurnout' ? 'Player Turnout' : 'Opponent Turnout');
-            detailLine = '<span class="tooltip-leader">' + label + ': ' + (avg ? avg.toFixed(2) + 'x' : '—') + '</span>';
-            subLine = '<span class="tooltip-stats">Turnout multiplier</span>';
+            var rateLabel = avg ? (avg * 100).toFixed(1) + '%' : '—';
+            detailLine = '<span class="tooltip-leader">' + label + ': ' + rateLabel + '</span>';
+            subLine = '<span class="tooltip-stats">Expected turnout of registered voters</span>';
         } else if (mode === 'favorability') {
             var fav = Math.round(this.getFavorability() * 100);
             detailLine = '<span class="tooltip-leader">Favorability: ' + fav + '%</span>';
@@ -344,21 +347,27 @@ var Campaign = {
         var stateFips = STATES[code].fips;
         var total = 0;
         var weight = 0;
+        var playerParty = gameData.selectedParty || 'D';
+        var opponentParty = gameData.selectedParty === 'D' ? 'R' : 'D';
         for (var fips in Counties.countyData) {
             var padded = fips.padStart(5, '0');
             if (padded.substring(0, 2) !== stateFips) continue;
             var county = Counties.countyData[fips];
-            var pop = county.p || 0;
-            var turnout = county.turnout || {};
-            var val = 1;
-            if (type === 'player') val = turnout.player || 1;
-            else if (type === 'opponent') {
-                val = gameData.selectedParty === 'D' ? (turnout.repOpponent || 1) : (turnout.demOpponent || 1);
-            } else {
-                val = Math.max(turnout.player || 1, turnout.demOpponent || 1, turnout.repOpponent || 1, turnout.thirdParty || 0.7);
+            var registered = (typeof Election !== 'undefined' && typeof Election.getCountyRegisteredVoters === 'function')
+                ? Election.getCountyRegisteredVoters(county)
+                : (county.regVoters || county.p || 0);
+            var rate = 0;
+            if (type === 'player' && typeof Election !== 'undefined' && typeof Election.getCountyTurnoutRateForParty === 'function') {
+                rate = Election.getCountyTurnoutRateForParty(county, playerParty);
+            } else if (type === 'opponent' && typeof Election !== 'undefined' && typeof Election.getCountyTurnoutRateForParty === 'function') {
+                rate = Election.getCountyTurnoutRateForParty(county, opponentParty);
+            } else if (typeof Election !== 'undefined' && typeof Election.getCountyTurnoutRate === 'function') {
+                rate = Election.getCountyTurnoutRate(county);
+            } else if (typeof Counties !== 'undefined' && typeof Counties.getBaseTurnoutRate === 'function') {
+                rate = Counties.getBaseTurnoutRate(county);
             }
-            total += pop * val;
-            weight += pop;
+            total += registered * rate;
+            weight += registered;
         }
         if (weight <= 0) return 0;
         return total / weight;
@@ -366,8 +375,15 @@ var Campaign = {
 
     getStateTurnoutIndex: function(code, type) {
         var avg = this.getStateTurnoutAverage(code, type);
-        if (!avg) return 0;
-        return Math.max(0, Math.min(1, (avg - 0.7) / 0.6));
+        return this.getTurnoutRateIndex(avg);
+    },
+
+    getTurnoutRateIndex: function(rate) {
+        if (!rate || !isFinite(rate)) return 0;
+        var min = this.TURNOUT_RATE_MIN;
+        var max = this.TURNOUT_RATE_MAX;
+        if (max <= min) return 0;
+        return Math.max(0, Math.min(1, (rate - min) / (max - min)));
     },
 
     applyMapPolarity: function(value) {

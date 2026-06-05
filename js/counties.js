@@ -13,6 +13,7 @@ var Counties = {
     MAX_RALLY_ATTENDANCE: 65000,
     DEFAULT_MAJOR_PARTY_TURNOUT: 1.0,
     DEFAULT_THIRD_PARTY_TURNOUT: 0.7,
+    DEFAULT_BASE_TURNOUT_RATE: 0.56,
     MAX_TURNOUT_MULTIPLIER: 1.3,
     CALIBRATION_LA_FIPS: '06037',
     CALIBRATION_NY_FIPS: '36061',
@@ -62,6 +63,10 @@ var Counties = {
                     
                     // Initialize undecided percentage (15% of population)
                     c.undecided = (c.undecided !== undefined) ? c.undecided : 15.0;
+                    c.regVoters = (typeof c.regVoters === 'number' && isFinite(c.regVoters) && c.regVoters > 0) ? c.regVoters : (c.p || 0);
+                    c.turnoutBase = (typeof c.turnoutBase === 'number' && isFinite(c.turnoutBase))
+                        ? Math.max(0, Math.min(1, c.turnoutBase))
+                        : Counties.DEFAULT_BASE_TURNOUT_RATE;
 
                     // Cache state code to avoid repeated FIPS parsing in tooltips
                     var normalizedFips = Counties.normalizeFips(fips);
@@ -183,11 +188,38 @@ var Counties = {
         return null;
     },
 
+    getCountyRegisteredVoters: function(county) {
+        if (!county) return 0;
+        if (typeof county.regVoters === 'number' && isFinite(county.regVoters) && county.regVoters > 0) {
+            return county.regVoters;
+        }
+        return county.p || 0;
+    },
+
     getBaseTurnoutRate: function(county) {
         if (typeof Election !== 'undefined' && typeof Election.getCountyTurnoutRate === 'function') {
             return Election.getCountyTurnoutRate(county);
         }
-        return 0.56;
+        if (county && typeof county.turnoutBase === 'number' && isFinite(county.turnoutBase)) {
+            return Math.max(0, Math.min(1, county.turnoutBase));
+        }
+        return this.DEFAULT_BASE_TURNOUT_RATE;
+    },
+
+    getCountyTurnoutRateForMode: function(county, mode) {
+        if (typeof Election === 'undefined') return this.getBaseTurnoutRate(county);
+        if (mode === 'playerTurnout' && typeof Election.getCountyTurnoutRateForParty === 'function') {
+            var playerParty = gameData.selectedParty || 'D';
+            return Election.getCountyTurnoutRateForParty(county, playerParty);
+        }
+        if (mode === 'opponentTurnout' && typeof Election.getCountyTurnoutRateForParty === 'function') {
+            var opponentParty = gameData.selectedParty === 'D' ? 'R' : 'D';
+            return Election.getCountyTurnoutRateForParty(county, opponentParty);
+        }
+        if (typeof Election.getCountyTurnoutRate === 'function') {
+            return Election.getCountyTurnoutRate(county);
+        }
+        return 0;
     },
 
     getPartyTurnoutMultipliers: function(county) {
@@ -328,8 +360,18 @@ var Counties = {
         var decidedMultiplier = opts.decidedMultiplier !== undefined ? opts.decidedMultiplier : 1;
         var errorFactor = opts.errorFactor !== undefined ? opts.errorFactor : 1;
 
-        var baseTurnout = this.getBaseTurnoutRate(county);
-        var voterPool = (county && county.p ? county.p : 0) * baseTurnout * decidedMultiplier * reportingFactor * errorFactor;
+        var voterPool = 0;
+        if (typeof Election !== 'undefined' && typeof Election.getCountyVoterPool === 'function') {
+            voterPool = Election.getCountyVoterPool(county, reportingFactor, decidedMultiplier, errorFactor);
+        } else {
+            var baseTurnout = this.getBaseTurnoutRate(county);
+            var registered = this.getCountyRegisteredVoters(county);
+            voterPool = registered * baseTurnout * decidedMultiplier * reportingFactor * errorFactor;
+            var cap = registered * Math.max(0, Math.min(1, reportingFactor || 1));
+            if (cap > 0) {
+                voterPool = Math.min(voterPool, cap);
+            }
+        }
         if (voterPool <= 0) {
             return { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
         }
@@ -427,7 +469,7 @@ var Counties = {
             
             var decay = Math.max(0, 1 - (distanceMiles / this.RALLY_RADIUS_MILES));
             var provisionalBoost = baseBoost * decay;
-            var rawTurnout = (county.p || 0) * provisionalBoost;
+            var rawTurnout = this.getCountyRegisteredVoters(county) * provisionalBoost;
             if (rawTurnout <= 0) continue;
             
             candidates.push({
@@ -529,7 +571,7 @@ var Counties = {
 
             var decay = Math.max(0, 1 - (distanceMiles / this.RALLY_RADIUS_MILES));
             var provisionalBoost = baseBoost * decay;
-            var rawTurnout = (county.p || 0) * provisionalBoost;
+            var rawTurnout = this.getCountyRegisteredVoters(county) * provisionalBoost;
             if (rawTurnout <= 0) continue;
 
             candidates.push({
@@ -621,7 +663,7 @@ var Counties = {
 
             var decay = Math.max(0, 1 - (distanceMiles / radiusMiles));
             var provisionalBoost = baseBoost * decay;
-            var rawTurnout = (county.p || 0) * provisionalBoost;
+            var rawTurnout = this.getCountyRegisteredVoters(county) * provisionalBoost;
             if (rawTurnout <= 0) continue;
             candidates.push({ stateFips: stateFips, county: county, provisionalBoost: provisionalBoost, rawTurnout: rawTurnout });
             totalRawTurnout += rawTurnout;
@@ -1141,12 +1183,11 @@ var Counties = {
             return Campaign.getGoldScaleColor(Campaign.getCountyPopulationIndex(county.p || 0));
         }
         if (mode === 'turnout' || mode === 'playerTurnout' || mode === 'opponentTurnout') {
-            var turnout = county.turnout || {};
-            var val = 1;
-            if (mode === 'playerTurnout') val = turnout.player || 1;
-            else if (mode === 'opponentTurnout') val = gameData.selectedParty === 'D' ? (turnout.repOpponent || 1) : (turnout.demOpponent || 1);
-            else val = Math.max(turnout.player || 1, turnout.demOpponent || 1, turnout.repOpponent || 1, turnout.thirdParty || 0.7);
-            return Campaign.getGoldScaleColor(Math.max(0, Math.min(1, (val - 0.7) / 0.6)));
+            var rate = this.getCountyTurnoutRateForMode(county, mode);
+            if (typeof Campaign !== 'undefined' && typeof Campaign.getTurnoutRateIndex === 'function') {
+                return Campaign.getGoldScaleColor(Campaign.getTurnoutRateIndex(rate));
+            }
+            return Campaign.getGoldScaleColor(Math.max(0, Math.min(1, (rate - 0.45) / 0.35)));
         }
         if (mode === 'favorability') return Campaign.getFavorabilityColor(Campaign.getFavorability());
         return '#2b2926';
@@ -1182,21 +1223,10 @@ var Counties = {
         // Show turnout info
         var issuesList = document.getElementById('sp-issues-list');
         if (issuesList) {
-            var turnoutBoost = 0;
-            if (county.turnout) {
-                if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
-                    turnoutBoost = (county.turnout.player || 1.0) - 1.0;
-                } else {
-                    turnoutBoost = (county.turnout.thirdParty || 0.7) - 0.7;
-                }
-            }
-            
-            var turnoutText = 'Normal';
-            if (turnoutBoost > 0.15) turnoutText = 'Strong';
-            else if (turnoutBoost > 0.08) turnoutText = 'Good';
-            else if (turnoutBoost > 0.03) turnoutText = 'Moderate';
-            
-            issuesList.innerHTML = '<div style="background: #2a2a2a; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (turnoutBoost > 0.1 ? '#198754' : '#ccc') + '">' + turnoutText + '</span></div>';
+            var turnoutRate = this.getCountyTurnoutRateForMode(county, 'turnout');
+            var turnoutLabel = turnoutRate ? (turnoutRate * 100).toFixed(1) + '% of registered' : '—';
+            var turnoutColor = turnoutRate >= 0.7 ? '#198754' : '#ccc';
+            issuesList.innerHTML = '<div style="background: #2a2a2a; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + turnoutColor + '">' + turnoutLabel + '</span></div>';
             issuesList.innerHTML += '<div style="background: #2a2a2a; padding: 8px; border-radius: 4px;"><strong>Type:</strong> ' + (county.t || 'Unknown') + '</div>';
         }
         
@@ -1373,14 +1403,11 @@ var Counties = {
             detailLine = '<span class="tooltip-leader">' + (county.p || 0).toLocaleString() + ' Population</span>';
             subLine = '<span class="tooltip-stats">County population</span>';
         } else if (mode === 'turnout' || mode === 'playerTurnout' || mode === 'opponentTurnout') {
-            var turnout = county.turnout || {};
-            var val = 1;
-            if (mode === 'playerTurnout') val = turnout.player || 1;
-            else if (mode === 'opponentTurnout') val = gameData.selectedParty === 'D' ? (turnout.repOpponent || 1) : (turnout.demOpponent || 1);
-            else val = Math.max(turnout.player || 1, turnout.demOpponent || 1, turnout.repOpponent || 1, turnout.thirdParty || 0.7);
             var label = mode === 'turnout' ? 'Turnout' : (mode === 'playerTurnout' ? 'Player Turnout' : 'Opponent Turnout');
-            detailLine = '<span class="tooltip-leader">' + label + ': ' + val.toFixed(2) + 'x</span>';
-            subLine = '<span class="tooltip-stats">Turnout multiplier</span>';
+            var rate = this.getCountyTurnoutRateForMode(county, mode);
+            var rateLabel = rate ? (rate * 100).toFixed(1) + '%' : '—';
+            detailLine = '<span class="tooltip-leader">' + label + ': ' + rateLabel + '</span>';
+            subLine = '<span class="tooltip-stats">Expected turnout of registered voters</span>';
         } else if (mode === 'favorability') {
             var fav = typeof Campaign !== 'undefined' ? Math.round(Campaign.getFavorability() * 100) : 0;
             detailLine = '<span class="tooltip-leader">Favorability: ' + fav + '%</span>';

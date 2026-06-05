@@ -2793,19 +2793,22 @@ body {
     background: rgba(0, 0, 0, 0.95);
     z-index: 10000;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow-y: auto;
-    padding: 20px;
+    justify-content: stretch;
+    align-items: stretch;
+    overflow: hidden;
+    padding: 0;
 }
 
 .final-results-content {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     border: 3px solid var(--forward-gold);
-    border-radius: 20px;
-    padding: 40px;
-    max-width: 900px;
+    border-radius: 0;
+    padding: 40px 60px;
+    max-width: none;
     width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    box-sizing: border-box;
     text-align: center;
     box-shadow: 0 10px 40px rgba(242, 199, 92, 0.3);
 }
