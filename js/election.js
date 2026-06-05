@@ -334,53 +334,147 @@ var Election = {
         this.updateThirdPartyTracker();
     },
 
-    getCountyTurnoutRate: function(county) {
-        var countyType = county && county.t ? county.t : 'Suburban/Mixed';
-        var baseTurnout = 0.56;
-        var maxCap = 0.65;
+    getCountyRegisteredVoters: function(county) {
+        var reg = county && county.regVoters;
+        if (typeof reg === 'number' && isFinite(reg) && reg > 0) {
+            return reg;
+        }
+        var pop = county && county.p ? county.p : 0;
+        return Math.max(0, pop);
+    },
 
+    getDefaultCountyTurnoutRate: function(county) {
+        var countyType = county && county.t ? county.t : 'Suburban/Mixed';
         switch (countyType) {
             case 'Highly Urban':
-                baseTurnout = 0.52;
-                maxCap = 0.58;
-                break;
+                return 0.52;
             case 'Urban/Dense Suburban':
-                baseTurnout = 0.58;
-                maxCap = 0.68;
-                break;
+                return 0.58;
             case 'Suburban/Mixed':
-                baseTurnout = 0.56;
-                maxCap = 0.65;
-                break;
+                return 0.56;
             case 'Rural/Small Town':
-                baseTurnout = 0.54;
-                maxCap = 0.64;
-                break;
+                return 0.54;
             case 'Deep Rural':
-                baseTurnout = 0.58;
-                maxCap = 0.61;
-                break;
+                return 0.58;
+        }
+        return DEFAULT_EXPECTED_TURNOUT_RATE;
+    },
+
+    getCountyBaseTurnoutRate: function(county) {
+        var base = county && county.turnoutBase;
+        if (typeof base === 'number' && isFinite(base)) {
+            return Math.max(0, Math.min(1, base));
+        }
+        return this.getDefaultCountyTurnoutRate(county);
+    },
+
+    getPartyTurnoutBaselineMultipliers: function() {
+        var third = (typeof Counties !== 'undefined' && typeof Counties.DEFAULT_THIRD_PARTY_TURNOUT === 'number')
+            ? Counties.DEFAULT_THIRD_PARTY_TURNOUT : 0.7;
+        return { D: 1, R: 1, G: third, L: third, PSL: third, I: third };
+    },
+
+    getCountyPartyTurnoutMultiplier: function(county) {
+        if (typeof Counties === 'undefined' || typeof Counties.getPartyTurnoutMultipliers !== 'function') {
+            if (county && county.turnout) {
+                var playerTurnout = (typeof county.turnout.player === 'number' && isFinite(county.turnout.player)) ? county.turnout.player : 1.0;
+                var demOpponentTurnout = (typeof county.turnout.demOpponent === 'number' && isFinite(county.turnout.demOpponent)) ? county.turnout.demOpponent : 1.0;
+                var repOpponentTurnout = (typeof county.turnout.repOpponent === 'number' && isFinite(county.turnout.repOpponent)) ? county.turnout.repOpponent : 1.0;
+                var thirdPartyTurnout = (typeof county.turnout.thirdParty === 'number' && isFinite(county.turnout.thirdParty)) ? county.turnout.thirdParty : 1.0;
+                return Math.max(0.5, Math.min(1.5, Math.max(playerTurnout, demOpponentTurnout, repOpponentTurnout, thirdPartyTurnout)));
+            }
+            return 1.0;
         }
 
-        var maxTurnoutMultiplier = 1.0;
-        if (county && county.turnout) {
-            var playerTurnout = (typeof county.turnout.player === 'number' && isFinite(county.turnout.player)) ? county.turnout.player : 1.0;
-            var demOpponentTurnout = (typeof county.turnout.demOpponent === 'number' && isFinite(county.turnout.demOpponent)) ? county.turnout.demOpponent : 1.0;
-            var repOpponentTurnout = (typeof county.turnout.repOpponent === 'number' && isFinite(county.turnout.repOpponent)) ? county.turnout.repOpponent : 1.0;
-            var thirdPartyTurnout = (typeof county.turnout.thirdParty === 'number' && isFinite(county.turnout.thirdParty)) ? county.turnout.thirdParty : 1.0;
-            maxTurnoutMultiplier = Math.max(1.0, playerTurnout, demOpponentTurnout, repOpponentTurnout, thirdPartyTurnout);
+        var multipliers = Counties.getPartyTurnoutMultipliers(county);
+        var baseline = this.getPartyTurnoutBaselineMultipliers();
+        var support = { D: 50, R: 50, G: 0, L: 0, PSL: 0, I: 0 };
+        if (county && county.v) {
+            support = {
+                D: county.v.D || 0,
+                R: county.v.R || 0,
+                G: county.v.G || 0,
+                L: county.v.L || 0,
+                PSL: county.v.PSL || 0,
+                I: county.v.I || 0
+            };
+        }
+        if (typeof Counties.normalizeVoteShareMap === 'function') {
+            support = Counties.normalizeVoteShareMap(support);
         }
 
-        var elasticityWindow = Math.max(0, maxCap - baseTurnout);
-        var turnoutRate = baseTurnout + Math.max(0, maxTurnoutMultiplier - 1) * elasticityWindow;
-        return Math.max(baseTurnout, Math.min(maxCap, turnoutRate));
+        var weightedCurrent = 0;
+        var weightedBaseline = 0;
+        for (var party in support) {
+            var share = support[party] || 0;
+            weightedCurrent += share * (multipliers[party] || 1);
+            weightedBaseline += share * (baseline[party] || 1);
+        }
+        var ratio = weightedBaseline > 0 ? (weightedCurrent / weightedBaseline) : 1;
+        return Math.max(0.5, Math.min(1.5, ratio));
+    },
+
+    getCountyInterestGroupTurnoutMultiplier: function(county) {
+        if (typeof Counties === 'undefined' || typeof Counties.getCountyDemographicWeights !== 'function') {
+            return 1;
+        }
+        var groupWeights = Counties.getCountyDemographicWeights(county);
+        if (!groupWeights || !groupWeights.length) return 1;
+        var totalShare = 0;
+        var weightedRatio = 0;
+        for (var i = 0; i < groupWeights.length; i++) {
+            var group = groupWeights[i];
+            var groupId = group.id;
+            var share = group.share || 0;
+            if (share <= 0) continue;
+            var baseline = (typeof BASE_TURNOUT_RATES !== 'undefined' && BASE_TURNOUT_RATES[groupId] !== undefined)
+                ? BASE_TURNOUT_RATES[groupId]
+                : DEFAULT_INTEREST_GROUP_TURNOUT_RATE;
+            var current = (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined)
+                ? gameData.interestGroupTurnout[groupId]
+                : baseline;
+            if (!baseline || !isFinite(baseline)) continue;
+            var ratio = current / baseline;
+            totalShare += share;
+            weightedRatio += share * ratio;
+        }
+        if (totalShare <= 0) return 1;
+        var avgRatio = weightedRatio / totalShare;
+        return Math.max(0.5, Math.min(1.5, avgRatio));
+    },
+
+    getCountyTurnoutRate: function(county) {
+        var baseTurnout = this.getCountyBaseTurnoutRate(county);
+        var partyMultiplier = this.getCountyPartyTurnoutMultiplier(county);
+        var groupMultiplier = this.getCountyInterestGroupTurnoutMultiplier(county);
+        var turnoutRate = baseTurnout * partyMultiplier * groupMultiplier;
+        return Math.max(0, Math.min(1, turnoutRate));
+    },
+
+    getCountyTurnoutRateForParty: function(county, partyKey) {
+        var baseTurnout = this.getCountyBaseTurnoutRate(county);
+        var groupMultiplier = this.getCountyInterestGroupTurnoutMultiplier(county);
+        if (typeof Counties === 'undefined' || typeof Counties.getPartyTurnoutMultipliers !== 'function') {
+            return Math.max(0, Math.min(1, baseTurnout * groupMultiplier));
+        }
+        var multipliers = Counties.getPartyTurnoutMultipliers(county);
+        var baseline = this.getPartyTurnoutBaselineMultipliers();
+        var target = (multipliers && multipliers[partyKey] !== undefined) ? multipliers[partyKey] : 1;
+        var base = (baseline && baseline[partyKey] !== undefined) ? baseline[partyKey] : 1;
+        var ratio = base ? (target / base) : target;
+        var turnoutRate = baseTurnout * ratio * groupMultiplier;
+        return Math.max(0, Math.min(1, turnoutRate));
     },
 
     getCountyVoterPool: function(county, reportingFactor, decidedMultiplier, errorFactor) {
-        var countyPopulation = Math.max(0, county && county.p ? county.p : 0);
+        var registered = this.getCountyRegisteredVoters(county);
         var turnoutRate = this.getCountyTurnoutRate(county);
-        var baseVoters = countyPopulation * turnoutRate;
+        var baseVoters = registered * turnoutRate;
         var effectivePool = baseVoters * (decidedMultiplier || 1) * (reportingFactor || 1) * (errorFactor || 1);
+        var cap = registered * Math.max(0, Math.min(1, reportingFactor || 1));
+        if (cap > 0) {
+            effectivePool = Math.min(effectivePool, cap);
+        }
         return Math.max(0, effectivePool);
     },
 
@@ -696,8 +790,9 @@ var Election = {
             var totals = Counties.getCountyVotesForAllocation(county, false);
             return (totals.D || 0) + (totals.R || 0) + (totals.G || 0) + (totals.L || 0) + (totals.PSL || 0) + (totals.I || 0);
         }
-        var pop = county && county.p ? county.p : 0;
-        return Math.max(0, pop * DEFAULT_EXPECTED_TURNOUT_RATE);
+        var reg = this.getCountyRegisteredVoters(county);
+        var turnoutRate = this.getCountyTurnoutRate(county);
+        return Math.max(0, reg * turnoutRate);
     },
 
     pulseState: function(stateCode) {
