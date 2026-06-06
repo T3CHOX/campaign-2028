@@ -481,6 +481,7 @@ const CANDIDATES = [
         debuff: "Narrow Coalition",
         groupBoosts: { libertarian: 9, rural_whites: 6, antiestablishment: 6 },
         groupDebuffs: { institutional_dems: -8, progressive_left: -4 },
+        // Target behavior request: Massie siphons ~10% of GOP share and ~3% of Democratic share.
         siphonFromMajorParties: { R: 0.10, D: 0.03 },
         regionalSpillover: [ "OH", "IN", "TN" ],
         regionalSpilloverBoost: 1.0,

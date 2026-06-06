@@ -16,6 +16,7 @@ var Counties = {
     DEFAULT_BASE_TURNOUT_RATE: 0.56,
     MAX_TURNOUT_MULTIPLIER: 1.3,
     COUNTY_BASELINE_SOURCE_FILES: [
+        // Try common upload naming variants for the county baseline CSV.
         'counties/2012-2024results.csv',
         'counties/2012_2024results.csv',
         'counties/2012-2024_results.csv',

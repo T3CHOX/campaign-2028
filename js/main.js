@@ -170,6 +170,7 @@ function applyCandidateBuffs() {
 
         // 3. Presidential group boosts/debuffs (from candidate data)
         if (pres && pres.siphonFromMajorParties) {
+            // Apply siphon first so downstream boosts/debuffs can still move the post-siphon coalition.
             _applyMajorPartySiphonToCounties(voteKey, pres.siphonFromMajorParties);
         }
         if (pres && pres.groupBoosts) {
@@ -256,6 +257,7 @@ function _applyCountyBoost(fips5, voteKey, boostPoints) {
 
 function _applyMajorPartySiphonToCounties(voteKey, siphonFromMajorParties) {
     if (!siphonFromMajorParties) return;
+    var maxVoteShare = 98; // Keep minor-party floor and avoid total lockout of other vote buckets.
     var siphonFromD = Math.max(0, Number(siphonFromMajorParties.D) || 0);
     var siphonFromR = Math.max(0, Number(siphonFromMajorParties.R) || 0);
     if (siphonFromD > 1) siphonFromD = siphonFromD / 100;
@@ -270,7 +272,7 @@ function _applyMajorPartySiphonToCounties(voteKey, siphonFromMajorParties) {
 
         county.v.D = Math.max(0, (county.v.D || 0) - fromD);
         county.v.R = Math.max(0, (county.v.R || 0) - fromR);
-        county.v[voteKey] = Math.min(98, (county.v[voteKey] || 0) + fromD + fromR);
+        county.v[voteKey] = Math.min(maxVoteShare, (county.v[voteKey] || 0) + fromD + fromR);
     }
 }
 
