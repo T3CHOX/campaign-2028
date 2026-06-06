@@ -15,20 +15,6 @@ var RESULTS_2024 = {
     WY:'R', DC:'D'
 };
 
-var TURNOUT_MODEL = {
-    DEFAULT_COLLEGE_SHARE: 0.35,
-    DEFAULT_RURAL_SHARE: 0.3,
-    DEFAULT_URBAN_INDEX: 0.58,
-    RURAL_COUNTY_SHARE: 0.7,
-    RURAL_URBAN_INDEX: 0.22,
-    BASELINE: 0.53,
-    COLLEGE_MULTIPLIER: 0.08,
-    URBAN_MULTIPLIER: 0.03,
-    RURAL_PENALTY: 0.02,
-    MIN_TURNOUT: 0.50,
-    MAX_TURNOUT: 0.65
-};
-
 var DEFAULT_EXPECTED_TURNOUT_RATE = 0.56;
 // Coalition turnout is stored as a 0-1 rate; multiply by this for display.
 var COALITION_BASE_TURNOUT_PCT = 100;
@@ -341,23 +327,6 @@ var Election = {
         }
         var pop = county && county.p ? county.p : 0;
         return Math.max(0, pop);
-    },
-
-    getDefaultCountyTurnoutRate: function(county) {
-        var countyType = county && county.t ? county.t : 'Suburban/Mixed';
-        switch (countyType) {
-            case 'Highly Urban':
-                return 0.52;
-            case 'Urban/Dense Suburban':
-                return 0.58;
-            case 'Suburban/Mixed':
-                return 0.56;
-            case 'Rural/Small Town':
-                return 0.54;
-            case 'Deep Rural':
-                return 0.58;
-        }
-        return DEFAULT_EXPECTED_TURNOUT_RATE;
     },
 
     getCountyBaseTurnoutRate: function(county) {
