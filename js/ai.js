@@ -58,6 +58,7 @@ var AI_CANDIDATE_PERSONALITIES = {
     paul: 'expansion',
     stein: 'expansion',
     oliver: 'expansion',
+    massie: 'expansion',
     kennedy_rfk: 'expansion'
 };
 

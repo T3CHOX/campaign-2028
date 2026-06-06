@@ -468,21 +468,23 @@ const CANDIDATES = [
         regionalSpilloverBoost: 0.6,
     },
     {
-        id: "manchin",
-        name: "Joe Manchin",
+        id: "massie",
+        name: "Thomas Massie",
         party: "I",
-        homeState: "WV",
-        homeStateBoost: 3,
-        funds: 52,
+        homeState: "KY",
+        homeStateBoost: 2.8,
+        funds: 44,
         img: "images/scenario.jpg",
-        stamina: 5,
-        desc: "Manchin is the old-school Appalachian dealmaker, strongest in places where Democrats have already been written off and Republicans still need to prove they can speak to cultural moderates. He can sell himself as the last independent-minded adult in the room, but the national electorate has moved far enough that his brand is more plausible as a spoiler than a winner. He is useful if the map gets weird; otherwise, he is a nostalgia candidate for an era of split-ticket politics that has mostly vanished.",
-        buff: "Appalachian Rogue",
-        debuff: "Era Mismatch",
-        groupBoosts: { rural_whites: 8, union: 6, moderates: 7 },
-        groupDebuffs: { progressive_left: -6, youth: -5 },
-        regionalSpillover: [ "OH", "PA" ],
-        regionalSpilloverBoost: 1.1,
+        stamina: 6,
+        desc: "Massie runs as a constitutional-libertarian spoiler with high credibility among anti-establishment conservatives and civil-libertarian voters. His lane is narrow but potent in close states: he can pull meaningful vote share from Republicans while also peeling a smaller bloc from anti-system Democrats. He is less a coalition builder than a disruptor who alters turnout and margins where ideological voters are already skeptical of both major-party tickets.",
+        buff: "Constitutionalist Spoiler",
+        debuff: "Narrow Coalition",
+        groupBoosts: { libertarian: 9, rural_whites: 6, antiestablishment: 6 },
+        groupDebuffs: { institutional_dems: -8, progressive_left: -4 },
+        // Target behavior request: Massie siphons ~10% of GOP share and ~3% of Democratic share.
+        siphonFromMajorParties: { R: 0.10, D: 0.03 },
+        regionalSpillover: [ "OH", "IN", "TN" ],
+        regionalSpilloverBoost: 1.0,
     },
     {
         id: "kennedy_rfk",
@@ -878,11 +880,11 @@ const CANDIDATE_POSITIONS = {
         criminal: -2, drugpricing: -4, energy: -3, foreign: -1, military: -1,
         israel: 0, govspend: -1, electionreform: -5, scotus: -2, economy: -2
     },
-    manchin: {
-        guns: 3, abortion: 1, healthcare: -2, immigration: 2, climate: -1,
-        taxation: 2, trade: 1, minwage: 1, labor: 1, lgbtq: -1,
-        criminal: 2, drugpricing: -2, energy: 3, foreign: 1, military: 2,
-        israel: 2, govspend: 1, electionreform: 1, scotus: 0, economy: 1
+    massie: {
+        guns: 8, abortion: 3, healthcare: 6, immigration: 5, climate: 5,
+        taxation: 8, trade: 4, minwage: 4, labor: 5, lgbtq: 1,
+        criminal: 5, drugpricing: 3, energy: 6, foreign: -1, military: 1,
+        israel: 0, govspend: 8, electionreform: -2, scotus: 4, economy: 5
     },
     kennedy_rfk: {
         guns: -1, abortion: -2, healthcare: -5, immigration: 1, climate: -5,

@@ -96,6 +96,7 @@ function startGame() {
 // Tuning constants for the dynamic buff/group system
 var BUFF_CONSTANTS = {
     GROUP_MOD_DAMPENING: 0.1,       // Scale factor: +15 mod with 100% group weight → +1.5 pts vote share
+    GROUP_TURNOUT_DAMPENING: 0.004, // Scale factor: +5 mod with 100% group weight → +0.02 turnout multiplier
     MIN_GROUP_TURNOUT: 0.5,          // Minimum group turnout propensity (50%)
     MAX_GROUP_TURNOUT: 1.5,          // Maximum group turnout propensity (150%)
     GROUP_TURNOUT_RATE: 0.008,       // Per-intensity turnout change rate per aligned campaign action
@@ -168,6 +169,10 @@ function applyCandidateBuffs() {
         }
 
         // 3. Presidential group boosts/debuffs (from candidate data)
+        if (pres && pres.siphonFromMajorParties) {
+            // Apply siphon first so downstream boosts/debuffs can still move the post-siphon coalition.
+            _applyMajorPartySiphonToCounties(voteKey, pres.siphonFromMajorParties);
+        }
         if (pres && pres.groupBoosts) {
             _applyGroupModsToCounties(pres.groupBoosts, voteKey, 1.0);
         }
@@ -247,6 +252,27 @@ function _applyCountyBoost(fips5, voteKey, boostPoints) {
     }
     if (voteKey !== 'R' && county.v.R !== undefined) {
         county.v.R = Math.max(1, county.v.R - boostPoints * 0.5);
+    }
+}
+
+function _applyMajorPartySiphonToCounties(voteKey, siphonFromMajorParties) {
+    if (!siphonFromMajorParties) return;
+    var maxVoteShare = 98; // Keep minor-party floor and avoid total lockout of other vote buckets.
+    var siphonFromD = Math.max(0, Number(siphonFromMajorParties.D) || 0);
+    var siphonFromR = Math.max(0, Number(siphonFromMajorParties.R) || 0);
+    if (siphonFromD > 1) siphonFromD = siphonFromD / 100;
+    if (siphonFromR > 1) siphonFromR = siphonFromR / 100;
+
+    for (var fips in Counties.countyData) {
+        var county = Counties.countyData[fips];
+        if (!county || !county.v) continue;
+        var fromD = (county.v.D || 0) * siphonFromD;
+        var fromR = (county.v.R || 0) * siphonFromR;
+        if (fromD <= 0 && fromR <= 0) continue;
+
+        county.v.D = Math.max(0, (county.v.D || 0) - fromD);
+        county.v.R = Math.max(0, (county.v.R || 0) - fromR);
+        county.v[voteKey] = Math.min(maxVoteShare, (county.v[voteKey] || 0) + fromD + fromR);
     }
 }
 
@@ -631,6 +657,8 @@ function _applyGroupModsToCounties(groupMods, voteKey, scale) {
             // shift = modifier_points * county_group_weight * dampening
             // GROUP_MOD_DAMPENING of 0.1 means a +15 mod with 100% group weight → +1.5 pts vote share
             var shift = effectiveModVal * groupWeight * BUFF_CONSTANTS.GROUP_MOD_DAMPENING;
+            var turnoutShift = effectiveModVal * groupWeight * BUFF_CONSTANTS.GROUP_TURNOUT_DAMPENING;
+            _applyCountyTurnoutModifier(county, voteKey, turnoutShift);
 
             if (shift > 0) {
                 // Boost this candidate
@@ -656,6 +684,32 @@ function _applyGroupModsToCounties(groupMods, voteKey, scale) {
             }
         }
     }
+}
+
+function _getCountyTurnoutKeyForVoteKey(voteKey) {
+    if (voteKey === gameData.selectedParty) return 'player';
+    if (voteKey === 'D') return 'demOpponent';
+    if (voteKey === 'R') return 'repOpponent';
+    return 'thirdParty';
+}
+
+function _applyCountyTurnoutModifier(county, voteKey, shift) {
+    if (!county || !isFinite(shift) || shift === 0) return;
+    if (!county.turnout) {
+        county.turnout = {
+            player: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
+            demOpponent: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
+            repOpponent: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
+            thirdParty: Counties.DEFAULT_THIRD_PARTY_TURNOUT
+        };
+    }
+    var turnoutKey = _getCountyTurnoutKeyForVoteKey(voteKey);
+    var defaultValue = turnoutKey === 'thirdParty'
+        ? Counties.DEFAULT_THIRD_PARTY_TURNOUT
+        : Counties.DEFAULT_MAJOR_PARTY_TURNOUT;
+    var current = county.turnout[turnoutKey];
+    if (typeof current !== 'number' || !isFinite(current)) current = defaultValue;
+    county.turnout[turnoutKey] = Math.max(0.5, Math.min(1.5, current + shift));
 }
 
 // Normalize all county vote shares so totals remain coherent (no negatives, no >100 incoherence)

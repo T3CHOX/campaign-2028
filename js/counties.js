@@ -15,6 +15,13 @@ var Counties = {
     DEFAULT_THIRD_PARTY_TURNOUT: 0.7,
     DEFAULT_BASE_TURNOUT_RATE: 0.56,
     MAX_TURNOUT_MULTIPLIER: 1.3,
+    COUNTY_BASELINE_SOURCE_FILES: [
+        // Try common upload naming variants for the county baseline CSV.
+        'counties/2012-2024results.csv',
+        'counties/2012_2024results.csv',
+        'counties/2012-2024_results.csv',
+        'counties/countypres_2012-2024.csv'
+    ],
     CALIBRATION_LA_FIPS: '06037',
     CALIBRATION_NY_FIPS: '36061',
     CALIBRATION_DISTANCE_MILES: 2445,
@@ -35,6 +42,185 @@ var Counties = {
         // Convert to string and pad to 5 digits with leading zeros
         return String(fips).padStart(5, '0');
     },
+
+    parseCsvLine: function(line) {
+        var parts = [];
+        var current = '';
+        var inQuotes = false;
+        for (var i = 0; i < line.length; i++) {
+            var ch = line.charAt(i);
+            if (ch === '"') {
+                if (inQuotes && line.charAt(i + 1) === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (ch === ',' && !inQuotes) {
+                parts.push(current);
+                current = '';
+            } else {
+                current += ch;
+            }
+        }
+        parts.push(current);
+        return parts;
+    },
+
+    applyCountyVoteBaselineFromRecentCycles: function(csvText, sourceName) {
+        if (!csvText) return 0;
+        var lines = csvText.split(/\r?\n/);
+        if (!lines.length) return 0;
+
+        var headerIndex = -1;
+        for (var hi = 0; hi < lines.length; hi++) {
+            var probe = (lines[hi] || '').toLowerCase();
+            if (probe.indexOf('county_fips') !== -1 && probe.indexOf('party') !== -1) {
+                headerIndex = hi;
+                break;
+            }
+        }
+        if (headerIndex < 0) return 0;
+
+        var headerParts = this.parseCsvLine(lines[headerIndex]);
+        var colMap = {};
+        for (var h = 0; h < headerParts.length; h++) {
+            colMap[(headerParts[h] || '').trim().toLowerCase()] = h;
+        }
+
+        var yearCol = colMap.year;
+        var fipsCol = colMap.county_fips;
+        var partyCol = colMap.party;
+        var votesCol = colMap.candidatevotes;
+        var totalCol = colMap.totalvotes;
+        if (yearCol === undefined || fipsCol === undefined || partyCol === undefined || votesCol === undefined || totalCol === undefined) {
+            return 0;
+        }
+
+        var wantedYears = { 2020: true, 2024: true };
+        var byCountyYear = {};
+        for (var i = headerIndex + 1; i < lines.length; i++) {
+            var line = (lines[i] || '').trim();
+            if (!line) continue;
+            var parts = this.parseCsvLine(line);
+            var year = parseInt(parts[yearCol], 10);
+            if (!wantedYears[year]) continue;
+
+            var fips = this.normalizeFips(parts[fipsCol]);
+            if (!fips) continue;
+            var party = ((parts[partyCol] || '').trim().toUpperCase());
+            var votes = parseFloat(parts[votesCol]);
+            var totalVotes = parseFloat(parts[totalCol]);
+            if (!isFinite(votes) || votes < 0) continue;
+
+            if (!byCountyYear[fips]) byCountyYear[fips] = {};
+            if (!byCountyYear[fips][year]) {
+                byCountyYear[fips][year] = { D: 0, R: 0, L: 0, O: 0, total: 0 };
+            }
+            var rec = byCountyYear[fips][year];
+            if (party === 'DEMOCRAT') rec.D += votes;
+            else if (party === 'REPUBLICAN') rec.R += votes;
+            else if (party === 'LIBERTARIAN') rec.L += votes;
+            else rec.O += votes;
+
+            if (isFinite(totalVotes) && totalVotes > 0) {
+                rec.total = Math.max(rec.total, totalVotes);
+            }
+        }
+
+        var applied = 0;
+        for (var countyFips in this.countyData) {
+            if (!this.countyData.hasOwnProperty(countyFips)) continue;
+            var normalized = this.normalizeFips(countyFips);
+            var county = this.countyData[countyFips];
+            var cycleData = byCountyYear[normalized];
+            if (!county || !cycleData) continue;
+
+            var yearsUsed = 0;
+            var sum = { D: 0, R: 0, L: 0, O: 0, total: 0 };
+            var cycles = [2020, 2024];
+            for (var y = 0; y < cycles.length; y++) {
+                var cycle = cycleData[cycles[y]];
+                if (!cycle) continue;
+                yearsUsed++;
+                sum.D += cycle.D;
+                sum.R += cycle.R;
+                sum.L += cycle.L;
+                sum.O += cycle.O;
+                var cycleTotal = Math.max(cycle.total || 0, cycle.D + cycle.R + cycle.L + cycle.O);
+                sum.total += cycleTotal;
+            }
+            if (yearsUsed <= 0) continue;
+
+            var avg = {
+                D: sum.D / yearsUsed,
+                R: sum.R / yearsUsed,
+                L: sum.L / yearsUsed,
+                O: sum.O / yearsUsed,
+                total: sum.total / yearsUsed
+            };
+            var shareTotal = avg.D + avg.R + avg.L + avg.O;
+            if (!isFinite(shareTotal) || shareTotal <= 0) continue;
+
+            county.v.D = (avg.D / shareTotal) * 100;
+            county.v.R = (avg.R / shareTotal) * 100;
+            county.v.L = (avg.L / shareTotal) * 100;
+            county.v.O = (avg.O / shareTotal) * 100;
+            county.v.G = 0;
+            county.v.F = 0;
+            county.regVoters = Math.max(1, Math.round(avg.total));
+            county.turnoutBase = 1.0;
+            county.baselineVoteTotals = {
+                D: avg.D,
+                R: avg.R,
+                L: avg.L,
+                O: avg.O,
+                total: avg.total,
+                yearsUsed: yearsUsed,
+                source: sourceName || ''
+            };
+            applied++;
+        }
+
+        return applied;
+    },
+
+    loadCountyVoteBaselineData: function(callback) {
+        var self = this;
+        var files = this.COUNTY_BASELINE_SOURCE_FILES.slice();
+        var idx = 0;
+
+        function finish(meta) {
+            if (callback) callback(meta || null);
+        }
+
+        function tryNext() {
+            if (idx >= files.length) {
+                finish(null);
+                return;
+            }
+            var file = files[idx++];
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', file, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState !== 4) return;
+                if (xhr.status === 200) {
+                    var applied = self.applyCountyVoteBaselineFromRecentCycles(xhr.responseText, file);
+                    if (applied > 0) {
+                        console.log('✓ County baseline loaded from ' + file + ' (' + applied + ' counties updated)');
+                        finish({ file: file, applied: applied });
+                    } else {
+                        tryNext();
+                    }
+                } else {
+                    tryNext();
+                }
+            };
+            xhr.send();
+        }
+
+        tryNext();
+    },
     
     // Load county data from JSON
     loadCountyData: function(callback) {
@@ -43,63 +229,65 @@ var Counties = {
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 Counties.countyData = JSON.parse(xhr.responseText);
-                
-                // Initialize each county with undecided voters and proper baseline
-                for (var fips in Counties.countyData) {
-                    var c = Counties.countyData[fips];
-                    
-                    // Store original values for reference
-                    // Map county JSON's 'O' key to 'I' (Independent), 'F' to 'PSL' (Party for Socialism and Liberation)
-                    c.v.I = c.v.O || 0;
-                    c.v.PSL = c.v.F || 0;
-                    c.originalV = {
-                        D: c.v.D,
-                        R: c.v.R,
-                        G: c.v.G || 0,
-                        L: c.v.L || 0,
-                        I: c.v.I || 0,
-                        PSL: c.v.PSL || 0
-                    };
-                    
-                    // Initialize undecided percentage (15% of population)
-                    c.undecided = (c.undecided !== undefined) ? c.undecided : 15.0;
-                    c.regVoters = (typeof c.regVoters === 'number' && isFinite(c.regVoters) && c.regVoters > 0) ? c.regVoters : (c.p || 0);
-                    c.turnoutBase = (typeof c.turnoutBase === 'number' && isFinite(c.turnoutBase))
-                        ? Math.max(0, Math.min(1, c.turnoutBase))
-                        : Counties.DEFAULT_BASE_TURNOUT_RATE;
 
-                    // Cache state code to avoid repeated FIPS parsing in tooltips
-                    var normalizedFips = Counties.normalizeFips(fips);
-                    if (normalizedFips) {
-                        c.stateCode = Counties.getStateCodeFromFips(normalizedFips.substring(0, 2));
+                Counties.loadCountyVoteBaselineData(function() {
+                    // Initialize each county with undecided voters and proper baseline
+                    for (var fips in Counties.countyData) {
+                        var c = Counties.countyData[fips];
+
+                        // Store original values for reference
+                        // Map county JSON's 'O' key to 'I' (Independent), 'F' to 'PSL' (Party for Socialism and Liberation)
+                        c.v.I = c.v.O || 0;
+                        c.v.PSL = c.v.F || 0;
+                        c.originalV = {
+                            D: c.v.D,
+                            R: c.v.R,
+                            G: c.v.G || 0,
+                            L: c.v.L || 0,
+                            I: c.v.I || 0,
+                            PSL: c.v.PSL || 0
+                        };
+
+                        // Initialize undecided percentage (15% of population)
+                        c.undecided = (c.undecided !== undefined) ? c.undecided : 15.0;
+                        c.regVoters = (typeof c.regVoters === 'number' && isFinite(c.regVoters) && c.regVoters > 0) ? c.regVoters : (c.p || 0);
+                        c.turnoutBase = (typeof c.turnoutBase === 'number' && isFinite(c.turnoutBase))
+                            ? Math.max(0, Math.min(1, c.turnoutBase))
+                            : Counties.DEFAULT_BASE_TURNOUT_RATE;
+
+                        // Cache state code to avoid repeated FIPS parsing in tooltips
+                        var normalizedFips = Counties.normalizeFips(fips);
+                        if (normalizedFips) {
+                            c.stateCode = Counties.getStateCodeFromFips(normalizedFips.substring(0, 2));
+                        }
+
+                        // Apply third-party toggle logic
+                        Counties.applyThirdPartyToggle(c);
+
+                        // Initialize turnout multipliers
+                        c.turnout = {
+                            player: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
+                            demOpponent: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
+                            repOpponent: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
+                            thirdParty: Counties.DEFAULT_THIRD_PARTY_TURNOUT
+                        };
                     }
-                    
-                    // Apply third-party toggle logic
-                    Counties.applyThirdPartyToggle(c);
-                    
-                    // Initialize turnout multipliers
-                    c.turnout = {
-                        player: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
-                        demOpponent: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
-                        repOpponent: Counties.DEFAULT_MAJOR_PARTY_TURNOUT,
-                        thirdParty: Counties.DEFAULT_THIRD_PARTY_TURNOUT
-                    };
-                }
-                
-                Counties.initializeRallyDistanceRatios();
-                
-                // Initialize state margins from county data to ensure consistency
-                // This prevents the bug where first campaign action causes large margin shifts
-                // Defensive checks ensure globals are loaded (this runs in async callback)
-                if (typeof gameData !== 'undefined' && gameData.states && typeof STATES !== 'undefined') {
-                    for (var code in gameData.states) {
-                        Counties.updateStateFromCounties(code);
+
+                    Counties.initializeRallyDistanceRatios();
+
+                    // Initialize state margins from county data to ensure consistency
+                    // This prevents the bug where first campaign action causes large margin shifts
+                    // Defensive checks ensure globals are loaded (this runs in async callback)
+                    if (typeof gameData !== 'undefined' && gameData.states && typeof STATES !== 'undefined') {
+                        for (var code in gameData.states) {
+                            Counties.updateStateFromCounties(code);
+                        }
                     }
-                }
-                
-                console.log('✓ County data loaded with undecided voters initialized');
-                
-                if (callback) callback();
+
+                    console.log('✓ County data loaded with undecided voters initialized');
+
+                    if (callback) callback();
+                });
             }
         };
         xhr.send();
