@@ -3332,10 +3332,10 @@ body {
 }
 
 .party-banner-desc {
-    font-size: 0.9rem;
-    color: #cccccc;
-    line-height: 1.7;
-    max-width: 700px;
+    font-size: 0.98rem;     
+    color: #cccccc;     
+    line-height: 1.6;     
+    max-width: 1400px;
 }
 
 .party-page-selection {
