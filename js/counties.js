@@ -611,7 +611,7 @@ var Counties = {
             if (supportTotal <= 0) continue;
 
             for (var p in totals) {
-                totals[p] += groupPool * (supportWeights[p] / supportTotal);
+                totals[p] += groupPool * ((supportWeights[p] || 0) / supportTotal);
             }
         }
 
