@@ -389,7 +389,7 @@ var Counties = {
                             var normalizedFips = Counties.normalizeFips(fips);
                             if (normalizedFips) {
                                 c.stateCode = Counties.getStateCodeFromFips(normalizedFips.substring(0, 2));
-                                c.fips = normalizedFips;  // Store FIPS for voter roll lookups
+                                c.fips = normalizedFips;  // Store normalized FIPS for voter roll lookups and consistency
                             }
 
                             // Apply third-party toggle logic

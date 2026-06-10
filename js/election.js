@@ -83,11 +83,11 @@ function getInactiveVoterTurnoutBoost(county) {
     // If there's a populist candidate, inactive voters are more likely to turn out
     // Boost is proportional to the share of inactive voters and presence of populist candidates
     if (hasPopulist) {
-        // Boost can be 5-15% based on inactive voter share
+        // Boost can be 5-15% (up to 15% × inactive voter ratio) based on inactive voter share
         return inactiveRatio * POPULIST_INACTIVE_VOTER_BOOST;
     }
     
-    // Small baseline boost (2-5%) even without populist candidate
+    // Small baseline boost (up to 5%) even without populist candidate
     return inactiveRatio * BASELINE_INACTIVE_VOTER_BOOST;
 }
 
