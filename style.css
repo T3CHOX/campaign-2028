@@ -3088,7 +3088,7 @@ body {
 /* New grid layout: minor-left | D(large) | R(large) | minor-right */
 .party-layout-grid {
     display: grid;
-    grid-template-columns: 200px 1fr 1fr 200px;
+    grid-template-columns: 240px 1fr 1fr 240px;
     gap: 18px;
     align-items: stretch;
     width: 100%;
@@ -3121,7 +3121,7 @@ body {
 }
 
 .party-panel:hover {
-    transform: translateY(-10px) scale(1.03);
+    transform: translateY(-10px) scale(1.01);
     box-shadow: 0 0 24px var(--party-color), 0 0 48px var(--party-color), 0 12px 40px rgba(0,0,0,0.7);
     z-index: 5;
 }
