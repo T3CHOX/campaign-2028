@@ -2,6 +2,22 @@
    DECISION 2028 - SCREEN MANAGEMENT (OVERHAULED)
    ============================================ */
 
+const GROUP_ICONS = {
+    white: '👨🏻', black: '👨🏿', hispanic: '👨🏽', asian: '👨🏻‍💻', native: '🪶',
+    evangelical: '✝️', catholic: '⛪', jewish: '🕍', muslim: '☪️', secular: '⚛️',
+    bluecollar: '👷', whitecollar: '👔', smallbusiness: '🏪', union: '⚙️', tech: '💻', farmers: '🚜', military: '🪖',
+    college: '🎓', noncollege: '🛠️', suburban: '🏡', urban: '🏙️', rural: '🌾',
+    youth: '📱', seniors: '👴', progressives: '🌹', libertarians: '🗽', maga: '🧢', centrists: '⚖️',
+    lgbtq_community: '🏳️‍🌈', women: '👩'
+};
+
+function formatEffect(isBuff, text, logo) {
+    var icon = isBuff ? '<span style="color: var(--green-success); font-weight: bold; font-size: 1.1em;">+</span>' : '<span style="color: var(--rep-red); font-weight: bold; font-size: 1.1em;">×</span>';
+    var groupLogo = logo ? '<span style="margin-left: auto;">' + logo + '</span>' : '<span style="margin-left: auto;"></span>';
+    return '<div style="display: flex; align-items: center; justify-content: flex-start; width: 100%; gap: 8px; margin-bottom: 3px; font-size: 0.75rem; color: #ccc;">' +
+           icon + '<span style="flex: 1;">' + text + '</span>' + groupLogo + '</div>';
+}
+
 var Screens = {
     // Selection flow state
     selectionFlow: [],        // Ordered list of party codes to select for
@@ -75,7 +91,7 @@ var Screens = {
         var phaseLabel = phase === 'pres' ? 'Presidential Nominee' : 'Vice Presidential Nominee';
         var stepNum = (flowIdx * 2) + (phase === 'vp' ? 2 : 1);
         var totalSteps = totalParties * 2;
-        headerInfo.innerText = 'Step ' + stepNum + ' of ' + totalSteps;
+        headerInfo.innerText = '';
 
         // Build banner HTML
         var logoName = this._getPartyLogoFile(partyCode);
@@ -176,36 +192,44 @@ var Screens = {
         for (var s = 0; s < 10; s++) {
             staminaPips += '<div class="stamina-pip' + (s < (c.stamina || 7) ? ' filled' : '') + '"></div>';
         }
-        var groupBoostsText = '';
+
+        var effectsHTML = '<div class="candidate-effects-list" style="margin-top: 6px; display: flex; flex-direction: column; width: 100%;">';
+        if (c.buff) effectsHTML += formatEffect(true, c.buff, '✦');
         if (c.groupBoosts) {
             var boostKeys = Object.keys(c.groupBoosts).slice(0, 3);
-            if (boostKeys.length > 0) {
-                groupBoostsText = '<div class="tile-groups">👥 ' + boostKeys.map(function(k) { return k + ' +' + c.groupBoosts[k]; }).join(', ') + '</div>';
+            for (var b = 0; b < boostKeys.length; b++) {
+                var k = boostKeys[b];
+                var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
+                effectsHTML += formatEffect(true, name + ' (+' + c.groupBoosts[k] + ')', GROUP_ICONS[k] || '👥');
             }
         }
-        var groupDebuffsText = '';
+        if (c.debuff) effectsHTML += formatEffect(false, c.debuff, '⚠');
         if (c.groupDebuffs) {
             var debuffKeys = Object.keys(c.groupDebuffs).slice(0, 2);
-            if (debuffKeys.length > 0) {
-                groupDebuffsText = '<div class="tile-groups tile-groups-debuff">⚠ ' + debuffKeys.map(function(k) { return k + ' ' + c.groupDebuffs[k]; }).join(', ') + '</div>';
+            for (var d = 0; d < debuffKeys.length; d++) {
+                var k = debuffKeys[d];
+                var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
+                effectsHTML += formatEffect(false, name + ' (' + c.groupDebuffs[k] + ')', GROUP_ICONS[k] || '👥');
             }
         }
+        effectsHTML += '</div>';
+
         var logoName = this._getPartyLogoFile(c.party);
         return '<div class="candidate-tile' + (selected ? ' selected' : '') + '" data-id="' + c.id + '" data-type="pres" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + c.party + '\', \'pres\')">' +
             '<img class="candidate-tile-party-logo" src="images/' + logoName + '" onerror="this.style.display=\'none\'" alt="' + c.party + ' logo">' +
             '<img class="candidate-tile-img" src="' + c.img + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + c.name + '">' +
             '<div class="candidate-tile-body">' +
                 '<div class="candidate-tile-meta">' +
-                    '<div class="candidate-tile-name">' + c.name + '</div>' +
-                    '<div class="candidate-tile-state">🏠 ' + (c.homeState || '') + '</div>' +
+                    '<div class="candidate-tile-header-row" style="display: flex; justify-content: space-between; align-items: baseline;">' +
+                        '<div class="candidate-tile-name">' + c.name + '</div>' +
+                        '<div class="candidate-tile-state" style="margin-bottom: 0;">🏠 ' + (c.homeState || '') + '</div>' +
+                    '</div>' +
+                    '<div class="candidate-tile-position">' + (c.position || '') + '</div>' +
                     '<div class="candidate-tile-stats">' +
                         '<div class="tile-stat-row"><span class="tile-stat-label">Funds:</span><span class="tile-stat-val">$' + (c.funds || 0) + 'M</span></div>' +
                         '<div class="tile-stat-row"><span class="tile-stat-label">Stamina:</span><div class="stamina-pips">' + staminaPips + '</div></div>' +
-                        (c.buff ? '<div class="tile-buff">✦ ' + c.buff + '</div>' : '') +
-                        (c.debuff ? '<div class="tile-debuff">⚠ ' + c.debuff + '</div>' : '') +
                     '</div>' +
-                    groupBoostsText +
-                    groupDebuffsText +
+                    effectsHTML +
                 '</div>' +
                 '<div class="candidate-tile-desc-wrapper">' +
                     '<p class="candidate-tile-desc">' + (c.desc || '') + '</p>' +
@@ -215,30 +239,39 @@ var Screens = {
     },
 
     _buildVpTile: function(v, color) {
-        var groupBoostsText = '';
+        var effectsHTML = '<div class="candidate-effects-list" style="margin-top: 6px; display: flex; flex-direction: column; width: 100%;">';
+        if (v.buff) effectsHTML += formatEffect(true, v.buff, '✦');
         if (v.groupBoosts) {
             var boostKeys = Object.keys(v.groupBoosts).slice(0, 3);
-            if (boostKeys.length > 0) {
-                groupBoostsText = '<div class="tile-groups">👥 ' + boostKeys.map(function(k) { return k + ' +' + v.groupBoosts[k]; }).join(', ') + '</div>';
+            for (var b = 0; b < boostKeys.length; b++) {
+                var k = boostKeys[b];
+                var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
+                effectsHTML += formatEffect(true, name + ' (+' + v.groupBoosts[k] + ')', GROUP_ICONS[k] || '👥');
             }
         }
-        var groupDebuffsText = '';
+        if (v.debuff) effectsHTML += formatEffect(false, v.debuff, '⚠');
         if (v.groupDebuffs) {
-            var debuffKeys = Object.keys(v.groupDebuffs).filter(function(k) { return v.groupDebuffs[k] < 0; }).slice(0, 2);
-            if (debuffKeys.length > 0) {
-                groupDebuffsText = '<div class="tile-groups tile-groups-debuff">⚠ ' + debuffKeys.map(function(k) { return k + ' ' + v.groupDebuffs[k]; }).join(', ') + '</div>';
+            var debuffKeys = Object.keys(v.groupDebuffs).slice(0, 2);
+            for (var d = 0; d < debuffKeys.length; d++) {
+                var k = debuffKeys[d];
+                var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
+                effectsHTML += formatEffect(false, name + ' (' + v.groupDebuffs[k] + ')', GROUP_ICONS[k] || '👥');
             }
         }
+        effectsHTML += '</div>';
+
         var logoName = this._getPartyLogoFile(v.party);
         return '<div class="candidate-tile" data-id="' + v.id + '" data-type="vp" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + v.party + '\', \'vp\')">' +
             '<img class="candidate-tile-party-logo" src="images/' + logoName + '" onerror="this.style.display=\'none\'" alt="' + v.party + ' logo">' +
             '<img class="candidate-tile-img" src="' + (v.img || 'images/scenario.jpg') + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + v.name + '">' +
             '<div class="candidate-tile-body">' +
                 '<div class="candidate-tile-meta">' +
-                    '<div class="candidate-tile-name">' + v.name + '</div>' +
-                    '<div class="candidate-tile-state">🏠 ' + (v.state || v.homeState || '') + '</div>' +
-                    groupBoostsText +
-                    groupDebuffsText +
+                    '<div class="candidate-tile-header-row" style="display: flex; justify-content: space-between; align-items: baseline;">' +
+                        '<div class="candidate-tile-name">' + v.name + '</div>' +
+                        '<div class="candidate-tile-state" style="margin-bottom: 0;">🏠 ' + (v.state || v.homeState || '') + '</div>' +
+                    '</div>' +
+                    '<div class="candidate-tile-position">' + (v.position || '') + '</div>' +
+                    effectsHTML +
                 '</div>' +
                 '<div class="candidate-tile-desc-wrapper">' +
                     '<p class="candidate-tile-desc">' + (v.desc || '') + '</p>' +
