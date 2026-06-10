@@ -24,22 +24,36 @@ var VICTORY_LANDSLIDE_EV_THRESHOLD = 350;
 var VICTORY_CLEAR_MARGIN_THRESHOLD = 30;
 var VICTORY_LANDSLIDE_MARGIN_THRESHOLD = 80;
 
+// Inactive voter turnout constants
+var INACTIVE_VOTER_BASE_TURNOUT_RATE = 0.35;  // Registered but inactive voters typically have ~35% turnout
+var MAX_INACTIVE_VOTER_TURNOUT = 0.8;         // Cap inactive voter turnout at 80% even with populist boost
+var POPULIST_INACTIVE_VOTER_BOOST = 0.15;     // Populist candidates can boost inactive turnout by up to 15%
+var BASELINE_INACTIVE_VOTER_BOOST = 0.05;     // Small baseline boost (5%) without populist candidates
+
 // Determine if a candidate is populist/outsider (boosts inactive voter turnout)
+// Third-party candidates are typically populist/outsiders as they represent non-mainstream positions
 function isPopulistCandidate(candidate) {
     if (!candidate) return false;
+    
     // Third party candidates are typically populist/outsiders
-    if (candidate.party && (candidate.party === 'F' || candidate.party === 'G' || 
-                            candidate.party === 'L' || candidate.party === 'PSL')) {
+    // Check against known third-party codes: F (Forward), G (Green), L (Libertarian), PSL (Party for Socialism and Liberation)
+    var thirdPartyCode = candidate.party;
+    if (thirdPartyCode && thirdPartyCode !== 'D' && thirdPartyCode !== 'R') {
         return true;
     }
+    
     // Also check if candidate has populist policy positions or ideology
+    // These properties would be defined in candidate configuration (see CANDIDATES in config.js)
     if (candidate.ideology === 'populist' || candidate.position === 'outsider') {
         return true;
     }
+    
     return false;
 }
 
-// Calculate inactive voter turnout boost based on populist candidates
+// Calculate inactive voter turnout boost based on populist candidates in the race
+// Inactive voters (registered but don't regularly vote) are more likely to participate
+// when populist or outsider candidates are running
 function getInactiveVoterTurnoutBoost(county) {
     if (!county || typeof Counties === 'undefined') {
         return 0;
@@ -51,6 +65,7 @@ function getInactiveVoterTurnoutBoost(county) {
     var activeCount = Counties.getCountyRegisteredVoters(county);
     if (activeCount <= 0) return 0;
     
+    // Calculate proportion of voters who are inactive
     var inactiveRatio = inactiveCount / (activeCount + inactiveCount);
     
     // Check which candidates in the race are populist
@@ -68,12 +83,12 @@ function getInactiveVoterTurnoutBoost(county) {
     // If there's a populist candidate, inactive voters are more likely to turn out
     // Boost is proportional to the share of inactive voters and presence of populist candidates
     if (hasPopulist) {
-        // Boost can be 0.05-0.15 (5-15% increased turnout) based on inactive voter share
-        return inactiveRatio * 0.15;
+        // Boost can be 5-15% based on inactive voter share
+        return inactiveRatio * POPULIST_INACTIVE_VOTER_BOOST;
     }
     
     // Small baseline boost (2-5%) even without populist candidate
-    return inactiveRatio * 0.05;
+    return inactiveRatio * BASELINE_INACTIVE_VOTER_BOOST;
 }
 
 var Election = {
@@ -501,8 +516,7 @@ var Election = {
         // Calculate inactive voter contribution (they have lower baseline turnout but boost with populist candidates)
         var inactiveVoters = typeof Counties !== 'undefined' ? Counties.getCountyInactiveVoters(county) : 0;
         var inactiveTurnoutBoost = getInactiveVoterTurnoutBoost(county);
-        var inactiveTurnoutRate = 0.35; // Inactive voters have ~35% baseline turnout
-        var inactiveTurnoutWithBoost = Math.min(0.8, inactiveTurnoutRate + inactiveTurnoutBoost);
+        var inactiveTurnoutWithBoost = Math.min(MAX_INACTIVE_VOTER_TURNOUT, INACTIVE_VOTER_BASE_TURNOUT_RATE + inactiveTurnoutBoost);
         var inactiveVotersPool = inactiveVoters * inactiveTurnoutWithBoost;
         
         // Total voter pool from both active and inactive voters
