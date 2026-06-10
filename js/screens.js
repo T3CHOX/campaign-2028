@@ -2,6 +2,22 @@
    DECISION 2028 - SCREEN MANAGEMENT (OVERHAULED)
    ============================================ */
 
+const GROUP_ICONS = {
+    white: '👨🏻', black: '👨🏿', hispanic: '👨🏽', asian: '👨🏻‍💻', native: '🪶',
+    evangelical: '✝️', catholic: '⛪', jewish: '🕍', muslim: '☪️', secular: '⚛️',
+    bluecollar: '👷', whitecollar: '👔', smallbusiness: '🏪', union: '⚙️', tech: '💻', farmers: '🚜', military: '🪖',
+    college: '🎓', noncollege: '🛠️', suburban: '🏡', urban: '🏙️', rural: '🌾',
+    youth: '📱', seniors: '👴', progressives: '🌹', libertarians: '🗽', maga: '🧢', centrists: '⚖️',
+    lgbtq_community: '🏳️‍🌈', women: '👩'
+};
+
+function formatEffect(isBuff, text, logo) {
+    var icon = isBuff ? '<span style="color: var(--green-success); font-weight: bold; font-size: 1.1em;">+</span>' : '<span style="color: var(--rep-red); font-weight: bold; font-size: 1.1em;">×</span>';
+    var groupLogo = logo ? '<span style="margin-left: auto;">' + logo + '</span>' : '<span style="margin-left: auto;"></span>';
+    return '<div style="display: flex; align-items: center; justify-content: flex-start; width: 100%; gap: 8px; margin-bottom: 3px; font-size: 0.75rem; color: #ccc;">' +
+           icon + '<span style="flex: 1;">' + text + '</span>' + groupLogo + '</div>';
+}
+
 var Screens = {
     // Selection flow state
     selectionFlow: [],        // Ordered list of party codes to select for
@@ -176,21 +192,6 @@ var Screens = {
         for (var s = 0; s < 10; s++) {
             staminaPips += '<div class="stamina-pip' + (s < (c.stamina || 7) ? ' filled' : '') + '"></div>';
         }
-        var groupIcons = {
-            white: '👨🏻', black: '👨🏿', hispanic: '👨🏽', asian: '👨🏻‍💻', native: '🪶',
-            evangelical: '✝️', catholic: '⛪', jewish: '🕍', muslim: '☪️', secular: '⚛️',
-            bluecollar: '👷', whitecollar: '👔', smallbusiness: '🏪', union: '⚙️', tech: '💻', farmers: '🚜', military: '🪖',
-            college: '🎓', noncollege: '🛠️', suburban: '🏡', urban: '🏙️', rural: '🌾',
-            youth: '📱', seniors: '👴', progressives: '🌹', libertarians: '🗽', maga: '🧢', centrists: '⚖️',
-            lgbtq_community: '🏳️‍🌈', women: '👩'
-        };
-
-        function formatEffect(isBuff, text, logo) {
-            var icon = isBuff ? '<span style="color: var(--green-success); font-weight: bold; font-size: 1.1em;">+</span>' : '<span style="color: var(--rep-red); font-weight: bold; font-size: 1.1em;">×</span>';
-            var groupLogo = logo ? '<span style="margin-left: auto;">' + logo + '</span>' : '<span style="margin-left: auto;"></span>';
-            return '<div style="display: flex; align-items: center; justify-content: flex-start; width: 100%; gap: 8px; margin-bottom: 3px; font-size: 0.75rem; color: #ccc;">' +
-                   icon + '<span style="flex: 1;">' + text + '</span>' + groupLogo + '</div>';
-        }
 
         var effectsHTML = '<div class="candidate-effects-list" style="margin-top: 6px; display: flex; flex-direction: column; width: 100%;">';
         if (c.buff) effectsHTML += formatEffect(true, c.buff, '✦');
@@ -199,7 +200,7 @@ var Screens = {
             for (var b = 0; b < boostKeys.length; b++) {
                 var k = boostKeys[b];
                 var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
-                effectsHTML += formatEffect(true, name + ' (+' + c.groupBoosts[k] + ')', groupIcons[k] || '👥');
+                effectsHTML += formatEffect(true, name + ' (+' + c.groupBoosts[k] + ')', GROUP_ICONS[k] || '👥');
             }
         }
         if (c.debuff) effectsHTML += formatEffect(false, c.debuff, '⚠');
@@ -208,7 +209,7 @@ var Screens = {
             for (var d = 0; d < debuffKeys.length; d++) {
                 var k = debuffKeys[d];
                 var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
-                effectsHTML += formatEffect(false, name + ' (' + c.groupDebuffs[k] + ')', groupIcons[k] || '👥');
+                effectsHTML += formatEffect(false, name + ' (' + c.groupDebuffs[k] + ')', GROUP_ICONS[k] || '👥');
             }
         }
         effectsHTML += '</div>';
@@ -238,22 +239,6 @@ var Screens = {
     },
 
     _buildVpTile: function(v, color) {
-        var groupIcons = {
-            white: '👨🏻', black: '👨🏿', hispanic: '👨🏽', asian: '👨🏻‍💻', native: '🪶',
-            evangelical: '✝️', catholic: '⛪', jewish: '🕍', muslim: '☪️', secular: '⚛️',
-            bluecollar: '👷', whitecollar: '👔', smallbusiness: '🏪', union: '⚙️', tech: '💻', farmers: '🚜', military: '🪖',
-            college: '🎓', noncollege: '🛠️', suburban: '🏡', urban: '🏙️', rural: '🌾',
-            youth: '📱', seniors: '👴', progressives: '🌹', libertarians: '🗽', maga: '🧢', centrists: '⚖️',
-            lgbtq_community: '🏳️‍🌈', women: '👩'
-        };
-
-        function formatEffect(isBuff, text, logo) {
-            var icon = isBuff ? '<span style="color: var(--green-success); font-weight: bold; font-size: 1.1em;">+</span>' : '<span style="color: var(--rep-red); font-weight: bold; font-size: 1.1em;">×</span>';
-            var groupLogo = logo ? '<span style="margin-left: auto;">' + logo + '</span>' : '<span style="margin-left: auto;"></span>';
-            return '<div style="display: flex; align-items: center; justify-content: flex-start; width: 100%; gap: 8px; margin-bottom: 3px; font-size: 0.75rem; color: #ccc;">' +
-                   icon + '<span style="flex: 1;">' + text + '</span>' + groupLogo + '</div>';
-        }
-
         var effectsHTML = '<div class="candidate-effects-list" style="margin-top: 6px; display: flex; flex-direction: column; width: 100%;">';
         if (v.buff) effectsHTML += formatEffect(true, v.buff, '✦');
         if (v.groupBoosts) {
@@ -261,7 +246,7 @@ var Screens = {
             for (var b = 0; b < boostKeys.length; b++) {
                 var k = boostKeys[b];
                 var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
-                effectsHTML += formatEffect(true, name + ' (+' + v.groupBoosts[k] + ')', groupIcons[k] || '👥');
+                effectsHTML += formatEffect(true, name + ' (+' + v.groupBoosts[k] + ')', GROUP_ICONS[k] || '👥');
             }
         }
         if (v.debuff) effectsHTML += formatEffect(false, v.debuff, '⚠');
@@ -270,7 +255,7 @@ var Screens = {
             for (var d = 0; d < debuffKeys.length; d++) {
                 var k = debuffKeys[d];
                 var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
-                effectsHTML += formatEffect(false, name + ' (' + v.groupDebuffs[k] + ')', groupIcons[k] || '👥');
+                effectsHTML += formatEffect(false, name + ' (' + v.groupDebuffs[k] + ')', GROUP_ICONS[k] || '👥');
             }
         }
         effectsHTML += '</div>';
