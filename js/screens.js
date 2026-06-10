@@ -12,9 +12,10 @@ const GROUP_ICONS = {
 };
 
 function formatEffect(isBuff, text, logo) {
-    var icon = isBuff ? '<span style="color: var(--green-success); font-weight: bold; font-size: 1.1em;">+</span>' : '<span style="color: var(--rep-red); font-weight: bold; font-size: 1.1em;">×</span>';
-    var groupLogo = logo ? '<span style="margin-left: auto;">' + logo + '</span>' : '<span style="margin-left: auto;"></span>';
-    return '<div style="display: flex; align-items: center; justify-content: flex-start; width: 100%; gap: 8px; margin-bottom: 3px; font-size: 0.75rem; color: #ccc;">' +
+    // Use game-themed gray icons: green for buff (+), red for debuff (-)
+    var icon = isBuff ? '<span style="color: #4CAF50; font-weight: bold; font-size: 1.2em;">+</span>' : '<span style="color: #DC3545; font-weight: bold; font-size: 1.2em;">−</span>';
+    var groupLogo = logo ? '<span style="margin-left: auto; margin-right: 4px;">' + logo + '</span>' : '<span style="margin-left: auto;"></span>';
+    return '<div style="display: flex; align-items: center; justify-content: flex-start; width: 100%; gap: 6px; margin-bottom: 4px; font-size: 0.75rem; color: #ccc;">' +
            icon + '<span style="flex: 1;">' + text + '</span>' + groupLogo + '</div>';
 }
 
@@ -220,9 +221,9 @@ var Screens = {
             '<img class="candidate-tile-img" src="' + c.img + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + c.name + '">' +
             '<div class="candidate-tile-body">' +
                 '<div class="candidate-tile-meta">' +
-                    '<div class="candidate-tile-header-row" style="display: flex; justify-content: space-between; align-items: baseline;">' +
-                        '<div class="candidate-tile-name">' + c.name + '</div>' +
-                        '<div class="candidate-tile-state" style="margin-bottom: 0;">🏠 ' + (c.homeState || '') + '</div>' +
+                    '<div class="candidate-tile-header-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 2px;">' +
+                        '<div class="candidate-tile-name" style="flex: 1;">' + c.name + '</div>' +
+                        '<div class="candidate-tile-state" style="margin-bottom: 0; white-space: nowrap; margin-left: 4px;">🏠 ' + (c.homeState || '') + '</div>' +
                     '</div>' +
                     '<div class="candidate-tile-position">' + (c.position || '') + '</div>' +
                     '<div class="candidate-tile-stats">' +
@@ -266,9 +267,9 @@ var Screens = {
             '<img class="candidate-tile-img" src="' + (v.img || 'images/scenario.jpg') + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + v.name + '">' +
             '<div class="candidate-tile-body">' +
                 '<div class="candidate-tile-meta">' +
-                    '<div class="candidate-tile-header-row" style="display: flex; justify-content: space-between; align-items: baseline;">' +
-                        '<div class="candidate-tile-name">' + v.name + '</div>' +
-                        '<div class="candidate-tile-state" style="margin-bottom: 0;">🏠 ' + (v.state || v.homeState || '') + '</div>' +
+                    '<div class="candidate-tile-header-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 2px;">' +
+                        '<div class="candidate-tile-name" style="flex: 1;">' + v.name + '</div>' +
+                        '<div class="candidate-tile-state" style="margin-bottom: 0; white-space: nowrap; margin-left: 4px;">🏠 ' + (v.state || v.homeState || '') + '</div>' +
                     '</div>' +
                     '<div class="candidate-tile-position">' + (v.position || '') + '</div>' +
                     effectsHTML +
