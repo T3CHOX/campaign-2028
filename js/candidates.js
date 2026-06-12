@@ -801,10 +801,14 @@ const VPS = [
         groupDebuffs: {}
     }
 ].map(function(vp) {
-    var normalized = Object.assign({}, vp || {});
+    var normalized = Object.assign({}, CANDIDATE_DEFAULTS, vp || {});
     normalized.groupEffects = _normalizeCandidateGroupEffects(normalized);
     normalized.groupBoosts = Object.assign({}, normalized.groupBoosts || {});
     normalized.groupDebuffs = Object.assign({}, normalized.groupDebuffs || {});
+    normalized.regionalSpillover = Array.isArray(normalized.regionalSpillover) ? normalized.regionalSpillover.slice() : [];
+    normalized.homeStateBoost = Number(normalized.homeStateBoost);
+    normalized.funds = Number(normalized.funds);
+    normalized.stamina = Number(normalized.stamina);
     return normalized;
 });
 

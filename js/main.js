@@ -895,6 +895,8 @@ var CANDIDATE_GROUP_MOD_ALIASES = {
 
 function _getCandidateGroupModifier(candidate, groupId) {
     if (!candidate) return 0;
+    // `groupEffects.support` is now a literal percentage-point shift; this replaces the old 0.45 dampening.
+    // The new math is intended to preserve the exact point shifts requested by the new balancing model.
     return _getCandidateGroupEffectValue(candidate, groupId, 'support');
 }
 

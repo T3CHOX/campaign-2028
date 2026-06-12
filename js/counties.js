@@ -82,7 +82,13 @@ var Counties = {
         }
     },
 
-    // Apply a literal percentage-point shift to a vote-share map while keeping totals normalized.
+    /**
+     * Apply a literal percentage-point shift to a vote-share map and normalize the result.
+     * @param {Object} voteShares Party vote shares keyed by party code.
+     * @param {string} partyKey Target party code to adjust.
+     * @param {number} shift Percentage-point change; positive adds support, negative removes it.
+     * @returns {Object} The same voteShares object, modified in place.
+     */
     applyVoteShareShift: function(voteShares, partyKey, shift) {
         if (!voteShares || !partyKey || !isFinite(shift) || shift === 0) return voteShares;
 
@@ -832,6 +838,7 @@ var Counties = {
                 turnoutIndex = (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined)
                     ? gameData.interestGroupTurnout[groupId] : 1.0;
             }
+            // turnoutIndex is already on the 0-1 scale, so use it directly for the county group weight.
             var groupWeight = groupShare * turnoutIndex;
             if (groupWeight <= 0) continue;
 
@@ -844,7 +851,7 @@ var Counties = {
                     ? _getCandidateGroupEffectValue(supportCandidate, groupId, 'support')
                     : 0;
                 if (!supportShift) continue;
-                this.applyVoteShareShift(support, activeCandidates[s].voteKey, supportShift);
+                support = this.applyVoteShareShift(support, activeCandidates[s].voteKey, supportShift);
             }
             var supportWeights = {};
             var supportTotal = 0;

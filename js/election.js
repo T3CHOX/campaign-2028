@@ -455,8 +455,7 @@ var Election = {
         return Math.max(0.5, Math.min(1.5, ratio));
     },
 
-    getCountyInterestGroupTurnoutMultiplier: function(county) {
-        var partyFilter = arguments.length > 1 ? arguments[1] : null;
+    getCountyInterestGroupTurnoutMultiplier: function(county, partyFilter) {
         if (typeof Counties === 'undefined' || typeof Counties.getCountyDemographicWeights !== 'function') {
             return 1;
         }

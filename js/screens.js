@@ -257,9 +257,9 @@ var Screens = {
                 effectParts.push((effect.turnout > 0 ? '+' : '') + effect.turnout + ' turnout');
             }
             if (!effectParts.length) continue;
-            var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[effectKey]) ? INTEREST_GROUPS[effectKey].name : effectKey;
+            var groupName = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[effectKey]) ? INTEREST_GROUPS[effectKey].name : effectKey;
             var isPositive = (effect.support || 0) >= 0 && (effect.turnout || 0) >= 0;
-            effectsHTML += formatEffect(isPositive, name + ' (' + effectParts.join(', ') + ')', GROUP_ICONS[effectKey] || '👥');
+            effectsHTML += formatEffect(isPositive, groupName + ' (' + effectParts.join(', ') + ')', GROUP_ICONS[effectKey] || '👥');
         }
         effectsHTML += '</div>';
 
