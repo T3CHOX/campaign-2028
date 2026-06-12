@@ -455,12 +455,14 @@ var Election = {
         return Math.max(0.5, Math.min(1.5, ratio));
     },
 
-    getCountyInterestGroupTurnoutMultiplier: function(county) {
+    getCountyInterestGroupTurnoutMultiplier: function(county, partyFilter) {
         if (typeof Counties === 'undefined' || typeof Counties.getCountyDemographicWeights !== 'function') {
             return 1;
         }
         var groupWeights = Counties.getCountyDemographicWeights(county);
         if (!groupWeights || !groupWeights.length) return 1;
+        var activeCandidates = (typeof _buildActiveCandidatesList === 'function') ? _buildActiveCandidatesList() : [];
+        var candidateById = (typeof _buildCandidateByIdMap === 'function') ? _buildCandidateByIdMap() : {};
         var totalShare = 0;
         var weightedRatio = 0;
         for (var i = 0; i < groupWeights.length; i++) {
@@ -474,6 +476,14 @@ var Election = {
             var current = (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined)
                 ? gameData.interestGroupTurnout[groupId]
                 : baseline;
+            var turnoutShift = 0;
+            for (var c = 0; c < activeCandidates.length; c++) {
+                if (partyFilter && activeCandidates[c].voteKey !== partyFilter) continue;
+                var candidate = candidateById[activeCandidates[c].id];
+                if (!candidate || typeof _getCandidateGroupEffectValue !== 'function') continue;
+                turnoutShift += _getCandidateGroupEffectValue(candidate, groupId, 'turnout');
+            }
+            current = Math.max(0, Math.min(1, current + (turnoutShift / 100)));
             if (!baseline || !isFinite(baseline)) continue;
             var ratio = current / baseline;
             totalShare += share;
@@ -494,7 +504,7 @@ var Election = {
 
     getCountyTurnoutRateForParty: function(county, partyKey) {
         var baseTurnout = this.getCountyBaseTurnoutRate(county);
-        var groupMultiplier = this.getCountyInterestGroupTurnoutMultiplier(county);
+        var groupMultiplier = this.getCountyInterestGroupTurnoutMultiplier(county, partyKey);
         if (typeof Counties === 'undefined' || typeof Counties.getPartyTurnoutMultipliers !== 'function') {
             return Math.max(0, Math.min(1, baseTurnout * groupMultiplier));
         }

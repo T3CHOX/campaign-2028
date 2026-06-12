@@ -18,11 +18,45 @@ const CANDIDATE_DEFAULTS = {
     desc: "",
     buff: null,
     debuff: null,
+    groupEffects: {},
     groupBoosts: {},
     groupDebuffs: {},
     regionalSpillover: [],
     regionalSpilloverBoost: 0
 };
+
+function _normalizeCandidateGroupEffects(candidate) {
+    var normalizedEffects = {};
+    var sourceEffects = candidate && candidate.groupEffects ? candidate.groupEffects : {};
+
+    for (var groupId in sourceEffects) {
+        if (!sourceEffects.hasOwnProperty(groupId)) continue;
+        var sourceEffect = sourceEffects[groupId] || {};
+        normalizedEffects[groupId] = {
+            support: Number(sourceEffect.support) || 0,
+            turnout: Number(sourceEffect.turnout) || 0
+        };
+    }
+
+    function mergeLegacyEffects(sourceMap) {
+        if (!sourceMap) return;
+        for (var legacyGroupId in sourceMap) {
+            if (!sourceMap.hasOwnProperty(legacyGroupId)) continue;
+            var legacyValue = Number(sourceMap[legacyGroupId]);
+            if (!isFinite(legacyValue) || legacyValue === 0) continue;
+            if (!normalizedEffects[legacyGroupId]) {
+                normalizedEffects[legacyGroupId] = { support: 0, turnout: 0 };
+            }
+            normalizedEffects[legacyGroupId].support += legacyValue;
+            normalizedEffects[legacyGroupId].turnout += legacyValue;
+        }
+    }
+
+    mergeLegacyEffects(candidate && candidate.groupBoosts);
+    mergeLegacyEffects(candidate && candidate.groupDebuffs);
+
+    return normalizedEffects;
+}
 
 const CANDIDATES = [
     {
@@ -587,6 +621,7 @@ const CANDIDATES = [
     // Ensure every candidate object has the core fields expected by game logic and UI,
     // while safely defaulting missing values from CANDIDATE_DEFAULTS.
     var normalized = Object.assign({}, CANDIDATE_DEFAULTS, candidate || {});
+    normalized.groupEffects = _normalizeCandidateGroupEffects(normalized);
     normalized.groupBoosts = Object.assign({}, CANDIDATE_DEFAULTS.groupBoosts, normalized.groupBoosts || {});
     normalized.groupDebuffs = Object.assign({}, CANDIDATE_DEFAULTS.groupDebuffs, normalized.groupDebuffs || {});
     normalized.regionalSpillover = Array.isArray(normalized.regionalSpillover) ? normalized.regionalSpillover.slice() : [];
@@ -765,7 +800,17 @@ const VPS = [
         groupBoosts: { labor_left: 2, antiwar_left: 2 }, 
         groupDebuffs: {}
     }
-];
+].map(function(vp) {
+    var normalized = Object.assign({}, CANDIDATE_DEFAULTS, vp || {});
+    normalized.groupEffects = _normalizeCandidateGroupEffects(normalized);
+    normalized.groupBoosts = Object.assign({}, normalized.groupBoosts || {});
+    normalized.groupDebuffs = Object.assign({}, normalized.groupDebuffs || {});
+    normalized.regionalSpillover = Array.isArray(normalized.regionalSpillover) ? normalized.regionalSpillover.slice() : [];
+    normalized.homeStateBoost = Number(normalized.homeStateBoost);
+    normalized.funds = Number(normalized.funds);
+    normalized.stamina = Number(normalized.stamina);
+    return normalized;
+});
 
 /* ---- CANDIDATE ISSUE POSITIONS (-10 = far left, +10 = far right) ---- */
 const CANDIDATE_POSITIONS = {

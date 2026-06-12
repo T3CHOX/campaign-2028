@@ -196,23 +196,24 @@ var Screens = {
 
         var effectsHTML = '<div class="candidate-effects-list" style="margin-top: 6px; display: flex; flex-direction: column; width: 100%;">';
         if (c.buff) effectsHTML += formatEffect(true, c.buff, '✦');
-        if (c.groupBoosts) {
-            var boostKeys = Object.keys(c.groupBoosts).slice(0, 3);
-            for (var b = 0; b < boostKeys.length; b++) {
-                var k = boostKeys[b];
-                var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
-                effectsHTML += formatEffect(true, name + ' (+' + c.groupBoosts[k] + ')', GROUP_ICONS[k] || '👥');
-            }
-        }
         if (c.debuff) effectsHTML += formatEffect(false, c.debuff, '⚠');
-        if (c.groupDebuffs) {
-            var debuffKeys = Object.keys(c.groupDebuffs).slice(0, 2);
-            for (var d = 0; d < debuffKeys.length; d++) {
-                var k = debuffKeys[d];
-                var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
-                effectsHTML += formatEffect(false, name + ' (' + c.groupDebuffs[k] + ')', GROUP_ICONS[k] || '👥');
+        var groupEffects = c.groupEffects || {};
+        var groupEffectKeys = Object.keys(groupEffects).slice(0, 5);
+        for (var e = 0; e < groupEffectKeys.length; e++) {
+            var effectKey = groupEffectKeys[e];
+            var effect = groupEffects[effectKey] || {};
+            var effectParts = [];
+            if (effect.support !== undefined && effect.support !== 0) {
+                effectParts.push((effect.support > 0 ? '+' : '') + effect.support + ' support');
             }
-        }
+            if (effect.turnout !== undefined && effect.turnout !== 0) {
+                effectParts.push((effect.turnout > 0 ? '+' : '') + effect.turnout + ' turnout');
+            }
+            if (!effectParts.length) continue;
+            var groupName = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[effectKey]) ? INTEREST_GROUPS[effectKey].name : effectKey;
+            var isPositive = (effect.support || 0) >= 0 && (effect.turnout || 0) >= 0;
+            effectsHTML += formatEffect(isPositive, groupName + ' (' + effectParts.join(', ') + ')', GROUP_ICONS[effectKey] || '👥');
+            }
         effectsHTML += '</div>';
 
         var logoName = this._getPartyLogoFile(c.party);
@@ -242,22 +243,23 @@ var Screens = {
     _buildVpTile: function(v, color) {
         var effectsHTML = '<div class="candidate-effects-list" style="margin-top: 6px; display: flex; flex-direction: column; width: 100%;">';
         if (v.buff) effectsHTML += formatEffect(true, v.buff, '✦');
-        if (v.groupBoosts) {
-            var boostKeys = Object.keys(v.groupBoosts).slice(0, 3);
-            for (var b = 0; b < boostKeys.length; b++) {
-                var k = boostKeys[b];
-                var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
-                effectsHTML += formatEffect(true, name + ' (+' + v.groupBoosts[k] + ')', GROUP_ICONS[k] || '👥');
-            }
-        }
         if (v.debuff) effectsHTML += formatEffect(false, v.debuff, '⚠');
-        if (v.groupDebuffs) {
-            var debuffKeys = Object.keys(v.groupDebuffs).slice(0, 2);
-            for (var d = 0; d < debuffKeys.length; d++) {
-                var k = debuffKeys[d];
-                var name = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[k]) ? INTEREST_GROUPS[k].name : k;
-                effectsHTML += formatEffect(false, name + ' (' + v.groupDebuffs[k] + ')', GROUP_ICONS[k] || '👥');
+        var vpGroupEffects = v.groupEffects || {};
+        var vpEffectKeys = Object.keys(vpGroupEffects).slice(0, 5);
+        for (var e = 0; e < vpEffectKeys.length; e++) {
+            var effectKey = vpEffectKeys[e];
+            var effect = vpGroupEffects[effectKey] || {};
+            var effectParts = [];
+            if (effect.support !== undefined && effect.support !== 0) {
+                effectParts.push((effect.support > 0 ? '+' : '') + effect.support + ' support');
             }
+            if (effect.turnout !== undefined && effect.turnout !== 0) {
+                effectParts.push((effect.turnout > 0 ? '+' : '') + effect.turnout + ' turnout');
+            }
+            if (!effectParts.length) continue;
+            var groupName = (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[effectKey]) ? INTEREST_GROUPS[effectKey].name : effectKey;
+            var isPositive = (effect.support || 0) >= 0 && (effect.turnout || 0) >= 0;
+            effectsHTML += formatEffect(isPositive, groupName + ' (' + effectParts.join(', ') + ')', GROUP_ICONS[effectKey] || '👥');
         }
         effectsHTML += '</div>';
 
