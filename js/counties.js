@@ -82,6 +82,68 @@ var Counties = {
         }
     },
 
+    // Apply a literal percentage-point shift to a vote-share map while keeping totals normalized.
+    applyVoteShareShift: function(voteShares, partyKey, shift) {
+        if (!voteShares || !partyKey || !isFinite(shift) || shift === 0) return voteShares;
+
+        var parties = this.getPartyVoteKeys();
+        if (parties.indexOf(partyKey) === -1) return voteShares;
+
+        var targetBefore = Math.max(0, voteShares[partyKey] || 0);
+        var totalBefore = 0;
+        for (var i = 0; i < parties.length; i++) {
+            totalBefore += Math.max(0, voteShares[parties[i]] || 0);
+        }
+        if (totalBefore <= 0) return voteShares;
+
+        if (shift > 0) {
+            var otherTotal = 0;
+            for (var j = 0; j < parties.length; j++) {
+                if (parties[j] !== partyKey) {
+                    otherTotal += Math.max(0, voteShares[parties[j]] || 0);
+                }
+            }
+            var actualGain = Math.min(shift, Math.max(0, 100 - targetBefore), otherTotal);
+            if (actualGain <= 0) return voteShares;
+
+            voteShares[partyKey] = targetBefore + actualGain;
+            if (otherTotal > 0) {
+                for (var k = 0; k < parties.length; k++) {
+                    var otherParty = parties[k];
+                    if (otherParty === partyKey) continue;
+                    var otherValue = Math.max(0, voteShares[otherParty] || 0);
+                    var loss = actualGain * (otherValue / otherTotal);
+                    voteShares[otherParty] = Math.max(0, otherValue - loss);
+                }
+            }
+        } else {
+            var lossAmount = Math.min(-shift, targetBefore);
+            if (lossAmount <= 0) return voteShares;
+
+            var remainingAfterLoss = Math.max(0, targetBefore - lossAmount);
+            var recipientTotal = 0;
+            for (var m = 0; m < parties.length; m++) {
+                if (parties[m] !== partyKey) {
+                    recipientTotal += Math.max(0, voteShares[parties[m]] || 0);
+                }
+            }
+
+            voteShares[partyKey] = remainingAfterLoss;
+            if (recipientTotal > 0) {
+                for (var n = 0; n < parties.length; n++) {
+                    var recipientParty = parties[n];
+                    if (recipientParty === partyKey) continue;
+                    var recipientValue = Math.max(0, voteShares[recipientParty] || 0);
+                    var gain = lossAmount * (recipientValue / recipientTotal);
+                    voteShares[recipientParty] = Math.min(100, recipientValue + gain);
+                }
+            }
+        }
+
+        this.normalizeVoteShareMap(voteShares);
+        return voteShares;
+    },
+
     parseCsvLine: function(line) {
         var parts = [];
         var current = '';
@@ -706,6 +768,8 @@ var Counties = {
         var reportingFactor = opts.reportingFactor !== undefined ? opts.reportingFactor : 1;
         var decidedMultiplier = opts.decidedMultiplier !== undefined ? opts.decidedMultiplier : 1;
         var errorFactor = opts.errorFactor !== undefined ? opts.errorFactor : 1;
+        var activeCandidates = (typeof _buildActiveCandidatesList === 'function') ? _buildActiveCandidatesList() : [];
+        var candidateById = (typeof _buildCandidateByIdMap === 'function') ? _buildCandidateByIdMap() : {};
 
         var voterPool = 0;
         if (typeof Election !== 'undefined' && typeof Election.getCountyVoterPool === 'function') {
@@ -727,12 +791,23 @@ var Counties = {
         var turnoutMultipliers = this.getPartyTurnoutMultipliers(county);
         var totals = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
         var totalWeight = 0;
+        var adjustedGroupTurnouts = {};
 
         for (var i = 0; i < groupWeights.length; i++) {
             var groupId = groupWeights[i].id;
             var share = groupWeights[i].share;
             var groupTurnout = (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined)
                 ? gameData.interestGroupTurnout[groupId] : 1.0;
+            var turnoutShift = 0;
+            for (var t = 0; t < activeCandidates.length; t++) {
+                var turnoutCandidate = candidateById[activeCandidates[t].id];
+                if (!turnoutCandidate) continue;
+                turnoutShift += (typeof _getCandidateGroupEffectValue === 'function')
+                    ? _getCandidateGroupEffectValue(turnoutCandidate, groupId, 'turnout')
+                    : 0;
+            }
+            groupTurnout = Math.max(0, Math.min(1, groupTurnout + (turnoutShift / 100)));
+            adjustedGroupTurnouts[groupId] = groupTurnout;
             totalWeight += share * groupTurnout;
         }
 
@@ -752,13 +827,25 @@ var Counties = {
             var group = groupWeights[j];
             var groupId = group.id;
             var groupShare = group.share;
-            var turnoutIndex = (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined)
-                ? gameData.interestGroupTurnout[groupId] : 1.0;
+            var turnoutIndex = adjustedGroupTurnouts[groupId];
+            if (turnoutIndex === undefined) {
+                turnoutIndex = (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined)
+                    ? gameData.interestGroupTurnout[groupId] : 1.0;
+            }
             var groupWeight = groupShare * turnoutIndex;
             if (groupWeight <= 0) continue;
 
             var groupPool = voterPool * (groupWeight / totalWeight);
             var support = this.getGroupSupportByParty(groupId, county);
+            for (var s = 0; s < activeCandidates.length; s++) {
+                var supportCandidate = candidateById[activeCandidates[s].id];
+                if (!supportCandidate) continue;
+                var supportShift = (typeof _getCandidateGroupEffectValue === 'function')
+                    ? _getCandidateGroupEffectValue(supportCandidate, groupId, 'support')
+                    : 0;
+                if (!supportShift) continue;
+                this.applyVoteShareShift(support, activeCandidates[s].voteKey, supportShift);
+            }
             var supportWeights = {};
             var supportTotal = 0;
             for (var partyKey in support) {

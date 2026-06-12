@@ -168,25 +168,13 @@ function applyCandidateBuffs() {
             }
         }
 
-        // 3. Presidential group boosts/debuffs (from candidate data)
+        // 3. Presidential group effects are handled dynamically in county vote calculations.
         if (pres && pres.siphonFromMajorParties) {
             // Apply siphon first so downstream boosts/debuffs can still move the post-siphon coalition.
             _applyMajorPartySiphonToCounties(voteKey, pres.siphonFromMajorParties);
         }
-        if (pres && pres.groupBoosts) {
-            _applyGroupModsToCounties(pres.groupBoosts, voteKey, 1.0);
-        }
-        if (pres && pres.groupDebuffs) {
-            _applyGroupModsToCounties(pres.groupDebuffs, voteKey, 1.0);
-        }
 
-        // 4. VP group boosts/debuffs (50% of presidential effect)
-        if (vp && vp.groupBoosts) {
-            _applyGroupModsToCounties(vp.groupBoosts, voteKey, 0.5);
-        }
-        if (vp && vp.groupDebuffs) {
-            _applyGroupModsToCounties(vp.groupDebuffs, voteKey, 0.5);
-        }
+        // 4. VP group effects are handled dynamically in county vote calculations.
 
         // 5. Special named buffs (deterministic)
         if (pres && pres.buff === 'Midwest Appeal') {
@@ -274,6 +262,41 @@ function _applyMajorPartySiphonToCounties(voteKey, siphonFromMajorParties) {
         county.v.R = Math.max(0, (county.v.R || 0) - fromR);
         county.v[voteKey] = Math.min(maxVoteShare, (county.v[voteKey] || 0) + fromD + fromR);
     }
+}
+
+function _getCandidateGroupEffects(candidate) {
+    if (!candidate) return {};
+    if (candidate.groupEffects && typeof candidate.groupEffects === 'object') {
+        return candidate.groupEffects;
+    }
+
+    var effects = {};
+
+    function mergeLegacy(sourceMap) {
+        if (!sourceMap) return;
+        for (var groupId in sourceMap) {
+            if (!sourceMap.hasOwnProperty(groupId)) continue;
+            var value = Number(sourceMap[groupId]);
+            if (!isFinite(value) || value === 0) continue;
+            if (!effects[groupId]) {
+                effects[groupId] = { support: 0, turnout: 0 };
+            }
+            effects[groupId].support += value;
+            effects[groupId].turnout += value;
+        }
+    }
+
+    mergeLegacy(candidate.groupBoosts);
+    mergeLegacy(candidate.groupDebuffs);
+    return effects;
+}
+
+function _getCandidateGroupEffectValue(candidate, groupId, effectKey) {
+    var effects = _getCandidateGroupEffects(candidate);
+    var effect = effects[groupId];
+    if (!effect) return 0;
+    var value = Number(effect[effectKey]);
+    return isFinite(value) ? value : 0;
 }
 
 // County-level targeted boosts for candidates with specific local ties
@@ -872,10 +895,7 @@ var CANDIDATE_GROUP_MOD_ALIASES = {
 
 function _getCandidateGroupModifier(candidate, groupId) {
     if (!candidate) return 0;
-    var total = 0;
-    total += _sumCandidateGroupMods(candidate.groupBoosts, groupId);
-    total += _sumCandidateGroupMods(candidate.groupDebuffs, groupId);
-    return total * 0.45;
+    return _getCandidateGroupEffectValue(candidate, groupId, 'support');
 }
 
 function _sumCandidateGroupMods(mods, groupId) {
