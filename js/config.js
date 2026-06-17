@@ -324,7 +324,23 @@ var gameData = {
     pendingActions: [],  // Array of {type, state, countyId, issueId, intensity, cost}
     turnPressure: {},     // Track cumulative pressure per state+issue for diminishing returns
     // Per-turn polling cache: { stateCode: { D: 48.5, R: 44.2, ... }, county: { fips: {...} } }
-    pollCache: {}
+    pollCache: {},
+    // === v2 NEW FIELDS ===
+    campaignMomentum: 0,        // Range: -1.0 to +1.0; tracks winning/losing streak
+    issueFatigueMap: {},         // {stateCode: {issueId: consecutiveWeeks}}
+    debatePrepBuff: false,       // True if player queued DEBATE PREP this cycle
+    oppoResearchCooldown: {},    // {partyCode: true} prevents consecutive targeting
+    approvalRating: 0.5,         // Player approval rating (0.30-0.80)
+    nationalPolls: [],           // Array of {D: %, R: %, ...} with variance
+    activeScandals: [],          // Scandals affecting any candidate
+    endorsements: [],            // Active endorsement effects
+    freeMediaUsed: false,        // Prevents double free media per momentum peak
+    grassrootsUsedThisWeek: 0,   // Grassroots fundraise count this week (max 2)
+    weatherModifier: null,       // Weather event for election week
+    ballotAccess: {},            // {partyCode: [accessible state codes]}
+    turnStatesUsed: [],          // States targeted this turn (max 3)
+    turnActionCounts: {},        // {stateCode_actionType: count} for 2-per-state cap
+    visitedStatesThisTurn: []    // States physically visited (Speech/Rally) this turn
 };
 
 // ==== CAMPAIGN PERSUASION TUNING CONSTANTS ====
@@ -365,7 +381,23 @@ var PERSUASION_CONSTANTS = {
     SPEECH_ENERGY_COST: 1,              // Speeches require candidate
     RALLY_ENERGY_COST: 2,               // Rallies require significant energy
     FIELD_ENERGY_COST: 1,               // Field ops require staff energy
-    DIGITAL_ENERGY_COST: 0              // Digital campaigns are staff-driven
+    DIGITAL_ENERGY_COST: 0,             // Digital campaigns are staff-driven
+    
+    // v2 New action costs
+    SURROGATE_BASE_COST: 1.0,           // Surrogate action base cost
+    SURROGATE_SCALE: 0.6,               // 60% of AD persuasion effect
+    SURROGATE_ENERGY_COST: 0,           // Surrogates don't require candidate
+    DEBATE_PREP_COST: 0.75,             // Debate prep cost
+    DEBATE_PREP_ENERGY_COST: 1,         // Debate prep energy
+    OPPO_RESEARCH_COST: 2.0,            // Oppo research cost
+    OPPO_RESEARCH_ENERGY_COST: 1,       // Oppo research energy
+    SURROGATE_TURNOUT_BOOST: 0.003,     // 60% of AD turnout boost
+    
+    // v2 Turnout cap
+    TURNOUT_BOOST_CAP: 0.18,            // Max cumulative turnout boost above turnoutBase per state
+    
+    // v2 Intensity scaling multipliers
+    INTENSITY_MULTIPLIERS: { 1: 1.0, 2: 1.7, 3: 2.2 }
 };
 
 // Credibility + fundraising tuning
@@ -404,5 +436,36 @@ const TARGETABLE_GROUPS = [
     'tech', 'farmers', 'military',
     'evangelical', 'catholic', 'jewish', 'muslim', 'secular',
     'progressives', 'libertarians', 'maga', 'centrists',
-    'youth', 'seniors', 'women', 'lgbtq_community'
+    'youth', 'seniors', 'women', 'lgbtq_community',
+    'genz', 'suburban_women'  // v2 new groups
 ];
+
+// === v2 NEW CONSTANTS ===
+
+var MOMENTUM_CONSTANTS = {
+    DECAY: 0.85,            // Weekly decay toward 0
+    WEEKLY_GAIN: 0.07,      // Gain per week of net positive polling
+    WEEKLY_LOSS: 0.07,      // Loss per week of net negative polling
+    EFFECT_SCALE: 0.15,     // Multiplier on action deltas: (1 + EFFECT_SCALE * momentum)
+    FREE_MEDIA_THRESHOLD: 0.5,  // Momentum needed for free media
+    FREE_MEDIA_RESET: 0.3      // Momentum drops below this to reset free media flag
+};
+
+var DEBATE_SCHEDULE = [
+    { week: 3, type: 'presidential', label: 'Presidential Debate #1' },
+    { week: 7, type: 'vp', label: 'Vice Presidential Debate' },
+    { week: 11, type: 'presidential', label: 'Presidential Debate #2' },
+    { week: 15, type: 'presidential', label: 'Presidential Debate #3' }
+];
+
+var BALLOT_ACCESS_COSTS = {
+    L: { cost: 2.0, initialStates: 51 },   // All 50 + DC
+    G: { cost: 3.5, initialStates: 40 },
+    PSL: { cost: 4.0, initialStates: 25 },
+    I: { cost: 5.0, initialStates: 30 }
+};
+
+var TURN_BUDGET = {
+    MAX_STATES_PER_TURN: 3,
+    MAX_SAME_ACTION_PER_STATE: 2
+};

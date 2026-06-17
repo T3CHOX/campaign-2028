@@ -30,7 +30,11 @@ var Campaign = {
             '<button class="act-btn" onclick="app.openStateBio()"><span><i class="fa-solid fa-book-open"></i></span><span>INTEL</span></button>' +
             '<button class="act-btn" onclick="app.openCountyView()"><span><i class="fa-solid fa-map"></i></span><span>BREAKDOWN</span></button>' +
             '<button class="act-btn" onclick="app.openIssuesPanel()"><span><i class="fa-solid fa-chart-line"></i></span><span>ISSUES</span></button>' +
-            '<button class="act-btn" onclick="app.handleAction(\'speech\')"><span><i class="fa-solid fa-microphone"></i></span><span>SPEECH</span></button>';
+            '<button class="act-btn" onclick="app.handleAction(\'speech\')"><span><i class="fa-solid fa-microphone"></i></span><span>SPEECH</span></button>' +
+            '<button class="act-btn v2-btn" onclick="app.handleAction(\'surrogate\')"><span><i class="fa-solid fa-user-group"></i></span><span>SURROGATE</span></button>' +
+            '<button class="act-btn v2-btn" onclick="app.handleAction(\'debate_prep\')"><span><i class="fa-solid fa-book"></i></span><span>DEBATE PREP</span></button>' +
+            '<button class="act-btn v2-btn" onclick="app.handleAction(\'oppo_research\')"><span><i class="fa-solid fa-magnifying-glass"></i></span><span>OPPO RESEARCH</span></button>' +
+            '<button class="act-btn v2-btn" onclick="Campaign.handleGrassrootsFundraise()"><span><i class="fa-solid fa-hand-holding-dollar"></i></span><span>GRASSROOTS</span></button>';
     },
 
     restoreStateActionGrid: function() {
@@ -96,6 +100,13 @@ var Campaign = {
                             })(code);
                         }
                     }
+                    var titleElements = svg.querySelectorAll('title');
+                    for (var j = 0; j < titleElements.length; j++) {
+                        if (titleElements[j].parentNode) {
+                            titleElements[j].parentNode.removeChild(titleElements[j]);
+                        }
+                    }
+
                     wrapper.innerHTML = '';
                     wrapper.appendChild(svg);
                     Campaign.colorMap();
@@ -195,7 +206,7 @@ var Campaign = {
         
         var issuesList = document.getElementById('sp-issues-list');
         issuesList.innerHTML = '';
-        issuesList.innerHTML += '<div style="background: #2a2a2a; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (totalBoost > 0.1 ? '#198754' : '#ccc') + '">' + turnoutText + '</span></div>';
+        issuesList.innerHTML += '<div style="background: rgba(0,0,0,0.2); padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + (totalBoost > 0.1 ? '#198754' : '#ccc') + '">' + turnoutText + '</span></div>';
         
         // Use CORE_ISSUES if available, otherwise fallback to old ISSUES
         var issueSource = (typeof CORE_ISSUES !== 'undefined') ? CORE_ISSUES : ISSUES;
@@ -452,6 +463,43 @@ var Campaign = {
         if (fav) {
             fav.innerText = Math.round(this.getFavorability() * 100) + '%';
         }
+
+        // v2: Momentum display
+        var momEl = document.getElementById('hud-momentum');
+        if (momEl) {
+            var mom = gameData.campaignMomentum || 0;
+            momEl.innerText = (mom >= 0 ? '+' : '') + mom.toFixed(2);
+            momEl.style.color = mom > 0.1 ? '#4ade80' : (mom < -0.1 ? '#f87171' : '#ccc');
+        }
+
+        // v2: Approval display
+        var approvalEl = document.getElementById('hud-approval');
+        if (approvalEl) {
+            approvalEl.innerText = Math.round((gameData.approvalRating || 0.5) * 100) + '%';
+        }
+        
+        // v2: National Poll display
+        var natPollEl = document.getElementById('hud-national-poll');
+        if (natPollEl && gameData.nationalPolls && gameData.nationalPolls.length > 0) {
+            var avgPoll = {};
+            for (var pIdx = 0; pIdx < gameData.nationalPolls.length; pIdx++) {
+                for (var pKey in gameData.nationalPolls[pIdx]) {
+                    avgPoll[pKey] = (avgPoll[pKey] || 0) + gameData.nationalPolls[pIdx][pKey];
+                }
+            }
+            var playerShare = (avgPoll[gameData.selectedParty] || 0) / gameData.nationalPolls.length;
+            var oppParty = gameData.selectedParty === 'D' ? 'R' : 'D';
+            var oppShare = (avgPoll[oppParty] || 0) / gameData.nationalPolls.length;
+            
+            var diff = (playerShare - oppShare) * 100;
+            var text = 'Tie';
+            if (diff > 0.5) text = '+' + diff.toFixed(1);
+            else if (diff < -0.5) text = diff.toFixed(1);
+            natPollEl.innerText = text;
+            natPollEl.style.color = diff > 0.5 ? 'var(--green-success)' : (diff < -0.5 ? 'var(--rep-red)' : '#ccc');
+        } else if (natPollEl) {
+            natPollEl.innerText = 'Tie';
+        }
         
         var energyHtml = '';
         for (var i = 0; i < gameData.maxEnergy; i++) {
@@ -536,6 +584,74 @@ var Campaign = {
         } else if (action === 'digital') {
             app.openDigitalModal();
             return;
+        } else if (action === 'surrogate') {
+            // v2: Surrogate action — reuses speech modal-style issue selection
+            if (gameData.energy < 1) {
+                return Utils.showToast("Need 1 energy for surrogate!");
+            }
+            if (gameData.funds < 2) {
+                return Utils.showToast("Need $2M for surrogate!");
+            }
+            // Check if state was physically visited
+            if (gameData.visitedStatesThisTurn && gameData.visitedStatesThisTurn.indexOf(gameData.selectedState) !== -1) {
+                return Utils.showToast("Can't send surrogate to a state you visited this turn");
+            }
+
+            var surrogateAction = {
+                type: 'SURROGATE',
+                state: gameData.selectedState,
+                issueId: null,  // Could be enhanced with issue selection
+                intensity: 1,
+                cost: { funds: 2, energy: 1 }
+            };
+
+            if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(surrogateAction)) {
+                Utils.showToast("Surrogate queued in " + s.name);
+                Utils.addLog("Queued surrogate in " + s.name);
+                this.updateHUD();
+                this.clickState(gameData.selectedState);
+            }
+        } else if (action === 'debate_prep') {
+            // v2: Debate prep — global action, not state-specific
+            if (gameData.energy < 2) {
+                return Utils.showToast("Need 2 energy for debate prep!");
+            }
+            if (gameData.debatePrepBuff) {
+                return Utils.showToast("Already prepared for debate!");
+            }
+
+            var debatePrepAction = {
+                type: 'DEBATE_PREP',
+                state: gameData.selectedState,
+                cost: { funds: 0, energy: 2 }
+            };
+
+            if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(debatePrepAction)) {
+                Utils.showToast("Debate prep queued");
+                this.updateHUD();
+            }
+        } else if (action === 'oppo_research') {
+            // v2: Opposition research — targets leading opponent
+            if (gameData.energy < 2) {
+                return Utils.showToast("Need 2 energy for oppo research!");
+            }
+            if (gameData.funds < 3) {
+                return Utils.showToast("Need $3M for oppo research!");
+            }
+
+            var oppoTarget = gameData.selectedParty === 'D' ? 'R' : 'D';
+            var oppoAction = {
+                type: 'OPPO_RESEARCH',
+                state: gameData.selectedState,
+                targetParty: oppoTarget,
+                cost: { funds: 3, energy: 2 }
+            };
+
+            if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(oppoAction)) {
+                Utils.showToast("Oppo research queued vs " + PARTIES[oppoTarget].shortName);
+                Utils.addLog("Queued oppo research vs " + PARTIES[oppoTarget].shortName);
+                this.updateHUD();
+            }
         }
     },
 
@@ -684,8 +800,18 @@ var Campaign = {
             Persuasion.applyQueuedActions();
         }
         
+        // Process new deep systems
+        if (typeof GroundOps !== 'undefined') GroundOps.processWeekly();
+        if (typeof DigitalAds !== 'undefined') DigitalAds.processWeekly();
+        
         gameData.currentDate.setDate(gameData.currentDate.getDate() + 7);
         gameData.energy = gameData.maxEnergy;
+
+        // v2: Reset turn budget tracking
+        gameData.turnStatesUsed = [];
+        gameData.turnActionCounts = {};
+        gameData.visitedStatesThisTurn = [];
+        gameData.grassrootsUsedThisWeek = 0;
         
         // Process undecided voters
         this.processUndecidedVoters();
@@ -700,6 +826,61 @@ var Campaign = {
         // Recompute live interest group support after all changes
         if (typeof recomputeInterestGroupSupport !== 'undefined') {
             recomputeInterestGroupSupport();
+        }
+
+        // v2: Process scandals (reveal pending, decrement active)
+        if (typeof Scandals !== 'undefined' && Scandals.processActiveScandals) {
+            Scandals.processActiveScandals();
+        }
+
+        // v2: News & Events Engine
+        if (typeof News !== 'undefined' && News.processWeeklyEvent) {
+            News.processWeeklyEvent();
+        }
+
+        // v2: Check for scheduled debates
+        if (typeof Debates !== 'undefined' && Debates.checkDebateWeek) {
+            Debates.checkDebateWeek();
+        }
+
+        // v2: Process active endorsements (decrement durations)
+        if (typeof Endorsements !== 'undefined' && Endorsements.processActiveEndorsements) {
+            Endorsements.processActiveEndorsements();
+        }
+
+        // v2: Update campaign momentum
+        if (typeof this.updateCampaignMomentum === 'function') {
+            this.updateCampaignMomentum();
+        }
+
+        // v2: Update approval rating
+        if (typeof this.updateApprovalRating === 'function') {
+            this.updateApprovalRating();
+        }
+
+        // v2: Calculate national polls
+        if (typeof this.calculateNationalPoll === 'function') {
+            this.calculateNationalPoll();
+        }
+
+        // v2: Spoiler effect — when third-party share >8%, opposing major party gets +0.5%/week in battlegrounds
+        if (gameData.thirdPartiesEnabled && typeof Debates !== 'undefined' && Debates.getThirdPartyNationalPoll) {
+            for (var tpCode in gameData.thirdTickets) {
+                var tpShare = Debates.getThirdPartyNationalPoll(tpCode);
+                if (tpShare > 8) {
+                    this._applySpoilerEffect(tpCode, tpShare);
+                }
+            }
+        }
+
+        // v2: Generate weather modifier in final campaign week
+        var msUntilElection = gameData.electionDay.getTime() - gameData.currentDate.getTime();
+        var weeksLeft = msUntilElection / (7 * 24 * 60 * 60 * 1000);
+        if (weeksLeft <= 1 && weeksLeft > 0 && !gameData.weatherModifier) {
+            gameData.weatherModifier = (Math.random() - 0.5) * 2; // -1 to +1
+            var weatherDesc = gameData.weatherModifier > 0.3 ? 'clear skies expected' : 
+                             (gameData.weatherModifier < -0.3 ? 'storms forecast' : 'mixed conditions');
+            Utils.addLog('🌤️ Election Day weather forecast: ' + weatherDesc);
         }
         
         // Random chance for PAC offer
@@ -940,5 +1121,176 @@ var Campaign = {
             document.getElementById('county-view-wrapper').classList.add('hidden');
             document.getElementById('us-map-wrapper').classList.remove('hidden');
         }
+    },
+
+    // === v2 NEW METHODS ===
+
+    // v2: Update campaign momentum based on weekly net polling change
+    updateCampaignMomentum: function() {
+        if (typeof MOMENTUM_CONSTANTS === 'undefined') return;
+
+        // Decay momentum toward 0
+        gameData.campaignMomentum *= MOMENTUM_CONSTANTS.DECAY;
+
+        // Calculate net polling direction (simplified: are we winning or losing states?)
+        var statesWinning = 0;
+        var statesLosing = 0;
+        for (var code in gameData.states) {
+            var s = gameData.states[code];
+            var playerMargin = gameData.selectedParty === 'D' ? s.margin : -s.margin;
+            if (playerMargin > 0) statesWinning++;
+            else statesLosing++;
+        }
+
+        var netDirection = statesWinning > statesLosing ? 1 : (statesWinning < statesLosing ? -1 : 0);
+        if (netDirection > 0) {
+            gameData.campaignMomentum = Math.min(1, gameData.campaignMomentum + MOMENTUM_CONSTANTS.WEEKLY_GAIN);
+        } else if (netDirection < 0) {
+            gameData.campaignMomentum = Math.max(-1, gameData.campaignMomentum - MOMENTUM_CONSTANTS.WEEKLY_LOSS);
+        }
+
+        // Clamp
+        gameData.campaignMomentum = Math.max(-1, Math.min(1, gameData.campaignMomentum));
+    },
+
+    // v2: Update approval rating
+    updateApprovalRating: function() {
+        var fav = typeof this.getFavorability === 'function' ? this.getFavorability() : 0.5;
+        var approval = 0.5 + (fav - 0.5) * 0.6; // Scale favorability contribution
+
+        // Issue position modifier (simplified)
+        if (gameData.lockedIssues && CORE_ISSUES) {
+            var positionScore = 0;
+            var positionCount = 0;
+            for (var issueId in gameData.lockedIssues) {
+                positionCount++;
+            }
+            if (positionCount > 3) positionScore += 0.02; // More positions = more defined = slightly more approval
+            approval += positionScore;
+        }
+
+        // Coalition loyalty modifier
+        if (gameData.coalitionStatus) {
+            var loyaltySum = 0;
+            var loyaltyCount = 0;
+            for (var cid in gameData.coalitionStatus) {
+                loyaltySum += gameData.coalitionStatus[cid].loyalty || 1.0;
+                loyaltyCount++;
+            }
+            if (loyaltyCount > 0) {
+                var avgLoyalty = loyaltySum / loyaltyCount;
+                approval += (avgLoyalty - 0.85) * 0.3;
+            }
+        }
+
+        // Momentum influence
+        approval += gameData.campaignMomentum * 0.05;
+
+        // Clamp to [0.30, 0.80]
+        gameData.approvalRating = Math.max(0.30, Math.min(0.80, approval));
+    },
+
+    // v2: Calculate national polls with variance
+    calculateNationalPoll: function() {
+        if (typeof Counties === 'undefined' || !Counties.countyData) return;
+
+        var partyTotals = {};
+        var totalPop = 0;
+
+        for (var fips in Counties.countyData) {
+            var county = Counties.countyData[fips];
+            if (!county || !county.v) continue;
+            var pop = county.p || 0;
+            totalPop += pop;
+            for (var party in county.v) {
+                if (!partyTotals[party]) partyTotals[party] = 0;
+                partyTotals[party] += pop * county.v[party];
+            }
+        }
+
+        // Generate 2-4 polls with Gaussian noise (sigma = 0.012 = 1.2%)
+        var numPolls = 2 + Math.floor(Math.random() * 3);
+        gameData.nationalPolls = [];
+        for (var p = 0; p < numPolls; p++) {
+            var poll = {};
+            for (var party in partyTotals) {
+                var baseValue = totalPop > 0 ? partyTotals[party] / totalPop : 0;
+                // Box-Muller Gaussian
+                var u1 = Math.random();
+                var u2 = Math.random();
+                var noise = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2) * 0.012;
+                poll[party] = Math.max(0, baseValue + noise);
+            }
+            gameData.nationalPolls.push(poll);
+        }
+    },
+
+    // v2: Spoiler effect — third party >8% helps opposing major party in battlegrounds
+    _applySpoilerEffect: function(thirdPartyCode, nationalShare) {
+        if (typeof Counties === 'undefined' || !Counties.countyData) return;
+        var spoilerBoost = 0.005; // +0.5% per week
+
+        for (var code in gameData.states) {
+            var s = gameData.states[code];
+            if (Math.abs(s.margin) > 8) continue; // Only battlegrounds
+
+            var stateFips = STATES[code] ? STATES[code].fips : null;
+            if (!stateFips) continue;
+
+            for (var fips in Counties.countyData) {
+                var paddedFips = fips.padStart(5, '0');
+                if (paddedFips.substring(0, 2) !== stateFips) continue;
+                var county = Counties.countyData[fips];
+                if (!county || !county.v) continue;
+
+                // Third party likely spoils the ideologically closer major party
+                // Green/PSL spoil D, Libertarian spoils R
+                if (thirdPartyCode === 'G' || thirdPartyCode === 'PSL') {
+                    county.v.R = Math.min(100, county.v.R + spoilerBoost);
+                } else if (thirdPartyCode === 'L') {
+                    county.v.D = Math.min(100, county.v.D + spoilerBoost);
+                }
+            }
+            Counties.updateStateFromCounties(code);
+        }
+    },
+
+    // v2: Grassroots fundraising — no issue lock, no media vulnerability
+    handleGrassrootsFundraise: function() {
+        if (gameData.grassrootsUsedThisWeek >= 2) {
+            Utils.showToast('Max 2 grassroots fundraises per week!');
+            return;
+        }
+        if (gameData.energy < 1) {
+            Utils.showToast('Not enough energy!');
+            return;
+        }
+
+        gameData.energy -= 1;
+        gameData.grassrootsUsedThisWeek++;
+
+        var momentum = gameData.campaignMomentum || 0;
+        var variance = 0.8 + Math.random() * 0.4; // 0.8-1.2
+        var yield_ = (2.0 + momentum * 1.5) * variance;
+
+        // Apply approval rating modifier (±15%)
+        if (gameData.approvalRating) {
+            yield_ *= (0.85 + gameData.approvalRating * 0.30);
+        }
+
+        // Apply endorsement fundraising bonus
+        if (typeof Endorsements !== 'undefined' && Endorsements.getActiveEffectMultiplier) {
+            yield_ *= Endorsements.getActiveEffectMultiplier('fundraising');
+        }
+
+        yield_ = Math.max(0.5, yield_);
+        gameData.funds += yield_;
+
+        // Small momentum boost
+        gameData.campaignMomentum = Math.min(1, (gameData.campaignMomentum || 0) + 0.02);
+
+        Utils.addLog('💰 Grassroots fundraise: $' + yield_.toFixed(1) + 'M raised');
+        Utils.showToast('💰 $' + yield_.toFixed(1) + 'M raised from grassroots!');
+        this.updateHUD();
     }
 };

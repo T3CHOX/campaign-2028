@@ -3,19 +3,29 @@
    ============================================ */
 
 var Utils = {
-    showToast: function(msg) {
+    showToast: function (msg) {
         var toast = document.getElementById('toast');
         if (toast) {
             toast.innerText = msg;
             toast.style.opacity = 1;
-            setTimeout(function() { toast.style.opacity = 0; }, 2500);
+            setTimeout(function () { toast.style.opacity = 0; }, 2500);
         }
     },
 
-    addLog: function(message) {
+    getDisplayTier: function (tier) {
+        if (!tier) return 'Unknown';
+        if (tier === 'Highly Urban') return 'Highly Urban';
+        if (tier === 'Urban/Dense Suburban') return 'Urban/Dense Suburban';
+        if (tier === 'Suburban/Mixed') return 'Suburban/Mixed';
+        if (tier === 'Rural/Small Town') return 'Rural/Small Town';
+        if (tier === 'Deep Rural') return 'Deep Rural';
+        return tier;
+    },
+
+    addLog: function (message) {
         gameData.logs.unshift(message);
         if (gameData.logs.length > 50) gameData.logs.pop();
-        
+
         var container = document.getElementById('log-content');
         if (container) {
             var html = '';
@@ -26,7 +36,7 @@ var Utils = {
         }
     },
 
-    getMarginColor: function(margin) {
+    getMarginColor: function (margin) {
         if (margin > 35) return "#00152e";
         if (margin > 25) return "#00264d";
         if (margin > 18) return "#003d7a";
@@ -54,31 +64,31 @@ var Utils = {
         return "#310105";
     },
 
-    formatDate: function(date) {
+    formatDate: function (date) {
         var months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
         return months[date.getMonth()] + ' ' + date.getDate();
     },
 
-    formatTime: function(timeValue) {
+    formatTime: function (timeValue) {
         // Handle time past midnight (24 hours)
         var adjustedTime = timeValue;
         if (timeValue >= 24) {
             adjustedTime = timeValue - 24;
         }
-        
+
         var hours = Math.floor(adjustedTime);
         var minutes = Math.floor((adjustedTime - hours) * 60);
         var ampm = hours >= 12 ? 'PM' : 'AM';
         var displayHours = hours > 12 ? hours - 12 : hours;
         if (displayHours === 0) displayHours = 12;
-        return displayHours + ':' + (minutes < 10 ? '0' :  '') + minutes + ' ' + ampm;
+        return displayHours + ':' + (minutes < 10 ? '0' : '') + minutes + ' ' + ampm;
     },
 
-    isThirdParty: function(partyCode) {
+    isThirdParty: function (partyCode) {
         return partyCode === 'PSL' || partyCode === 'G' || partyCode === 'L' || partyCode === 'I';
     },
 
-    shuffleArray: function(array) {
+    shuffleArray: function (array) {
         var result = array.slice();
         for (var i = result.length - 1; i > 0; i--) {
             var j = Math.floor(Math.random() * (i + 1));
@@ -90,7 +100,7 @@ var Utils = {
     },
 
     // Return all active presidential candidates with their party + candidate object
-    getActiveCandidates: function() {
+    getActiveCandidates: function () {
         var list = [];
         if (gameData.candidate) {
             list.push({ party: gameData.selectedParty, cand: gameData.candidate });
@@ -114,7 +124,7 @@ var Utils = {
     },
 
     // Compute per-party polling percentages for a state from county data
-    getStatePollingByParty: function(stateCode) {
+    getStatePollingByParty: function (stateCode) {
         if (typeof Counties === 'undefined' || !Counties.countyData) return null;
         if (typeof STATES === 'undefined' || !STATES[stateCode]) return null;
         var stateFips = STATES[stateCode].fips;
@@ -128,7 +138,7 @@ var Utils = {
             var county = Counties.countyData[fips];
             if (!county.v || !county.p) continue;
 
-            var decided      = (100 - (county.undecided || 0)) / 100;
+            var decided = (100 - (county.undecided || 0)) / 100;
             var countyTotals = Counties.calculateCountyVoteTotals(county, { reportingFactor: 1, decidedMultiplier: decided, errorFactor: 1 });
 
             totals.D += countyTotals.D || 0;
@@ -151,10 +161,10 @@ var Utils = {
     },
 
     // Compute per-party polling percentages for a single county object
-    getCountyPollingByParty: function(county) {
+    getCountyPollingByParty: function (county) {
         if (!county || !county.v) return null;
 
-        var decided      = (100 - (county.undecided || 0)) / 100;
+        var decided = (100 - (county.undecided || 0)) / 100;
         var totals = Counties.calculateCountyVoteTotals(county, { reportingFactor: 1, decidedMultiplier: decided, errorFactor: 1 });
 
         var totalVotes = totals.D + totals.R + totals.G + totals.L + totals.I + totals.PSL;
@@ -171,7 +181,7 @@ var Utils = {
     // ─── Ranked candidate list helpers ─────────────────────────────────────────
 
     // Build the ordered array of all active candidates with polling percentages and deltas
-    _getRankedCandidates: function(pcts, prevPcts) {
+    _getRankedCandidates: function (pcts, prevPcts) {
         var all = [];
 
         // Dem ticket
@@ -204,19 +214,19 @@ var Utils = {
             result.push({ party: entry.party, cand: entry.cand, pct: pct, delta: delta });
         }
 
-        result.sort(function(a, b) { return b.pct - a.pct; });
+        result.sort(function (a, b) { return b.pct - a.pct; });
         return result;
     },
 
     // Format a candidate name as "First Last (P-ST)"
-    _formatCandName: function(cand, party) {
+    _formatCandName: function (cand, party) {
         var homeState = (cand && (cand.homeState || cand.state)) || '';
         var partyCode = party || (cand && cand.party) || '?';
         return (cand ? cand.name : '—') + ' (' + partyCode + (homeState ? '-' + homeState : '') + ')';
     },
 
     // Build ranked candidate list HTML for simulator state/county views
-    buildCandidateRankedListHTML: function(pcts, prevPcts) {
+    buildCandidateRankedListHTML: function (pcts, prevPcts) {
         if (!pcts) {
             return '<div class="cpl-empty">No polling data available.</div>';
         }
@@ -251,10 +261,10 @@ var Utils = {
     },
 
     // Build ranked candidate list HTML for election-night state/county detail panels
-    buildElectionRankedListHTML: function(reportedVotes, reportedPct, ev, projStatus) {
+    buildElectionRankedListHTML: function (reportedVotes, reportedPct, ev, projStatus) {
         var votes = reportedVotes || { D: 0, R: 0, G: 0, L: 0, I: 0, PSL: 0 };
         var totalVotes = (votes.D || 0) + (votes.R || 0) + (votes.G || 0) +
-                         (votes.L || 0) + (votes.I || 0) + (votes.PSL || 0);
+            (votes.L || 0) + (votes.I || 0) + (votes.PSL || 0);
 
         // Build candidate list ordered by reported votes
         var all = [];
@@ -273,7 +283,7 @@ var Utils = {
                 }
             }
         }
-        all.sort(function(a, b) { return b.votes - a.votes; });
+        all.sort(function (a, b) { return b.votes - a.votes; });
 
         var html = '<div class="elec-cpl-list">';
 
@@ -309,7 +319,7 @@ var Utils = {
 
     // Color a county/state by shift from 2024 election
     // shift > 0 = moved toward D, shift < 0 = moved toward R
-    getShiftColor: function(shift) {
+    getShiftColor: function (shift) {
         var absShift = Math.abs(shift);
         if (absShift < 0.5) return '#888888';
         var intensity = Math.min(1, absShift / 20); // saturate at ±20 pts

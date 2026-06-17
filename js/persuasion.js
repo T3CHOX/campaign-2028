@@ -55,12 +55,65 @@ var Persuasion = {
     calculateSaturationFactor: function(pressure) {
         return 1 / (1 + pressure * PERSUASION_CONSTANTS.PRESSURE_SCALAR);
     },
+
+    // v2: Intensity scaling — diminishing returns on higher intensity levels
+    getEffectiveIntensity: function(intensity) {
+        if (typeof PERSUASION_CONSTANTS.INTENSITY_MULTIPLIERS !== 'undefined') {
+            return PERSUASION_CONSTANTS.INTENSITY_MULTIPLIERS[intensity] || intensity;
+        }
+        if (intensity === 2) return 1.7;
+        if (intensity === 3) return 2.2;
+        return 1.0;
+    },
+
+    // v2: Get issue fatigue multiplier for a state+issue combo
+    getIssueFatigueMultiplier: function(stateCode, issueId) {
+        if (!gameData.issueFatigueMap || !gameData.issueFatigueMap[stateCode]) return 1.0;
+        var weeks = gameData.issueFatigueMap[stateCode][issueId] || 0;
+        if (weeks >= 5) return 0.50;
+        if (weeks >= 3) return 0.70;
+        return 1.0;
+    },
+
+    // v2: Track issue fatigue per state
+    trackIssueFatigue: function(stateCode, issueId) {
+        if (!gameData.issueFatigueMap) gameData.issueFatigueMap = {};
+        if (!gameData.issueFatigueMap[stateCode]) gameData.issueFatigueMap[stateCode] = {};
+        gameData.issueFatigueMap[stateCode][issueId] = (gameData.issueFatigueMap[stateCode][issueId] || 0) + 1;
+    },
+
+    // v2: Check turn budget constraints
+    checkTurnBudget: function(action) {
+        if (typeof TURN_BUDGET === 'undefined') return true;
+        // Check max states per turn
+        if (!gameData.turnStatesUsed) gameData.turnStatesUsed = [];
+        if (gameData.turnStatesUsed.indexOf(action.state) === -1) {
+            if (gameData.turnStatesUsed.length >= TURN_BUDGET.MAX_STATES_PER_TURN) {
+                Utils.showToast('Maximum ' + TURN_BUDGET.MAX_STATES_PER_TURN + ' states per turn!');
+                return false;
+            }
+        }
+        // Check max same action type per state
+        if (!gameData.turnActionCounts) gameData.turnActionCounts = {};
+        var key = action.state + '_' + action.type;
+        var count = gameData.turnActionCounts[key] || 0;
+        if (count >= TURN_BUDGET.MAX_SAME_ACTION_PER_STATE) {
+            Utils.showToast('Max ' + TURN_BUDGET.MAX_SAME_ACTION_PER_STATE + ' of same action per state!');
+            return false;
+        }
+        return true;
+    },
     
     // Queue a campaign action (doesn't apply immediately)
     queueAction: function(action) {
         // Validate action structure
         if (!action.type || !action.state) {
             console.error('Invalid action structure:', action);
+            return false;
+        }
+
+        // v2: Turn budget enforcement
+        if (!this.checkTurnBudget(action)) {
             return false;
         }
         
@@ -85,6 +138,23 @@ var Persuasion = {
             if (action.cost.energy) gameData.energy -= action.cost.energy;
         }
         
+        // Track turn budget
+        if (!gameData.turnStatesUsed) gameData.turnStatesUsed = [];
+        if (gameData.turnStatesUsed.indexOf(action.state) === -1) {
+            gameData.turnStatesUsed.push(action.state);
+        }
+        if (!gameData.turnActionCounts) gameData.turnActionCounts = {};
+        var budgetKey = action.state + '_' + action.type;
+        gameData.turnActionCounts[budgetKey] = (gameData.turnActionCounts[budgetKey] || 0) + 1;
+
+        // Track physical visits for Surrogate exclusion
+        if (action.type === 'SPEECH' || action.type === 'RALLY') {
+            if (!gameData.visitedStatesThisTurn) gameData.visitedStatesThisTurn = [];
+            if (gameData.visitedStatesThisTurn.indexOf(action.state) === -1) {
+                gameData.visitedStatesThisTurn.push(action.state);
+            }
+        }
+
         // Add to queue
         gameData.pendingActions.push(action);
         
@@ -119,6 +189,12 @@ var Persuasion = {
                 this.applyFieldAction(action);
             } else if (action.type === 'DIGITAL') {
                 this.applyDigitalAction(action);
+            } else if (action.type === 'SURROGATE') {
+                this.applySurrogateAction(action);
+            } else if (action.type === 'DEBATE_PREP') {
+                this.applyDebatePrepAction(action);
+            } else if (action.type === 'OPPO_RESEARCH') {
+                this.applyOppoResearchAction(action);
             }
         }
         
@@ -269,6 +345,17 @@ var Persuasion = {
         }
         
         var rallyDelta = PERSUASION_CONSTANTS.BASE_PERSUASION_RALLY;
+
+        // v2: Charisma scaling for rallies
+        if (gameData.candidate && gameData.candidate.charisma) {
+            rallyDelta *= gameData.candidate.charisma;
+        }
+
+        // v2: Momentum multiplier
+        if (typeof MOMENTUM_CONSTANTS !== 'undefined') {
+            rallyDelta *= (1.0 + MOMENTUM_CONSTANTS.EFFECT_SCALE * (gameData.campaignMomentum || 0));
+        }
+
         for (var fips in Counties.countyData) {
             var paddedFips = fips.padStart(5, '0');
             if (paddedFips.substring(0, 2) === stateFips) {
@@ -329,6 +416,24 @@ var Persuasion = {
                 if (groupShare <= 0) continue;
 
                 var delta = PERSUASION_CONSTANTS.BASE_PERSUASION_DIGITAL * intensity * groupShare;
+
+                // v2: Age-group targeting bonus for Digital
+                if (INTEREST_GROUPS[groupId] && INTEREST_GROUPS[groupId].ageSkew === 'young') {
+                    delta *= 1.25;
+                } else if (INTEREST_GROUPS[groupId] && INTEREST_GROUPS[groupId].ageSkew === 'old') {
+                    delta *= 0.80;
+                }
+
+                // v2: Momentum multiplier
+                if (typeof MOMENTUM_CONSTANTS !== 'undefined') {
+                    delta *= (1.0 + MOMENTUM_CONSTANTS.EFFECT_SCALE * (gameData.campaignMomentum || 0));
+                }
+
+                // v2: Endorsement digital bonus
+                if (typeof Endorsements !== 'undefined' && Endorsements.getActiveEffectMultiplier) {
+                    delta *= Endorsements.getActiveEffectMultiplier('digital');
+                }
+
                 this.applyMarginShift(county, delta);
                 this.applyTurnoutBoost(county, PERSUASION_CONSTANTS.DIGITAL_TURNOUT_BOOST * intensity * groupShare);
             }
@@ -388,6 +493,19 @@ var Persuasion = {
         
         // Apply saturation
         totalDelta *= saturation;
+
+        // v2: Momentum multiplier
+        if (typeof MOMENTUM_CONSTANTS !== 'undefined') {
+            totalDelta *= (1.0 + MOMENTUM_CONSTANTS.EFFECT_SCALE * (gameData.campaignMomentum || 0));
+        }
+
+        // v2: Issue fatigue
+        if (typeof this.getIssueFatigueMultiplier === 'function') {
+            var stateCode = this.getStateCodeFromFips(county.fips || county.s || 0);
+            if (stateCode && issueId) {
+                totalDelta *= this.getIssueFatigueMultiplier(stateCode, issueId);
+            }
+        }
 
         // Apply favorability multiplier. Neutral is 50%; strong favorability adds persuasion.
         if (typeof Campaign !== 'undefined' && Campaign.getFavorability) {
@@ -461,6 +579,14 @@ var Persuasion = {
     applyTurnoutBoost: function(county, boostAmount) {
         if (!county.turnout) {
             county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+        }
+
+        // v2: Turnout cap enforcement
+        if (typeof PERSUASION_CONSTANTS.TURNOUT_BOOST_CAP !== 'undefined') {
+            var currentBoost = (county.turnout.player || 1.0) - 1.0;
+            var remainingCap = PERSUASION_CONSTANTS.TURNOUT_BOOST_CAP - currentBoost;
+            if (remainingCap <= 0) return;
+            boostAmount = Math.min(boostAmount, remainingCap);
         }
         
         var playerParty = gameData.selectedParty;
@@ -563,6 +689,7 @@ var Persuasion = {
         }
         
         var ads = 0, speeches = 0, rallies = 0, fields = 0, digitals = 0;
+        var surrogates = 0, debatePreps = 0, oppoResearch = 0;
         
         for (var i = 0; i < gameData.pendingActions.length; i++) {
             var action = gameData.pendingActions[i];
@@ -571,6 +698,9 @@ var Persuasion = {
             else if (action.type === 'RALLY') rallies++;
             else if (action.type === 'FIELD') fields++;
             else if (action.type === 'DIGITAL') digitals++;
+            else if (action.type === 'SURROGATE') surrogates++;
+            else if (action.type === 'DEBATE_PREP') debatePreps++;
+            else if (action.type === 'OPPO_RESEARCH') oppoResearch++;
         }
         
         var parts = [];
@@ -579,7 +709,72 @@ var Persuasion = {
         if (rallies > 0) parts.push(rallies + ' rall' + (rallies > 1 ? 'ies' : 'y'));
         if (fields > 0) parts.push(fields + ' field op' + (fields > 1 ? 's' : ''));
         if (digitals > 0) parts.push(digitals + ' digital');
+        if (surrogates > 0) parts.push(surrogates + ' surrogate' + (surrogates > 1 ? 's' : ''));
+        if (debatePreps > 0) parts.push(debatePreps + ' debate prep');
+        if (oppoResearch > 0) parts.push(oppoResearch + ' oppo research');
         
         return parts.join(', ') + ' queued';
+    },
+
+    // v2: SURROGATE action — 60% of AD effect, no turn pressure, only in unvisited states
+    applySurrogateAction: function(action) {
+        var stateCode = action.state;
+        var issueId = action.issueId;
+        var intensity = action.intensity || 1;
+
+        // Check if state was physically visited this turn
+        if (gameData.visitedStatesThisTurn && gameData.visitedStatesThisTurn.indexOf(stateCode) !== -1) {
+            Utils.showToast('Cannot send surrogate to a state you visited this turn');
+            return;
+        }
+
+        var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
+        if (!stateFips || !Counties || !Counties.countyData) return;
+
+        // Track issue fatigue
+        if (issueId) this.trackIssueFatigue(stateCode, issueId);
+
+        var surrogateScale = PERSUASION_CONSTANTS.SURROGATE_SCALE || 0.6;
+
+        for (var fips in Counties.countyData) {
+            var paddedFips = fips.padStart(5, '0');
+            if (paddedFips.substring(0, 2) === stateFips) {
+                var county = Counties.countyData[fips];
+                var delta = this.calculateCountyPersuasion(
+                    county, issueId, intensity,
+                    PERSUASION_CONSTANTS.BASE_PERSUASION_AD * surrogateScale,
+                    1.0, false // No saturation penalty, no localized
+                );
+                this.applyMarginShift(county, delta);
+                this.applyTurnoutBoost(county, (PERSUASION_CONSTANTS.SURROGATE_TURNOUT_BOOST || 0.003) * intensity);
+            }
+        }
+
+        if (typeof updateGroupTurnoutFromIssue !== 'undefined' && issueId) {
+            updateGroupTurnoutFromIssue(issueId, gameData.selectedParty, intensity * 0.5);
+        }
+        this.applyIssueGroupMomentum(issueId, intensity, 0.10);
+        Utils.addLog('📢 Surrogate dispatched to ' + gameData.states[stateCode].name + ' on ' + (issueId || 'general'));
+    },
+
+    // v2: DEBATE PREP action — sets buff flag
+    applyDebatePrepAction: function(action) {
+        gameData.debatePrepBuff = true;
+        Utils.addLog('📚 Debate preparation completed — ready for next debate!');
+        Utils.showToast('📚 Debate prep complete — +15% debate performance');
+    },
+
+    // v2: OPPO RESEARCH action — delegates to Scandals module
+    applyOppoResearchAction: function(action) {
+        var targetParty = action.targetParty;
+        if (!targetParty) {
+            // Default to major opponent
+            targetParty = gameData.selectedParty === 'D' ? 'R' : 'D';
+        }
+        if (typeof Scandals !== 'undefined' && Scandals.rollOppoResearch) {
+            Scandals.rollOppoResearch(targetParty);
+        } else {
+            Utils.addLog('🔍 Opposition research conducted');
+        }
     }
 };

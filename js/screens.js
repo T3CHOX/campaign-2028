@@ -230,6 +230,10 @@ var Screens = {
                     '<div class="candidate-tile-stats">' +
                         '<div class="tile-stat-row"><span class="tile-stat-label">Funds:</span><span class="tile-stat-val">$' + (c.funds || 0) + 'M</span></div>' +
                         '<div class="tile-stat-row"><span class="tile-stat-label">Stamina:</span><div class="stamina-pips">' + staminaPips + '</div></div>' +
+                        '<div class="tile-stat-row"><span class="tile-stat-label">Charisma:</span><span class="tile-stat-val">' + (c.charisma ? c.charisma.toFixed(1) : '1.0') + 'x</span></div>' +
+                        '<div class="tile-stat-row"><span class="tile-stat-label">Debate Skill:</span><span class="tile-stat-val">' + (c.debateSkill !== undefined ? c.debateSkill : 5) + '/10</span></div>' +
+                        '<div class="tile-stat-row"><span class="tile-stat-label">Scandal Res.:</span><span class="tile-stat-val">' + (c.scandalResistance ? c.scandalResistance.toFixed(1) : '1.0') + 'x</span></div>' +
+                        (c.siphonFromMajorParties ? '<div class="tile-stat-row"><span class="tile-stat-label">Siphons:</span><span class="tile-stat-val">D -' + Math.round((c.siphonFromMajorParties.D || 0) * 100) + '%, R -' + Math.round((c.siphonFromMajorParties.R || 0) * 100) + '%</span></div>' : '') +
                     '</div>' +
                     effectsHTML +
                 '</div>' +

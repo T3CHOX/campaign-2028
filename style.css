@@ -3652,7 +3652,7 @@ body {
     align-items: center;
     gap: 8px;
     padding: 6px 8px;
-    background: #1c1c1c;
+    background: rgba(0,0,0,0.2) !important;
     border-radius: 6px;
     border: 1px solid #2d2d2d;
 }
@@ -3744,7 +3744,7 @@ body {
     align-items: center;
     gap: 8px;
     padding: 7px 8px;
-    background: #1c1c1c;
+    background: rgba(0,0,0,0.2) !important;
     border-radius: 6px;
     border: 1px solid #2d2d2d;
 }
@@ -4705,4 +4705,69 @@ body {
 #us-map-svg path.selected {
     stroke: var(--map-stroke-selected) !important;
     stroke-width: 2.6px !important;
+}
+
+/* ============================================
+   v2 STYLES — New Action Buttons & HUD
+   ============================================ */
+
+/* v2 action buttons — subtle distinction from original */
+.act-btn.v2-btn {
+    border-color: #3b5998;
+    background: linear-gradient(135deg, #1e2a3a, #2a2a3a);
+    position: relative;
+    overflow: hidden;
+}
+
+.act-btn.v2-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #4a9eff, transparent);
+    opacity: 0.6;
+}
+
+.act-btn.v2-btn:hover {
+    background: linear-gradient(135deg, #253445, #3a3a4a);
+    border-color: #5b8fd8;
+    box-shadow: 0 0 12px rgba(74, 158, 255, 0.15);
+}
+
+/* Expand action grid to 3 columns when many buttons */
+.action-grid {
+    grid-template-columns: 1fr 1fr 1fr !important;
+}
+
+@media (max-width: 1200px) {
+    .action-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+
+/* v2 HUD Stat Styles */
+.momentum {
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
+}
+
+.approval {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #e0e0e0;
+    letter-spacing: 0.5px;
+}
+
+/* Momentum glow when positive */
+#hud-momentum[style*="color: rgb(74, 222, 128)"] {
+    text-shadow: 0 0 6px rgba(74, 222, 128, 0.4);
+}
+
+/* Momentum warning when negative */
+#hud-momentum[style*="color: rgb(248, 113, 113)"] {
+    text-shadow: 0 0 6px rgba(248, 113, 113, 0.4);
 }

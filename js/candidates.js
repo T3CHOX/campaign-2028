@@ -22,7 +22,11 @@ const CANDIDATE_DEFAULTS = {
     groupBoosts: {},
     groupDebuffs: {},
     regionalSpillover: [],
-    regionalSpilloverBoost: 0
+    regionalSpilloverBoost: 0,
+    // v2 new attributes
+    charisma: 1.0,              // 0.5 (boring) to 2.0 (electrifying)
+    debateSkill: 5,             // 1-10 scale
+    scandalResistance: 0.3      // 0.0 (vulnerable) to 1.0 (teflon)
 };
 
 function _normalizeCandidateGroupEffects(candidate) {
@@ -74,7 +78,7 @@ const CANDIDATES = [
         debuff: "General-Election Ceiling",
         groupBoosts: { black: 9, asian: 7, suburban_college: 7 },
         groupDebuffs: { noncollege: -4, rural: -5 },
-        regionalSpillover: [ "NV", "AZ" ],
+        regionalSpillover: ["NV", "AZ"],
         regionalSpilloverBoost: 1,
     },
     {
@@ -92,7 +96,7 @@ const CANDIDATES = [
         debuff: "Heartland Liability",
         groupBoosts: { urban: 8, tech: 8, lgbtq: 7 },
         groupDebuffs: { rural: -6, evangelical: -5 },
-        regionalSpillover: [ "NV", "OR" ],
+        regionalSpillover: ["NV", "OR"],
         regionalSpilloverBoost: 0.9,
     },
     {
@@ -110,7 +114,7 @@ const CANDIDATES = [
         debuff: "Low-Voltage Base",
         groupBoosts: { union: 8, suburban_women: 8, midwest_noncollege: 6 },
         groupDebuffs: { progressive_left: -3, rural: -4 },
-        regionalSpillover: [ "WI", "PA", "IN", "OH", "MN" ],
+        regionalSpillover: ["WI", "PA", "IN", "OH", "MN"],
         regionalSpilloverBoost: 1.5,
     },
     {
@@ -128,7 +132,7 @@ const CANDIDATES = [
         debuff: "Working-Class Gap",
         groupBoosts: { suburban_college: 8, lgbtq: 9, urban: 7 },
         groupDebuffs: { rural: -6, noncollege: -4 },
-        regionalSpillover: [ "MI", "OH" ],
+        regionalSpillover: ["MI", "OH"],
         regionalSpilloverBoost: 0.8,
     },
     {
@@ -146,7 +150,7 @@ const CANDIDATES = [
         debuff: "Swing Voter Repellent",
         groupBoosts: { youth: 10, hispanic: 9, progressive_left: 9 },
         groupDebuffs: { noncollege: -6, evangelical: -7 },
-        regionalSpillover: [ "NJ", "CT" ],
+        regionalSpillover: ["NJ", "CT"],
         regionalSpilloverBoost: 0.8,
     },
     {
@@ -164,7 +168,7 @@ const CANDIDATES = [
         debuff: "Muted Fire",
         groupBoosts: { veterans: 8, suburban_moderates: 7, latino: 6 },
         groupDebuffs: { progressive_left: -3, evangelical: -4 },
-        regionalSpillover: [ "NV", "CO" ],
+        regionalSpillover: ["NV", "CO"],
         regionalSpilloverBoost: 1.2,
     },
     {
@@ -182,7 +186,7 @@ const CANDIDATES = [
         debuff: "Rust Belt Doubt",
         groupBoosts: { tech: 9, asian: 7, progressive_left: 8 },
         groupDebuffs: { rural: -5, noncollege: -4 },
-        regionalSpillover: [ "NV", "WA" ],
+        regionalSpillover: ["NV", "WA"],
         regionalSpilloverBoost: 0.7,
     },
     {
@@ -200,7 +204,7 @@ const CANDIDATES = [
         debuff: "Base Friction",
         groupBoosts: { suburban_moderates: 7, business_community: 8, jewish: 6 },
         groupDebuffs: { progressive_left: -7, youth: -4 },
-        regionalSpillover: [ "WI", "MI" ],
+        regionalSpillover: ["WI", "MI"],
         regionalSpilloverBoost: 1,
     },
     {
@@ -218,7 +222,7 @@ const CANDIDATES = [
         debuff: "No Governing Record",
         groupBoosts: { youth: 8, media_consumers: 9, progressive_left: 6 },
         groupDebuffs: { institutional_dems: -4, high_info_swing: -3 },
-        regionalSpillover: [ "NY", "PA" ],
+        regionalSpillover: ["NY", "PA"],
         regionalSpilloverBoost: 1,
     },
     {
@@ -236,7 +240,7 @@ const CANDIDATES = [
         debuff: "National Ceiling",
         groupBoosts: { rural_whites: 7, union: 6, moderate_dems: 8 },
         groupDebuffs: { progressive_left: -4, youth: -3 },
-        regionalSpillover: [ "OH", "WV" ],
+        regionalSpillover: ["OH", "WV"],
         regionalSpilloverBoost: 1.1,
     },
     {
@@ -254,7 +258,7 @@ const CANDIDATES = [
         debuff: "Execution Questions",
         groupBoosts: { black: 8, urban: 8, suburban_moderates: 6 },
         groupDebuffs: { noncollege: -3, progressive_left: -3 },
-        regionalSpillover: [ "NY", "PA" ],
+        regionalSpillover: ["NY", "PA"],
         regionalSpilloverBoost: 1,
     },
     {
@@ -272,7 +276,7 @@ const CANDIDATES = [
         debuff: "Soft National Brand",
         groupBoosts: { suburban_college: 8, jewish: 7, moderate_dems: 7 },
         groupDebuffs: { youth: -3, progressive_left: -3 },
-        regionalSpillover: [ "MI", "WI" ],
+        regionalSpillover: ["MI", "WI"],
         regionalSpilloverBoost: 1.5,
     },
     {
@@ -290,7 +294,7 @@ const CANDIDATES = [
         debuff: "Fatigue Ceiling",
         groupBoosts: { noncollege: 10, evangelical: 10, rural: 10 },
         groupDebuffs: { suburban_college: -7, youth: -6 },
-        regionalSpillover: [ "PA", "OH" ],
+        regionalSpillover: ["PA", "OH"],
         regionalSpilloverBoost: 1.5,
     },
     {
@@ -308,7 +312,7 @@ const CANDIDATES = [
         debuff: "Trust Deficit",
         groupBoosts: { noncollege: 9, evangelical: 8, rural: 9 },
         groupDebuffs: { suburban_college: -5, youth: -4 },
-        regionalSpillover: [ "PA", "MI" ],
+        regionalSpillover: ["PA", "MI"],
         regionalSpilloverBoost: 1.3,
     },
     {
@@ -326,7 +330,7 @@ const CANDIDATES = [
         debuff: "Momentum Loss",
         groupBoosts: { evangelical: 8, suburban_conservative: 7, noncollege: 7 },
         groupDebuffs: { youth: -5, college_liberals: -6 },
-        regionalSpillover: [ "GA", "NC" ],
+        regionalSpillover: ["GA", "NC"],
         regionalSpilloverBoost: 1,
     },
     {
@@ -344,7 +348,7 @@ const CANDIDATES = [
         debuff: "General-Election Baggage",
         groupBoosts: { evangelical: 9, noncollege: 8, donor_conservative: 8 },
         groupDebuffs: { suburban_college: -7, latino: -3 },
-        regionalSpillover: [ "OK", "LA" ],
+        regionalSpillover: ["OK", "LA"],
         regionalSpilloverBoost: 0.9,
     },
     {
@@ -362,7 +366,7 @@ const CANDIDATES = [
         debuff: "Narrow Coalition",
         groupBoosts: { libertarian: 9, tech_conservative: 6, donor_antiestablishment: 7 },
         groupDebuffs: { evangelical: -4, national_security_hawks: -5 },
-        regionalSpillover: [ "TN", "IN" ],
+        regionalSpillover: ["TN", "IN"],
         regionalSpilloverBoost: 0.7,
     },
     {
@@ -380,7 +384,7 @@ const CANDIDATES = [
         debuff: "MAGA Suspicion",
         groupBoosts: { suburban_college: 8, donor_class: 8, women: 7 },
         groupDebuffs: { evangelical: -4, noncollege: -3 },
-        regionalSpillover: [ "NC", "GA" ],
+        regionalSpillover: ["NC", "GA"],
         regionalSpilloverBoost: 1.2,
     },
     {
@@ -398,7 +402,7 @@ const CANDIDATES = [
         debuff: "Experience Gap",
         groupBoosts: { youth: 8, tech: 8, antiestablishment: 9 },
         groupDebuffs: { evangelical: -3, suburban_college: -4 },
-        regionalSpillover: [ "MI", "PA" ],
+        regionalSpillover: ["MI", "PA"],
         regionalSpilloverBoost: 1,
     },
     {
@@ -416,7 +420,7 @@ const CANDIDATES = [
         debuff: "Electoral Toxicity",
         groupBoosts: { hardcore_right: 9, antiestablishment: 8, online_militant: 8 },
         groupDebuffs: { suburban_college: -8, women: -6 },
-        regionalSpillover: [ "AZ", "WI" ],
+        regionalSpillover: ["AZ", "WI"],
         regionalSpilloverBoost: 0.9,
     },
     {
@@ -434,7 +438,7 @@ const CANDIDATES = [
         debuff: "Trust Issues",
         groupBoosts: { noncollege: 8, evangelical: 8, blue_collar: 7 },
         groupDebuffs: { suburban_college: -6, donor_class: -4 },
-        regionalSpillover: [ "IA", "OH" ],
+        regionalSpillover: ["IA", "OH"],
         regionalSpilloverBoost: 1,
     },
     {
@@ -452,7 +456,7 @@ const CANDIDATES = [
         debuff: "Candidate Question",
         groupBoosts: { online_right: 9, noncollege: 7, antiestablishment: 8 },
         groupDebuffs: { suburban_college: -7, women: -5 },
-        regionalSpillover: [ "MN", "WI" ],
+        regionalSpillover: ["MN", "WI"],
         regionalSpilloverBoost: 1,
     },
     {
@@ -470,7 +474,7 @@ const CANDIDATES = [
         debuff: "Base Skepticism",
         groupBoosts: { hispanic: 7, suburban_college: 7, donor_class: 8 },
         groupDebuffs: { hard_right: -4, antiestablishment: -3 },
-        regionalSpillover: [ "NV", "AZ" ],
+        regionalSpillover: ["NV", "AZ"],
         regionalSpilloverBoost: 1.1,
     },
     {
@@ -488,7 +492,7 @@ const CANDIDATES = [
         debuff: "Ballot-Box Ceiling",
         groupBoosts: { progressive_left: 7, antiwar_left: 8, environmentalists: 8 },
         groupDebuffs: { suburban_moderates: -6, institutional_dems: -7 },
-        regionalSpillover: [ "MI", "WI" ],
+        regionalSpillover: ["MI", "WI"],
         regionalSpilloverBoost: 0.8,
     },
     {
@@ -506,7 +510,7 @@ const CANDIDATES = [
         debuff: "Low Visibility",
         groupBoosts: { libertarian: 9, small_business: 6, antiwar_independents: 6 },
         groupDebuffs: { evangelical: -5, union: -4 },
-        regionalSpillover: [ "NC", "FL" ],
+        regionalSpillover: ["NC", "FL"],
         regionalSpilloverBoost: 0.7,
     },
     {
@@ -524,7 +528,7 @@ const CANDIDATES = [
         debuff: "Coalition Drift",
         groupBoosts: { tech: 8, youth: 7, independents: 8 },
         groupDebuffs: { union: -4, party_loyalists: -6 },
-        regionalSpillover: [ "CA", "NY" ],
+        regionalSpillover: ["CA", "NY"],
         regionalSpilloverBoost: 0.6,
     },
     {
@@ -535,7 +539,7 @@ const CANDIDATES = [
         position: "U.S. Representative from Kentucky (2012-)",
         homeStateBoost: 2.8,
         funds: 44,
-        img: "images/scenario.jpg",
+        img: "images/massie.jpg",
         stamina: 6,
         desc: "Massie runs as a constitutional-libertarian spoiler with high credibility among anti-establishment conservatives and civil-libertarian voters. His lane is narrow but potent in close states: he can pull meaningful vote share from Republicans while also peeling a smaller bloc from anti-system Democrats. He is less a coalition builder than a disruptor who alters turnout and margins where ideological voters are already skeptical of both major-party tickets.",
         buff: "Constitutionalist Spoiler",
@@ -544,7 +548,7 @@ const CANDIDATES = [
         groupDebuffs: { institutional_dems: -8, progressive_left: -4 },
         // Target behavior request: Massie siphons ~10% of GOP share and ~3% of Democratic share.
         siphonFromMajorParties: { R: 0.10, D: 0.03 },
-        regionalSpillover: [ "OH", "IN", "TN" ],
+        regionalSpillover: ["OH", "IN", "TN"],
         regionalSpilloverBoost: 1.0,
     },
     {
@@ -555,14 +559,14 @@ const CANDIDATES = [
         position: "Kennedy Family Member & Public Health Activist",
         homeStateBoost: 1.2,
         funds: 58,
-        img: "images/scenario.jpg",
+        img: "images/rfkjr.jpg",
         stamina: 6,
         desc: "Kennedy remains a highly unusual independent presence: strong name ID, strong anti-establishment signaling, and a brand that can briefly cut across partisan lines before collapsing under scrutiny. He can pull dissatisfied voters who want to punish both parties, but his coalition is unstable and often more emotional than durable. If the race is close enough for protest votes to matter, he is dangerous; if not, he is mostly a spoiler with an oversized microphone.",
         buff: "Anti-Establishment Pull",
         debuff: "Message Volatility",
         groupBoosts: { antiestablishment: 8, independents: 7, alternative_media: 7 },
         groupDebuffs: { institutional_dems: -7, public_health_professionals: -8 },
-        regionalSpillover: [ "AZ", "NH" ],
+        regionalSpillover: ["AZ", "NH"],
         regionalSpilloverBoost: 0.8,
     },
     {
@@ -573,14 +577,14 @@ const CANDIDATES = [
         position: "Former Mayor of New York City (2002-2013)",
         homeStateBoost: 1,
         funds: 100,
-        img: "images/scenario.jpg",
+        img: "images/bloomberg.jpg",
         stamina: 5,
         desc: "Bloomberg is the pure money candidate: unmatched resources, serious managerial credentials, and the ability to bankroll a professional operation at a scale no outsider can match. The catch is that money buys structure, not affection, and his profile remains deeply polarizing with both populists and activists. He can shape the field, dominate issue spending, and function as the emergency asset for anxious moderates, but he is not naturally built for mass enthusiasm.",
         buff: "Unlimited War Chest",
         debuff: "Mass-appeal Problem",
         groupBoosts: { suburban_moderates: 8, donor_class: 10, business_community: 10 },
         groupDebuffs: { black: -3, progressive_left: -8 },
-        regionalSpillover: [ "NY", "NJ" ],
+        regionalSpillover: ["NY", "NJ"],
         regionalSpilloverBoost: 0.9,
     },
     {
@@ -597,7 +601,7 @@ const CANDIDATES = [
         debuff: "Electoral Margin",
         groupBoosts: { progressive_left: 8, youth: 7, latino_left: 7 },
         groupDebuffs: { suburban_moderates: -8, institutional_dems: -9 },
-        regionalSpillover: [ "NY", "CA" ],
+        regionalSpillover: ["NY", "CA"],
         regionalSpilloverBoost: 0.5,
     },
     {
@@ -607,17 +611,175 @@ const CANDIDATES = [
         homeState: "CA",
         homeStateBoost: 1,
         funds: 10,
-        img: "images/scenario.jpg",
+        img: "images/lariva.jpg",
         stamina: 5,
         desc: "La Riva is the veteran socialist protest candidate with deep left activist credibility and very limited national reach. She can energize niche anti-imperialist and labor-left circles, but her ceiling is tiny in a presidential system that rewards broad coalitions and punishes fragmentation. She is a message candidate first and a vote-getter second, which is why her influence comes from issue pressure rather than electoral viability.",
         buff: "Leftist Credentials",
         debuff: "Tiny Ceiling",
         groupBoosts: { antiwar_left: 8, progressive_left: 6, labor_left: 6 },
         groupDebuffs: { suburban_moderates: -7, donor_class: -9 },
-        regionalSpillover: [ "CA", "NY" ],
+        regionalSpillover: ["CA", "NY"],
         regionalSpilloverBoost: 0.5,
+    },
+    // --- DEMOCRATS ---
+    {
+        id: "walz", name: "Tim Walz", party: "D", homeState: "MN", position: "Governor of Minnesota",
+        homeStateBoost: 2.2, funds: 65, img: "images/walz.jpg", stamina: 7, charisma: 1.3, debateSkill: 7, scandalResistance: 0.8,
+        desc: "A pragmatic Midwestern governor known for translating progressive wins through folksy communication. He holds the Blue Wall but lacks national flash.",
+        buff: "Midwest Dad Energy", debuff: "Progressive Liability",
+        groupEffects: { union: { support: 5, turnout: 3 }, rural: { support: 3, turnout: 1 }, suburban_moderates: { support: 4, turnout: 1 } }
+    },
+    {
+        id: "crockett", name: "Jasmine Crockett", party: "D", homeState: "TX", position: "Former U.S. Representative",
+        homeStateBoost: 1.3, funds: 55, img: "images/crockett.jpg", stamina: 9, charisma: 1.5, debateSkill: 8, scandalResistance: 0.5,
+        desc: "A viral, highly aggressive progressive combatant who maxes out youth and minority turnout, but her hyper-partisan style acts as a lightning rod for the right.",
+        buff: "Viral Combatant", debuff: "Swing Voter Repellent",
+        groupEffects: { black: { support: 5, turnout: 6 }, youth: { support: 6, turnout: 7 }, suburban_moderates: { support: -4, turnout: -3 }, rural: { support: -5, turnout: 5 } }
+    },
+    {
+        id: "ossoff", name: "Jon Ossoff", party: "D", homeState: "GA", position: "U.S. Senator",
+        homeStateBoost: 1.9, funds: 80, img: "images/ossoff.jpg", stamina: 8, charisma: 1.4, debateSkill: 7, scandalResistance: 0.9,
+        desc: "The quintessential Sun Belt suburban Democrat. He dominates high-income moderate areas but struggles to drive raw, unpolished base enthusiasm.",
+        buff: "Sun Belt Appeal", debuff: "Soft Base Enthusiasm",
+        groupEffects: { suburban_college: { support: 6, turnout: 3 }, youth: { support: 3, turnout: 1 }, noncollege: { support: -3, turnout: -2 } }
+    },
+    {
+        id: "gallego", name: "Ruben Gallego", party: "D", homeState: "AZ", position: "U.S. Senator",
+        homeStateBoost: 2.1, funds: 60, img: "images/gallego.jpg", stamina: 8, charisma: 1.3, debateSkill: 7, scandalResistance: 0.6,
+        desc: "A Marine veteran who connects deeply with working-class voters and Hispanics, though the activist left views him with deep suspicion.",
+        buff: "Working-Class Brawler", debuff: "Progressive Friction",
+        groupEffects: { hispanic: { support: 6, turnout: 4 }, veterans: { support: 5, turnout: 2 }, union: { support: 4, turnout: 3 }, progressive_left: { support: -4, turnout: -3 } }
+    },
+    {
+        id: "moore", name: "Wes Moore", party: "D", homeState: "MD", position: "Governor of Maryland",
+        homeStateBoost: 2.3, funds: 75, img: "images/moore.jpg", stamina: 9, charisma: 1.6, debateSkill: 8, scandalResistance: 0.7,
+        desc: "A highly charismatic rising star with massive upside, though he remains relatively untested on the grueling national stage.",
+        buff: "Generational Charisma", debuff: "Light Governing Record",
+        groupEffects: { black: { support: 5, turnout: 4 }, suburban_college: { support: 5, turnout: 2 }, independents: { support: 3, turnout: 1 } }
+    },
+    {
+        id: "cuban", name: "Mark Cuban", party: "D", homeState: "TX", position: "Businessman & Investor",
+        homeStateBoost: 1.5, funds: 100, img: "images/cuban.jpg", stamina: 7, charisma: 1.6, debateSkill: 8, scandalResistance: 0.4,
+        desc: "A billionaire outsider with incredible crossover appeal. He pulls huge numbers of independents, but the progressive base openly revolts against him.",
+        buff: "Business Maverick", debuff: "Base Distrust",
+        groupEffects: { independents: { support: 8, turnout: 4 }, suburban_moderates: { support: 6, turnout: 3 }, progressive_left: { support: -8, turnout: -7 } }
+    },
+    {
+        id: "talarico", name: "James Talarico", party: "D", homeState: "TX", position: "Texas Politician",
+        homeStateBoost: 1.4, funds: 45, img: "images/talarico.jpg", stamina: 8, charisma: 1.5, debateSkill: 9, scandalResistance: 0.8,
+        desc: "A progressive who uniquely articulates left-wing policy through a moral and religious lens. Extremely popular with the youth, but unknown nationally.",
+        buff: "Moral Articulator", debuff: "National Anonymity",
+        groupEffects: { youth: { support: 7, turnout: 6 }, secular: { support: 4, turnout: 3 }, progressive_left: { support: 6, turnout: 4 }, high_info_swing: { support: -2, turnout: 0 } }
+    },
+
+    // --- REPUBLICANS ---
+    {
+        id: "bovino", name: "Greg Bovino", party: "R", homeState: "CA", position: "Fmr. Commander-at-Large of the Border Patrol",
+        homeStateBoost: 1.1, funds: 70, img: "images/bovino.jpg", stamina: 8, charisma: 1.2, debateSkill: 5, scandalResistance: 0.8,
+        desc: "The hyper-polarizing face of the 2025/2026 mass deportation crackdowns. He maximizes the MAGA and working-class base but triggers historic, catastrophic opposition turnout.",
+        buff: "Deportation Architect", debuff: "Electoral Toxicity",
+        groupEffects: { noncollege: { support: 5, turnout: 9 }, rural: { support: 4, turnout: 7 }, hispanic: { support: -8, turnout: 9 }, suburban_college: { support: -9, turnout: 10 } }
+    },
+    {
+        id: "youngkin", name: "Glenn Youngkin", party: "R", homeState: "VA", position: "Governor of Virginia",
+        homeStateBoost: 2.1, funds: 85, img: "images/youngkin.jpg", stamina: 7, charisma: 1.3, debateSkill: 7, scandalResistance: 0.7,
+        desc: "Projects a fleece-vest moderation that completely disarms suburban panic, but leaves the populist MAGA base utterly uninspired.",
+        buff: "Suburban Restoration", debuff: "MAGA Skepticism",
+        groupEffects: { suburban_conservative: { support: 7, turnout: 4 }, suburban_moderates: { support: 6, turnout: 2 }, noncollege: { support: -5, turnout: -6 } }
+    },
+    {
+        id: "sununu", name: "Chris Sununu", party: "R", homeState: "NH", position: "Former Governor of New Hampshire",
+        homeStateBoost: 2.0, funds: 55, img: "images/sununu.jpg", stamina: 8, charisma: 1.4, debateSkill: 8, scandalResistance: 0.8,
+        desc: "A highly effective centrist communicator. Swing voters love him, but the religious and populist right will actively stay home.",
+        buff: "New England Pragmatist", debuff: "Base Alienation",
+        groupEffects: { independents: { support: 7, turnout: 2 }, suburban_moderates: { support: 7, turnout: 2 }, evangelical: { support: -7, turnout: -8 }, populist_right: { support: -6, turnout: -7 } }
+    },
+    {
+        id: "trumpjr", name: "Don Trump Jr.", party: "R", homeState: "FL", position: "Businessman & Media Figure",
+        homeStateBoost: 1.5, funds: 90, img: "images/trumpjr.jpg", stamina: 7, charisma: 1.4, debateSkill: 6, scandalResistance: 0.5,
+        desc: "The ideological heir to the MAGA movement. He commands the populist base effortlessly but suffers from an immovable general-election ceiling.",
+        buff: "MAGA Heir", debuff: "General-Election Ceiling",
+        groupEffects: { noncollege: { support: 2, turnout: 5 }, rural: { support: 2, turnout: 4 }, suburban_college: { support: -7, turnout: 7 }, suburban_women: { support: -6, turnout: 6 } }
+    },
+    {
+        id: "gabbard", name: "Tulsi Gabbard", party: "R", homeState: "HI", position: "Former U.S. Representative",
+        homeStateBoost: 1.4, funds: 65, img: "images/gabbard.jpg", stamina: 8, charisma: 1.5, debateSkill: 8, scandalResistance: 0.6,
+        desc: "A true wild-card candidate. Pulls in anti-establishment independents and veterans, but lacks trust from the traditional conservative institutional framework.",
+        buff: "Anti-Establishment Magnet", debuff: "Partisan Mismatch",
+        groupEffects: { independents: { support: 6, turnout: 4 }, veterans: { support: 5, turnout: 3 }, evangelical: { support: -5, turnout: -4 }, donor_conservative: { support: -4, turnout: -3 } }
+    },
+    {
+        id: "kemp", name: "Brian Kemp", party: "R", homeState: "GA", position: "Governor of Georgia",
+        homeStateBoost: 2.4, funds: 80, img: "images/kemp.jpg", stamina: 8, charisma: 1.2, debateSkill: 7, scandalResistance: 0.8,
+        desc: "A highly competent Sun Belt executive. Shored up the conservative suburbs but continues to face lingering resentment from the hardest core of Trump loyalists.",
+        buff: "Sun Belt Executor", debuff: "Trump Loyalist Grudge",
+        groupEffects: { suburban_conservative: { support: 6, turnout: 3 }, rural: { support: 3, turnout: 0 }, populist_right: { support: -5, turnout: -4 } }
+    },
+    {
+        id: "mace", name: "Nancy Mace", party: "R", homeState: "SC", position: "Former U.S. Representative",
+        homeStateBoost: 1.5, funds: 60, img: "images/mace.jpg", stamina: 8, charisma: 1.3, debateSkill: 7, scandalResistance: 0.4,
+        desc: "Highly visible in the media and capable of moderating on social issues, but her shifting alliances have created deep ideological whiplash.",
+        buff: "Media Combatant", debuff: "Ideological Whiplash",
+        groupEffects: { suburban_women: { support: 4, turnout: 2 }, suburban_moderates: { support: 4, turnout: 1 }, evangelical: { support: -4, turnout: -4 } }
+    },
+    {
+        id: "cheney", name: "Liz Cheney", party: "R", homeState: "WY", position: "Former U.S. Representative",
+        homeStateBoost: 1.2, funds: 85, img: "images/cheney.jpg", stamina: 8, charisma: 1.2, debateSkill: 8, scandalResistance: 0.8,
+        desc: "The ultimate Never-Trump avatar. She flips the high-income suburbs entirely, but effectively destroys the Republican party by collapsing working-class turnout.",
+        buff: "Institutional Martyr", debuff: "MAGA Excommunication",
+        groupEffects: { suburban_college: { support: 9, turnout: 5 }, independents: { support: 5, turnout: 2 }, noncollege: { support: -10, turnout: -10 }, rural: { support: -9, turnout: -9 } }
+    },
+
+    // --- THIRD PARTIES (With Siphon Rates) ---
+    {
+        id: "walker", name: "Angela Nicole Walker", party: "G", homeState: "WI", position: "Activist",
+        homeStateBoost: 1.1, funds: 5, img: "images/walker.jpg", stamina: 7, charisma: 1.1, debateSkill: 6, scandalResistance: 0.8,
+        desc: "A prominent labor organizer who peels away disgruntled union and working-class Democrats.",
+        buff: "Labor Groundgame", debuff: "Third-Party Ceiling",
+        siphonFromMajorParties: { D: 0.05, R: 0.01 },
+        groupEffects: { union: { support: 4, turnout: 2 }, black: { support: 3, turnout: 1 } }
+    },
+    {
+        id: "ware", name: "Butch Ware", party: "G", homeState: "CA", position: "Academic & Activist",
+        homeStateBoost: 1.1, funds: 6, img: "images/ware.jpg", stamina: 8, charisma: 1.3, debateSkill: 8, scandalResistance: 0.7,
+        desc: "Highly effective communicator with younger, urban voters who feel abandoned by the mainstream Democratic establishment.",
+        buff: "Academic Rhetoric", debuff: "Limited Resources",
+        siphonFromMajorParties: { D: 0.06, R: 0.01 },
+        groupEffects: { youth: { support: 5, turnout: 3 }, black: { support: 4, turnout: 2 } }
+    },
+    {
+        id: "laduke", name: "Winona LaDuke", party: "G", homeState: "MN", position: "Environmentalist",
+        homeStateBoost: 1.2, funds: 8, img: "images/laduke.jpg", stamina: 7, charisma: 1.2, debateSkill: 6, scandalResistance: 0.9,
+        desc: "A renowned environmentalist. Acts as a significant spoiler for Democrats relying on the deep-green activist core.",
+        buff: "Environmental Anchor", debuff: "Narrow Coalition",
+        siphonFromMajorParties: { D: 0.05, R: 0.02 },
+        groupEffects: { progressive_left: { support: 5, turnout: 3 }, rural: { support: 2, turnout: 1 } }
+    },
+    {
+        id: "hoh", name: "Matthew Hoh", party: "G", homeState: "NC", position: "Anti-War Activist",
+        homeStateBoost: 1.1, funds: 5, img: "images/hoh.jpg", stamina: 7, charisma: 1.1, debateSkill: 7, scandalResistance: 0.8,
+        desc: "A veteran turned anti-war activist. Uniquely pulls disillusioned military members and anti-interventionists from both sides.",
+        buff: "Anti-War Credibility", debuff: "Low Name ID",
+        siphonFromMajorParties: { D: 0.04, R: 0.02 },
+        groupEffects: { veterans: { support: 4, turnout: 2 }, progressive_left: { support: 3, turnout: 1 } }
+    },
+    {
+        id: "hill", name: "Marc Lamont Hill", party: "G", homeState: "PA", position: "Academic & Media Personality",
+        homeStateBoost: 1.2, funds: 10, img: "images/hill.jpg", stamina: 8, charisma: 1.5, debateSkill: 9, scandalResistance: 0.5,
+        desc: "A brilliant media combatant who heavily threatens the Democratic baseline in critical urban centers.",
+        buff: "Media Visibility", debuff: "Polarizing Rhetoric",
+        siphonFromMajorParties: { D: 0.07, R: 0.01 },
+        groupEffects: { black: { support: 5, turnout: 4 }, youth: { support: 6, turnout: 3 }, urban: { support: 4, turnout: 2 } }
+    },
+    {
+        id: "amash", name: "Justin Amash", party: "L", homeState: "MI", position: "Former U.S. Representative",
+        homeStateBoost: 1.2, funds: 15, img: "images/amash.jpg", stamina: 7, charisma: 1.2, debateSkill: 8, scandalResistance: 0.9,
+        desc: "A highly principled constitutional conservative. Serves as a major release valve for Republicans who despise MAGA populism.",
+        buff: "Principled Consistency", debuff: "Libertarian Ceiling",
+        siphonFromMajorParties: { R: 0.06, D: 0.03 },
+        groupEffects: { independents: { support: 6, turnout: 3 }, suburban_moderates: { support: 4, turnout: 2 } }
     }
-].map(function(candidate) {
+].map(function (candidate) {
     // Ensure every candidate object has the core fields expected by game logic and UI,
     // while safely defaulting missing values from CANDIDATE_DEFAULTS.
     var normalized = Object.assign({}, CANDIDATE_DEFAULTS, candidate || {});
@@ -644,6 +806,48 @@ const CANDIDATES = [
     return normalized;
 });
 
+// v2: Apply candidate-specific charisma, debateSkill, and scandalResistance
+var CANDIDATE_V2_ATTRIBUTES = {
+    harris: { charisma: 1.2, debateSkill: 7, scandalResistance: 0.5 },
+    newsom: { charisma: 1.6, debateSkill: 8, scandalResistance: 0.3 },
+    whitmer: { charisma: 1.3, debateSkill: 6, scandalResistance: 0.6 },
+    buttigieg: { charisma: 1.4, debateSkill: 9, scandalResistance: 0.5 },
+    aoc: { charisma: 1.8, debateSkill: 7, scandalResistance: 0.2 },
+    kelly: { charisma: 0.9, debateSkill: 5, scandalResistance: 0.8 },
+    khanna: { charisma: 1.0, debateSkill: 7, scandalResistance: 0.4 },
+    emanuel: { charisma: 1.1, debateSkill: 7, scandalResistance: 0.2 },
+    stewart: { charisma: 1.5, debateSkill: 8, scandalResistance: 0.4 },
+    beshear: { charisma: 1.2, debateSkill: 6, scandalResistance: 0.7 },
+    booker: { charisma: 1.5, debateSkill: 8, scandalResistance: 0.3 },
+    trump: { charisma: 2.0, debateSkill: 6, scandalResistance: 0.9 },
+    vance: { charisma: 1.3, debateSkill: 7, scandalResistance: 0.3 },
+    desantis: { charisma: 0.8, debateSkill: 5, scandalResistance: 0.5 },
+    cruz: { charisma: 0.7, debateSkill: 9, scandalResistance: 0.3 },
+    paul: { charisma: 1.0, debateSkill: 8, scandalResistance: 0.6 },
+    haley: { charisma: 1.3, debateSkill: 7, scandalResistance: 0.7 },
+    ramaswamy: { charisma: 1.5, debateSkill: 8, scandalResistance: 0.2 },
+    bannon: { charisma: 1.0, debateSkill: 5, scandalResistance: 0.1 },
+    hawley: { charisma: 1.1, debateSkill: 7, scandalResistance: 0.4 },
+    carlson: { charisma: 1.6, debateSkill: 7, scandalResistance: 0.2 },
+    rubio: { charisma: 1.0, debateSkill: 6, scandalResistance: 0.5 },
+    stein: { charisma: 0.8, debateSkill: 6, scandalResistance: 0.4 },
+    oliver: { charisma: 0.9, debateSkill: 5, scandalResistance: 0.6 },
+    massie: { charisma: 0.7, debateSkill: 5, scandalResistance: 0.5 },
+    kennedy_rfk: { charisma: 1.5, debateSkill: 7, scandalResistance: 0.2 },
+    bloomberg: { charisma: 0.6, debateSkill: 4, scandalResistance: 0.7 },
+    delacruz: { charisma: 1.1, debateSkill: 6, scandalResistance: 0.5 },
+    lariva: { charisma: 0.9, debateSkill: 5, scandalResistance: 0.5 },
+    yang: { charisma: 1.3, debateSkill: 6, scandalResistance: 0.4 }
+};
+for (var ci = 0; ci < CANDIDATES.length; ci++) {
+    var attrs = CANDIDATE_V2_ATTRIBUTES[CANDIDATES[ci].id];
+    if (attrs) {
+        if (attrs.charisma !== undefined) CANDIDATES[ci].charisma = attrs.charisma;
+        if (attrs.debateSkill !== undefined) CANDIDATES[ci].debateSkill = attrs.debateSkill;
+        if (attrs.scandalResistance !== undefined) CANDIDATES[ci].scandalResistance = attrs.scandalResistance;
+    }
+}
+
 /* ---- RUNNING MATES ----
    Structured identically to CANDIDATES for flexibility.
    `state` is used by applyCandidateBuffs for home-state VP advantage.
@@ -654,7 +858,7 @@ const VPS = [
         id: "shapiro", name: "Josh Shapiro", party: "D", state: "PA", homeState: "PA",
         funds: 15, img: "images/shapiro.jpg", stamina: 8,
         desc: "Governor of Pennsylvania. Brings critical Blue Wall structural advantages and moderate credibility.",
-        groupBoosts: { suburban_moderates: 3, jewish: 4, moderate_dems: 2 }, 
+        groupBoosts: { suburban_moderates: 3, jewish: 4, moderate_dems: 2 },
         groupDebuffs: { progressive_left: -2, youth: -1 }
     },
     {
@@ -662,7 +866,7 @@ const VPS = [
         position: "U.S. Senator from Arizona (2020-)",
         funds: 10, img: "images/kelly.jpg", stamina: 8,
         desc: "Arizona Senator. Offers border-state defensive capability and high floor with independents.",
-        groupBoosts: { veterans: 4, suburban_moderates: 2, independents: 2 }, 
+        groupBoosts: { veterans: 4, suburban_moderates: 2, independents: 2 },
         groupDebuffs: { progressive_left: -1 }
     },
     {
@@ -670,7 +874,7 @@ const VPS = [
         position: "U.S. Senator from Georgia (2021-)",
         funds: 12, img: "images/warnock.jpg", stamina: 8,
         desc: "Georgia Senator. Elite surrogate for turning out the Black church network in the Sun Belt.",
-        groupBoosts: { black: 4, urban: 2 }, 
+        groupBoosts: { black: 4, urban: 2 },
         groupDebuffs: { rural_whites: -1 }
     },
     {
@@ -678,7 +882,7 @@ const VPS = [
         position: "Governor of Illinois (2019-)",
         funds: 25, img: "images/pritzker.jpg", stamina: 7,
         desc: "Illinois Governor. Provides a massive self-funded financial floor for the campaign.",
-        groupBoosts: { union: 2, suburban_college: 2 }, 
+        groupBoosts: { union: 2, suburban_college: 2 },
         groupDebuffs: { rural: -1 }
     },
     {
@@ -686,7 +890,7 @@ const VPS = [
         position: "Governor of Michigan (2019-)",
         funds: 15, img: "images/whitmer.jpg", stamina: 8,
         desc: "Michigan Governor. Locks down the Midwest and appeals strongly to suburban women.",
-        groupBoosts: { suburban_women: 4, midwest_noncollege: 2, union: 2 }, 
+        groupBoosts: { suburban_women: 4, midwest_noncollege: 2, union: 2 },
         groupDebuffs: { rural: -1 }
     },
     {
@@ -694,7 +898,7 @@ const VPS = [
         position: "U.S. Representative from California (2017-)",
         funds: 10, img: "images/khanna.jpg", stamina: 9,
         desc: "Silicon Valley progressive. Bridges the gap between tech donors and the online left.",
-        groupBoosts: { tech: 4, youth: 3, progressive_left: 3 }, 
+        groupBoosts: { tech: 4, youth: 3, progressive_left: 3 },
         groupDebuffs: { noncollege: -2 }
     },
 
@@ -703,7 +907,7 @@ const VPS = [
         id: "rubio", name: "Marco Rubio", party: "R", state: "FL", homeState: "FL",
         funds: 15, img: "images/rubio.jpg", stamina: 8,
         desc: "Secretary of State. Softens the ticket's edges with Hispanics and suburban moderates.",
-        groupBoosts: { hispanic: 4, suburban_college: 2, donor_class: 3 }, 
+        groupBoosts: { hispanic: 4, suburban_college: 2, donor_class: 3 },
         groupDebuffs: { hardcore_right: -1 }
     },
     {
@@ -711,7 +915,7 @@ const VPS = [
         position: "U.S. Senator from South Carolina (2013-)",
         funds: 12, img: "images/scott.jpg", stamina: 7,
         desc: "South Carolina Senator. A high-energy, optimistic surrogate with deep evangelical ties.",
-        groupBoosts: { evangelical: 3, suburban_conservative: 2 }, 
+        groupBoosts: { evangelical: 3, suburban_conservative: 2 },
         groupDebuffs: {}
     },
     {
@@ -719,7 +923,7 @@ const VPS = [
         position: "U.S. Representative from New York (2015-)",
         funds: 10, img: "images/stefanik.jpg", stamina: 7,
         desc: "New York Congresswoman. A ruthless MAGA loyalist who plays well on cable news.",
-        groupBoosts: { online_militant: 2, noncollege: 2 }, 
+        groupBoosts: { online_militant: 2, noncollege: 2 },
         groupDebuffs: { suburban_college: -2 }
     },
     {
@@ -727,7 +931,7 @@ const VPS = [
         position: "Secretary of Homeland Security (2025-)",
         funds: 8, img: "images/noem.jpg", stamina: 7,
         desc: "South Dakota Governor. A base-play to energize the rural and evangelical wings.",
-        groupBoosts: { rural: 3, evangelical: 2 }, 
+        groupBoosts: { rural: 3, evangelical: 2 },
         groupDebuffs: { suburban_moderates: -2 }
     },
     {
@@ -735,7 +939,7 @@ const VPS = [
         position: "U.S. Senator from Texas (2013-)",
         funds: 15, img: "images/cruz.jpg", stamina: 8,
         desc: "Texas Senator. Unifies the constitutional conservative and evangelical flanks.",
-        groupBoosts: { donor_conservative: 3, evangelical: 3 }, 
+        groupBoosts: { donor_conservative: 3, evangelical: 3 },
         groupDebuffs: { independents: -2 }
     },
     {
@@ -743,7 +947,7 @@ const VPS = [
         position: "U.S. Senator from Missouri (2019-)",
         funds: 10, img: "images/hawley.jpg", stamina: 7,
         desc: "Missouri Senator. Reinforces the populist, working-class narrative of the ticket.",
-        groupBoosts: { blue_collar: 3, noncollege: 2 }, 
+        groupBoosts: { blue_collar: 3, noncollege: 2 },
         groupDebuffs: { donor_class: -2 }
     },
 
@@ -753,15 +957,15 @@ const VPS = [
         position: "Environmental Activist & Academic",
         funds: 0, img: "images/ware.jpg", stamina: 7,
         desc: "Academic and activist. Secures the anti-war progressive flank.",
-        groupBoosts: { antiwar_left: 3, progressive_left: 2 }, 
+        groupBoosts: { antiwar_left: 3, progressive_left: 2 },
         groupDebuffs: {}
     },
     {
         id: "termaat", name: "Mike ter Maat", party: "L", state: "FL", homeState: "FL",
         position: "Libertarian Economist",
-        funds: 0, img: "images/scenario.jpg", stamina: 7,
+        funds: 0, img: "images/maat.jpg", stamina: 7,
         desc: "Economist. Appeals to fiscal conservatives and small business owners.",
-        groupBoosts: { small_business: 2, libertarian: 2 }, 
+        groupBoosts: { small_business: 2, libertarian: 2 },
         groupDebuffs: {}
     },
 
@@ -769,17 +973,17 @@ const VPS = [
     {
         id: "kinzinger", name: "Adam Kinzinger", party: "I", state: "IL", homeState: "IL",
         position: "Former U.S. Representative from Illinois (2011-2023)",
-        funds: 5, img: "images/scenario.jpg", stamina: 7,
+        funds: 5, img: "images/kinzinger.jpg", stamina: 7,
         desc: "Former Republican Congressman. Pulls disaffected anti-Trump conservatives.",
-        groupBoosts: { suburban_moderates: 2, veterans: 2, antiestablishment: 1 }, 
+        groupBoosts: { suburban_moderates: 2, veterans: 2, antiestablishment: 1 },
         groupDebuffs: { hardcore_right: -3 }
     },
     {
         id: "west_cornel", name: "Cornel West", party: "I", state: "MA", homeState: "MA",
         position: "Philosopher & Political Activist",
-        funds: 5, img: "images/scenario.jpg", stamina: 6,
+        funds: 5, img: "images/west.jpg", stamina: 6,
         desc: "Philosopher and activist. Gives an independent ticket deep progressive credibility.",
-        groupBoosts: { black: 2, progressive_left: 3 }, 
+        groupBoosts: { black: 2, progressive_left: 3 },
         groupDebuffs: { suburban_moderates: -2 }
     },
 
@@ -787,9 +991,9 @@ const VPS = [
     {
         id: "freeman", name: "Sunil Freeman", party: "PSL", state: "PA", homeState: "PA",
         position: "Labor Organizer & PSL Activist",
-        funds: 0, img: "images/scenario.jpg", stamina: 7,
+        funds: 0, img: "images/freeman.jpg", stamina: 7,
         desc: "Activist and labor organizer.",
-        groupBoosts: { labor_left: 2, urban: 1 }, 
+        groupBoosts: { labor_left: 2, urban: 1 },
         groupDebuffs: {}
     },
     {
@@ -797,10 +1001,10 @@ const VPS = [
         position: "PSL General Secretary",
         funds: 0, img: "images/lariva.jpg", stamina: 7,
         desc: "PSL General Secretary. Anchors the ticket with institutional socialist credibility.",
-        groupBoosts: { labor_left: 2, antiwar_left: 2 }, 
+        groupBoosts: { labor_left: 2, antiwar_left: 2 },
         groupDebuffs: {}
     }
-].map(function(vp) {
+].map(function (vp) {
     var normalized = Object.assign({}, CANDIDATE_DEFAULTS, vp || {});
     normalized.groupEffects = _normalizeCandidateGroupEffects(normalized);
     normalized.groupBoosts = Object.assign({}, normalized.groupBoosts || {});
@@ -812,6 +1016,35 @@ const VPS = [
     return normalized;
 });
 
+// v2: Apply VP-specific charisma, debateSkill, and scandalResistance
+var VP_V2_ATTRIBUTES = {
+    shapiro: { charisma: 1.3, debateSkill: 7, scandalResistance: 0.6 },
+    kelly_vp: { charisma: 0.9, debateSkill: 5, scandalResistance: 0.8 },
+    warnock: { charisma: 1.4, debateSkill: 7, scandalResistance: 0.5 },
+    pritzker: { charisma: 0.8, debateSkill: 5, scandalResistance: 0.4 },
+    whitmer_vp: { charisma: 1.3, debateSkill: 6, scandalResistance: 0.6 },
+    khanna_vp: { charisma: 1.0, debateSkill: 7, scandalResistance: 0.4 },
+    rubio: { charisma: 1.0, debateSkill: 6, scandalResistance: 0.5 },
+    scott_tim: { charisma: 1.3, debateSkill: 6, scandalResistance: 0.6 },
+    stefanik: { charisma: 1.1, debateSkill: 6, scandalResistance: 0.3 },
+    noem: { charisma: 1.0, debateSkill: 5, scandalResistance: 0.3 },
+    cruz_vp: { charisma: 0.7, debateSkill: 9, scandalResistance: 0.3 },
+    hawley_vp: { charisma: 1.1, debateSkill: 7, scandalResistance: 0.4 },
+    ware: { charisma: 0.8, debateSkill: 5, scandalResistance: 0.5 },
+    termaat: { charisma: 0.7, debateSkill: 4, scandalResistance: 0.5 },
+    kinzinger: { charisma: 1.1, debateSkill: 6, scandalResistance: 0.6 },
+    west_cornel: { charisma: 1.4, debateSkill: 7, scandalResistance: 0.2 },
+    freeman: { charisma: 0.9, debateSkill: 5, scandalResistance: 0.5 },
+    lariva_vp: { charisma: 0.9, debateSkill: 5, scandalResistance: 0.5 }
+};
+for (var vi = 0; vi < VPS.length; vi++) {
+    var vpAttrs = VP_V2_ATTRIBUTES[VPS[vi].id];
+    if (vpAttrs) {
+        if (vpAttrs.charisma !== undefined) VPS[vi].charisma = vpAttrs.charisma;
+        if (vpAttrs.debateSkill !== undefined) VPS[vi].debateSkill = vpAttrs.debateSkill;
+        if (vpAttrs.scandalResistance !== undefined) VPS[vi].scandalResistance = vpAttrs.scandalResistance;
+    }
+}
 /* ---- CANDIDATE ISSUE POSITIONS (-10 = far left, +10 = far right) ---- */
 const CANDIDATE_POSITIONS = {
     harris: {
@@ -999,5 +1232,26 @@ const CANDIDATE_POSITIONS = {
         taxation: -9, trade: -6, minwage: -9, labor: -9, lgbtq: -9,
         criminal: -8, drugpricing: -10, energy: -10, foreign: -7, military: -9,
         israel: -8, govspend: -8, electionreform: -7, scotus: -8, economy: -7
-    }
+    },
+    walz: { guns: -4, abortion: -7, healthcare: -6, immigration: -3, climate: -5, taxation: -4, trade: -2, minwage: -6, labor: -8, lgbtq: -6, criminal: -3, drugpricing: -7, energy: -4, foreign: -2, military: 0, israel: 2, govspend: -4, electionreform: -5, scotus: -5, economy: -3 },
+    crockett: { guns: -8, abortion: -9, healthcare: -8, immigration: -6, climate: -7, taxation: -7, trade: -3, minwage: -8, labor: -7, lgbtq: -8, criminal: -7, drugpricing: -8, energy: -6, foreign: -4, military: -3, israel: -5, govspend: -6, electionreform: -8, scotus: -8, economy: -6 },
+    ossoff: { guns: -5, abortion: -6, healthcare: -5, immigration: -2, climate: -6, taxation: -3, trade: 1, minwage: -4, labor: -4, lgbtq: -5, criminal: -2, drugpricing: -6, energy: -3, foreign: -1, military: 1, israel: 4, govspend: -3, electionreform: -6, scotus: -4, economy: -2 },
+    gallego: { guns: -6, abortion: -7, healthcare: -6, immigration: -3, climate: -5, taxation: -4, trade: -1, minwage: -6, labor: -7, lgbtq: -6, criminal: -3, drugpricing: -7, energy: -4, foreign: -1, military: 3, israel: 3, govspend: -4, electionreform: -5, scotus: -5, economy: -4 },
+    moore: { guns: -6, abortion: -7, healthcare: -5, immigration: -3, climate: -6, taxation: -4, trade: 0, minwage: -5, labor: -5, lgbtq: -6, criminal: -4, drugpricing: -6, energy: -4, foreign: 0, military: 2, israel: 2, govspend: -3, electionreform: -5, scotus: -5, economy: -3 },
+    cuban: { guns: -2, abortion: -4, healthcare: -2, immigration: 0, climate: -3, taxation: 1, trade: 4, minwage: -1, labor: -1, lgbtq: -4, criminal: -1, drugpricing: -8, energy: 0, foreign: 1, military: 2, israel: 3, govspend: -1, electionreform: -2, scotus: -2, economy: 2 },
+    talarico: { guns: -7, abortion: -8, healthcare: -8, immigration: -5, climate: -8, taxation: -6, trade: -2, minwage: -8, labor: -7, lgbtq: -8, criminal: -6, drugpricing: -8, energy: -7, foreign: -3, military: -2, israel: -4, govspend: -5, electionreform: -7, scotus: -6, economy: -5 },
+    bovino: { guns: 8, abortion: 7, healthcare: 5, immigration: 10, climate: 6, taxation: 4, trade: 6, minwage: 4, labor: 5, lgbtq: 6, criminal: 9, drugpricing: 2, energy: 7, foreign: 5, military: 8, israel: 6, govspend: 5, electionreform: 7, scotus: 8, economy: 5 },
+    youngkin: { guns: 5, abortion: 4, healthcare: 4, immigration: 3, climate: 2, taxation: 6, trade: 4, minwage: 3, labor: 4, lgbtq: 3, criminal: 5, drugpricing: 1, energy: 3, foreign: 4, military: 5, israel: 6, govspend: 6, electionreform: 4, scotus: 5, economy: 6 },
+    sununu: { guns: 4, abortion: 1, healthcare: 3, immigration: 2, climate: 1, taxation: 5, trade: 3, minwage: 2, labor: 2, lgbtq: 0, criminal: 3, drugpricing: 1, energy: 2, foreign: 3, military: 4, israel: 5, govspend: 5, electionreform: 2, scotus: 3, economy: 5 },
+    trumpjr: { guns: 9, abortion: 8, healthcare: 6, immigration: 9, climate: 8, taxation: 6, trade: 8, minwage: 5, labor: 4, lgbtq: 7, criminal: 8, drugpricing: 3, energy: 9, foreign: 7, military: 7, israel: 7, govspend: 6, electionreform: 9, scotus: 8, economy: 6 },
+    gabbard: { guns: 3, abortion: -1, healthcare: -2, immigration: 6, climate: 1, taxation: 2, trade: 4, minwage: -2, labor: -1, lgbtq: 4, criminal: 3, drugpricing: -4, energy: 3, foreign: -8, military: 4, israel: -2, govspend: 2, electionreform: -3, scotus: 2, economy: 1 },
+    kemp: { guns: 7, abortion: 7, healthcare: 6, immigration: 6, climate: 4, taxation: 7, trade: 3, minwage: 5, labor: 6, lgbtq: 5, criminal: 7, drugpricing: 2, energy: 5, foreign: 5, military: 6, israel: 7, govspend: 6, electionreform: 8, scotus: 7, economy: 7 },
+    mace: { guns: 5, abortion: 1, healthcare: 3, immigration: 4, climate: 2, taxation: 5, trade: 3, minwage: 2, labor: 3, lgbtq: 2, criminal: 4, drugpricing: 1, energy: 3, foreign: 4, military: 5, israel: 6, govspend: 5, electionreform: 3, scotus: 4, economy: 5 },
+    cheney: { guns: 7, abortion: 6, healthcare: 5, immigration: 4, climate: 3, taxation: 7, trade: 1, minwage: 4, labor: 5, lgbtq: 2, criminal: 6, drugpricing: 2, energy: 6, foreign: 9, military: 9, israel: 9, govspend: 6, electionreform: -6, scotus: 7, economy: 6 },
+    walker: { guns: -6, abortion: -9, healthcare: -10, immigration: -8, climate: -9, taxation: -9, trade: -6, minwage: -10, labor: -10, lgbtq: -9, criminal: -8, drugpricing: -10, energy: -9, foreign: -7, military: -8, israel: -9, govspend: -8, electionreform: -9, scotus: -8, economy: -8 },
+    ware: { guns: -7, abortion: -9, healthcare: -10, immigration: -8, climate: -9, taxation: -8, trade: -5, minwage: -9, labor: -9, lgbtq: -9, criminal: -9, drugpricing: -9, energy: -8, foreign: -8, military: -8, israel: -10, govspend: -7, electionreform: -9, scotus: -8, economy: -8 },
+    laduke: { guns: -5, abortion: -8, healthcare: -9, immigration: -6, climate: -10, taxation: -7, trade: -4, minwage: -8, labor: -8, lgbtq: -8, criminal: -6, drugpricing: -8, energy: -10, foreign: -6, military: -7, israel: -7, govspend: -6, electionreform: -8, scotus: -7, economy: -7 },
+    hoh: { guns: -4, abortion: -7, healthcare: -8, immigration: -5, climate: -7, taxation: -6, trade: -2, minwage: -7, labor: -6, lgbtq: -7, criminal: -5, drugpricing: -7, energy: -6, foreign: -10, military: -10, israel: -9, govspend: -8, electionreform: -7, scotus: -6, economy: -6 },
+    hill: { guns: -8, abortion: -9, healthcare: -10, immigration: -8, climate: -8, taxation: -8, trade: -6, minwage: -9, labor: -9, lgbtq: -9, criminal: -9, drugpricing: -9, energy: -7, foreign: -8, military: -7, israel: -10, govspend: -7, electionreform: -8, scotus: -8, economy: -8 },
+    amash: { guns: 9, abortion: 4, healthcare: 7, immigration: 1, climate: 6, taxation: 9, trade: -8, minwage: 8, labor: 7, lgbtq: 0, criminal: 0, drugpricing: 6, energy: 7, foreign: -9, military: -6, israel: -4, govspend: 10, electionreform: 0, scotus: 6, economy: 8 }
 };
