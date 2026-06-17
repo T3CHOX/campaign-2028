@@ -745,6 +745,18 @@ var Counties = {
 
         if (!gameData.thirdPartiesEnabled) {
             support.G = 0; support.L = 0; support.PSL = 0; support.I = 0;
+        } else {
+            var activeParties = {};
+            if (typeof Utils !== 'undefined' && Utils.getActiveCandidates) {
+                var active = Utils.getActiveCandidates();
+                for (var k = 0; k < active.length; k++) {
+                    activeParties[active[k].party] = true;
+                }
+                if (!activeParties['G']) support.G = 0;
+                if (!activeParties['L']) support.L = 0;
+                if (!activeParties['PSL']) support.PSL = 0;
+                if (!activeParties['I']) support.I = 0;
+            }
         }
 
         Object.keys(support).forEach(function(key) {
@@ -804,15 +816,9 @@ var Counties = {
             var share = groupWeights[i].share;
             var groupTurnout = (gameData.interestGroupTurnout && gameData.interestGroupTurnout[groupId] !== undefined)
                 ? gameData.interestGroupTurnout[groupId] : 1.0;
-            var turnoutShift = 0;
-            for (var t = 0; t < activeCandidates.length; t++) {
-                var turnoutCandidate = candidateById[activeCandidates[t].id];
-                if (!turnoutCandidate) continue;
-                turnoutShift += (typeof _getCandidateGroupEffectValue === 'function')
-                    ? _getCandidateGroupEffectValue(turnoutCandidate, groupId, 'turnout')
-                    : 0;
-            }
-            groupTurnout = Math.max(0, Math.min(1, groupTurnout + (turnoutShift / 100)));
+            // v2 Bug Fix #1: Removed _getCandidateGroupEffectValue call here.
+            // Group modifiers are now applied solely in recomputeInterestGroupSupport().
+            groupTurnout = Math.max(0, Math.min(1, groupTurnout));
             adjustedGroupTurnouts[groupId] = groupTurnout;
             totalWeight += share * groupTurnout;
         }
@@ -844,15 +850,8 @@ var Counties = {
 
             var groupPool = voterPool * (groupWeight / totalWeight);
             var support = this.getGroupSupportByParty(groupId, county);
-            for (var s = 0; s < activeCandidates.length; s++) {
-                var supportCandidate = candidateById[activeCandidates[s].id];
-                if (!supportCandidate) continue;
-                var supportShift = (typeof _getCandidateGroupEffectValue === 'function')
-                    ? _getCandidateGroupEffectValue(supportCandidate, groupId, 'support')
-                    : 0;
-                if (!supportShift) continue;
-                support = this.applyVoteShareShift(support, activeCandidates[s].voteKey, supportShift);
-            }
+            // v2 Bug Fix #1: Removed _getCandidateGroupEffectValue support shift call.
+            // Group support modifiers are now applied solely in recomputeInterestGroupSupport().
             var supportWeights = {};
             var supportTotal = 0;
             for (var partyKey in support) {
@@ -1151,24 +1150,23 @@ var Counties = {
         
         if (thirdPartiesEnabled) {
             // Use original third-party percentages
-            county.v.G = county.originalV.G;
-            county.v.L = county.originalV.L;
-            county.v.I = county.originalV.I;
-            county.v.PSL = county.originalV.PSL;
+            county.v.G = county.originalV.G || 0;
+            county.v.L = county.originalV.L || 0;
+            county.v.I = county.originalV.I || 0;
+            county.v.PSL = county.originalV.PSL || 0;
         } else {
-            // Split third-party votes 50/50 between D and R
-            var totalThird = (county.originalV.G || 0) + (county.originalV.L || 0) + (county.originalV.I || 0) + (county.originalV.PSL || 0);
-            var halfThird = totalThird / 2;
-            
-            county.v.D = county.originalV.D + halfThird;
-            county.v.R = county.originalV.R + halfThird;
+            // Do NOT split 50/50. Third parties are siphoners, so without them, 
+            // the D and R base should just be scaled proportionally.
             county.v.G = 0;
             county.v.L = 0;
             county.v.I = 0;
             county.v.PSL = 0;
+            // Restore D and R to their original pre-siphon values
+            county.v.D = county.originalV.D || 0;
+            county.v.R = county.originalV.R || 0;
         }
         
-        // Always normalize votes to ensure they sum to 100%
+        // Always normalize votes to ensure they sum to 100% proportionally
         this.normalizeCountyVotes(county);
     },
 
@@ -1492,6 +1490,13 @@ var Counties = {
                         }
                     }
                     
+                    var titleElements = svg.querySelectorAll('title');
+                    for (var j = 0; j < titleElements.length; j++) {
+                        if (titleElements[j].parentNode) {
+                            titleElements[j].parentNode.removeChild(titleElements[j]);
+                        }
+                    }
+
                     wrapper.innerHTML = '';
                     wrapper.appendChild(svg);
                     
@@ -1670,8 +1675,8 @@ var Counties = {
             var turnoutRate = this.getCountyTurnoutRateForMode(county, 'turnout');
             var turnoutLabel = turnoutRate ? (turnoutRate * 100).toFixed(1) + '% of registered' : '—';
             var turnoutColor = turnoutRate >= 0.7 ? '#198754' : '#ccc';
-            issuesList.innerHTML = '<div style="background: #2a2a2a; padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + turnoutColor + '">' + turnoutLabel + '</span></div>';
-            issuesList.innerHTML += '<div style="background: #2a2a2a; padding: 8px; border-radius: 4px;"><strong>Type:</strong> ' + (county.t || 'Unknown') + '</div>';
+            issuesList.innerHTML = '<div style="background: rgba(0,0,0,0.2); padding: 8px; margin-bottom: 10px; border-radius: 4px;"><strong>Turnout:</strong> <span style="color: ' + turnoutColor + '">' + turnoutLabel + '</span></div>';
+            issuesList.innerHTML += '<div style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px;"><strong>Type:</strong> ' + Utils.getDisplayTier(county.t) + '</div>';
         }
         
         // Mark that we're in county view mode

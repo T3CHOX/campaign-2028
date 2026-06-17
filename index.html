@@ -159,6 +159,18 @@
                     <label>DATE</label>
                     <span class="date-display" id="hud-date">JUL 4</span>
                 </div>
+                <div class="stat-group">
+                    <label>MOMENTUM</label>
+                    <span class="momentum" id="hud-momentum" title="Campaign momentum: -1.0 to +1.0">0.00</span>
+                </div>
+                <div class="stat-group">
+                    <label>APPROVAL</label>
+                    <span class="approval" id="hud-approval" title="National approval rating">50%</span>
+                </div>
+                <div class="stat-group">
+                    <label>NATIONAL POLL</label>
+                    <span class="national-poll" id="hud-national-poll" title="Average of recent national polls">Tie</span>
+                </div>
                 <button class="next-turn-btn" onclick="app.nextWeek()">NEXT WEEK &rarr;</button>
             </div>
         </header>
@@ -208,6 +220,10 @@
                             <button class="act-btn" onclick="app.openCountyView()"><span><i class="fa-solid fa-map"></i></span><span>BREAKDOWN</span></button>
                             <button class="act-btn" onclick="app.openIssuesPanel()"><span><i class="fa-solid fa-chart-line"></i></span><span>ISSUES</span></button>
                             <button class="act-btn" onclick="app.handleAction('speech')"><span><i class="fa-solid fa-microphone"></i></span><span>SPEECH</span></button>
+                            <button class="act-btn v2-btn" onclick="app.handleAction('surrogate')"><span><i class="fa-solid fa-user-group"></i></span><span>SURROGATE</span></button>
+                            <button class="act-btn v2-btn" onclick="app.handleAction('debate_prep')"><span><i class="fa-solid fa-book"></i></span><span>DEBATE PREP</span></button>
+                            <button class="act-btn v2-btn" onclick="app.handleAction('oppo_research')"><span><i class="fa-solid fa-magnifying-glass"></i></span><span>OPPO RESEARCH</span></button>
+                            <button class="act-btn v2-btn" onclick="Campaign.handleGrassrootsFundraise()"><span><i class="fa-solid fa-hand-holding-dollar"></i></span><span>GRASSROOTS</span></button>
                         </div>
                     </div>
                     
@@ -231,12 +247,33 @@
                             </div>
                             <button class="queue-ad-btn" onclick="app.queueAd()">QUEUE AD</button>
                         </div>
-                        <div class="queued-ads-display" id="queued-ads-display">
-                            <small>No ads queued this turn</small>
+                        <div class="queued-ads-display" id="queued-ads-display" style="background: rgba(0,0,0,0.2);">
+                            <strong>QUEUED ADS:</strong> <span id="queued-ads-count">0</span>
                         </div>
                     </div>
                     
                     <div class="issues-list"><h4>TOP ISSUES</h4><div id="sp-issues-list"></div></div>
+                    
+                    <div id="ground-ops-panel" style="margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                        <h4><i class="fa-solid fa-map-location-dot"></i> GROUND OPS</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; color: #ccc;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Field Offices:</span><strong id="sp-go-offices" style="color:#fff;">0</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Staff Level:</span><strong id="sp-go-staff" style="color:#fff;">0 / 60</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Volunteer Pool:</span><strong id="sp-go-vols" style="color:#fff;">0</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Voter File Quality:</span><strong id="sp-go-vf" style="color:#fff;">20%</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>GOTV Status:</span><strong id="sp-go-gotv" style="color:#fff;">Dormant</strong>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div id="empty-msg">
                     <div class="empty-icon"><i class="fa-solid fa-person-booth"></i></div>
@@ -343,27 +380,19 @@
                     </div>
                 </div>
 
-                <aside id="election-sidebar">
-                        <div id="polls-closing-panel">
-                            <h4>POLLS CLOSING NEXT</h4>
-                            <div id="polls-closing-next"></div>
-                        </div>
-                        <div id="third-party-tracker-panel" class="hidden">
-                            <h4>THIRD PARTY TRACKER</h4>
-                            <div id="third-party-tracker-body"></div>
-                        </div>
-                        <div id="election-state-info" class="hidden">
-                            <!-- Dynamically populated by Election.selectState() -->
-                        </div>
-                    
-                    <div id="election-feed">
-                        <h4>🔴 LIVE UPDATES</h4>
-                        <div id="election-feed-content"></div>
+                <aside id="election-sidebar" class="election-sidebar">
+                    <div id="election-state-info" class="hidden">
+                        <!-- Filled dynamically by JS -->
                     </div>
                     
-                    <div id="race-calls">
-                        <h4>RACE CALLS</h4>
-                        <div id="race-calls-content"></div>
+                    <div id="third-party-tracker-panel" class="hidden">
+                        <h4>THIRD PARTY TRACKER</h4>
+                        <div id="third-party-tracker-body"></div>
+                    </div>
+
+                    <div id="polls-closing-panel">
+                        <h4>POLLS CLOSING NEXT</h4>
+                        <div id="polls-closing-next"></div>
                     </div>
                 </aside>
             </div>
@@ -467,52 +496,126 @@
         </div>
     </div>
 
-    <div id="field-modal" class="hidden">
+    <div id="ground-ops-modal" class="hidden">
         <div class="modal-box speech-modal-box">
             <div class="modal-header">
-                <h2>FIELD OPERATIONS</h2>
+                <h2>GROUND OPERATIONS</h2>
                 <button class="modal-close-btn" onclick="app.closeFieldModal()">×</button>
             </div>
-            <div id="field-content">
-                <p style="margin-bottom: 15px; color: #ccc;">Deploy staff and volunteers to mobilize a specific demographic in this state.</p>
-                <div class="control-group">
-                    <label>Target Group:</label>
-                    <select id="field-group-select" class="issue-dropdown"></select>
+            <div id="ground-ops-content" style="display: flex; flex-direction: column; gap: 15px;">
+                <p style="color: #ccc;">Build permanent infrastructure to multiply turnout on Election Day.</p>
+                
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong><i class="fa-solid fa-store"></i> Open Field Office</strong><br>
+                        <small style="color:#aaa;">Cost: $1.8M | Energy: 1. Generates volunteers & passive turnout.</small>
+                    </div>
+                    <button class="queue-ad-btn" style="width: auto; padding: 8px 15px;" onclick="app.runGroundOp('office')">OPEN</button>
                 </div>
-                <div class="control-group">
-                    <label>Intensity:</label>
-                    <select id="field-intensity-select" class="intensity-dropdown">
-                        <option value="1">Local Push ($2.5M)</option>
-                        <option value="2">Regional Surge ($5.0M)</option>
-                        <option value="3">Statewide Blitz ($7.5M)</option>
-                    </select>
+                
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <strong><i class="fa-solid fa-user-tie"></i> Hire Field Staff</strong><br>
+                        <small style="color:#aaa;">Cost: $0.9M - $2.7M. Multiplies all other ground actions.</small>
+                        <select id="go-staff-intensity" class="intensity-dropdown" style="margin-top: 5px; width: 100%;">
+                            <option value="1">Intensity 1 ($0.9M, +10 Staff)</option>
+                            <option value="2">Intensity 2 ($1.8M, +18 Staff)</option>
+                            <option value="3">Intensity 3 ($2.7M, +24 Staff)</option>
+                        </select>
+                    </div>
+                    <button class="queue-ad-btn" style="width: auto; padding: 8px 15px; margin-left: 10px;" onclick="app.runGroundOp('staff')">HIRE</button>
                 </div>
-                <button class="queue-ad-btn" onclick="app.queueFieldOperation()">QUEUE FIELD OPS</button>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <strong><i class="fa-solid fa-person-walking"></i> Deploy Canvassers</strong><br>
+                        <small style="color:#aaa;">Cost: $0.6M - $1.8M | Energy: 1. Requires 1 Office & 10 Staff.</small>
+                        <select id="go-canvass-intensity" class="intensity-dropdown" style="margin-top: 5px; width: 100%;">
+                            <option value="1">Light ($0.6M)</option>
+                            <option value="2">Medium ($1.2M)</option>
+                            <option value="3">Heavy ($1.8M)</option>
+                        </select>
+                    </div>
+                    <button class="queue-ad-btn" style="width: auto; padding: 8px 15px; margin-left: 10px;" onclick="app.runGroundOp('canvass')">DEPLOY</button>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong><i class="fa-solid fa-database"></i> Invest in Voter File</strong><br>
+                        <small style="color:#aaa;">Cost: $1.2M. Max 2 times per state. Boosts targeting efficiency.</small>
+                    </div>
+                    <button class="queue-ad-btn" style="width: auto; padding: 8px 15px;" onclick="app.runGroundOp('voterfile')">INVEST</button>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--rep-red);">
+                    <div>
+                        <strong><i class="fa-solid fa-truck-fast"></i> Activate GOTV Push</strong><br>
+                        <small style="color:#aaa;">Cost: ~$2.5M | Energy: 2. Weeks 14-17 Only. Final turnout lift!</small>
+                    </div>
+                    <button class="queue-ad-btn" style="width: auto; padding: 8px 15px;" onclick="app.runGroundOp('gotv')">ACTIVATE</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="digital-modal" class="hidden">
+    <div id="digital-planner-modal" class="hidden">
         <div class="modal-box speech-modal-box">
             <div class="modal-header">
-                <h2>DIGITAL CAMPAIGN</h2>
+                <h2>DIGITAL AD PLANNER</h2>
                 <button class="modal-close-btn" onclick="app.closeDigitalModal()">×</button>
             </div>
-            <div id="digital-content">
-                <p style="margin-bottom: 15px; color: #ccc;">Target online messaging and social ads to energize a demographic cohort.</p>
-                <div class="control-group">
-                    <label>Target Group:</label>
-                    <select id="digital-group-select" class="issue-dropdown"></select>
+            <div id="digital-content" style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="display: flex; gap: 10px; justify-content: space-between;">
+                    <button class="act-btn" style="flex:1;" onclick="app.runDigitalPreset('base')">BASE MOBILIZE<br><small>$2M</small></button>
+                    <button class="act-btn" style="flex:1;" onclick="app.runDigitalPreset('swing')">SWING TARGET<br><small>$2.5M</small></button>
+                    <button class="act-btn" style="flex:1;" onclick="app.runDigitalPreset('youth')">YOUTH DRIVE<br><small>$1.5M</small></button>
                 </div>
+                
+                <hr style="border-color: #444;">
+                
                 <div class="control-group">
-                    <label>Intensity:</label>
-                    <select id="digital-intensity-select" class="intensity-dropdown">
-                        <option value="1">Precision Target ($1.5M)</option>
-                        <option value="2">Platform Push ($3.0M)</option>
-                        <option value="3">National Trending ($4.5M)</option>
+                    <label>Total Budget ($M): <span id="digi-budget-val">2.0</span></label>
+                    <input type="range" id="digi-budget-slider" min="0.5" max="10.0" step="0.5" value="2.0" oninput="document.getElementById('digi-budget-val').innerText=this.value" style="width: 100%;">
+                </div>
+                
+                <div class="control-group">
+                    <label>Target Segment:</label>
+                    <select id="digi-segment-select" class="issue-dropdown">
+                        <option value="persuadable">Persuadable (Swing)</option>
+                        <option value="suburban_women">Suburban Women</option>
+                        <option value="non_college">Non-College Rural</option>
+                        <option value="gen_z">Gen Z & Youth</option>
+                        <option value="senior">Senior Citizens</option>
+                        <option value="progressive">Progressives</option>
+                        <option value="libertarian">Libertarians</option>
                     </select>
                 </div>
-                <button class="queue-ad-btn" onclick="app.queueDigitalCampaign()">QUEUE DIGITAL</button>
+
+                <div class="control-group">
+                    <label>Creative Strategy:</label>
+                    <select id="digi-creative-select" class="intensity-dropdown">
+                        <option value="issue">Issue Advocacy (Balanced)</option>
+                        <option value="contrast">Contrast / Attack (Opponent Debuff)</option>
+                        <option value="mobilize">Mobilization (Turnout Focus)</option>
+                        <option value="testimonial">Testimonial (High Persuasion)</option>
+                        <option value="data_collect">Data Collection (Infrastructure)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Platform Allocation:</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem;">
+                        <div>CTV <input type="number" id="digi-ctv" value="40" min="0" max="100" style="width:50px;">%</div>
+                        <div>Meta <input type="number" id="digi-meta" value="30" min="0" max="100" style="width:50px;">%</div>
+                        <div>Search <input type="number" id="digi-search" value="0" min="0" max="100" style="width:50px;">%</div>
+                        <div>YouTube <input type="number" id="digi-youtube" value="30" min="0" max="100" style="width:50px;">%</div>
+                        <div>TikTok <input type="number" id="digi-tiktok" value="0" min="0" max="100" style="width:50px;">%</div>
+                        <div>Display <input type="number" id="digi-display" value="0" min="0" max="100" style="width:50px;">%</div>
+                    </div>
+                    <small style="color:var(--rep-red);" id="digi-alloc-warn"></small>
+                </div>
+
+                <button class="queue-ad-btn" onclick="app.executeCustomDigital()">LAUNCH CAMPAIGN</button>
             </div>
         </div>
     </div>
@@ -572,6 +675,133 @@
         </div>
     </div>
     
+    <!-- Ground Ops Modal -->
+    <div id="ground-ops-modal" class="hidden">
+        <div class="modal-box ground-ops-box">
+            <div class="modal-header">
+                <h2>GROUND OPERATIONS</h2>
+                <button class="modal-close-btn" onclick="app.closeFieldModal()">×</button>
+            </div>
+            <div id="ground-ops-content">
+                <div class="go-stats-grid">
+                    <div class="go-stat"><label>OFFICES</label><span id="sp-go-offices">0</span></div>
+                    <div class="go-stat"><label>STAFF</label><span id="sp-go-staff">0 / 60</span></div>
+                    <div class="go-stat"><label>VOLUNTEERS</label><span id="sp-go-vols">0</span></div>
+                    <div class="go-stat"><label>DATA QUALITY</label><span id="sp-go-vf">0%</span></div>
+                    <div class="go-stat"><label>GOTV STATUS</label><span id="sp-go-gotv">Dormant</span></div>
+                </div>
+                
+                <div class="go-actions-grid">
+                    <div class="go-action-card">
+                        <h4>Open Field Office</h4>
+                        <p>Costs $0.5M, 1 Energy. Generates volunteers over time.</p>
+                        <button onclick="app.runGroundOp('office')">OPEN OFFICE</button>
+                    </div>
+                    
+                    <div class="go-action-card">
+                        <h4>Hire Field Staff</h4>
+                        <p>Costs $0.2M per intensity, 1 Energy. Boosts volunteer efficiency.</p>
+                        <select id="go-staff-intensity" class="intensity-dropdown">
+                            <option value="1">Light ($0.2M)</option>
+                            <option value="2">Medium ($0.4M)</option>
+                            <option value="3">Heavy ($0.6M)</option>
+                        </select>
+                        <button onclick="app.runGroundOp('staff')">HIRE STAFF</button>
+                    </div>
+                    
+                    <div class="go-action-card">
+                        <h4>Deploy Canvassers</h4>
+                        <p>Costs $0.5M per intensity, 2 Energy. Consumes volunteers to persuade voters.</p>
+                        <select id="go-canvass-intensity" class="intensity-dropdown">
+                            <option value="1">Light ($0.5M)</option>
+                            <option value="2">Medium ($1.0M)</option>
+                            <option value="3">Heavy ($1.5M)</option>
+                        </select>
+                        <button onclick="app.runGroundOp('canvass')">DEPLOY CANVASSERS</button>
+                    </div>
+                    
+                    <div class="go-action-card">
+                        <h4>Invest in Voter File</h4>
+                        <p>Costs $1.5M, 1 Energy. Improves targeting and GOTV efficiency.</p>
+                        <button onclick="app.runGroundOp('voterfile')">UPGRADE DATA</button>
+                    </div>
+                    
+                    <div class="go-action-card">
+                        <h4>Activate GOTV</h4>
+                        <p>Costs $2.0M, 2 Energy. Turns out your base voters on election day.</p>
+                        <button onclick="app.runGroundOp('gotv')">ACTIVATE GOTV</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Digital Planner Modal -->
+    <div id="digital-planner-modal" class="hidden">
+        <div class="modal-box digital-planner-box">
+            <div class="modal-header">
+                <h2>DIGITAL AD CAMPAIGN</h2>
+                <button class="modal-close-btn" onclick="app.closeDigitalModal()">×</button>
+            </div>
+            <div id="digital-planner-content">
+                <div class="digital-presets">
+                    <h4>QUICK PRESETS</h4>
+                    <div class="digital-preset-buttons">
+                        <button onclick="app.runDigitalPreset('base')">BASE MOBILIZATION ($2.0M)</button>
+                        <button onclick="app.runDigitalPreset('swing')">SWING CONTRAST ($2.5M)</button>
+                        <button onclick="app.runDigitalPreset('youth')">YOUTH OUTREACH ($1.5M)</button>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="digital-custom">
+                    <h4>CUSTOM CAMPAIGN</h4>
+                    <div class="control-group">
+                        <label>Total Budget ($M): <span id="digi-budget-val">2.0</span></label>
+                        <input type="range" id="digi-budget-slider" min="0.5" max="10.0" step="0.5" value="2.0" oninput="document.getElementById('digi-budget-val').innerText = this.value">
+                    </div>
+                    
+                    <div class="control-group" style="display: flex; gap: 15px;">
+                        <div style="flex: 1;">
+                            <label>Target Segment:</label>
+                            <select id="digi-segment-select" class="intensity-dropdown">
+                                <option value="persuadable">Persuadable Voters</option>
+                                <option value="youth">Youth / First Time</option>
+                                <option value="progressive">Progressive Base</option>
+                                <option value="hardcore_right">Conservative Base</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Creative Type:</label>
+                            <select id="digi-creative-select" class="intensity-dropdown">
+                                <option value="issue">Issue Focus</option>
+                                <option value="contrast">Negative/Contrast</option>
+                                <option value="mobilize">GOTV/Mobilize</option>
+                                <option value="testimonial">Testimonial</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="allocations-section">
+                        <label>Platform Allocations (%)</label>
+                        <div class="allocations-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>CTV/Streaming: <input type="number" id="digi-ctv" value="20" min="0" max="100"></div>
+                            <div>Meta/Facebook: <input type="number" id="digi-meta" value="30" min="0" max="100"></div>
+                            <div>Google Search: <input type="number" id="digi-search" value="20" min="0" max="100"></div>
+                            <div>YouTube: <input type="number" id="digi-youtube" value="20" min="0" max="100"></div>
+                            <div>TikTok: <input type="number" id="digi-tiktok" value="0" min="0" max="100"></div>
+                            <div>Display Network: <input type="number" id="digi-display" value="10" min="0" max="100"></div>
+                        </div>
+                        <div id="digi-alloc-warn" style="color: var(--rep-red); font-weight: bold; margin-top: 10px;"></div>
+                    </div>
+                    
+                    <button class="queue-ad-btn" onclick="app.executeCustomDigital()" style="margin-top: 15px; width: 100%;">LAUNCH CUSTOM CAMPAIGN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Load scripts in dependency order -->
 <script src="js/config.js"></script>
 <script src="js/candidates.js"></script>
@@ -581,7 +811,13 @@
 <script src="js/turnout.js"></script>
 <script src="js/counties.js"></script>
 <script src="js/persuasion.js"></script>
+<script src="js/groundOps.js"></script>
+<script src="js/digitalAds.js"></script>
 <script src="js/ai.js"></script>
+<script src="js/news.js"></script>
+<script src="js/debates.js"></script>
+<script src="js/scandals.js"></script>
+<script src="js/endorsements.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/screens.js"></script>
 <script src="js/campaign.js"></script>

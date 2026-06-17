@@ -4,44 +4,44 @@
 
 var AI_PERSONALITIES = {
     aggressive: {
-        swingWeight: 0.55,
+        swingWeight: 0.50,
         defendWeight: 0.18,
         expandWeight: 0.17,
-        fundraiseWeight: 0.1,
+        fundraiseWeight: 0.15,
         rallyBias: 0.65,
-        countyRallyBias: 0.6,
-        mistakeChance: 0.12,
+        countyRallyBias: 0.60,
+        mistakeChance: 0.10,
         vpPressureChance: 0.25
     },
     defensive: {
-        swingWeight: 0.4,
-        defendWeight: 0.38,
+        swingWeight: 0.38,
+        defendWeight: 0.35,
         expandWeight: 0.12,
-        fundraiseWeight: 0.1,
+        fundraiseWeight: 0.15,
         rallyBias: 0.45,
         countyRallyBias: 0.35,
-        mistakeChance: 0.08,
-        vpPressureChance: 0.2
+        mistakeChance: 0.06,
+        vpPressureChance: 0.20
     },
     expansion: {
-        swingWeight: 0.35,
-        defendWeight: 0.15,
-        expandWeight: 0.4,
-        fundraiseWeight: 0.1,
+        swingWeight: 0.32,
+        defendWeight: 0.13,
+        expandWeight: 0.40,
+        fundraiseWeight: 0.15,
         rallyBias: 0.55,
-        countyRallyBias: 0.7,
-        mistakeChance: 0.15,
+        countyRallyBias: 0.70,
+        mistakeChance: 0.12,
         vpPressureChance: 0.22
     },
     balanced: {
-        swingWeight: 0.45,
-        defendWeight: 0.25,
-        expandWeight: 0.2,
-        fundraiseWeight: 0.1,
+        swingWeight: 0.42,
+        defendWeight: 0.22,
+        expandWeight: 0.21,
+        fundraiseWeight: 0.15,
         rallyBias: 0.55,
         countyRallyBias: 0.45,
-        mistakeChance: 0.1,
-        vpPressureChance: 0.2
+        mistakeChance: 0.08,
+        vpPressureChance: 0.20
     }
 };
 
@@ -116,6 +116,44 @@ var OpponentAI = {
     executeTurn: function(opponentParty, stamina) {
         var actions = [];
         var personality = this.getPersonality(opponentParty);
+
+        // v2: Late Game Pivot — override swing weight in weeks 13-17 if trailing by >30 EVs
+        var weekNum = typeof Debates !== 'undefined' && Debates.getCurrentWeekNumber
+            ? Debates.getCurrentWeekNumber()
+            : Math.floor((gameData.currentDate - new Date('2028-07-04')) / (7 * 24 * 60 * 60 * 1000));
+        if (weekNum >= 13) {
+            var aiEV = 0;
+            var playerEV = 0;
+            for (var sc in gameData.states) {
+                var s = gameData.states[sc];
+                var aiMarginCheck = opponentParty === 'D' ? s.margin : -s.margin;
+                if (aiMarginCheck > 0) aiEV += s.ev;
+                else playerEV += s.ev;
+            }
+            if (playerEV - aiEV > 30) {
+                personality = Object.assign({}, personality);
+                personality.swingWeight = 0.75;
+            }
+        }
+
+        // v2: AI Debate Strategy — prep before scheduled debates
+        if (typeof DEBATE_SCHEDULE !== 'undefined') {
+            for (var di = 0; di < DEBATE_SCHEDULE.length; di++) {
+                if (DEBATE_SCHEDULE[di].week === weekNum + 1) {
+                    var ticket = this.getTicket(opponentParty);
+                    var aiFunds = ticket && ticket.pres ? (ticket.pres.funds || 50) : 50;
+                    if (aiFunds > 10 && Math.random() < 0.60) {
+                        if (!ticket._aiDebatePrepped) {
+                            ticket._aiDebatePrepped = true;
+                            ticket._aiDebateSkillBuff = 1;
+                            Utils.addLog(PARTIES[opponentParty].shortName + ' is preparing for the upcoming debate.');
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
         var strategy = this.determineStrategy(opponentParty, personality);
         var numActions = Math.max(1, Math.min(3, Math.floor(stamina * 0.35)));
 
@@ -143,9 +181,13 @@ var OpponentAI = {
         }
 
         var rallyBias = personality.rallyBias || 0.5;
-        var actionType = Math.random() < rallyBias ? 'rally' : 'ad';
+        var r = Math.random();
+        var actionType = 'ad';
+        if (r < rallyBias * 0.6) actionType = 'rally';
+        else if (r < rallyBias * 0.8) actionType = 'ground_op';
+        else if (r < rallyBias * 1.0) actionType = 'digital_preset';
 
-        if (typeof Counties !== 'undefined' && Counties.countyData) {
+        if (typeof Counties !== 'undefined' && Counties.countyData && (actionType === 'rally' || actionType === 'ad')) {
             return {
                 type: actionType === 'rally' ? 'county_rally' : 'county_ad',
                 state: targetState,
@@ -373,6 +415,30 @@ var OpponentAI = {
             var adPres = party === 'D' ? gameData.demTicket.pres : gameData.repTicket.pres;
             if (adPres) {
                 Utils.addLog('OPPONENT UPDATE: ' + adPres.name + ' ran a targeted media buy in ' + s.name);
+            }
+            return;
+        }
+
+        if (action.type === 'ground_op') {
+            if (typeof GroundOps !== 'undefined') {
+                GroundOps.openFieldOffice(action.state, party);
+            }
+            var goPres = party === 'D' ? gameData.demTicket.pres : gameData.repTicket.pres;
+            if (goPres) {
+                Utils.addLog('OPPONENT UPDATE: ' + goPres.name + ' expanded ground operations in ' + s.name);
+            }
+            return;
+        }
+        
+        if (action.type === 'digital_preset') {
+            if (typeof DigitalAds !== 'undefined') {
+                var config = { totalBudget: 2.0, allocations: { meta: 0.5, youtube: 0.5 }, segment: 'persuadable', creative: 'mobilize' };
+                // We're passing party here if executeDigitalCampaign can take it, but the current logic always uses player party.
+                // It's a placeholder for opponent usage.
+                var digiPres = party === 'D' ? gameData.demTicket.pres : gameData.repTicket.pres;
+                if (digiPres) {
+                    Utils.addLog('OPPONENT UPDATE: ' + digiPres.name + ' launched a massive digital blitz in ' + s.name);
+                }
             }
             return;
         }

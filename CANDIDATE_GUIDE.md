@@ -31,6 +31,9 @@ Add a new object to the `CANDIDATES` array in `js/candidates.js`:
     funds: 75,
     img: "images/candidate.jpg",
     stamina: 8,
+    charisma: 1.2,
+    debateSkill: 7,
+    scandalResistance: 0.5,
     desc: "Detailed candidate description...",
     buff: "Primary Strength Name",
     debuff: "Primary Weakness Name",
@@ -102,6 +105,10 @@ Add to the `VPS` array in `candidates.js`:
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `charisma` | number | 0.5-2.0. Candidate's public appeal (1.0 is average). |
+| `debateSkill` | number | 1-10. Competence and performance in debates. |
+| `scandalResistance` | number | 0.0-1.0. Immunity to scandals (1.0 = teflon). |
+| `siphonFromMajorParties`| object | Ex: `{ R: 0.10, D: 0.03 }`. Share of votes a 3rd party siphons. |
 | `groupBoosts` | object | Interest groups candidate appeals to |
 | `groupDebuffs` | object | Interest groups candidate struggles with |
 | `regionalSpillover` | array | States that receive spillover effects |
@@ -300,6 +307,7 @@ These effects compound with turnout multipliers and issue alignment bonuses.
 | Mark Kelly | AZ | 2.8 | Muted Fire | veterans(+8), suburban_moderates(+7), latino(+6) | progressive_left(-3), evangelical(-4) |
 | Ro Khanna | CA | 1.4 | Rust Belt Doubt | tech(+9), asian(+7), progressive_left(+8) | rural(-5), noncollege(-4) |
 | Rahm Emanuel | IL | 1.7 | Base Friction | suburban_moderates(+7), business_community(+8), jewish(+6) | progressive_left(-7), youth(-4) |
+| Jon Stewart | NJ | 1.4 | No Governing Record | youth(+8), media_consumers(+9), progressive_left(+6) | institutional_dems(-4), high_info_swing(-3) |
 | Josh Shapiro | PA | 3.4 | Soft National Brand | suburban_college(+8), jewish(+7), moderate_dems(+7) | youth(-3), progressive_left(-3) |
 | Andy Beshear | KY | 2.4 | National Ceiling | rural_whites(+7), moderate_dems(+8), union(+6) | progressive_left(-4), youth(-3) |
 | Cory Booker | NJ | 1.9 | Execution Questions | black(+8), urban(+8), suburban_moderates(+6) | noncollege(-3), progressive_left(-3) |
@@ -315,8 +323,23 @@ These effects compound with turnout multipliers and issue alignment bonuses.
 | Rand Paul | KY | 1.9 | Republican Base Skepticism | libertarian(+8), donors(+7), noncollege(+6) | evangelical(-5), rural(-4) |
 | Nikki Haley | SC | 1.6 | Base Doubt | suburban_college(+5), suburban_moderates(+6), asian(+3) | evangelical(-4), noncollege(-5) |
 | Vivek Ramaswamy | OH | 1.7 | Establishment Skepticism | youth(+6), asian(+7), noncollege(+5) | evangelical(-3), rural(-4) |
+| Steve Bannon | NY | 1.2 | Electoral Toxicity | hardcore_right(+9), antiestablishment(+8), online_militant(+8) | suburban_college(-8), women(-6) |
 | Josh Hawley | MO | 2.1 | Moderate Distance | noncollege(+7), rural(+6), bluecollar(+7) | suburban_moderates(-4), donors(-3) |
+| Tucker Carlson | FL | 1.4 | Candidate Question | online_right(+9), noncollege(+7), antiestablishment(+8) | suburban_college(-7), women(-5) |
 | Marco Rubio | FL | 2.2 | Conservative Skepticism | hispanic(+7), evangelical(+5), donor_conservative(+6) | noncollege(-4), populist_right(-3) |
+
+### Third Party Candidates Summary
+
+| Name | Party | Home State | Boost | Debuff | Top Boosts | Top Debuffs |
+|------|-------|-----------|-------|--------|-----------|-----------|
+| Jill Stein | G | MA | 1.0 | Ballot-Box Ceiling | progressive_left(+7), antiwar_left(+8), environmentalists(+8) | suburban_moderates(-6), institutional_dems(-7) |
+| Chase Oliver | L | GA | 1.2 | Low Visibility | libertarian(+9), small_business(+6), antiwar_independents(+6) | evangelical(-5), union(-4) |
+| Andrew Yang | I | NY | 1.3 | Coalition Drift | tech(+8), youth(+7), independents(+8) | union(-4), party_loyalists(-6) |
+| Thomas Massie | I | KY | 2.8 | Narrow Coalition | libertarian(+9), rural_whites(+6), antiestablishment(+6) | institutional_dems(-8), progressive_left(-4) |
+| Robert F. Kennedy Jr. | I | NY | 1.2 | Message Volatility | antiestablishment(+8), independents(+7), alternative_media(+7) | institutional_dems(-7), public_health_professionals(-8) |
+| Michael Bloomberg | I | NY | 1.0 | Mass-appeal Problem | suburban_moderates(+8), donor_class(+10), business_community(+10) | black(-3), progressive_left(-8) |
+| Claudia De la Cruz | PSL | NY | 1.0 | Electoral Margin | progressive_left(+8), youth(+7), latino_left(+7) | suburban_moderates(-8), institutional_dems(-9) |
+| Gloria La Riva | PSL | CA | 1.0 | Tiny Ceiling | antiwar_left(+8), progressive_left(+6), labor_left(+6) | suburban_moderates(-7), donor_class(-9) |
 
 ---
 

@@ -67,6 +67,10 @@ function startGame() {
     // Initialize interest group support for all candidates
     initializeInterestGroupSupport();
     
+    // Initialize new subsystems
+    if (typeof GroundOps !== 'undefined') GroundOps.initGroundOps();
+    if (typeof DigitalAds !== 'undefined') DigitalAds.initDigitalAds();
+    
     // Initialize per-group turnout tracking
     initInterestGroupTurnout();
     if (typeof initCoalitionStatus === 'function') {
@@ -1971,14 +1975,14 @@ var app = {
             Utils.showToast("Select a state first!");
             return;
         }
-        var modal = document.getElementById('field-modal');
+        var modal = document.getElementById('ground-ops-modal');
         if (!modal) return;
-        this.initTargetGroupDropdown('field-group-select');
+        this.updateGroundOpsPanel();
         modal.classList.remove('hidden');
     },
 
     closeFieldModal: function() {
-        var modal = document.getElementById('field-modal');
+        var modal = document.getElementById('ground-ops-modal');
         if (modal) modal.classList.add('hidden');
     },
 
@@ -1987,14 +1991,13 @@ var app = {
             Utils.showToast("Select a state first!");
             return;
         }
-        var modal = document.getElementById('digital-modal');
+        var modal = document.getElementById('digital-planner-modal');
         if (!modal) return;
-        this.initTargetGroupDropdown('digital-group-select');
         modal.classList.remove('hidden');
     },
 
     closeDigitalModal: function() {
-        var modal = document.getElementById('digital-modal');
+        var modal = document.getElementById('digital-planner-modal');
         if (modal) modal.classList.add('hidden');
     },
     
@@ -2004,79 +2007,128 @@ var app = {
         Campaign.handleSpeech(issueId, intensity);
     },
 
-    queueFieldOperation: function() {
-        if (!gameData.selectedState) return;
-
-        var groupSelect = document.getElementById('field-group-select');
-        var intensitySelect = document.getElementById('field-intensity-select');
-        if (!groupSelect || !intensitySelect) return;
-
-        var groupId = groupSelect.value;
-        var intensity = parseInt(intensitySelect.value) || 1;
-        if (!groupId) {
-            Utils.showToast("Select a target group!");
-            return;
+    runGroundOp: function(type) {
+        var state = gameData.selectedState;
+        if (!state) return;
+        var success = false;
+        
+        if (type === 'office') {
+            success = GroundOps.openFieldOffice(state, null);
+        } else if (type === 'staff') {
+            var intensity = parseInt(document.getElementById('go-staff-intensity').value) || 1;
+            success = GroundOps.hireFieldStaff(state, intensity);
+        } else if (type === 'canvass') {
+            var intensity = parseInt(document.getElementById('go-canvass-intensity').value) || 1;
+            success = GroundOps.deployCanvassers(state, intensity);
+        } else if (type === 'voterfile') {
+            success = GroundOps.investVoterFile(state);
+        } else if (type === 'gotv') {
+            success = GroundOps.activateGOTV(state);
         }
-
-        var cost = intensity * PERSUASION_CONSTANTS.FIELD_BASE_COST;
-        var action = {
-            type: 'FIELD',
-            state: gameData.selectedState,
-            groupId: groupId,
-            intensity: intensity,
-            cost: {
-                funds: cost,
-                energy: PERSUASION_CONSTANTS.FIELD_ENERGY_COST
-            }
-        };
-
-        if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(action)) {
-            var groupName = INTEREST_GROUPS[groupId] ? INTEREST_GROUPS[groupId].name : groupId;
-            var state = gameData.states[gameData.selectedState];
-            state.lastCampaignDate = new Date(gameData.currentDate);
-            state.campaignActionsCount = (state.campaignActionsCount || 0) + 1;
-            Utils.showToast("Field ops queued: " + groupName);
-            Utils.addLog("Queued field ops targeting " + groupName + " in " + gameData.states[gameData.selectedState].name);
-            this.updateQueuedAdsDisplay();
-            this.closeFieldModal();
+        
+        if (success) {
+            this.updateGroundOpsPanel();
+            Campaign.updateHUD();
+            Campaign.clickState(state);
+        } else {
+            Utils.showToast("Insufficient funds or requirements not met.");
         }
     },
 
-    queueDigitalCampaign: function() {
-        if (!gameData.selectedState) return;
-
-        var groupSelect = document.getElementById('digital-group-select');
-        var intensitySelect = document.getElementById('digital-intensity-select');
-        if (!groupSelect || !intensitySelect) return;
-
-        var groupId = groupSelect.value;
-        var intensity = parseInt(intensitySelect.value) || 1;
-        if (!groupId) {
-            Utils.showToast("Select a target group!");
+    runDigitalPreset: function(preset) {
+        var state = gameData.selectedState;
+        if (!state) return;
+        
+        var config = { totalBudget: 2.0, allocations: {}, segment: 'persuadable', creative: 'issue' };
+        
+        if (preset === 'base') {
+            config.totalBudget = 2.0;
+            config.allocations = { meta: 0.5, ctv: 0.3, display: 0.2 };
+            config.segment = gameData.selectedParty === 'D' ? 'progressive' : 'hardcore_right';
+            config.creative = 'mobilize';
+        } else if (preset === 'swing') {
+            config.totalBudget = 2.5;
+            config.allocations = { ctv: 0.4, search: 0.3, youtube: 0.3 };
+            config.segment = 'persuadable';
+            config.creative = 'contrast';
+        } else if (preset === 'youth') {
+            config.totalBudget = 1.5;
+            config.allocations = { tiktok: 0.6, meta: 0.2, youtube: 0.2 };
+            config.segment = 'youth';
+            config.creative = 'testimonial';
+        }
+        
+        if (DigitalAds.executeDigitalCampaign(state, config)) {
+            Campaign.updateHUD();
+            Campaign.clickState(state);
+            this.closeDigitalModal();
+            Utils.showToast("Launched " + preset.toUpperCase() + " digital campaign!");
+        } else {
+            Utils.showToast("Insufficient funds for this preset.");
+        }
+    },
+    
+    executeCustomDigital: function() {
+        var state = gameData.selectedState;
+        if (!state) return;
+        
+        var totalBudget = parseFloat(document.getElementById('digi-budget-slider').value) || 2.0;
+        var segment = document.getElementById('digi-segment-select').value;
+        var creative = document.getElementById('digi-creative-select').value;
+        
+        var allocs = {
+            ctv: (parseFloat(document.getElementById('digi-ctv').value) || 0) / 100,
+            meta: (parseFloat(document.getElementById('digi-meta').value) || 0) / 100,
+            search: (parseFloat(document.getElementById('digi-search').value) || 0) / 100,
+            youtube: (parseFloat(document.getElementById('digi-youtube').value) || 0) / 100,
+            tiktok: (parseFloat(document.getElementById('digi-tiktok').value) || 0) / 100,
+            display: (parseFloat(document.getElementById('digi-display').value) || 0) / 100
+        };
+        
+        var sum = 0;
+        for (var k in allocs) sum += allocs[k];
+        
+        if (Math.abs(sum - 1.0) > 0.05) {
+            document.getElementById('digi-alloc-warn').innerText = "Allocations must sum to 100%!";
             return;
         }
-
-        var cost = intensity * PERSUASION_CONSTANTS.DIGITAL_BASE_COST;
-        var action = {
-            type: 'DIGITAL',
-            state: gameData.selectedState,
-            groupId: groupId,
-            intensity: intensity,
-            cost: {
-                funds: cost,
-                energy: PERSUASION_CONSTANTS.DIGITAL_ENERGY_COST
-            }
+        
+        document.getElementById('digi-alloc-warn').innerText = "";
+        
+        var config = {
+            totalBudget: totalBudget,
+            allocations: allocs,
+            segment: segment,
+            creative: creative
         };
-
-        if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(action)) {
-            var groupName = INTEREST_GROUPS[groupId] ? INTEREST_GROUPS[groupId].name : groupId;
-            var state = gameData.states[gameData.selectedState];
-            state.lastCampaignDate = new Date(gameData.currentDate);
-            state.campaignActionsCount = (state.campaignActionsCount || 0) + 1;
-            Utils.showToast("Digital campaign queued: " + groupName);
-            Utils.addLog("Queued digital campaign targeting " + groupName + " in " + gameData.states[gameData.selectedState].name);
-            this.updateQueuedAdsDisplay();
+        
+        if (DigitalAds.executeDigitalCampaign(state, config)) {
+            Campaign.updateHUD();
+            Campaign.clickState(state);
             this.closeDigitalModal();
+        } else {
+            Utils.showToast("Failed to launch digital campaign. Check budget and cooldowns.");
+        }
+    },
+    
+    updateGroundOpsPanel: function() {
+        var state = gameData.selectedState;
+        if (!state || !gameData.groundOps) return;
+        
+        var ops = gameData.groundOps;
+        document.getElementById('sp-go-offices').innerText = ops.offices[state].count;
+        document.getElementById('sp-go-staff').innerText = Math.round(ops.staffLevels[state]) + " / 60";
+        document.getElementById('sp-go-vols').innerText = Math.round(ops.volunteerPools[state] || 0);
+        document.getElementById('sp-go-vf').innerText = Math.round((ops.voterFiles[state].quality || 0) * 100) + "%";
+        
+        var gotv = ops.gotv[state].activated;
+        var gotvElem = document.getElementById('sp-go-gotv');
+        if (gotv) {
+            gotvElem.innerText = "ACTIVE!";
+            gotvElem.style.color = "var(--green-success)";
+        } else {
+            gotvElem.innerText = "Dormant";
+            gotvElem.style.color = "#ccc";
         }
     },
     

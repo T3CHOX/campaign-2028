@@ -22,16 +22,18 @@ const INTEREST_GROUPS = {
     hispanic: {
         name: 'Hispanic/Latino',
         category: 'Racial/Ethnic',
-        baseline: -3, // Moderate D lean
+        baseline: -3,
         priorities: ['immigration', 'economy', 'healthcare'],
-        support: { D: 50, R: 48, I: 2, G: 0, L: 0, PSL: 0 }
+        support: { D: 53, R: 45, I: 2, G: 0, L: 0, PSL: 0 },
+        ageSkew: null
     },
     asian: {
         name: 'Asian American',
         category: 'Racial/Ethnic',
-        baseline: -2, // Slight D lean
+        baseline: -2,
         priorities: ['economy', 'healthcare', 'immigration'],
-        support: { D: 58, R: 40, I: 2, G: 0, L: 0, PSL: 0 }
+        support: { D: 59, R: 38, I: 2, G: 0, L: 0, PSL: 1 },
+        ageSkew: null
     },
     native: {
         name: 'Native American',
@@ -45,9 +47,10 @@ const INTEREST_GROUPS = {
     evangelical: {
         name: 'Evangelical',
         category: 'Religious',
-        baseline: 6, // Strong R lean
+        baseline: 6,
         priorities: ['abortion', 'lgbtq', 'religious_freedom'],
-        support: { D: 17, R: 81, I: 2, G: 0, L: 0, PSL: 0 }
+        support: { D: 17, R: 81, I: 2, G: 0, L: 0, PSL: 0 },
+        ageSkew: 'old'
     },
     catholic: {
         name: 'Catholic',
@@ -103,9 +106,10 @@ const INTEREST_GROUPS = {
     union: {
         name: 'Union Workers',
         category: 'Occupational',
-        baseline: -4, // Moderate D lean
+        baseline: -4,
         priorities: ['labor', 'economy', 'healthcare'],
-        support: { D: 49, R: 50, I: 1, G: 0, L: 0, PSL: 0 }
+        support: { D: 51, R: 48, I: 1, G: 0, L: 0, PSL: 0 },
+        ageSkew: null
     },
     tech: {
         name: 'Tech Workers',
@@ -133,9 +137,10 @@ const INTEREST_GROUPS = {
     college: {
         name: 'College Educated',
         category: 'Demographic',
-        baseline: -2, // Slight D lean
+        baseline: -2,
         priorities: ['economy', 'climate', 'healthcare'],
-        support: { D: 56, R: 42, I: 2, G: 0, L: 0, PSL: 0 }
+        support: { D: 57, R: 40, I: 2, G: 0, L: 0, PSL: 1 },
+        ageSkew: 'young'
     },
     noncollege: {
         name: 'Non-College',
@@ -154,16 +159,18 @@ const INTEREST_GROUPS = {
     urban: {
         name: 'Urban',
         category: 'Demographic',
-        baseline: -5, // Strong D lean
+        baseline: -5,
         priorities: ['climate', 'healthcare', 'criminal'],
-        support: { D: 63, R: 33, I: 4, G: 0, L: 0, PSL: 0 }
+        support: { D: 63, R: 33, I: 4, G: 0, L: 0, PSL: 0 },
+        ageSkew: 'young'
     },
     rural: {
         name: 'Rural',
         category: 'Demographic',
-        baseline: 5, // Strong R lean
+        baseline: 5,
         priorities: ['economy', 'guns', 'trade'],
-        support: { D: 28, R: 70, I: 2, G: 0, L: 0, PSL: 0 }
+        support: { D: 28, R: 70, I: 2, G: 0, L: 0, PSL: 0 },
+        ageSkew: 'old'
     },
     youth: {
         name: 'Youth (18-29)',
@@ -205,9 +212,10 @@ const INTEREST_GROUPS = {
     centrists: {
         name: 'Centrists',
         category: 'Political',
-        baseline: 0, // Neutral
+        baseline: 0,
         priorities: ['economy', 'bipartisanship', 'pragmatism'],
-        support: { D: 47, R: 50, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 49, R: 48, I: 2, G: 0, L: 0, PSL: 1 },
+        ageSkew: null
     },
     
     // Gender/Orientation
@@ -222,9 +230,28 @@ const INTEREST_GROUPS = {
     women: {
         name: 'Women Voters',
         category: 'Gender/Orientation',
-        baseline: -2, // Slight D lean
+        baseline: -2,
         priorities: ['healthcare', 'abortion', 'economy'],
-        support: { D: 53, R: 44, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 53, R: 44, I: 3, G: 0, L: 0, PSL: 0 },
+        ageSkew: null
+    },
+
+    // v2 New Groups
+    genz: {
+        name: 'Gen Z',
+        category: 'Demographic',
+        baseline: -4,
+        priorities: ['climate', 'economy', 'healthcare'],
+        support: { D: 60, R: 34, I: 3, G: 3, L: 0, PSL: 0 },
+        ageSkew: 'young'
+    },
+    suburban_women: {
+        name: 'Suburban Women',
+        category: 'Gender/Orientation',
+        baseline: -3,
+        priorities: ['healthcare', 'abortion', 'economy'],
+        support: { D: 59, R: 38, I: 2, G: 0, L: 0, PSL: 1 },
+        ageSkew: null
     }
 };
 
@@ -391,8 +418,8 @@ const COALITION_BREAKPOINTS = {
         ],
         warningWeeks: 2,
         collapseWeeks: 4,
-        riskLeak: 0.08,
-        collapseLeak: 0.22,
+        riskLeak: 0.06,
+        collapseLeak: 0.18,
         leakTo: { G: 0.6, PSL: 0.4 }
     },
     union: {
@@ -403,9 +430,9 @@ const COALITION_BREAKPOINTS = {
         ],
         warningWeeks: 2,
         collapseWeeks: 4,
-        riskLeak: 0.06,
-        collapseLeak: 0.18,
-        leakTo: { G: 0.4, PSL: 0.3, R: 0.3 }
+        riskLeak: 0.05,
+        collapseLeak: 0.16,
+        leakTo: { _opponent: 0.5, _undecided: 0.5 }
     },
     evangelical: {
         label: 'Evangelicals',
@@ -416,9 +443,9 @@ const COALITION_BREAKPOINTS = {
         ],
         warningWeeks: 2,
         collapseWeeks: 3,
-        riskLeak: 0.06,
-        collapseLeak: 0.18,
-        leakTo: { L: 0.6, I: 0.4 }
+        riskLeak: 0.07,
+        collapseLeak: 0.20,
+        leakTo: { _undecided: 0.7, L: 0.3 }
     },
     smallbusiness: {
         label: 'Small Business',
@@ -430,7 +457,7 @@ const COALITION_BREAKPOINTS = {
         collapseWeeks: 4,
         riskLeak: 0.05,
         collapseLeak: 0.16,
-        leakTo: { L: 0.5, I: 0.5 }
+        leakTo: { L: 0.6, _undecided: 0.4 }
     },
     muslim: {
         label: 'Muslim Voters',
@@ -440,13 +467,53 @@ const COALITION_BREAKPOINTS = {
         ],
         warningWeeks: 2,
         collapseWeeks: 3,
-        riskLeak: 0.07,
-        collapseLeak: 0.2,
-        leakTo: { G: 0.5, PSL: 0.5 }
+        riskLeak: 0.08,
+        collapseLeak: 0.22,
+        leakTo: { G: 0.5, _undecided: 0.5 }
+    },
+    // v2 New Coalitions
+    genz_bloc: {
+        label: 'Gen Z Bloc',
+        parties: ['D', 'G', 'PSL'],
+        requirements: [
+            { issue: 'climate', max: -4, label: 'Aggressive climate action' },
+            { issue: 'economy', max: -3, label: 'Student debt relief' }
+        ],
+        warningWeeks: 2,
+        collapseWeeks: 3,
+        riskLeak: 0.06,
+        collapseLeak: 0.17,
+        leakTo: { G: 0.4, _undecided: 0.4, PSL: 0.2 }
+    },
+    maga_core: {
+        label: 'MAGA Core',
+        parties: ['R'],
+        requirements: [
+            { issue: 'immigration', min: 5, label: 'Hardline immigration stance' },
+            { issue: 'trade', min: 3, label: 'America First trade policy' }
+        ],
+        warningWeeks: 2,
+        collapseWeeks: 3,
+        riskLeak: 0.10,
+        collapseLeak: 0.24,
+        leakTo: { _undecided: 0.8, _opponent: 0.2 }
+    },
+    moderate_republicans: {
+        label: 'Moderate Republicans',
+        parties: ['R'],
+        requirements: [
+            { issue: 'abortion', max: 0, label: 'Moderate abortion stance' },
+            { issue: 'lgbtq', max: 0, label: 'Tolerant LGBTQ+ stance' }
+        ],
+        warningWeeks: 2,
+        collapseWeeks: 4,
+        riskLeak: 0.05,
+        collapseLeak: 0.15,
+        leakTo: { _undecided: 0.6, D: 0.4 }
     }
 };
 
-// Cross-pressure penalties when courting opposing coalitions
+// Cross-pressure penalties when courting opposing coalitions — v2 expanded
 const COALITION_CROSS_PRESSURES = [
     {
         id: 'secular-backlash',
@@ -455,6 +522,70 @@ const COALITION_CROSS_PRESSURES = [
         triggerMax: -6,
         targetGroup: 'evangelical',
         penalty: 0.06
+    },
+    {
+        id: 'hispanic-immigration',
+        label: 'Hispanic backlash to hardline immigration',
+        triggerIssue: 'immigration',
+        triggerMin: 7,
+        targetGroup: 'hispanic',
+        penalty: 0.08
+    },
+    {
+        id: 'maga-immigration-soft',
+        label: 'MAGA backlash to soft immigration',
+        triggerIssue: 'immigration',
+        triggerMax: -7,
+        targetGroup: 'maga',
+        penalty: 0.10
+    },
+    {
+        id: 'smallbiz-labor',
+        label: 'Small business backlash to pro-labor',
+        triggerIssue: 'labor',
+        triggerMin: 5,
+        targetGroup: 'smallbusiness',
+        penalty: 0.06
+    },
+    {
+        id: 'muslim-israel',
+        label: 'Muslim backlash to pro-Israel stance',
+        triggerIssue: 'israel',
+        triggerMin: 5,
+        targetGroup: 'muslim',
+        penalty: 0.09
+    },
+    {
+        id: 'jewish-palestine',
+        label: 'Jewish backlash to pro-Palestine stance',
+        triggerIssue: 'israel',
+        triggerMax: -5,
+        targetGroup: 'jewish',
+        penalty: 0.07
+    },
+    {
+        id: 'rural-climate',
+        label: 'Rural backlash to aggressive climate policy',
+        triggerIssue: 'climate',
+        triggerMin: 6,
+        targetGroup: 'rural',
+        penalty: 0.05
+    },
+    {
+        id: 'centrist-healthcare',
+        label: 'Centrist backlash to single payer',
+        triggerIssue: 'healthcare',
+        triggerMin: 5,
+        targetGroup: 'centrists',
+        penalty: 0.04
+    },
+    {
+        id: 'seniors-studentdebt',
+        label: 'Senior backlash to student debt forgiveness',
+        triggerIssue: 'economy',
+        triggerMax: -5,
+        targetGroup: 'seniors',
+        penalty: 0.04
     }
 ];
 
