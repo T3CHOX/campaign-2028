@@ -30,6 +30,7 @@ var Campaign = {
             '<button class="act-btn" onclick="app.openStateBio()"><span><i class="fa-solid fa-book-open"></i></span><span>INTEL</span></button>' +
             '<button class="act-btn" onclick="app.openCountyView()"><span><i class="fa-solid fa-map"></i></span><span>BREAKDOWN</span></button>' +
             '<button class="act-btn" onclick="app.openIssuesPanel()"><span><i class="fa-solid fa-chart-line"></i></span><span>ISSUES</span></button>' +
+            '<button class="act-btn" onclick="app.openEndorsersModal()"><span><i class="fa-solid fa-handshake"></i></span><span>ENDORSERS</span></button>' +
             '<button class="act-btn" onclick="app.handleAction(\'speech\')"><span><i class="fa-solid fa-microphone"></i></span><span>SPEECH</span></button>' +
             '<button class="act-btn v2-btn" onclick="app.handleAction(\'surrogate\')"><span><i class="fa-solid fa-user-group"></i></span><span>SURROGATE</span></button>' +
             '<button class="act-btn v2-btn" onclick="app.handleAction(\'debate_prep\')"><span><i class="fa-solid fa-book"></i></span><span>DEBATE PREP</span></button>' +
@@ -107,8 +108,16 @@ var Campaign = {
                         }
                     }
 
+                    // Click outside states for national overview
+                    svg.onclick = function(e) {
+                        if (e.target.tagName === 'svg') {
+                            Campaign.clickNational();
+                        }
+                    };
+
                     wrapper.innerHTML = '';
                     wrapper.appendChild(svg);
+                    Campaign.stateSvg = svg;
                     Campaign.colorMap();
                 }
             } else if (xhr.readyState === 4) {
@@ -160,6 +169,41 @@ var Campaign = {
         tooltip.style.top = (e.clientY + 15) + 'px';
     },
 
+    clickNational: function() {
+        gameData.selectedState = null;
+        gameData.selectedDistrict = null;
+        var paths = document.querySelectorAll('#us-map-svg path');
+        for (var i = 0; i < paths.length; i++) {
+            paths[i].classList.remove('selected');
+        }
+        
+        document.getElementById('empty-msg').classList.add('hidden');
+        document.getElementById('state-panel').classList.remove('hidden');
+        
+        document.getElementById('sp-name').innerText = "United States of America";
+        document.getElementById('sp-ev').innerText = "";
+        
+        var spDistricts = document.getElementById('sp-districts');
+        if (spDistricts) {
+            spDistricts.innerHTML = '';
+            spDistricts.classList.add('hidden');
+        }
+        
+        var pollByParty = Utils.getNationalPollingByParty();
+        var prevPollByParty = (gameData.pollCache && gameData.pollCache['USA']) || null;
+        var pollVis = document.getElementById('poll-vis');
+        if (pollVis) {
+            pollVis.innerHTML = Utils.buildCandidateRankedListHTML(pollByParty, prevPollByParty);
+        }
+        
+        var issuesList = document.getElementById('sp-issues-list');
+        issuesList.innerHTML = '';
+        
+        if (typeof Counties !== 'undefined') {
+            document.getElementById('cv-districts').classList.add('hidden');
+        }
+    },
+
     clickState: function(code) {
         gameData.selectedState = code;
         var paths = document.querySelectorAll('#us-map-svg path');
@@ -175,10 +219,36 @@ var Campaign = {
         var s = gameData.states[code];
         document.getElementById('sp-name').innerText = s.name;
         var evLabel = s.ev + ' EV';
+        
+        var spDistricts = document.getElementById('sp-districts');
+        if (spDistricts) {
+            spDistricts.innerHTML = '';
+            spDistricts.classList.add('hidden');
+        }
+
         if ((code === 'NE' || code === 'ME') && typeof Counties !== 'undefined' && Counties.calculateStateElectoralAllocation) {
             var split = Counties.calculateStateElectoralAllocation(code, { useReportedVotes: false });
             if (split && split.isSplitState) {
-                evLabel = s.ev + ' EV (' + split.statewideWinner + '+' + split.statewideEV + ' statewide)';
+                
+                
+                if (spDistricts) {
+                    spDistricts.classList.remove('hidden');
+                    var dhtml = '';
+                    for (var i = 0; i < split.districtResults.length; i++) {
+                        var dres = split.districtResults[i];
+                        var marginColor = '#444';
+                        if (typeof Utils !== 'undefined' && Utils.getMarginColor) {
+                            var totalDistVotes = 0;
+                            for (var p in dres.votes) totalDistVotes += dres.votes[p];
+                            var demVotes = dres.votes['D'] || 0;
+                            var repVotes = dres.votes['R'] || 0;
+                            var marginPct = totalDistVotes > 0 ? ((demVotes - repVotes) / totalDistVotes) * 100 : 0;
+                            marginColor = Utils.getMarginColor(marginPct);
+                        }
+                        dhtml += '<div class="district-box" style="background-color: ' + marginColor + ';" onclick="Campaign.clickDistrict(\'' + code + '\', \'' + dres.district + '\')">' + dres.district + '</div>';
+                    }
+                    spDistricts.innerHTML = dhtml;
+                }
             }
         }
         document.getElementById('sp-ev').innerText = evLabel;
@@ -226,6 +296,45 @@ var Campaign = {
         }
     },
 
+    clickDistrict: function(stateCode, districtId) {
+        if (!gameData.states[stateCode]) return;
+        document.getElementById('sp-name').innerText = districtId;
+        document.getElementById('sp-ev').innerText = '1 EV';
+        
+        var boxes = document.querySelectorAll('#sp-districts .district-box');
+        for (var i = 0; i < boxes.length; i++) {
+            if (boxes[i].innerText === districtId) boxes[i].classList.add('active');
+            else boxes[i].classList.remove('active');
+        }
+        
+        if (typeof Counties !== 'undefined' && Counties.calculateStateElectoralAllocation) {
+            var split = Counties.calculateStateElectoralAllocation(stateCode, { useReportedVotes: false });
+            if (split && split.districtResults) {
+                var dres = null;
+                for (var j = 0; j < split.districtResults.length; j++) {
+                    if (split.districtResults[j].district === districtId) {
+                        dres = split.districtResults[j];
+                        break;
+                    }
+                }
+                if (dres) {
+                    var totalVotes = 0;
+                    for (var p in dres.votes) totalVotes += dres.votes[p];
+                    var distPoll = {};
+                    if (totalVotes > 0) {
+                        for (var p in dres.votes) {
+                            distPoll[p] = (dres.votes[p] / totalVotes) * 100;
+                        }
+                    }
+                    var pollVis = document.getElementById('poll-vis');
+                    if (pollVis && typeof Utils !== 'undefined' && Utils.buildCandidateRankedListHTML) {
+                        pollVis.innerHTML = Utils.buildCandidateRankedListHTML(distPoll, null);
+                    }
+                }
+            }
+        }
+    },
+
     colorMap: function() {
         for (var code in gameData.states) {
             var s = gameData.states[code];
@@ -243,9 +352,198 @@ var Campaign = {
         if (select && select.value !== this.mapMode) {
             select.value = this.mapMode;
         }
-        this.colorMap();
+        
+        var wrapper = document.getElementById('us-map-wrapper');
+        if (this.mapMode === 'mediaMarkets') {
+            if (Campaign.nationalCountySvg) {
+                if (wrapper) {
+                    wrapper.innerHTML = '';
+                    wrapper.appendChild(Campaign.nationalCountySvg);
+                }
+                Campaign.colorNationalCountyMap();
+            } else {
+                if (wrapper) {
+                    wrapper.innerHTML = '<div class="loading-map">Loading national county map...</div>';
+                }
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', 'counties/uscountymap.svg', true);
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            var parser = new DOMParser();
+                            var svgDoc = parser.parseFromString(xhr.responseText, 'image/svg+xml');
+                            var svg = svgDoc.querySelector('svg');
+                            if (svg) {
+                                svg.id = 'us-national-county-map-svg';
+                                Campaign.setupNationalCountyMapEvents(svg);
+                                Campaign.nationalCountySvg = svg;
+                                if (wrapper) {
+                                    wrapper.innerHTML = '';
+                                    wrapper.appendChild(svg);
+                                }
+                                Campaign.colorNationalCountyMap();
+                            }
+                        } else {
+                            if (wrapper) {
+                                wrapper.innerHTML = '<div class="error-map">Failed to load national county map.</div>';
+                            }
+                        }
+                    }
+                };
+                xhr.send();
+            }
+        } else {
+            if (Campaign.stateSvg && wrapper && wrapper.firstChild !== Campaign.stateSvg) {
+                wrapper.innerHTML = '';
+                wrapper.appendChild(Campaign.stateSvg);
+            }
+            this.colorMap();
+        }
+
         if (typeof Counties !== 'undefined' && gameData.inCountyView && Counties.colorCountyMap) {
             Counties.colorCountyMap();
+        }
+    },
+
+    setupNationalCountyMapEvents: function(svg) {
+        var paths = svg.querySelectorAll('path');
+        for (var i = 0; i < paths.length; i++) {
+            var path = paths[i];
+            var pathId = path.id;
+            if (pathId && pathId.length >= 3 && pathId.charAt(0) === 'c') {
+                var fips = pathId.substring(1);
+                path.style.cursor = 'pointer';
+                path.style.stroke = '#ffffff';
+                path.style.strokeWidth = '0.1';
+                
+                (function(f, p) {
+                    p.onclick = function() {
+                        if (typeof Counties !== 'undefined') {
+                            Counties.selectCounty(f);
+                        }
+                    };
+                    p.ondblclick = function(e) {
+                        e.stopPropagation();
+                        if (typeof Counties !== 'undefined') {
+                            var stateFips = f.substring(0, 2);
+                            var stateCode = Counties.getStateCodeFromFips(stateFips);
+                            if (stateCode) {
+                                Counties.openCountyView(stateCode);
+                            }
+                        }
+                    };
+                    p.onmouseenter = function(e) {
+                        if (typeof MEDIA_MARKETS !== 'undefined') {
+                            var county = Counties.countyData[f];
+                            if (county && county.mediaMarket && MEDIA_MARKETS[county.mediaMarket]) {
+                                var market = MEDIA_MARKETS[county.mediaMarket];
+                                for (var ci = 0; ci < market.counties.length; ci++) {
+                                    var fipsId = 'c' + market.counties[ci];
+                                    var otherPath = svg.getElementById(fipsId);
+                                    if (otherPath) {
+                                        otherPath.style.filter = 'brightness(1.3)';
+                                        otherPath.style.stroke = '#ffd700';
+                                        otherPath.style.strokeWidth = '0.4px';
+                                    }
+                                }
+                            } else {
+                                p.style.filter = 'brightness(1.3)';
+                                p.style.stroke = '#ffd700';
+                                p.style.strokeWidth = '0.4px';
+                            }
+                        }
+                    };
+                    p.onmousemove = function(e) {
+                        Campaign.showNationalCountyTooltip(e, f);
+                    };
+                    p.onmouseleave = function() {
+                        var tooltip = document.getElementById('map-tooltip');
+                        if (tooltip) tooltip.style.display = 'none';
+                        
+                        if (typeof MEDIA_MARKETS !== 'undefined') {
+                            var county = Counties.countyData[f];
+                            if (county && county.mediaMarket && MEDIA_MARKETS[county.mediaMarket]) {
+                                var market = MEDIA_MARKETS[county.mediaMarket];
+                                for (var ci = 0; ci < market.counties.length; ci++) {
+                                    var fipsId = 'c' + market.counties[ci];
+                                    var otherPath = svg.getElementById(fipsId);
+                                    if (otherPath) {
+                                        otherPath.style.filter = '';
+                                        otherPath.style.stroke = '#ffffff';
+                                        otherPath.style.strokeWidth = '0.1px';
+                                    }
+                                }
+                            } else {
+                                p.style.filter = '';
+                                p.style.stroke = '#ffffff';
+                                p.style.strokeWidth = '0.1px';
+                            }
+                        }
+                    };
+                })(fips, path);
+            }
+        }
+    },
+
+    showNationalCountyTooltip: function(e, fips) {
+        if (typeof Counties === 'undefined') return;
+        var county = Counties.countyData[fips];
+        if (!county) return;
+        
+        var tooltip = document.getElementById('map-tooltip');
+        if (!tooltip) return;
+        
+        var stateFips = fips.substring(0, 2);
+        var stateCode = Counties.getStateCodeFromFips(stateFips);
+        var stateName = (typeof STATES !== 'undefined' && STATES[stateCode] && STATES[stateCode].name) || stateCode;
+        
+        var countyName = county.n || 'County';
+        var marketText = 'None';
+        var costText = 'N/A';
+        var reachText = 'N/A';
+        
+        if (county.mediaMarket && typeof MEDIA_MARKETS !== 'undefined' && MEDIA_MARKETS[county.mediaMarket]) {
+            var market = MEDIA_MARKETS[county.mediaMarket];
+            marketText = market.label;
+            reachText = market.reach.toLocaleString() + ' households';
+            costText = '$' + market.cpmBase.toFixed(2) + ' CPM';
+        }
+        
+        var html = '<div class="tooltip-title">' + countyName + ', ' + stateName + '</div>';
+        html += '<div class="tooltip-detail"><strong>Media Market:</strong> ' + marketText + '</div>';
+        html += '<div class="tooltip-detail"><strong>Reach:</strong> ' + reachText + '</div>';
+        html += '<div class="tooltip-detail"><strong>CPM:</strong> ' + costText + '</div>';
+        
+        if (county.v) {
+            var dPct = county.v.D || 0;
+            var rPct = county.v.R || 0;
+            var margin = dPct - rPct;
+            var leadText = margin > 0 ? 'D +' + margin.toFixed(1) : (margin < 0 ? 'R +' + Math.abs(margin).toFixed(1) : 'Even');
+            html += '<div class="tooltip-sub"><strong>Dominating:</strong> ' + leadText + '</div>';
+        }
+        
+        tooltip.innerHTML = html;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.pageX + 15) + 'px';
+        tooltip.style.top = (e.pageY + 15) + 'px';
+    },
+
+    colorNationalCountyMap: function() {
+        var svg = document.getElementById('us-national-county-map-svg');
+        if (!svg || typeof Counties === 'undefined') return;
+        
+        var paths = svg.querySelectorAll('path');
+        for (var i = 0; i < paths.length; i++) {
+            var path = paths[i];
+            var pathId = path.id;
+            if (pathId && pathId.length >= 3 && pathId.charAt(0) === 'c') {
+                var fips = pathId.substring(1);
+                var county = Counties.countyData[fips];
+                if (county) {
+                    path.style.fill = Counties.getCountyMapModeColor(county);
+                    path.style.display = 'block';
+                }
+            }
         }
     },
 
@@ -1129,6 +1427,11 @@ var Campaign = {
     updateCampaignMomentum: function() {
         if (typeof MOMENTUM_CONSTANTS === 'undefined') return;
 
+        if (typeof DigitalAds !== 'undefined') DigitalAds.processWeekly();
+        if (typeof Persuasion !== 'undefined' && typeof Persuasion.processWeeklyDecay === 'function') {
+            Persuasion.processWeeklyDecay();
+        }
+        
         // Decay momentum toward 0
         gameData.campaignMomentum *= MOMENTUM_CONSTANTS.DECAY;
 
@@ -1208,19 +1511,28 @@ var Campaign = {
             }
         }
 
-        // Generate 2-4 polls with Gaussian noise (sigma = 0.012 = 1.2%)
+        // Generate 2-4 polls with Gaussian noise (using POLLING_NOISE_STDEV if available, fallback to 0.02)
         var numPolls = 2 + Math.floor(Math.random() * 3);
+        var noiseStdev = (typeof MOMENTUM_CONSTANTS !== 'undefined' && MOMENTUM_CONSTANTS.POLLING_NOISE_STDEV) ? MOMENTUM_CONSTANTS.POLLING_NOISE_STDEV : 0.02;
         gameData.nationalPolls = [];
-        for (var p = 0; p < numPolls; p++) {
+        for (var i = 0; i < numPolls; i++) {
             var poll = {};
+            var basePolls = {};
+            var total = 0;
             for (var party in partyTotals) {
-                var baseValue = totalPop > 0 ? partyTotals[party] / totalPop : 0;
-                // Box-Muller Gaussian
+                basePolls[party] = totalPop > 0 ? partyTotals[party] / totalPop : 0;
+            }
+            for (var party in basePolls) {
+                // Apply noise
                 var u1 = Math.random();
                 var u2 = Math.random();
-                var noise = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2) * 0.012;
-                poll[party] = Math.max(0, baseValue + noise);
+                var z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+                var noise = z0 * noiseStdev * 100; // Convert to percentage points
+                poll[party] = Math.max(0, basePolls[party] + noise);
+                total += poll[party];
             }
+            // Normalize
+            for (var party in poll) poll[party] /= (total > 0 ? total / 100 : 1);
             gameData.nationalPolls.push(poll);
         }
     },

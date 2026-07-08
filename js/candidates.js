@@ -67,6 +67,7 @@ const CANDIDATES = [
         id: "harris",
         name: "Kamala Harris",
         party: "D",
+        factionId: "mainstream_liberal",
         homeState: "CA",
         position: "Former Vice President of the United States (2021-2025)",
         homeStateBoost: 2.3,
@@ -85,6 +86,7 @@ const CANDIDATES = [
         id: "newsom",
         name: "Gavin Newsom",
         party: "D",
+        factionId: "mainstream_liberal",
         homeState: "CA",
         position: "Governor of California (2019-)",
         homeStateBoost: 2,
@@ -103,6 +105,7 @@ const CANDIDATES = [
         id: "whitmer",
         name: "Gretchen Whitmer",
         party: "D",
+        factionId: "mainstream_liberal",
         homeState: "MI",
         position: "Governor of Michigan (2019-)",
         homeStateBoost: 3.1,
@@ -121,6 +124,7 @@ const CANDIDATES = [
         id: "buttigieg",
         name: "Pete Buttigieg",
         party: "D",
+        factionId: "mainstream_liberal",
         homeState: "IN",
         position: "Former Transportation Secretary (2021-2025)",
         homeStateBoost: 1.4,
@@ -139,6 +143,7 @@ const CANDIDATES = [
         id: "aoc",
         name: "Alexandria Ocasio-Cortez",
         party: "D",
+        factionId: "activist_left",
         homeState: "NY",
         position: "U.S. Representative from New York (2019-)",
         homeStateBoost: 1.6,
@@ -157,6 +162,7 @@ const CANDIDATES = [
         id: "kelly",
         name: "Mark Kelly",
         party: "D",
+        factionId: "mainstream_liberal",
         homeState: "AZ",
         position: "U.S. Senator from Arizona (2020-)",
         homeStateBoost: 2.8,
@@ -175,6 +181,7 @@ const CANDIDATES = [
         id: "khanna",
         name: "Ro Khanna",
         party: "D",
+        factionId: "activist_left",
         homeState: "CA",
         position: "U.S. Representative from California (2017-)",
         homeStateBoost: 1.4,
@@ -193,6 +200,7 @@ const CANDIDATES = [
         id: "emanuel",
         name: "Rahm Emanuel",
         party: "D",
+        factionId: "pragmatic_moderate",
         homeState: "IL",
         position: "U.S. Ambassador to Japan (2021-2025)",
         homeStateBoost: 1.7,
@@ -211,6 +219,7 @@ const CANDIDATES = [
         id: "stewart",
         name: "Jon Stewart",
         party: "D",
+        factionId: "activist_left",
         homeState: "NJ",
         position: "Media Personality & Activist",
         homeStateBoost: 1.4,
@@ -229,6 +238,7 @@ const CANDIDATES = [
         id: "beshear",
         name: "Andy Beshear",
         party: "D",
+        factionId: "pragmatic_moderate",
         homeState: "KY",
         position: "Governor of Kentucky (2019-)",
         homeStateBoost: 2.4,
@@ -247,6 +257,7 @@ const CANDIDATES = [
         id: "booker",
         name: "Cory Booker",
         party: "D",
+        factionId: "activist_left",
         homeState: "NJ",
         position: "U.S. Senator from New Jersey (2013-)",
         homeStateBoost: 1.9,
@@ -265,6 +276,7 @@ const CANDIDATES = [
         id: "shapiro",
         name: "Josh Shapiro",
         party: "D",
+        factionId: "pragmatic_moderate",
         homeState: "PA",
         position: "Governor of Pennsylvania (2023-)",
         homeStateBoost: 3.4,
@@ -283,6 +295,7 @@ const CANDIDATES = [
         id: "trump",
         name: "Donald Trump",
         party: "R",
+        factionId: "america_first_conservative",
         homeState: "FL",
         position: "45th President of the United States (2017-2021)",
         homeStateBoost: 1.8,
@@ -301,6 +314,7 @@ const CANDIDATES = [
         id: "vance",
         name: "JD Vance",
         party: "R",
+        factionId: "populist_right",
         homeState: "OH",
         position: "U.S. Vice President (2025-)",
         homeStateBoost: 2.4,
@@ -319,6 +333,7 @@ const CANDIDATES = [
         id: "desantis",
         name: "Ron DeSantis",
         party: "R",
+        factionId: "america_first_conservative",
         homeState: "FL",
         position: "Governor of Florida (2019-)",
         homeStateBoost: 2.6,
@@ -337,6 +352,7 @@ const CANDIDATES = [
         id: "cruz",
         name: "Ted Cruz",
         party: "R",
+        factionId: "religious_right",
         homeState: "TX",
         position: "U.S. Senator from Texas (2013-)",
         homeStateBoost: 2.2,
@@ -355,6 +371,7 @@ const CANDIDATES = [
         id: "paul",
         name: "Rand Paul",
         party: "R",
+        factionId: "america_first_conservative",
         homeState: "KY",
         position: "U.S. Senator from Kentucky (2011-)",
         homeStateBoost: 2,
@@ -373,6 +390,7 @@ const CANDIDATES = [
         id: "haley",
         name: "Nikki Haley",
         party: "R",
+        factionId: "compassionate_conservative",
         homeState: "SC",
         position: "Former Governor of South Carolina (2011-2017)",
         homeStateBoost: 2.4,
@@ -391,6 +409,7 @@ const CANDIDATES = [
         id: "ramaswamy",
         name: "Vivek Ramaswamy",
         party: "R",
+        factionId: "populist_right",
         homeState: "OH",
         position: "Biotech CEO & Political Activist",
         homeStateBoost: 1.8,
@@ -409,6 +428,7 @@ const CANDIDATES = [
         id: "bannon",
         name: "Steve Bannon",
         party: "R",
+        factionId: "america_first_conservative",
         homeState: "NY",
         position: "Former Chief Strategist to President Trump",
         homeStateBoost: 1.2,
@@ -427,6 +447,7 @@ const CANDIDATES = [
         id: "hawley",
         name: "Josh Hawley",
         party: "R",
+        factionId: "populist_right",
         homeState: "MO",
         position: "U.S. Senator from Missouri (2019-)",
         homeStateBoost: 1.9,
@@ -445,6 +466,7 @@ const CANDIDATES = [
         id: "carlson",
         name: "Tucker Carlson",
         party: "R",
+        factionId: "populist_right",
         homeState: "FL",
         position: "Media Personality & Political Commentator",
         homeStateBoost: 1.4,
@@ -463,6 +485,7 @@ const CANDIDATES = [
         id: "rubio",
         name: "Marco Rubio",
         party: "R",
+        factionId: "america_first_conservative",
         homeState: "FL",
         position: "Secretary of State (2025-)",
         homeStateBoost: 2.7,
@@ -481,6 +504,7 @@ const CANDIDATES = [
         id: "stein",
         name: "Jill Stein",
         party: "G",
+        factionId: "outsider_leftist",
         homeState: "MA",
         position: "Green Party Activist & Physician",
         homeStateBoost: 1,
@@ -499,6 +523,7 @@ const CANDIDATES = [
         id: "oliver",
         name: "Chase Oliver",
         party: "L",
+        factionId: "unaligned_center",
         homeState: "GA",
         position: "Libertarian Activist & Entrepreneur",
         homeStateBoost: 1.2,
@@ -517,6 +542,7 @@ const CANDIDATES = [
         id: "yang",
         name: "Andrew Yang",
         party: "I",
+        factionId: "unaligned_center",
         homeState: "NY",
         position: "Entrepreneur & Political Activist",
         homeStateBoost: 1.3,
@@ -535,6 +561,7 @@ const CANDIDATES = [
         id: "massie",
         name: "Thomas Massie",
         party: "I",
+        factionId: "unaligned_center",
         homeState: "KY",
         position: "U.S. Representative from Kentucky (2012-)",
         homeStateBoost: 2.8,
@@ -555,6 +582,7 @@ const CANDIDATES = [
         id: "kennedy_rfk",
         name: "Robert F. Kennedy Jr.",
         party: "I",
+        factionId: "unaligned_center",
         homeState: "NY",
         position: "Kennedy Family Member & Public Health Activist",
         homeStateBoost: 1.2,
@@ -573,6 +601,7 @@ const CANDIDATES = [
         id: "bloomberg",
         name: "Michael Bloomberg",
         party: "I",
+        factionId: "unaligned_center",
         homeState: "NY",
         position: "Former Mayor of New York City (2002-2013)",
         homeStateBoost: 1,
@@ -591,6 +620,7 @@ const CANDIDATES = [
         id: "delacruz",
         name: "Claudia De la Cruz",
         party: "PSL",
+        factionId: "outsider_leftist",
         homeState: "NY",
         homeStateBoost: 1,
         funds: 12,
@@ -608,6 +638,7 @@ const CANDIDATES = [
         id: "lariva",
         name: "Gloria La Riva",
         party: "PSL",
+        factionId: "outsider_leftist",
         homeState: "CA",
         homeStateBoost: 1,
         funds: 10,
@@ -623,49 +654,56 @@ const CANDIDATES = [
     },
     // --- DEMOCRATS ---
     {
-        id: "walz", name: "Tim Walz", party: "D", homeState: "MN", position: "Governor of Minnesota",
+        id: "walz", name: "Tim Walz", party: "D",
+        factionId: "mainstream_liberal", homeState: "MN", position: "Governor of Minnesota",
         homeStateBoost: 2.2, funds: 65, img: "images/walz.jpg", stamina: 7, charisma: 1.3, debateSkill: 7, scandalResistance: 0.8,
         desc: "A pragmatic Midwestern governor known for translating progressive wins through folksy communication. He holds the Blue Wall but lacks national flash.",
         buff: "Midwest Dad Energy", debuff: "Progressive Liability",
         groupEffects: { union: { support: 5, turnout: 3 }, rural: { support: 3, turnout: 1 }, suburban_moderates: { support: 4, turnout: 1 } }
     },
     {
-        id: "crockett", name: "Jasmine Crockett", party: "D", homeState: "TX", position: "Former U.S. Representative",
+        id: "crockett", name: "Jasmine Crockett", party: "D",
+        factionId: "activist_left", homeState: "TX", position: "Former U.S. Representative",
         homeStateBoost: 1.3, funds: 55, img: "images/crockett.jpg", stamina: 9, charisma: 1.5, debateSkill: 8, scandalResistance: 0.5,
         desc: "A viral, highly aggressive progressive combatant who maxes out youth and minority turnout, but her hyper-partisan style acts as a lightning rod for the right.",
         buff: "Viral Combatant", debuff: "Swing Voter Repellent",
         groupEffects: { black: { support: 5, turnout: 6 }, youth: { support: 6, turnout: 7 }, suburban_moderates: { support: -4, turnout: -3 }, rural: { support: -5, turnout: 5 } }
     },
     {
-        id: "ossoff", name: "Jon Ossoff", party: "D", homeState: "GA", position: "U.S. Senator",
+        id: "ossoff", name: "Jon Ossoff", party: "D",
+        factionId: "mainstream_liberal", homeState: "GA", position: "U.S. Senator",
         homeStateBoost: 1.9, funds: 80, img: "images/ossoff.jpg", stamina: 8, charisma: 1.4, debateSkill: 7, scandalResistance: 0.9,
         desc: "The quintessential Sun Belt suburban Democrat. He dominates high-income moderate areas but struggles to drive raw, unpolished base enthusiasm.",
         buff: "Sun Belt Appeal", debuff: "Soft Base Enthusiasm",
         groupEffects: { suburban_college: { support: 6, turnout: 3 }, youth: { support: 3, turnout: 1 }, noncollege: { support: -3, turnout: -2 } }
     },
     {
-        id: "gallego", name: "Ruben Gallego", party: "D", homeState: "AZ", position: "U.S. Senator",
+        id: "gallego", name: "Ruben Gallego", party: "D",
+        factionId: "mainstream_liberal", homeState: "AZ", position: "U.S. Senator",
         homeStateBoost: 2.1, funds: 60, img: "images/gallego.jpg", stamina: 8, charisma: 1.3, debateSkill: 7, scandalResistance: 0.6,
         desc: "A Marine veteran who connects deeply with working-class voters and Hispanics, though the activist left views him with deep suspicion.",
         buff: "Working-Class Brawler", debuff: "Progressive Friction",
         groupEffects: { hispanic: { support: 6, turnout: 4 }, veterans: { support: 5, turnout: 2 }, union: { support: 4, turnout: 3 }, progressive_left: { support: -4, turnout: -3 } }
     },
     {
-        id: "moore", name: "Wes Moore", party: "D", homeState: "MD", position: "Governor of Maryland",
+        id: "moore", name: "Wes Moore", party: "D",
+        factionId: "mainstream_liberal", homeState: "MD", position: "Governor of Maryland",
         homeStateBoost: 2.3, funds: 75, img: "images/moore.jpg", stamina: 9, charisma: 1.6, debateSkill: 8, scandalResistance: 0.7,
         desc: "A highly charismatic rising star with massive upside, though he remains relatively untested on the grueling national stage.",
         buff: "Generational Charisma", debuff: "Light Governing Record",
         groupEffects: { black: { support: 5, turnout: 4 }, suburban_college: { support: 5, turnout: 2 }, independents: { support: 3, turnout: 1 } }
     },
     {
-        id: "cuban", name: "Mark Cuban", party: "D", homeState: "TX", position: "Businessman & Investor",
+        id: "cuban", name: "Mark Cuban", party: "D",
+        factionId: "pragmatic_moderate", homeState: "TX", position: "Businessman & Investor",
         homeStateBoost: 1.5, funds: 100, img: "images/cuban.jpg", stamina: 7, charisma: 1.6, debateSkill: 8, scandalResistance: 0.4,
         desc: "A billionaire outsider with incredible crossover appeal. He pulls huge numbers of independents, but the progressive base openly revolts against him.",
         buff: "Business Maverick", debuff: "Base Distrust",
         groupEffects: { independents: { support: 8, turnout: 4 }, suburban_moderates: { support: 6, turnout: 3 }, progressive_left: { support: -8, turnout: -7 } }
     },
     {
-        id: "talarico", name: "James Talarico", party: "D", homeState: "TX", position: "Texas Politician",
+        id: "talarico", name: "James Talarico", party: "D",
+        factionId: "activist_left", homeState: "TX", position: "Texas Politician",
         homeStateBoost: 1.4, funds: 45, img: "images/talarico.jpg", stamina: 8, charisma: 1.5, debateSkill: 9, scandalResistance: 0.8,
         desc: "A progressive who uniquely articulates left-wing policy through a moral and religious lens. Extremely popular with the youth, but unknown nationally.",
         buff: "Moral Articulator", debuff: "National Anonymity",
@@ -674,56 +712,64 @@ const CANDIDATES = [
 
     // --- REPUBLICANS ---
     {
-        id: "bovino", name: "Greg Bovino", party: "R", homeState: "CA", position: "Fmr. Commander-at-Large of the Border Patrol",
+        id: "bovino", name: "Greg Bovino", party: "R",
+        factionId: "compassionate_conservative", homeState: "CA", position: "Fmr. Commander-at-Large of the Border Patrol",
         homeStateBoost: 1.1, funds: 70, img: "images/bovino.jpg", stamina: 8, charisma: 1.2, debateSkill: 5, scandalResistance: 0.8,
         desc: "The hyper-polarizing face of the 2025/2026 mass deportation crackdowns. He maximizes the MAGA and working-class base but triggers historic, catastrophic opposition turnout.",
         buff: "Deportation Architect", debuff: "Electoral Toxicity",
         groupEffects: { noncollege: { support: 5, turnout: 9 }, rural: { support: 4, turnout: 7 }, hispanic: { support: -8, turnout: 9 }, suburban_college: { support: -9, turnout: 10 } }
     },
     {
-        id: "youngkin", name: "Glenn Youngkin", party: "R", homeState: "VA", position: "Governor of Virginia",
+        id: "youngkin", name: "Glenn Youngkin", party: "R",
+        factionId: "compassionate_conservative", homeState: "VA", position: "Governor of Virginia",
         homeStateBoost: 2.1, funds: 85, img: "images/youngkin.jpg", stamina: 7, charisma: 1.3, debateSkill: 7, scandalResistance: 0.7,
         desc: "Projects a fleece-vest moderation that completely disarms suburban panic, but leaves the populist MAGA base utterly uninspired.",
         buff: "Suburban Restoration", debuff: "MAGA Skepticism",
         groupEffects: { suburban_conservative: { support: 7, turnout: 4 }, suburban_moderates: { support: 6, turnout: 2 }, noncollege: { support: -5, turnout: -6 } }
     },
     {
-        id: "sununu", name: "Chris Sununu", party: "R", homeState: "NH", position: "Former Governor of New Hampshire",
+        id: "sununu", name: "Chris Sununu", party: "R",
+        factionId: "compassionate_conservative", homeState: "NH", position: "Former Governor of New Hampshire",
         homeStateBoost: 2.0, funds: 55, img: "images/sununu.jpg", stamina: 8, charisma: 1.4, debateSkill: 8, scandalResistance: 0.8,
         desc: "A highly effective centrist communicator. Swing voters love him, but the religious and populist right will actively stay home.",
         buff: "New England Pragmatist", debuff: "Base Alienation",
         groupEffects: { independents: { support: 7, turnout: 2 }, suburban_moderates: { support: 7, turnout: 2 }, evangelical: { support: -7, turnout: -8 }, populist_right: { support: -6, turnout: -7 } }
     },
     {
-        id: "trumpjr", name: "Don Trump Jr.", party: "R", homeState: "FL", position: "Businessman & Media Figure",
+        id: "trumpjr", name: "Don Trump Jr.", party: "R",
+        factionId: "populist_right", homeState: "FL", position: "Businessman & Media Figure",
         homeStateBoost: 1.5, funds: 90, img: "images/trumpjr.jpg", stamina: 7, charisma: 1.4, debateSkill: 6, scandalResistance: 0.5,
         desc: "The ideological heir to the MAGA movement. He commands the populist base effortlessly but suffers from an immovable general-election ceiling.",
         buff: "MAGA Heir", debuff: "General-Election Ceiling",
         groupEffects: { noncollege: { support: 2, turnout: 5 }, rural: { support: 2, turnout: 4 }, suburban_college: { support: -7, turnout: 7 }, suburban_women: { support: -6, turnout: 6 } }
     },
     {
-        id: "gabbard", name: "Tulsi Gabbard", party: "R", homeState: "HI", position: "Former U.S. Representative",
+        id: "gabbard", name: "Tulsi Gabbard", party: "R",
+        factionId: "america_first_conservative", homeState: "HI", position: "Former U.S. Representative",
         homeStateBoost: 1.4, funds: 65, img: "images/gabbard.jpg", stamina: 8, charisma: 1.5, debateSkill: 8, scandalResistance: 0.6,
         desc: "A true wild-card candidate. Pulls in anti-establishment independents and veterans, but lacks trust from the traditional conservative institutional framework.",
         buff: "Anti-Establishment Magnet", debuff: "Partisan Mismatch",
         groupEffects: { independents: { support: 6, turnout: 4 }, veterans: { support: 5, turnout: 3 }, evangelical: { support: -5, turnout: -4 }, donor_conservative: { support: -4, turnout: -3 } }
     },
     {
-        id: "kemp", name: "Brian Kemp", party: "R", homeState: "GA", position: "Governor of Georgia",
+        id: "kemp", name: "Brian Kemp", party: "R",
+        factionId: "compassionate_conservative", homeState: "GA", position: "Governor of Georgia",
         homeStateBoost: 2.4, funds: 80, img: "images/kemp.jpg", stamina: 8, charisma: 1.2, debateSkill: 7, scandalResistance: 0.8,
         desc: "A highly competent Sun Belt executive. Shored up the conservative suburbs but continues to face lingering resentment from the hardest core of Trump loyalists.",
         buff: "Sun Belt Executor", debuff: "Trump Loyalist Grudge",
         groupEffects: { suburban_conservative: { support: 6, turnout: 3 }, rural: { support: 3, turnout: 0 }, populist_right: { support: -5, turnout: -4 } }
     },
     {
-        id: "mace", name: "Nancy Mace", party: "R", homeState: "SC", position: "Former U.S. Representative",
+        id: "mace", name: "Nancy Mace", party: "R",
+        factionId: "compassionate_conservative", homeState: "SC", position: "Former U.S. Representative",
         homeStateBoost: 1.5, funds: 60, img: "images/mace.jpg", stamina: 8, charisma: 1.3, debateSkill: 7, scandalResistance: 0.4,
         desc: "Highly visible in the media and capable of moderating on social issues, but her shifting alliances have created deep ideological whiplash.",
         buff: "Media Combatant", debuff: "Ideological Whiplash",
         groupEffects: { suburban_women: { support: 4, turnout: 2 }, suburban_moderates: { support: 4, turnout: 1 }, evangelical: { support: -4, turnout: -4 } }
     },
     {
-        id: "cheney", name: "Liz Cheney", party: "R", homeState: "WY", position: "Former U.S. Representative",
+        id: "cheney", name: "Liz Cheney", party: "R",
+        factionId: "compassionate_conservative", homeState: "WY", position: "Former U.S. Representative",
         homeStateBoost: 1.2, funds: 85, img: "images/cheney.jpg", stamina: 8, charisma: 1.2, debateSkill: 8, scandalResistance: 0.8,
         desc: "The ultimate Never-Trump avatar. She flips the high-income suburbs entirely, but effectively destroys the Republican party by collapsing working-class turnout.",
         buff: "Institutional Martyr", debuff: "MAGA Excommunication",
@@ -732,7 +778,8 @@ const CANDIDATES = [
 
     // --- THIRD PARTIES (With Siphon Rates) ---
     {
-        id: "walker", name: "Angela Nicole Walker", party: "G", homeState: "WI", position: "Activist",
+        id: "walker", name: "Angela Nicole Walker", party: "G",
+        factionId: "outsider_leftist", homeState: "WI", position: "Activist",
         homeStateBoost: 1.1, funds: 5, img: "images/walker.jpg", stamina: 7, charisma: 1.1, debateSkill: 6, scandalResistance: 0.8,
         desc: "A prominent labor organizer who peels away disgruntled union and working-class Democrats.",
         buff: "Labor Groundgame", debuff: "Third-Party Ceiling",
@@ -740,7 +787,8 @@ const CANDIDATES = [
         groupEffects: { union: { support: 4, turnout: 2 }, black: { support: 3, turnout: 1 } }
     },
     {
-        id: "ware", name: "Butch Ware", party: "G", homeState: "CA", position: "Academic & Activist",
+        id: "ware", name: "Butch Ware", party: "G",
+        factionId: "outsider_leftist", homeState: "CA", position: "Academic & Activist",
         homeStateBoost: 1.1, funds: 6, img: "images/ware.jpg", stamina: 8, charisma: 1.3, debateSkill: 8, scandalResistance: 0.7,
         desc: "Highly effective communicator with younger, urban voters who feel abandoned by the mainstream Democratic establishment.",
         buff: "Academic Rhetoric", debuff: "Limited Resources",
@@ -748,7 +796,8 @@ const CANDIDATES = [
         groupEffects: { youth: { support: 5, turnout: 3 }, black: { support: 4, turnout: 2 } }
     },
     {
-        id: "laduke", name: "Winona LaDuke", party: "G", homeState: "MN", position: "Environmentalist",
+        id: "laduke", name: "Winona LaDuke", party: "G",
+        factionId: "outsider_leftist", homeState: "MN", position: "Environmentalist",
         homeStateBoost: 1.2, funds: 8, img: "images/laduke.jpg", stamina: 7, charisma: 1.2, debateSkill: 6, scandalResistance: 0.9,
         desc: "A renowned environmentalist. Acts as a significant spoiler for Democrats relying on the deep-green activist core.",
         buff: "Environmental Anchor", debuff: "Narrow Coalition",
@@ -756,7 +805,8 @@ const CANDIDATES = [
         groupEffects: { progressive_left: { support: 5, turnout: 3 }, rural: { support: 2, turnout: 1 } }
     },
     {
-        id: "hoh", name: "Matthew Hoh", party: "G", homeState: "NC", position: "Anti-War Activist",
+        id: "hoh", name: "Matthew Hoh", party: "G",
+        factionId: "outsider_leftist", homeState: "NC", position: "Anti-War Activist",
         homeStateBoost: 1.1, funds: 5, img: "images/hoh.jpg", stamina: 7, charisma: 1.1, debateSkill: 7, scandalResistance: 0.8,
         desc: "A veteran turned anti-war activist. Uniquely pulls disillusioned military members and anti-interventionists from both sides.",
         buff: "Anti-War Credibility", debuff: "Low Name ID",
@@ -764,7 +814,8 @@ const CANDIDATES = [
         groupEffects: { veterans: { support: 4, turnout: 2 }, progressive_left: { support: 3, turnout: 1 } }
     },
     {
-        id: "hill", name: "Marc Lamont Hill", party: "G", homeState: "PA", position: "Academic & Media Personality",
+        id: "hill", name: "Marc Lamont Hill", party: "G",
+        factionId: "outsider_leftist", homeState: "PA", position: "Academic & Media Personality",
         homeStateBoost: 1.2, funds: 10, img: "images/hill.jpg", stamina: 8, charisma: 1.5, debateSkill: 9, scandalResistance: 0.5,
         desc: "A brilliant media combatant who heavily threatens the Democratic baseline in critical urban centers.",
         buff: "Media Visibility", debuff: "Polarizing Rhetoric",
@@ -772,7 +823,8 @@ const CANDIDATES = [
         groupEffects: { black: { support: 5, turnout: 4 }, youth: { support: 6, turnout: 3 }, urban: { support: 4, turnout: 2 } }
     },
     {
-        id: "amash", name: "Justin Amash", party: "L", homeState: "MI", position: "Former U.S. Representative",
+        id: "amash", name: "Justin Amash", party: "L",
+        factionId: "unaligned_center", homeState: "MI", position: "Former U.S. Representative",
         homeStateBoost: 1.2, funds: 15, img: "images/amash.jpg", stamina: 7, charisma: 1.2, debateSkill: 8, scandalResistance: 0.9,
         desc: "A highly principled constitutional conservative. Serves as a major release valve for Republicans who despise MAGA populism.",
         buff: "Principled Consistency", debuff: "Libertarian Ceiling",
@@ -855,14 +907,16 @@ for (var ci = 0; ci < CANDIDATES.length; ci++) {
 const VPS = [
     /* ===== DEMOCRATIC VPs ===== */
     {
-        id: "shapiro", name: "Josh Shapiro", party: "D", state: "PA", homeState: "PA",
+        id: "shapiro", name: "Josh Shapiro", party: "D",
+        factionId: "pragmatic_moderate", state: "PA", homeState: "PA",
         funds: 15, img: "images/shapiro.jpg", stamina: 8,
         desc: "Governor of Pennsylvania. Brings critical Blue Wall structural advantages and moderate credibility.",
         groupBoosts: { suburban_moderates: 3, jewish: 4, moderate_dems: 2 },
         groupDebuffs: { progressive_left: -2, youth: -1 }
     },
     {
-        id: "kelly_vp", name: "Mark Kelly", party: "D", state: "AZ", homeState: "AZ",
+        id: "kelly_vp", name: "Mark Kelly", party: "D",
+        factionId: "mainstream_liberal", state: "AZ", homeState: "AZ",
         position: "U.S. Senator from Arizona (2020-)",
         funds: 10, img: "images/kelly.jpg", stamina: 8,
         desc: "Arizona Senator. Offers border-state defensive capability and high floor with independents.",
@@ -870,7 +924,8 @@ const VPS = [
         groupDebuffs: { progressive_left: -1 }
     },
     {
-        id: "warnock", name: "Raphael Warnock", party: "D", state: "GA", homeState: "GA",
+        id: "warnock", name: "Raphael Warnock", party: "D",
+        factionId: "mainstream_liberal", state: "GA", homeState: "GA",
         position: "U.S. Senator from Georgia (2021-)",
         funds: 12, img: "images/warnock.jpg", stamina: 8,
         desc: "Georgia Senator. Elite surrogate for turning out the Black church network in the Sun Belt.",
@@ -878,7 +933,8 @@ const VPS = [
         groupDebuffs: { rural_whites: -1 }
     },
     {
-        id: "pritzker", name: "JB Pritzker", party: "D", state: "IL", homeState: "IL",
+        id: "pritzker", name: "JB Pritzker", party: "D",
+        factionId: "mainstream_liberal", state: "IL", homeState: "IL",
         position: "Governor of Illinois (2019-)",
         funds: 25, img: "images/pritzker.jpg", stamina: 7,
         desc: "Illinois Governor. Provides a massive self-funded financial floor for the campaign.",
@@ -886,7 +942,8 @@ const VPS = [
         groupDebuffs: { rural: -1 }
     },
     {
-        id: "whitmer_vp", name: "Gretchen Whitmer", party: "D", state: "MI", homeState: "MI",
+        id: "whitmer_vp", name: "Gretchen Whitmer", party: "D",
+        factionId: "mainstream_liberal", state: "MI", homeState: "MI",
         position: "Governor of Michigan (2019-)",
         funds: 15, img: "images/whitmer.jpg", stamina: 8,
         desc: "Michigan Governor. Locks down the Midwest and appeals strongly to suburban women.",
@@ -894,7 +951,8 @@ const VPS = [
         groupDebuffs: { rural: -1 }
     },
     {
-        id: "khanna_vp", name: "Ro Khanna", party: "D", state: "CA", homeState: "CA",
+        id: "khanna_vp", name: "Ro Khanna", party: "D",
+        factionId: "mainstream_liberal", state: "CA", homeState: "CA",
         position: "U.S. Representative from California (2017-)",
         funds: 10, img: "images/khanna.jpg", stamina: 9,
         desc: "Silicon Valley progressive. Bridges the gap between tech donors and the online left.",
@@ -904,14 +962,16 @@ const VPS = [
 
     /* ===== REPUBLICAN VPs ===== */
     {
-        id: "rubio", name: "Marco Rubio", party: "R", state: "FL", homeState: "FL",
+        id: "rubio", name: "Marco Rubio", party: "R",
+        factionId: "america_first_conservative", state: "FL", homeState: "FL",
         funds: 15, img: "images/rubio.jpg", stamina: 8,
         desc: "Secretary of State. Softens the ticket's edges with Hispanics and suburban moderates.",
         groupBoosts: { hispanic: 4, suburban_college: 2, donor_class: 3 },
         groupDebuffs: { hardcore_right: -1 }
     },
     {
-        id: "scott_tim", name: "Tim Scott", party: "R", state: "SC", homeState: "SC",
+        id: "scott_tim", name: "Tim Scott", party: "R",
+        factionId: "religious_right", state: "SC", homeState: "SC",
         position: "U.S. Senator from South Carolina (2013-)",
         funds: 12, img: "images/scott.jpg", stamina: 7,
         desc: "South Carolina Senator. A high-energy, optimistic surrogate with deep evangelical ties.",
@@ -919,7 +979,8 @@ const VPS = [
         groupDebuffs: {}
     },
     {
-        id: "stefanik", name: "Elise Stefanik", party: "R", state: "NY", homeState: "NY",
+        id: "stefanik", name: "Elise Stefanik", party: "R",
+        factionId: "america_first_conservative", state: "NY", homeState: "NY",
         position: "U.S. Representative from New York (2015-)",
         funds: 10, img: "images/stefanik.jpg", stamina: 7,
         desc: "New York Congresswoman. A ruthless MAGA loyalist who plays well on cable news.",
@@ -927,7 +988,8 @@ const VPS = [
         groupDebuffs: { suburban_college: -2 }
     },
     {
-        id: "noem", name: "Kristi Noem", party: "R", state: "SD", homeState: "SD",
+        id: "noem", name: "Kristi Noem", party: "R",
+        factionId: "america_first_conservative", state: "SD", homeState: "SD",
         position: "Secretary of Homeland Security (2025-)",
         funds: 8, img: "images/noem.jpg", stamina: 7,
         desc: "South Dakota Governor. A base-play to energize the rural and evangelical wings.",
@@ -935,7 +997,8 @@ const VPS = [
         groupDebuffs: { suburban_moderates: -2 }
     },
     {
-        id: "cruz_vp", name: "Ted Cruz", party: "R", state: "TX", homeState: "TX",
+        id: "cruz_vp", name: "Ted Cruz", party: "R",
+        factionId: "religious_right", state: "TX", homeState: "TX",
         position: "U.S. Senator from Texas (2013-)",
         funds: 15, img: "images/cruz.jpg", stamina: 8,
         desc: "Texas Senator. Unifies the constitutional conservative and evangelical flanks.",
@@ -943,7 +1006,8 @@ const VPS = [
         groupDebuffs: { independents: -2 }
     },
     {
-        id: "hawley_vp", name: "Josh Hawley", party: "R", state: "MO", homeState: "MO",
+        id: "hawley_vp", name: "Josh Hawley", party: "R",
+        factionId: "populist_right", state: "MO", homeState: "MO",
         position: "U.S. Senator from Missouri (2019-)",
         funds: 10, img: "images/hawley.jpg", stamina: 7,
         desc: "Missouri Senator. Reinforces the populist, working-class narrative of the ticket.",
@@ -953,7 +1017,8 @@ const VPS = [
 
     /* ===== GREEN & LIBERTARIAN VPs ===== */
     {
-        id: "ware", name: "Butch Ware", party: "G", state: "CA", homeState: "CA",
+        id: "ware", name: "Butch Ware", party: "G",
+        factionId: "outsider_leftist", state: "CA", homeState: "CA",
         position: "Environmental Activist & Academic",
         funds: 0, img: "images/ware.jpg", stamina: 7,
         desc: "Academic and activist. Secures the anti-war progressive flank.",
@@ -961,7 +1026,8 @@ const VPS = [
         groupDebuffs: {}
     },
     {
-        id: "termaat", name: "Mike ter Maat", party: "L", state: "FL", homeState: "FL",
+        id: "termaat", name: "Mike ter Maat", party: "L",
+        factionId: "unaligned_center", state: "FL", homeState: "FL",
         position: "Libertarian Economist",
         funds: 0, img: "images/maat.jpg", stamina: 7,
         desc: "Economist. Appeals to fiscal conservatives and small business owners.",
@@ -971,7 +1037,8 @@ const VPS = [
 
     /* ===== INDEPENDENT VPs ===== */
     {
-        id: "kinzinger", name: "Adam Kinzinger", party: "I", state: "IL", homeState: "IL",
+        id: "kinzinger", name: "Adam Kinzinger", party: "I",
+        factionId: "unaligned_center", state: "IL", homeState: "IL",
         position: "Former U.S. Representative from Illinois (2011-2023)",
         funds: 5, img: "images/kinzinger.jpg", stamina: 7,
         desc: "Former Republican Congressman. Pulls disaffected anti-Trump conservatives.",
@@ -979,7 +1046,8 @@ const VPS = [
         groupDebuffs: { hardcore_right: -3 }
     },
     {
-        id: "west_cornel", name: "Cornel West", party: "I", state: "MA", homeState: "MA",
+        id: "west_cornel", name: "Cornel West", party: "I",
+        factionId: "outsider_leftist", state: "MA", homeState: "MA",
         position: "Philosopher & Political Activist",
         funds: 5, img: "images/west.jpg", stamina: 6,
         desc: "Philosopher and activist. Gives an independent ticket deep progressive credibility.",
@@ -989,7 +1057,8 @@ const VPS = [
 
     /* ===== PSL VPs ===== */
     {
-        id: "freeman", name: "Sunil Freeman", party: "PSL", state: "PA", homeState: "PA",
+        id: "freeman", name: "Sunil Freeman", party: "PSL",
+        factionId: "outsider_leftist", state: "PA", homeState: "PA",
         position: "Labor Organizer & PSL Activist",
         funds: 0, img: "images/freeman.jpg", stamina: 7,
         desc: "Activist and labor organizer.",
@@ -997,7 +1066,8 @@ const VPS = [
         groupDebuffs: {}
     },
     {
-        id: "lariva_vp", name: "Gloria La Riva", party: "PSL", state: "CA", homeState: "CA",
+        id: "lariva_vp", name: "Gloria La Riva", party: "PSL",
+        factionId: "outsider_leftist", state: "CA", homeState: "CA",
         position: "PSL General Secretary",
         funds: 0, img: "images/lariva.jpg", stamina: 7,
         desc: "PSL General Secretary. Anchors the ticket with institutional socialist credibility.",

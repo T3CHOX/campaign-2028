@@ -1099,16 +1099,16 @@ body {
     box-shadow: 0 5px 25px rgba(0,0,0,0.5);
 }
 
-#bio-modal {
-    position:  fixed;
+#bio-modal, #national-modal, #speech-modal, #ground-ops-modal, #digital-planner-modal, #fundraise-modal, #pac-modal, #interest-groups-modal, #ads-modal, #rally-modal, #endorsers-modal {
+    position: fixed;
     top: 0;
     left: 0;
-    width:  100%;
+    width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.9);
+    background: rgba(0, 0, 0, 0.72);
     z-index: 5000;
     display: flex;
-    justify-content:  center;
+    justify-content: center;
     align-items: center;
 }
 
@@ -1448,7 +1448,7 @@ body {
 }
 
 .ev-progress-bar {
-    height: 30px;
+    height: 42px;
     background: #333333;
     border-radius: 4px;
     display: flex;
@@ -1486,11 +1486,7 @@ body {
 }
 
 .ev-labels {
-    display:  flex;
-    justify-content: space-between;
-    font-size: 0.75rem;
-    color: #666666;
-    margin-top: 5px;
+    display: none !important;
 }
 
 .national-popular-vote-ticker {
@@ -4771,3 +4767,10 @@ body {
 #hud-momentum[style*="color: rgb(248, 113, 113)"] {
     text-shadow: 0 0 6px rgba(248, 113, 113, 0.4);
 }
+
+/* District UI */
+.sp-districts, .cv-districts { display: flex; gap: 6px; align-items: center; }
+.district-box { width: 45px; height: 30px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; cursor: pointer; color: white; transition: all 0.2s; user-select: none; }
+.district-box:hover { transform: scale(1.05); border-color: white; }
+.district-box.active { border: 2px solid white; box-shadow: 0 0 8px rgba(255,255,255,0.5); }
+

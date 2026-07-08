@@ -386,16 +386,16 @@ var Persuasion = {
                 var county = Counties.countyData[fips];
                 var groupShare = Counties.getCountyGroupShare ? Counties.getCountyGroupShare(county, groupId) : 0;
                 if (groupShare <= 0) continue;
-                var turnoutBoost = PERSUASION_CONSTANTS.FIELD_TURNOUT_BOOST * intensity * groupShare;
+                var turnoutBoost = PERSUASION_CONSTANTS.FIELD_TURNOUT_BOOST * intensity * groupShare * PERSUASION_CONSTANTS.CONTACT_RATE_EFFICIENCY;
                 this.applyTurnoutBoost(county, turnoutBoost);
             }
         }
-        this.applyTargetGroupMomentum(groupId, intensity * 0.65);
-        this.boostGroupTurnout(groupId, BUFF_CONSTANTS.GROUP_TURNOUT_RATE * intensity * 2.5);
+        this.applyTargetGroupMomentum(groupId, intensity * 0.65 * PERSUASION_CONSTANTS.CONTACT_RATE_EFFICIENCY);
+        this.boostGroupTurnout(groupId, BUFF_CONSTANTS.GROUP_TURNOUT_RATE * intensity * 2.5 * PERSUASION_CONSTANTS.CONTACT_RATE_EFFICIENCY);
         this.recordAppliedActionMetric(action, {
             groupId: groupId,
             turnoutKey: groupId,
-            turnoutDelta: PERSUASION_CONSTANTS.FIELD_TURNOUT_BOOST * intensity
+            turnoutDelta: PERSUASION_CONSTANTS.FIELD_TURNOUT_BOOST * intensity * PERSUASION_CONSTANTS.CONTACT_RATE_EFFICIENCY
         });
     },
 
@@ -485,8 +485,17 @@ var Persuasion = {
             // Get alignment between candidate and group on this issue
             var alignment = this.calculateAlignment(candidateId, groupId, issueId);
             
+            // v2: Persuadable Fraction (only a sliver of the group is actually movable)
+            var persuadableShare = (groupShare / 100) * PERSUASION_CONSTANTS.PERSUADABLE_FRACTION;
+            
             // Calculate delta for this group
-            var groupDelta = (groupShare / 100) * importance * alignment * baseStrength * intensity;
+            var groupDelta = persuadableShare * importance * alignment * baseStrength * intensity;
+            
+            // v2: Unpopular position trigger
+            // If the alignment is very bad (-0.5 or lower) and the player runs an attack or oppo on it
+            if (alignment <= -0.5 && (baseStrength === PERSUASION_CONSTANTS.BASE_PERSUASION_AD || baseStrength === PERSUASION_CONSTANTS.BASE_PERSUASION_DIGITAL)) {
+                 groupDelta *= PERSUASION_CONSTANTS.UNPOPULAR_POSITION_TRIGGER;
+            }
             
             totalDelta += groupDelta;
         }
@@ -518,6 +527,43 @@ var Persuasion = {
         }
         
         return totalDelta;
+    },
+    
+    // v2: Process weekly decay of persuasion effects back toward baseline
+    processWeeklyDecay: function() {
+        if (!Counties || !Counties.countyData) return;
+        
+        var decayRate = PERSUASION_CONSTANTS.PERSUASION_DECAY_WEEKLY || 0.6; // 40% decays, 60% remains
+        
+        for (var fips in Counties.countyData) {
+            var county = Counties.countyData[fips];
+            if (!county.v || !county.originalV) continue;
+            
+            var parties = ['D', 'R', 'G', 'L', 'I', 'PSL'];
+            var total = 0;
+            
+            for (var i = 0; i < parties.length; i++) {
+                var party = parties[i];
+                var current = county.v[party] || 0;
+                var original = county.originalV[party] || 0;
+                
+                // Diff is the delta we've created via persuasion actions
+                var diff = current - original;
+                
+                // Decay the diff
+                var newCurrent = original + (diff * decayRate);
+                county.v[party] = Math.max(0, newCurrent);
+                total += county.v[party];
+            }
+            
+            // Re-normalize to 100% just in case
+            if (total > 0 && total !== 100) {
+                var scale = 100 / total;
+                for (var j = 0; j < parties.length; j++) {
+                    county.v[parties[j]] *= scale;
+                }
+            }
+        }
     },
     
     // Get county demographics — uses county's own ig data directly (populated for all 3142 counties)

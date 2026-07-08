@@ -403,6 +403,27 @@ var OpponentAI = {
         }
 
         if (action.type === 'ad') {
+            if (typeof MEDIA_MARKETS !== 'undefined' && typeof DigitalAds !== 'undefined') {
+                // Find media markets overlapping with target state
+                var overlappingMarkets = [];
+                for (var mId in MEDIA_MARKETS) {
+                    if (MEDIA_MARKETS[mId].states.indexOf(action.state) !== -1) {
+                        overlappingMarkets.push(MEDIA_MARKETS[mId]);
+                    }
+                }
+                if (overlappingMarkets.length > 0) {
+                    // Pick overlapping market with largest reach
+                    overlappingMarkets.sort(function(a, b) { return b.reach - a.reach; });
+                    var targetMarket = overlappingMarkets[0];
+                    
+                    // Call buyTVAd for target market (heavy intensity, 4 weeks)
+                    var success = DigitalAds.buyTVAd(targetMarket.id, 'positive', 2, 4, party);
+                    if (success) {
+                        return;
+                    }
+                }
+            }
+
             var fallbackAdCounty = this.pickPriorityCounty(action.state, party);
             if (fallbackAdCounty && typeof Counties !== 'undefined' && Counties.applyOpponentAdSpillover) {
                 var fallbackAdSpill = Counties.applyOpponentAdSpillover(fallbackAdCounty, party);
@@ -432,13 +453,20 @@ var OpponentAI = {
         
         if (action.type === 'digital_preset') {
             if (typeof DigitalAds !== 'undefined') {
-                var config = { totalBudget: 2.0, allocations: { meta: 0.5, youtube: 0.5 }, segment: 'persuadable', creative: 'mobilize' };
-                // We're passing party here if executeDigitalCampaign can take it, but the current logic always uses player party.
-                // It's a placeholder for opponent usage.
-                var digiPres = party === 'D' ? gameData.demTicket.pres : gameData.repTicket.pres;
-                if (digiPres) {
-                    Utils.addLog('OPPONENT UPDATE: ' + digiPres.name + ' launched a massive digital blitz in ' + s.name);
+                var config = { 
+                    totalBudget: 2.0, 
+                    allocations: { meta: 0.5, youtube: 0.5 }, 
+                    segment: 'independents', 
+                    creative: 'persuade' 
+                };
+                var success = DigitalAds.executeDigitalCampaign(action.state, config, party);
+                if (success) {
+                    return;
                 }
+            }
+            var digiPres = party === 'D' ? gameData.demTicket.pres : gameData.repTicket.pres;
+            if (digiPres) {
+                Utils.addLog('OPPONENT UPDATE: ' + digiPres.name + ' launched a digital blitz in ' + s.name);
             }
             return;
         }

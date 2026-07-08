@@ -70,6 +70,7 @@ function startGame() {
     // Initialize new subsystems
     if (typeof GroundOps !== 'undefined') GroundOps.initGroundOps();
     if (typeof DigitalAds !== 'undefined') DigitalAds.initDigitalAds();
+    if (typeof EndorserSystem !== 'undefined') EndorserSystem.init();
     
     // Initialize per-group turnout tracking
     initInterestGroupTurnout();
@@ -1499,7 +1500,9 @@ function applyPacCommitment(pacId) {
     addMediaVulnerability(pac);
 }
 
-var app = {
+window.app = window.app || {};
+var app = window.app;
+Object.assign(app, {
     goToScreen: function(id) { Screens.goTo(id); },
     selParty: function(code) { Screens.selectParty(code); },
     setCampaignMapMode: function(mode) { if (typeof Campaign !== 'undefined') Campaign.setMapMode(mode); },
@@ -1663,6 +1666,47 @@ var app = {
     openCountyView: function() { 
         if (gameData.selectedState && typeof Counties !== 'undefined') {
             Counties.openCountyView(gameData.selectedState);
+        }
+    },
+    openEndorsersModal: function() {
+        var modal = document.getElementById('endorsers-modal');
+        var list = document.getElementById('endorsers-list');
+        if (!modal || !list || typeof EndorserSystem === 'undefined') return;
+        
+        var html = '';
+        var pCandId = gameData.playerCandidate || "harris";
+        for (var i = 0; i < EndorserSystem.endorsers.length; i++) {
+            var e = EndorserSystem.endorsers[i];
+            var endorsedYou = (e.currentEndorsement === pCandId);
+            var isEndorsed = e.currentEndorsement !== null;
+            
+            html += '<div style="background: rgba(0,0,0,0.3); border: 1px solid #444; padding: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">';
+            html += '<div><strong style="color: ' + (endorsedYou ? '#198754' : '#ccc') + ';">' + e.name + '</strong><br><small>' + e.type + ' - ' + e.state + '</small></div>';
+            
+            if (endorsedYou) {
+                html += '<div><span style="color: #198754; font-weight: bold;">ENDORSED</span></div>';
+            } else {
+                html += '<div><button onclick="app.lobbyEndorser(\'' + e.id + '\')" style="padding: 5px 10px; background: #0077d9; border: none; color: white; cursor: pointer;">LOBBY (1 Energy)</button></div>';
+            }
+            html += '</div>';
+        }
+        
+        list.innerHTML = html;
+        modal.classList.remove('hidden');
+    },
+    lobbyEndorser: function(endorserId) {
+        if (typeof EndorserSystem !== 'undefined') {
+            if (EndorserSystem.lobbyEndorser(endorserId)) {
+                this.openEndorsersModal();
+            }
+        }
+    },
+    openRallyReportModal: function(message) {
+        var modal = document.getElementById('rally-modal');
+        var content = document.getElementById('rally-report-content');
+        if (modal && content) {
+            content.innerHTML = message;
+            modal.classList.remove('hidden');
         }
     },
     openIssuesPanel: function() {
@@ -2788,7 +2832,7 @@ var app = {
         exitAnalysisMode: function() { Election.exitAnalysisMode(); },
         setAnalysisYear: function(y) { Election.setAnalysisYear(y); }
     }
-};
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     if (app && app.initTheme) app.initTheme();

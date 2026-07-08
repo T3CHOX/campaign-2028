@@ -11,6 +11,13 @@ const PARTIES = {
     PSL: { name: "Party for Socialism and Liberation", shortName: "PSL", color: "#CC0000", desc: "The Party for Socialism and Liberation is a revolutionary socialist organization fighting for a future free from exploitation, oppression, and war. The PSL champions a working-class government, an end to racism and all forms of discrimination, and a socialist reorganization of the economy. Drawing on the Marxist-Leninist tradition, the PSL organizes communities of color, labor, and the poor to challenge corporate power and U.S. imperialism." }
 };
 
+const THIRD_PARTY_BALLOT_ACCESS = {
+    'G': ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'FL', 'GA', 'HI', 'ID', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NH', 'NJ', 'NM', 'NC', 'OR', 'PA', 'RI', 'SC', 'TN', 'TX', 'UT', 'VA', 'WA', 'WV', 'WI'],
+    'L': ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IN', 'IA', 'KS', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'],
+    'I': ['AL', 'AK', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'MD', 'MI', 'MN', 'MS', 'MT', 'NJ', 'NM', 'OK', 'OR', 'RI', 'SD', 'TN', 'VT', 'WA', 'WV', 'WI'],
+    'PSL': ['CA', 'FL', 'HI', 'ID', 'IA', 'LA', 'MA', 'MN', 'MS', 'NJ', 'NM', 'RI', 'SC', 'TN', 'UT', 'VT', 'VA', 'WA', 'WI', 'WY']
+};
+
 const ISSUES = [
     { id: 'econ', name: 'Economy' },
     { id: 'jobs', name: 'Jobs' },
@@ -243,25 +250,25 @@ const SPLIT_ELECTORAL_RULES = {
         statewideEV: 2,
         defaultDistrict: 'NE-3',
         countyDistrictMap: {
-            '31055': 'NE-1', // Douglas
-            '31025': 'NE-1', // Cass
-            '31053': 'NE-1', // Dodge
-            '31155': 'NE-1', // Saunders
-            '31177': 'NE-1', // Washington
-            '31109': 'NE-2', // Lancaster
-            '31001': 'NE-2', // Adams
-            '31019': 'NE-2', // Buffalo
-            '31079': 'NE-2', // Hall
-            '31181': 'NE-2'  // Webster
+            '31055': 'NE-2', // Douglas
+            '31025': 'NE-2', // Cass
+            '31053': 'NE-2', // Dodge
+            '31155': 'NE-2', // Saunders
+            '31177': 'NE-2', // Washington
+            '31109': 'NE-1', // Lancaster
+            '31001': 'NE-1', // Adams
+            '31019': 'NE-1', // Buffalo
+            '31079': 'NE-1', // Hall
+            '31181': 'NE-1'  // Webster
         },
         splitCounties: {
             '31173': [ // Thurston
                 { district: 'NE-3', share: 0.963, baseline: { D: 47.59, R: 52.41 } },
-                { district: 'NE-1', share: 0.037, baseline: { D: 27.73, R: 72.27 } }
+                { district: 'NE-2', share: 0.037, baseline: { D: 27.73, R: 72.27 } }
             ],
             '31153': [ // Sarpy
-                { district: 'NE-1', share: 0.389, baseline: { D: 44.26, R: 55.74 } },
-                { district: 'NE-2', share: 0.611, baseline: { D: 40.45, R: 55.74 } }
+                { district: 'NE-2', share: 0.389, baseline: { D: 44.26, R: 55.74 } },
+                { district: 'NE-1', share: 0.611, baseline: { D: 40.45, R: 55.74 } }
             ]
         }
     },
@@ -347,13 +354,16 @@ var gameData = {
 // All balanceable parameters in one place
 var PERSUASION_CONSTANTS = {
     // Base persuasion strength per intensity level
-    BASE_PERSUASION_AD: 0.02,           // Base margin shift per ad intensity point
-    BASE_PERSUASION_SPEECH: 0.015,      // Base margin shift per speech intensity point
-    BASE_PERSUASION_RALLY: 0.01,        // Base margin shift per rally (kept for compatibility)
-    BASE_PERSUASION_DIGITAL: 0.012,     // Base margin shift per digital intensity point
+    BASE_PERSUASION_AD: 0.003,           // Base margin shift per ad intensity point
+    BASE_PERSUASION_SPEECH: 0.0025,      // Base margin shift per speech intensity point
+    BASE_PERSUASION_RALLY: 0.0015,       // Base margin shift per rally (kept for compatibility)
+    BASE_PERSUASION_DIGITAL: 0.002,      // Base margin shift per digital intensity point
+    
+    // v2: Persuasion fraction (only this % is actually movable)
+    PERSUADABLE_FRACTION: 0.08,
     
     // Speech localized multiplier (county where speech occurs)
-    SPEECH_LOCAL_MULTIPLIER: 2.5,       // 2.5x effect in the specific county
+    SPEECH_LOCAL_MULTIPLIER: 1.5,       // 1.5x effect in the specific county
     
     // Diminishing returns
     PRESSURE_SCALAR: 0.15,              // Higher = faster diminishing returns
@@ -362,12 +372,12 @@ var PERSUASION_CONSTANTS = {
     RELATIONSHIP_SCALE: 0.05,           // How much each action affects group relationship
     RELATIONSHIP_DIVISOR: 20,           // Relationship score impact on effectiveness
     
-    // Turnout effects (preserved from existing system)
-    AD_TURNOUT_BOOST: 0.005,            // Small turnout boost per ad
-    SPEECH_TURNOUT_BOOST: 0.01,         // Moderate turnout boost per speech
-    RALLY_TURNOUT_BOOST: 0.05,          // Large turnout boost per rally
-    FIELD_TURNOUT_BOOST: 0.08,          // Strong turnout boost per field action
-    DIGITAL_TURNOUT_BOOST: 0.03,        // Digital turnout boost per action
+    // Turnout effects (discounted for high-salience general elections)
+    AD_TURNOUT_BOOST: 0.002,            // Small turnout boost per ad
+    SPEECH_TURNOUT_BOOST: 0.004,        // Moderate turnout boost per speech
+    RALLY_TURNOUT_BOOST: 0.02,          // Large turnout boost per rally
+    FIELD_TURNOUT_BOOST: 0.025,         // Strong turnout boost per field action
+    DIGITAL_TURNOUT_BOOST: 0.012,       // Digital turnout boost per action
     
     // Cost structure
     AD_BASE_COST: 3.0,                  // Base cost in millions
@@ -391,10 +401,15 @@ var PERSUASION_CONSTANTS = {
     DEBATE_PREP_ENERGY_COST: 1,         // Debate prep energy
     OPPO_RESEARCH_COST: 2.0,            // Oppo research cost
     OPPO_RESEARCH_ENERGY_COST: 1,       // Oppo research energy
-    SURROGATE_TURNOUT_BOOST: 0.003,     // 60% of AD turnout boost
+    SURROGATE_TURNOUT_BOOST: 0.0015,    // Turnout boost per surrogate
     
-    // v2 Turnout cap
-    TURNOUT_BOOST_CAP: 0.18,            // Max cumulative turnout boost above turnoutBase per state
+    // v2 Turnout cap and Field Efficiency
+    TURNOUT_BOOST_CAP: 0.08,            // Realistic ceiling on campaign turnout boost per state
+    CONTACT_RATE_EFFICIENCY: 0.4,       // Only ~40% of targeted voters are reached
+    
+    // v2 Decay and triggers
+    PERSUASION_DECAY_WEEKLY: 0.6,       // 40% of swing decays per week (retains 60%)
+    UNPOPULAR_POSITION_TRIGGER: 3.0,    // Multiplier when exploiting an unpopular stance
     
     // v2 Intensity scaling multipliers
     INTENSITY_MULTIPLIERS: { 1: 1.0, 2: 1.7, 3: 2.2 }
@@ -446,9 +461,10 @@ var MOMENTUM_CONSTANTS = {
     DECAY: 0.85,            // Weekly decay toward 0
     WEEKLY_GAIN: 0.07,      // Gain per week of net positive polling
     WEEKLY_LOSS: 0.07,      // Loss per week of net negative polling
-    EFFECT_SCALE: 0.15,     // Multiplier on action deltas: (1 + EFFECT_SCALE * momentum)
+    EFFECT_SCALE: 0.06,     // Multiplier on action deltas: (1 + EFFECT_SCALE * momentum)
     FREE_MEDIA_THRESHOLD: 0.5,  // Momentum needed for free media
-    FREE_MEDIA_RESET: 0.3      // Momentum drops below this to reset free media flag
+    FREE_MEDIA_RESET: 0.3,      // Momentum drops below this to reset free media flag
+    POLLING_NOISE_STDEV: 0.02   // Standard deviation for polling noise (2%)
 };
 
 var DEBATE_SCHEDULE = [
