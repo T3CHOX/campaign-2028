@@ -35,15 +35,25 @@ var BASELINE_INACTIVE_VOTER_BOOST = 0.05;     // Small baseline boost (5%) witho
 function isPopulistCandidate(candidate) {
     if (!candidate) return false;
     
+    // Look up full candidate profile to check factionId and other attributes
+    var fullCand = null;
+    if (typeof _buildCandidateByIdMap === 'function') {
+        var map = _buildCandidateByIdMap();
+        fullCand = map[candidate.id];
+    }
+    
     // Third party candidates are typically populist/outsiders
-    // Check against known third-party codes: F (Forward), G (Green), L (Libertarian), PSL (Party for Socialism and Liberation)
-    var thirdPartyCode = candidate.party;
-    if (thirdPartyCode && thirdPartyCode !== 'D' && thirdPartyCode !== 'R') {
+    var party = (fullCand && fullCand.party) || candidate.party;
+    if (party && party !== 'D' && party !== 'R') {
         return true;
     }
     
-    // Also check if candidate has populist policy positions or ideology
-    // These properties would be defined in candidate configuration (see CANDIDATES in config.js)
+    // Check for populist/outsider factions
+    var faction = fullCand && fullCand.factionId;
+    if (faction === 'populist_right' || faction === 'america_first_conservative' || faction === 'outsider_leftist' || faction === 'activist_left') {
+        return true;
+    }
+    
     if (candidate.ideology === 'populist' || candidate.position === 'outsider') {
         return true;
     }
@@ -288,7 +298,9 @@ var Election = {
                     var reportingFactor = county.reportedPct / 100;
                     var errorFactor = 1.0 + (county.marginOfError / 100);
                     var undecidedPct = county.undecided || 0;
-                    var decidedMultiplier = (100 - undecidedPct) / 100;
+                    // On Election Day, undecided voters proportionally break for candidates or stay home according to base turnout. 
+                    // Multiplying by (100-undecidedPct)/100 incorrectly deletes them from the voting pool entirely.
+                    var decidedMultiplier = 1.0;
 
                     county.reportedVotes = this.calculateCountyReportedVotes(county, reportingFactor, decidedMultiplier, errorFactor);
                 }
@@ -459,6 +471,13 @@ var Election = {
             return Math.max(0, Math.min(1, base));
         }
         return this.getDefaultCountyTurnoutRate(county);
+    },
+
+    getDefaultCountyTurnoutRate: function(county) {
+        if (typeof Counties !== 'undefined' && typeof Counties.DEFAULT_BASE_TURNOUT_RATE === 'number') {
+            return Counties.DEFAULT_BASE_TURNOUT_RATE;
+        }
+        return 0.60;
     },
 
     getPartyTurnoutBaselineMultipliers: function() {
@@ -1800,7 +1819,9 @@ var Election = {
                 if (county.v) {
                     county.reportedVotes = county.reportedVotes || {};
                     var undecidedPct = county.undecided || 0;
-                    var decidedMultiplier = (100 - undecidedPct) / 100;
+                    // On Election Day, undecided voters proportionally break for candidates or stay home according to base turnout. 
+                    // Multiplying by (100-undecidedPct)/100 incorrectly deletes them from the voting pool entirely.
+                    var decidedMultiplier = 1.0;
 
                     if (!county.marginOfError) {
                         county.marginOfError = (Math.random() - 0.5) * 4; // ±2%

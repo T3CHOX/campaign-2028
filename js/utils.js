@@ -123,7 +123,40 @@ var Utils = {
         return list;
     },
 
-    // Compute per-party polling percentages for a state from county data
+    getNationalPollingByParty: function() {
+        var nTotals = { D: 0, R: 0, G: 0, L: 0, I: 0, PSL: 0 };
+        var nUndecided = 0;
+        var nPop = 0;
+        
+        for (var stateCode in gameData.states) {
+            var s = gameData.states[stateCode];
+            var pcts = this.getStatePollingByParty(stateCode);
+            if (!pcts) continue;
+            
+            var weight = s.population || 1000000;
+            nTotals.D += pcts.D * weight;
+            nTotals.R += pcts.R * weight;
+            nTotals.G += (pcts.G || 0) * weight;
+            nTotals.L += (pcts.L || 0) * weight;
+            nTotals.I += (pcts.I || 0) * weight;
+            nTotals.PSL += (pcts.PSL || 0) * weight;
+            nUndecided += (pcts.Undecided || 0) * weight;
+            nPop += weight;
+        }
+        
+        if (nPop === 0) return null;
+        
+        return {
+            D: nTotals.D / nPop,
+            R: nTotals.R / nPop,
+            G: nTotals.G / nPop,
+            L: nTotals.L / nPop,
+            I: nTotals.I / nPop,
+            PSL: nTotals.PSL / nPop,
+            Undecided: nUndecided / nPop
+        };
+    },
+
     getStatePollingByParty: function (stateCode) {
         if (typeof Counties === 'undefined' || !Counties.countyData) return null;
         if (typeof STATES === 'undefined' || !STATES[stateCode]) return null;
@@ -131,6 +164,8 @@ var Utils = {
         if (!stateFips) return null;
 
         var totals = { D: 0, R: 0, G: 0, L: 0, I: 0, PSL: 0 };
+        var stateUndecidedTotal = 0;
+        var statePopTotal = 0;
 
         for (var fips in Counties.countyData) {
             var paddedFips = fips.padStart(5, '0');
@@ -147,20 +182,28 @@ var Utils = {
             totals.L += countyTotals.L || 0;
             totals.I += countyTotals.I || 0;
             totals.PSL += countyTotals.PSL || 0;
+            
+            var pop = county.regVoters || county.p || 0;
+            stateUndecidedTotal += (county.undecided || 0) * pop;
+            statePopTotal += pop;
         }
 
         var totalVotes = totals.D + totals.R + totals.G + totals.L + totals.I + totals.PSL;
         if (totalVotes <= 0) return null;
 
+        var stateUndecided = statePopTotal > 0 ? (stateUndecidedTotal / statePopTotal) : 0;
         var pcts = {};
         var keys = ['D', 'R', 'G', 'L', 'I', 'PSL'];
+        var sumPct = 0;
         for (var pi = 0; pi < keys.length; pi++) {
-            pcts[keys[pi]] = (totals[keys[pi]] / totalVotes) * 100;
+            var scaledPct = (totals[keys[pi]] / totalVotes) * (100 - stateUndecided);
+            pcts[keys[pi]] = scaledPct;
+            sumPct += scaledPct;
         }
+        pcts['Undecided'] = 100 - sumPct;
         return pcts;
     },
 
-    // Compute per-party polling percentages for a single county object
     getCountyPollingByParty: function (county) {
         if (!county || !county.v) return null;
 
@@ -170,11 +213,16 @@ var Utils = {
         var totalVotes = totals.D + totals.R + totals.G + totals.L + totals.I + totals.PSL;
         if (totalVotes <= 0) return null;
 
+        var countyUndecided = county.undecided || 0;
         var pcts = {};
         var keys = ['D', 'R', 'G', 'L', 'I', 'PSL'];
+        var sumPct = 0;
         for (var pi = 0; pi < keys.length; pi++) {
-            pcts[keys[pi]] = (totals[keys[pi]] / totalVotes) * 100;
+            var scaledPct = (totals[keys[pi]] / totalVotes) * (100 - countyUndecided);
+            pcts[keys[pi]] = scaledPct;
+            sumPct += scaledPct;
         }
+        pcts['Undecided'] = 100 - sumPct;
         return pcts;
     },
 
@@ -209,11 +257,10 @@ var Utils = {
             var entry = all[i];
             var pct = (pcts && pcts[entry.party]) || 0;
             var prev = (prevPcts && prevPcts[entry.party]);
-            // On first turn prev is undefined → delta shown as 0.0
             var delta = (prev !== undefined) ? pct - prev : 0;
             result.push({ party: entry.party, cand: entry.cand, pct: pct, delta: delta });
         }
-
+        
         result.sort(function (a, b) { return b.pct - a.pct; });
         return result;
     },
@@ -257,6 +304,12 @@ var Utils = {
             html += '</div>';
         }
         html += '</div>';
+        
+        if (pcts && pcts['Undecided'] !== undefined) {
+            var uPct = pcts['Undecided'];
+            html += '<div class="cpl-undecided-row" style="text-align: right; margin-top: 8px; padding-right: 12px; font-size: 0.88rem; font-weight: bold; color: var(--ink-muted);">Undecided: ' + uPct.toFixed(1) + '%</div>';
+        }
+        
         return html;
     },
 

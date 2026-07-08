@@ -167,10 +167,6 @@
                     <label>APPROVAL</label>
                     <span class="approval" id="hud-approval" title="National approval rating">50%</span>
                 </div>
-                <div class="stat-group">
-                    <label>NATIONAL POLL</label>
-                    <span class="national-poll" id="hud-national-poll" title="Average of recent national polls">Tie</span>
-                </div>
                 <button class="next-turn-btn" onclick="app.nextWeek()">NEXT WEEK &rarr;</button>
             </div>
         </header>
@@ -184,16 +180,19 @@
                         <option value="ev">EV</option>
                         <option value="population">POPULATION</option>
                         <option value="turnout">TURNOUT</option>
+                        <option value="mediaMarkets">MEDIA MARKETS</option>
                         <option value="playerTurnout">PLAYER</option>
                         <option value="opponentTurnout">OPPONENT</option>
                         <option value="favorability">FAVORABILITY</option>
                     </select>
                 </div>
+                <button class="ads-map-btn" onclick="app.openAdsModal()" style="position: absolute; top: 10px; right: 10px; z-index: 100; padding: 10px 20px; background: #e67e22; color: white; border: none; font-weight: bold; font-size: 1.1em; cursor: pointer; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);"><i class="fa-solid fa-tv"></i> ADS CAMPAIGN</button>
                 <div id="us-map-wrapper"></div>
                 <div id="county-view-wrapper" class="hidden">
                     <div id="county-view-header">
                         <button class="county-back-btn" onclick="app.closeCountyView()">← BACK TO US MAP</button>
                         <span id="cv-title">STATE</span>
+                        <div id="cv-districts" class="cv-districts hidden"></div>
                         <div id="cv-stats"></div>
                     </div>
                     <div id="county-map-container"></div>
@@ -203,7 +202,10 @@
             <aside id="sidebar">
                 <div id="state-panel" class="hidden">
                     <div class="state-header-box">
-                        <h2 id="sp-name">STATE</h2>
+                        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <h2 id="sp-name" style="margin: 0;">STATE</h2>
+                            <div id="sp-districts" class="sp-districts hidden"></div>
+                        </div>
                         <span class="ev-badge" id="sp-ev">0 EV</span>
                     </div>
                     <div id="poll-vis" class="poll-vis">
@@ -227,8 +229,8 @@
                         </div>
                     </div>
                     
-                    <!-- Ad Campaign Tile (Bottom, Spans 2 columns) -->
-                    <div class="ad-campaign-tile">
+                    <!-- Ads moved to Map Button. Hiding legacy tile. -->
+                    <div class="ad-campaign-tile" style="display:none;">
                         <h4><i class="fa-solid fa-tv"></i> AD CAMPAIGN</h4>
                         <div class="ad-controls">
                             <div class="control-group">
@@ -339,17 +341,12 @@
                         <span class="ev-count" id="elec-dem-ev">0</span>
                     </div>
                 </div>
-                <div class="ev-progress-wrapper">
-                    <div class="ev-progress-bar">
+                <div class="ev-progress-wrapper" style="height: 100%; margin-top: 35px;">
+                    <div class="ev-progress-bar" style="height: 40px; margin-bottom: 0;">
                         <div class="ev-fill ev-fill-dem" id="elec-bar-dem"></div>
-                        <div class="ev-marker">270</div>
+                        <div class="ev-marker" style="height: 40px; line-height: 40px;">270</div>
                         <div class="ev-fill ev-fill-rep" id="elec-bar-rep"></div>
                         <div class="ev-fill ev-fill-third" id="elec-bar-third" style="display: none;"></div>
-                    </div>
-                    <div class="ev-labels">
-                        <span>0</span>
-                        <span class="hidden third-ev-label"><span id="elec-third-ev">0</span> 3rd</span>
-                        <span>538</span>
                     </div>
                 </div>
                 <div class="ev-candidate ev-rep">
@@ -618,9 +615,32 @@
                 <button class="queue-ad-btn" onclick="app.executeCustomDigital()">LAUNCH CAMPAIGN</button>
             </div>
         </div>
+        <!-- RALLY REPORT MODAL -->
+        <div id="rally-modal" class="modal hidden" style="z-index: 2100;">
+            <div class="modal-content" style="max-width: 500px; text-align: center;">
+                <button class="modal-close-btn" onclick="document.getElementById('rally-modal').classList.add('hidden')">x</button>
+                <h2 style="color: #ffaa00; margin-bottom: 5px;">RALLY COMPLETED</h2>
+                <div id="rally-report-content" style="margin-top: 15px; font-size: 1.1rem; line-height: 1.5; color: #ddd;">
+                    <!-- Content populated dynamically -->
+                </div>
+                <button class="queue-ad-btn" onclick="document.getElementById('rally-modal').classList.add('hidden')" style="margin-top: 25px; width: 100%;">CONTINUE CAMPAIGN</button>
+            </div>
+        </div>
+        
+        <!-- ENDORSERS MODAL -->
+        <div id="endorsers-modal" class="modal hidden" style="z-index: 2000;">
+            <div class="modal-content" style="max-width: 600px;">
+                <button class="modal-close-btn" onclick="document.getElementById('endorsers-modal').classList.add('hidden')">x</button>
+                <h2 style="color: #fff; border-bottom: 2px solid #555; padding-bottom: 10px; margin-bottom: 20px;">KEY ENDORSERS</h2>
+                <div id="endorsers-list" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Endorsers populated here -->
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Fundraising Modal -->
+    <!-- MAIN GAME SCRIPTS -->
     <div id="fundraise-modal" class="hidden">
         <div class="modal-box fundraise-modal-box">
             <div class="modal-header">
@@ -736,78 +756,117 @@
         </div>
     </div>
     
-    <!-- Digital Planner Modal -->
-    <div id="digital-planner-modal" class="hidden">
-        <div class="modal-box digital-planner-box">
+    <!-- Ads Modal -->
+    <div id="ads-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.72); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <div class="modal-box ads-modal-box" style="max-width: 800px; width: 90%;">
             <div class="modal-header">
-                <h2>DIGITAL AD CAMPAIGN</h2>
-                <button class="modal-close-btn" onclick="app.closeDigitalModal()">×</button>
+                <h2>AD CAMPAIGN CENTER</h2>
+                <button class="modal-close-btn" onclick="app.closeAdsModal()">×</button>
             </div>
-            <div id="digital-planner-content">
-                <div class="digital-presets">
-                    <h4>QUICK PRESETS</h4>
-                    <div class="digital-preset-buttons">
-                        <button onclick="app.runDigitalPreset('base')">BASE MOBILIZATION ($2.0M)</button>
-                        <button onclick="app.runDigitalPreset('swing')">SWING CONTRAST ($2.5M)</button>
-                        <button onclick="app.runDigitalPreset('youth')">YOUTH OUTREACH ($1.5M)</button>
+            <div class="ads-tabs" style="display: flex; border-bottom: 1px solid #444; margin-bottom: 15px;">
+                <button class="ads-tab-btn active" id="tab-btn-tv" onclick="app.switchAdsTab('tv')" style="flex: 1; padding: 10px; background: #333; color: white; border: none; cursor: pointer;">TELEVISION</button>
+                <button class="ads-tab-btn" id="tab-btn-digital" onclick="app.switchAdsTab('digital')" style="flex: 1; padding: 10px; background: #222; color: #ccc; border: none; cursor: pointer;">DIGITAL</button>
+            </div>
+            
+            <div id="ads-content-tv" class="ads-tab-content">
+                <div class="control-group">
+                    <label>Target Media Market:</label>
+                    <select id="ads-market-select" class="issue-dropdown">
+                        <option value="">Select Market...</option>
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="control-group" style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label>Ad Type:</label>
+                        <select id="ads-tv-type" class="intensity-dropdown">
+                            <option value="positive">Positive / Bio</option>
+                            <option value="attack">Attack / Contrast</option>
+                            <option value="issue">Issue Focus</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Intensity:</label>
+                        <select id="ads-tv-intensity" class="intensity-dropdown">
+                            <option value="1">Light</option>
+                            <option value="2">Moderate</option>
+                            <option value="3">Heavy</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Duration:</label>
+                        <select id="ads-tv-duration" class="intensity-dropdown">
+                            <option value="1">1 Week</option>
+                            <option value="2">2 Weeks</option>
+                            <option value="3">3 Weeks</option>
+                            <option value="4">4 Weeks</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; font-weight: bold; text-align: center;">
+                    Estimated Cost: <span id="ads-tv-cost" style="color: #4CAF50;">$0.0M</span>
+                </div>
+                <button class="queue-ad-btn" onclick="app.executeTVAd()" style="margin-top: 15px; width: 100%;">PURCHASE TV AD</button>
+            </div>
+
+            <div id="ads-content-digital" class="ads-tab-content" style="display: none;">
+                <div class="control-group">
+                    <label>Total Budget ($M): <span id="digi-budget-val">2.0</span></label>
+                    <input type="range" id="digi-budget-slider" min="0.5" max="10.0" step="0.5" value="2.0" oninput="document.getElementById('digi-budget-val').innerText = this.value">
+                </div>
+                
+                <div class="control-group" style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label>Target State:</label>
+                        <select id="digi-state-select" class="intensity-dropdown">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Target Segment:</label>
+                        <select id="digi-segment-select" class="intensity-dropdown">
+                            <option value="persuadable">Persuadable Voters</option>
+                            <option value="youth">Youth / First Time</option>
+                            <option value="progressives">Progressive Base</option>
+                            <option value="hardcore_right">Conservative Base</option>
+                            <option value="suburban_women">Suburban Women</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Creative Type:</label>
+                        <select id="digi-creative-select" class="intensity-dropdown">
+                            <option value="issue">Issue Focus</option>
+                            <option value="contrast">Negative/Contrast</option>
+                            <option value="mobilize">GOTV/Mobilize</option>
+                        </select>
                     </div>
                 </div>
                 
-                <hr>
-                
-                <div class="digital-custom">
-                    <h4>CUSTOM CAMPAIGN</h4>
-                    <div class="control-group">
-                        <label>Total Budget ($M): <span id="digi-budget-val">2.0</span></label>
-                        <input type="range" id="digi-budget-slider" min="0.5" max="10.0" step="0.5" value="2.0" oninput="document.getElementById('digi-budget-val').innerText = this.value">
+                <div class="allocations-section">
+                    <label>Platform Allocations (%)</label>
+                    <div class="allocations-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>CTV/Streaming: <input type="number" id="digi-ctv" value="20" min="0" max="100"></div>
+                        <div>Meta/Facebook: <input type="number" id="digi-meta" value="30" min="0" max="100"></div>
+                        <div>Google Search: <input type="number" id="digi-search" value="20" min="0" max="100"></div>
+                        <div>YouTube: <input type="number" id="digi-youtube" value="20" min="0" max="100"></div>
+                        <div>TikTok: <input type="number" id="digi-tiktok" value="0" min="0" max="100"></div>
+                        <div>Display Network: <input type="number" id="digi-display" value="10" min="0" max="100"></div>
                     </div>
-                    
-                    <div class="control-group" style="display: flex; gap: 15px;">
-                        <div style="flex: 1;">
-                            <label>Target Segment:</label>
-                            <select id="digi-segment-select" class="intensity-dropdown">
-                                <option value="persuadable">Persuadable Voters</option>
-                                <option value="youth">Youth / First Time</option>
-                                <option value="progressive">Progressive Base</option>
-                                <option value="hardcore_right">Conservative Base</option>
-                            </select>
-                        </div>
-                        <div style="flex: 1;">
-                            <label>Creative Type:</label>
-                            <select id="digi-creative-select" class="intensity-dropdown">
-                                <option value="issue">Issue Focus</option>
-                                <option value="contrast">Negative/Contrast</option>
-                                <option value="mobilize">GOTV/Mobilize</option>
-                                <option value="testimonial">Testimonial</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="allocations-section">
-                        <label>Platform Allocations (%)</label>
-                        <div class="allocations-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div>CTV/Streaming: <input type="number" id="digi-ctv" value="20" min="0" max="100"></div>
-                            <div>Meta/Facebook: <input type="number" id="digi-meta" value="30" min="0" max="100"></div>
-                            <div>Google Search: <input type="number" id="digi-search" value="20" min="0" max="100"></div>
-                            <div>YouTube: <input type="number" id="digi-youtube" value="20" min="0" max="100"></div>
-                            <div>TikTok: <input type="number" id="digi-tiktok" value="0" min="0" max="100"></div>
-                            <div>Display Network: <input type="number" id="digi-display" value="10" min="0" max="100"></div>
-                        </div>
-                        <div id="digi-alloc-warn" style="color: var(--rep-red); font-weight: bold; margin-top: 10px;"></div>
-                    </div>
-                    
-                    <button class="queue-ad-btn" onclick="app.executeCustomDigital()" style="margin-top: 15px; width: 100%;">LAUNCH CUSTOM CAMPAIGN</button>
                 </div>
+                
+                <button class="queue-ad-btn" onclick="app.executeDigitalAd()" style="margin-top: 15px; width: 100%;">LAUNCH DIGITAL CAMPAIGN</button>
             </div>
         </div>
     </div>
     
     <!-- Load scripts in dependency order -->
 <script src="js/config.js"></script>
+<script src="js/factions.js"></script>
 <script src="js/candidates.js"></script>
 <script src="js/issues.js"></script>
 <script src="js/interestGroups.js"></script>
 <script src="js/states.js"></script>
+<script src="js/mediaMarkets.js"></script>
 <script src="js/turnout.js"></script>
 <script src="js/counties.js"></script>
 <script src="js/persuasion.js"></script>
@@ -818,8 +877,10 @@
 <script src="js/debates.js"></script>
 <script src="js/scandals.js"></script>
 <script src="js/endorsements.js"></script>
+<script src="js/endorsers.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/screens.js"></script>
+<script src="js/adsUI.js"></script>
 <script src="js/campaign.js"></script>
 <script src="js/election.js"></script>
 <script src="js/main.js"></script>

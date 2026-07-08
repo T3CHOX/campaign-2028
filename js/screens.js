@@ -167,9 +167,25 @@ var Screens = {
                 '</button>' +
             '</div>';
 
+        var partyFactions = {};
+        if (phase === 'pres') {
+            partyCands.forEach(function(c) { if(c.factionId) partyFactions[c.factionId] = true; });
+        } else {
+            allVPOptions.forEach(function(c) { if(c.factionId) partyFactions[c.factionId] = true; });
+        }
+        var filterHTML = '<div class="faction-filters" style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; justify-content: center;">';
+        filterHTML += '<button class="faction-filter-btn" onclick="Screens.filterFaction(\'all\')" style="padding: 4px 12px; border: 1px solid #ccc; background: #222; color: #fff; cursor: pointer; border-radius: 4px;">All Factions</button>';
+        for (var f in partyFactions) {
+            if (typeof FACTIONS !== 'undefined' && FACTIONS[f]) {
+                filterHTML += '<button class="faction-filter-btn" onclick="Screens.filterFaction(\'' + f + '\')" style="padding: 4px 12px; border: 1px solid ' + FACTIONS[f].color + '; background: #222; color: ' + FACTIONS[f].color + '; cursor: pointer; border-radius: 4px;">' + FACTIONS[f].name + '</button>';
+            }
+        }
+        filterHTML += '</div>';
+
         body.innerHTML = bannerHTML +
             '<div class="party-page-selection">' +
                 '<div class="party-page-selection-title" style="color:' + color + ';">' + roleLabel + '</div>' +
+                filterHTML +
                 tilesHTML +
             '</div>' +
             skipBtnHTML +
@@ -216,8 +232,17 @@ var Screens = {
             }
         effectsHTML += '</div>';
 
+        var faction = typeof FACTIONS !== 'undefined' && c.factionId ? FACTIONS[c.factionId] : null;
+        var factionHTML = '';
+        if (faction) {
+            factionHTML = '<div class="candidate-faction-badge" style="display: flex; align-items: center; gap: 4px; font-size: 0.85em; margin-bottom: 6px; color: ' + faction.color + ';" title="' + faction.description + '">' +
+                '<img src="' + faction.emblem + '" style="width:16px;height:16px;" alt="' + faction.name + '">' +
+                '<strong>' + faction.name + '</strong>' +
+                '</div>';
+        }
+
         var logoName = this._getPartyLogoFile(c.party);
-        return '<div class="candidate-tile' + (selected ? ' selected' : '') + '" data-id="' + c.id + '" data-type="pres" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + c.party + '\', \'pres\')">' +
+        return '<div class="candidate-tile' + (selected ? ' selected' : '') + '" data-id="' + c.id + '" data-type="pres" data-faction="' + (c.factionId || '') + '" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + c.party + '\', \'pres\')">' +
             '<img class="candidate-tile-party-logo" src="images/' + logoName + '" onerror="this.style.display=\'none\'" alt="' + c.party + ' logo">' +
             '<img class="candidate-tile-img" src="' + c.img + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + c.name + '">' +
             '<div class="candidate-tile-body">' +
@@ -227,6 +252,7 @@ var Screens = {
                         '<div class="candidate-tile-state" style="margin-bottom: 0; white-space: nowrap; margin-left: 4px;">🏠 ' + (c.homeState || '') + '</div>' +
                     '</div>' +
                     '<div class="candidate-tile-position">' + (c.position || '') + '</div>' +
+                    factionHTML +
                     '<div class="candidate-tile-stats">' +
                         '<div class="tile-stat-row"><span class="tile-stat-label">Funds:</span><span class="tile-stat-val">$' + (c.funds || 0) + 'M</span></div>' +
                         '<div class="tile-stat-row"><span class="tile-stat-label">Stamina:</span><div class="stamina-pips">' + staminaPips + '</div></div>' +
@@ -267,8 +293,28 @@ var Screens = {
         }
         effectsHTML += '</div>';
 
+        var faction = typeof FACTIONS !== 'undefined' && v.factionId ? FACTIONS[v.factionId] : null;
+        var factionHTML = '';
+        if (faction) {
+            var presId = Screens._getSelectedPresForParty(v.party);
+            var presCand = null;
+            if (presId) {
+                presCand = CANDIDATES.find(function(c) { return c.id === presId; });
+            }
+            var synergyStr = "";
+            if (presCand && presCand.factionId) {
+                var syn = typeof getVPSynergyModifier === 'function' ? getVPSynergyModifier(presCand.factionId, v.factionId) : 0;
+                if (syn > 0) synergyStr = ' <span style="color:#4CAF50; font-weight:bold;">(Synergy: +' + Math.round(syn*100) + '%)</span>';
+                else if (syn < 0) synergyStr = ' <span style="color:#DC3545; font-weight:bold;">(Friction: ' + Math.round(syn*100) + '%)</span>';
+            }
+            factionHTML = '<div class="candidate-faction-badge" style="display: flex; align-items: center; gap: 4px; font-size: 0.85em; margin-bottom: 6px; color: ' + faction.color + ';" title="' + faction.description + '">' +
+                '<img src="' + faction.emblem + '" style="width:16px;height:16px;" alt="' + faction.name + '">' +
+                '<strong>' + faction.name + synergyStr + '</strong>' +
+                '</div>';
+        }
+
         var logoName = this._getPartyLogoFile(v.party);
-        return '<div class="candidate-tile" data-id="' + v.id + '" data-type="vp" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + v.party + '\', \'vp\')">' +
+        return '<div class="candidate-tile" data-id="' + v.id + '" data-type="vp" data-faction="' + (v.factionId || '') + '" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + v.party + '\', \'vp\')">' +
             '<img class="candidate-tile-party-logo" src="images/' + logoName + '" onerror="this.style.display=\'none\'" alt="' + v.party + ' logo">' +
             '<img class="candidate-tile-img" src="' + (v.img || 'images/scenario.jpg') + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + v.name + '">' +
             '<div class="candidate-tile-body">' +
@@ -278,6 +324,7 @@ var Screens = {
                         '<div class="candidate-tile-state" style="margin-bottom: 0; white-space: nowrap; margin-left: 4px;">🏠 ' + (v.state || v.homeState || '') + '</div>' +
                     '</div>' +
                     '<div class="candidate-tile-position">' + (v.position || '') + '</div>' +
+                    factionHTML +
                     effectsHTML +
                 '</div>' +
                 '<div class="candidate-tile-desc-wrapper">' +
@@ -303,6 +350,21 @@ var Screens = {
         var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         if (!result) return '128,128,128';
         return parseInt(result[1], 16) + ',' + parseInt(result[2], 16) + ',' + parseInt(result[3], 16);
+    },
+
+    filterFaction: function(fid) {
+        var tiles = document.querySelectorAll('.candidate-tile');
+        for (var i = 0; i < tiles.length; i++) {
+            if (fid === 'all') {
+                tiles[i].style.display = 'flex';
+            } else {
+                if (tiles[i].getAttribute('data-faction') === fid) {
+                    tiles[i].style.display = 'flex';
+                } else {
+                    tiles[i].style.display = 'none';
+                }
+            }
+        }
     },
 
     selectTile: function(tileEl, partyCode, type) {
