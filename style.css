@@ -64,10 +64,10 @@ body {
 }
 
 #intro-screen {
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+    justify-content: flex-start;
+    align-items: stretch;
+    text-align: left;
+    background: #0a0d12;
 }
 
 .intro-content {
@@ -1097,6 +1097,7 @@ body {
     z-index: 9000;
     border: 1px solid #555555;
     box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+    pointer-events: none;
 }
 
 #bio-modal, #national-modal, #speech-modal, #ground-ops-modal, #digital-planner-modal, #fundraise-modal, #pac-modal, #interest-groups-modal, #ads-modal, #rally-modal, #endorsers-modal {
@@ -1497,7 +1498,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: 50; pointer-events: none;
 }
 
 .npv-header {
@@ -1619,7 +1620,7 @@ body {
     height: 100%;
     display: flex;
     align-items: center;
-    justify-content:  center;
+    justify-content: center; 
 }
 
 #election-map-wrapper svg {
@@ -1992,6 +1993,7 @@ body {
     justify-content: center;
     background: #222;
     overflow: hidden;
+    
 }
 
 #county-map-svg {
@@ -2232,25 +2234,22 @@ body {
 }
 
 .modal-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
     background: none;
     border: none;
-    color: white;
-    font-size: 2.5rem;
+    color: #888;
+    font-size: 1.5rem;
     cursor: pointer;
     padding: 0;
     line-height: 1;
-    transition: 0.2s;
+    transition: color 0.2s;
+    z-index: 10;
 }
 
 .modal-close-btn:hover {
     color: var(--rep-red);
-    transform: rotate(90deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .modal-close-btn:hover {
-        transform: none;
-    }
 }
 
 #issues-scales {
@@ -4773,4 +4772,860 @@ body {
 .district-box { width: 45px; height: 30px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; cursor: pointer; color: white; transition: all 0.2s; user-select: none; }
 .district-box:hover { transform: scale(1.05); border-color: white; }
 .district-box.active { border: 2px solid white; box-shadow: 0 0 8px rgba(255,255,255,0.5); }
+
+/* ============================================
+   HOMEPAGE — Decision 2028
+   ============================================ */
+
+/* ── Layout overrides for intro-screen ── */
+#intro-screen {
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+}
+
+#intro-screen .hp-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+/* ── Nav ── */
+.hp-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10, 13, 18, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 0 32px;
+    height: 56px;
+    flex-shrink: 0;
+}
+
+.hp-nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    gap: 32px;
+}
+
+.hp-nav-logo {
+    font-family: 'Newsreader', serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: #fff;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+}
+
+.hp-nav-logo span { color: #E81B23; }
+
+.hp-nav-links {
+    display: flex;
+    gap: 28px;
+    margin-left: auto;
+}
+
+.hp-nav-links a {
+    color: #999;
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+    transition: color 0.2s;
+}
+
+.hp-nav-links a:hover { color: #fff; }
+
+.hp-play-btn {
+    margin-left: 24px;
+    padding: 8px 22px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #fff;
+    background: transparent;
+    border: 1.5px solid #E81B23;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 0 12px rgba(232, 27, 35, 0.25),
+                inset 0 0 12px rgba(232, 27, 35, 0.08);
+}
+
+.hp-play-btn:hover {
+    background: #E81B23;
+    box-shadow: 0 0 24px rgba(232, 27, 35, 0.45);
+}
+
+/* ── Hero ── */
+.hp-hero {
+    position: relative;
+    min-height: 440px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 32px 60px;
+    overflow: hidden;
+}
+
+.hp-hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 900px 600px at 20% 30%, rgba(0,174,243,0.12), transparent),
+        radial-gradient(ellipse 900px 600px at 80% 70%, rgba(232,27,35,0.10), transparent),
+        linear-gradient(180deg, #0a0d12 0%, #111520 100%);
+    z-index: 0;
+}
+
+.hp-hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+}
+
+.hp-hero-kicker {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #E81B23;
+    margin-bottom: 16px;
+}
+
+.hp-hero-title {
+    font-family: 'Newsreader', serif;
+    font-size: 4.5rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 18px;
+    letter-spacing: -2px;
+}
+
+.hp-hero-title span { color: #E81B23; }
+
+.hp-hero-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.15rem;
+    color: #888;
+    font-weight: 400;
+    margin-bottom: 36px;
+    line-height: 1.5;
+}
+
+.hp-hero-cta {
+    margin-bottom: 48px;
+}
+
+.hp-hero-btn-primary {
+    padding: 14px 48px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #fff;
+    background: #E81B23;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 4px 20px rgba(232, 27, 35, 0.35);
+}
+
+.hp-hero-btn-primary:hover {
+    background: #ff2a33;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(232, 27, 35, 0.5);
+}
+
+.hp-hero-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+}
+
+.hp-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.hp-stat-num {
+    font-family: 'Newsreader', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.hp-stat-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #666;
+}
+
+.hp-stat-divider {
+    width: 1px;
+    height: 32px;
+    background: rgba(255,255,255,0.1);
+}
+
+/* ── Sections ── */
+.hp-section {
+    padding: 72px 32px;
+}
+
+.hp-section-alt {
+    background: rgba(255,255,255,0.018);
+}
+
+.hp-section-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.hp-section-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #E81B23;
+    margin-bottom: 10px;
+}
+
+.hp-section-title {
+    font-family: 'Newsreader', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 32px;
+    letter-spacing: -0.5px;
+}
+
+/* ── About ── */
+.hp-about-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 48px;
+    align-items: start;
+}
+
+.hp-about-text p {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.75;
+    color: #aaa;
+    margin-bottom: 20px;
+}
+
+.hp-about-text p:last-child { margin-bottom: 0; }
+
+.hp-about-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.hp-sidebar-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 20px;
+    transition: border-color 0.3s;
+}
+
+.hp-sidebar-card:hover {
+    border-color: rgba(232, 27, 35, 0.3);
+}
+
+.hp-sidebar-icon {
+    font-size: 1.1rem;
+    color: #E81B23;
+    margin-bottom: 10px;
+}
+
+.hp-sidebar-card h4 {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #ddd;
+    margin-bottom: 6px;
+}
+
+.hp-sidebar-card p {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: #888;
+}
+
+/* ── Features ── */
+.hp-features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.hp-feature {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 6px;
+    padding: 28px 24px;
+    transition: border-color 0.3s, transform 0.3s;
+}
+
+.hp-feature:hover {
+    border-color: rgba(0,174,243,0.3);
+    transform: translateY(-3px);
+}
+
+.hp-feature-icon {
+    font-size: 1.3rem;
+    color: #00AEF3;
+    margin-bottom: 14px;
+}
+
+.hp-feature h4 {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #ddd;
+    margin-bottom: 10px;
+}
+
+.hp-feature p {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: #888;
+}
+
+/* ── Roadmap / Timeline ── */
+.hp-roadmap-intro {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: #888;
+    line-height: 1.6;
+    margin-bottom: 40px;
+    max-width: 680px;
+}
+
+.hp-timeline {
+    position: relative;
+    padding-left: 28px;
+    border-left: 2px solid rgba(255,255,255,0.06);
+}
+
+.hp-timeline-item {
+    position: relative;
+    padding-bottom: 36px;
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.hp-timeline-item:last-child { padding-bottom: 0; }
+
+.hp-timeline-marker {
+    position: absolute;
+    left: -35px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #333;
+    border: 2px solid #555;
+    flex-shrink: 0;
+}
+
+.hp-marker-done {
+    background: #198754;
+    border-color: #198754;
+}
+
+.hp-marker-active {
+    background: #E81B23;
+    border-color: #E81B23;
+    box-shadow: 0 0 8px rgba(232, 27, 35, 0.5);
+}
+
+.hp-timeline-body {
+    flex: 1;
+}
+
+.hp-timeline-phase {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.hp-timeline-body h4 {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ddd;
+    margin-bottom: 6px;
+}
+
+.hp-timeline-body p {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: #888;
+    margin-bottom: 10px;
+}
+
+.hp-timeline-tag {
+    display: inline-block;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    text-transform: uppercase;
+}
+
+.hp-tag-done {
+    background: rgba(25, 135, 84, 0.15);
+    color: #198754;
+    border: 1px solid rgba(25, 135, 84, 0.3);
+}
+
+.hp-tag-active {
+    background: rgba(232, 27, 35, 0.12);
+    color: #E81B23;
+    border: 1px solid rgba(232, 27, 35, 0.3);
+}
+
+.hp-tag-planned {
+    background: rgba(255,255,255,0.04);
+    color: #666;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ── Changelog ── */
+.hp-changelog {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.hp-changelog-entry {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 24px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.hp-changelog-entry:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.hp-changelog-date {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #666;
+    padding-top: 2px;
+}
+
+.hp-changelog-body h4 {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ddd;
+    margin-bottom: 10px;
+}
+
+.hp-changelog-body ul {
+    padding-left: 18px;
+    margin: 0;
+}
+
+.hp-changelog-body li {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: #888;
+    margin-bottom: 6px;
+}
+
+.hp-changelog-body li:last-child { margin-bottom: 0; }
+
+/* ── Footer ── */
+.hp-footer {
+    background: rgba(0,0,0,0.3);
+    border-top: 1px solid rgba(255,255,255,0.04);
+    padding: 48px 32px;
+    text-align: center;
+}
+
+.hp-footer-inner {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.hp-footer-brand {
+    font-family: 'Newsreader', serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+.hp-footer-brand span { color: #E81B23; }
+
+.hp-footer-copy {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.hp-footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 20px;
+}
+
+.hp-footer-links a {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #666;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.2s;
+}
+
+.hp-footer-links a:hover { color: #ccc; }
+
+.hp-footer-legal {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    color: #444;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    .hp-about-grid { grid-template-columns: 1fr; }
+    .hp-features-grid { grid-template-columns: 1fr 1fr; }
+    .hp-hero-title { font-size: 3rem; }
+    .hp-hero-stats { flex-wrap: wrap; gap: 16px; }
+    .hp-changelog-entry { grid-template-columns: 1fr; gap: 8px; }
+    .hp-nav-links { display: none; }
+}
+
+@media (max-width: 600px) {
+    .hp-features-grid { grid-template-columns: 1fr; }
+    .hp-hero-title { font-size: 2.4rem; }
+    .hp-nav { padding: 0 16px; }
+    .hp-section { padding: 48px 16px; }
+}
+
+/* ============================================
+   REDESIGNED CAMPAIGN HUD
+   ============================================ */
+
+.hud-header {
+    height: auto;
+    padding: 0;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.hud-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 20px;
+    max-width: 100%;
+    width: 100%;
+}
+
+.hud-brand {
+    font-family: 'Newsreader', serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: #fff;
+    white-space: nowrap;
+    letter-spacing: -0.5px;
+    flex-shrink: 0;
+}
+
+.hud-brand span { color: #E81B23; }
+
+.hud-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.04);
+    padding: 4px 12px 4px 4px;
+    border-radius: 24px;
+    border: 1px solid #333;
+    flex-shrink: 0;
+}
+
+.hud-badge img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+}
+
+.hud-badge-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.hud-badge-text .cand-name {
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.hud-badge-text .cand-party {
+    font-size: 0.6rem;
+    color: #777;
+}
+
+/* ── Campaign EV block ── */
+.hud-ev-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.hud-ev-score {
+    font-family: 'Newsreader', serif;
+    font-weight: 900;
+    font-size: 1.5rem;
+    min-width: 32px;
+    text-align: center;
+}
+
+.hud-ev-dem { color: #00AEF3; }
+.hud-ev-rep { color: #E81B23; }
+
+.hud-ev-center-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.hud-ev-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.hud-ev-bar-track {
+    width: 180px;
+    height: 6px;
+    background: #222;
+    border-radius: 3px;
+    border: 1px solid #3a3a3a;
+    overflow: hidden;
+}
+
+.hud-ev-bar-fill {
+    height: 100%;
+    transition: width 0.5s, background 0.5s;
+}
+
+/* ── HUD stats ── */
+.hud-stats-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-left: auto;
+}
+
+.hud-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.hud-stat-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.52rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #555;
+    text-transform: uppercase;
+}
+
+.hud-stat-value {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #ddd;
+}
+
+.hud-stat-value.hud-funds { color: #4ade80; }
+
+/* ── HUD action buttons ── */
+.hud-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.hud-small-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.hud-small-btn:hover {
+    background: #3a3a3a;
+    color: #fff;
+    border-color: #666;
+}
+
+.next-turn-btn {
+    padding: 8px 20px;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+/* ============================================
+   REDESIGNED ELECTION NIGHT HEADER
+   ============================================ */
+
+.election-header {
+    height: auto;
+    padding: 8px 24px;
+    gap: 20px;
+}
+
+.network-bug {
+    display: inline;
+    font-family: 'Newsreader', serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fff;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.network-bug .bug-year {
+    font-size: inherit;
+    font-family: inherit;
+    color: #E81B23;
+}
+
+.election-banner {
+    font-size: 0.7rem;
+    padding: 4px 14px;
+    letter-spacing: 1.5px;
+}
+
+.election-header-center {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.election-time-display {
+    font-size: 1.4rem;
+    white-space: nowrap;
+}
+
+#election-timezone {
+    font-size: 0.7rem;
+}
+
+.time-controls {
+    margin-top: 0;
+    gap: 3px;
+}
+
+.time-btn {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+}
+
+/* ── Election EV Banner ── */
+.election-ev-banner {
+    height: 80px;
+    padding: 0 30px;
+}
+
+.ev-candidate img {
+    width: 48px;
+    height: 48px;
+}
+
+.ev-count {
+    font-size: 2rem;
+}
+
+.ev-name {
+    font-size: 0.72rem;
+    letter-spacing: 0.5px;
+}
+
+.ev-progress-wrapper {
+    margin: 0 28px;
+}
+
+.ev-progress-bar {
+    height: 32px !important;
+}
+
+.ev-marker {
+    height: 32px !important;
+    line-height: 32px !important;
+    font-size: 0.7rem;
+}
+
+.party-page-selection-title {
+    font-family: 'Inter', sans-serif; /* CHANGE YOUR FONT HERE */
+}
+
+
 

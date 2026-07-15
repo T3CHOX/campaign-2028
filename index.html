@@ -11,12 +11,248 @@
 <body>
 
     <section id="intro-screen" class="screen active">
-        <div class="intro-content">
-            <div class="breaking-banner">ELECTION ALERT</div>
-            <h1 class="main-title">DECISION <span class="highlight">2028</span></h1>
-            <p class="subtitle">The race for the White House begins now. </p>
-            <button class="start-btn" onclick="app.goToScreen('party-screen')">BEGIN CAMPAIGN</button>
+        <!-- ═══════ FIXED NAV BAR ═══════ -->
+        <nav class="hp-nav">
+            <div class="hp-nav-inner">
+                <div class="hp-nav-logo">DECISION <span>2028</span></div>
+                <div class="hp-nav-links">
+                    <a href="#hp-about">About</a>
+                    <a href="#hp-features">Features</a>
+                    <a href="#hp-roadmap">Roadmap</a>
+                    <a href="#hp-changelog">Updates</a>
+                </div>
+                <button class="hp-play-btn" onclick="app.goToScreen('party-screen')">PLAY NOW</button>
+            </div>
+        </nav>
+
+        <div class="hp-scroll-area">
+
+            <!-- ═══════ HERO ═══════ -->
+            <div class="hp-hero">
+                <div class="hp-hero-bg"></div>
+                <div class="hp-hero-content">
+                    <div class="hp-hero-kicker">CAMPAIGN SIMULATOR</div>
+                    <h1 class="hp-hero-title">DECISION <span>2028</span></h1>
+                    <p class="hp-hero-sub">Build your campaign. Navigate the electorate. Win 270.</p>
+                    <div class="hp-hero-cta">
+                        <button class="hp-hero-btn-primary" onclick="app.goToScreen('party-screen')">BEGIN CAMPAIGN</button>
+                    </div>
+                    <div class="hp-hero-stats">
+                        <div class="hp-stat"><span class="hp-stat-num">3,100+</span><span class="hp-stat-label">Counties</span></div>
+                        <div class="hp-stat-divider"></div>
+                        <div class="hp-stat"><span class="hp-stat-num">210</span><span class="hp-stat-label">Media Markets</span></div>
+                        <div class="hp-stat-divider"></div>
+                        <div class="hp-stat"><span class="hp-stat-num">6</span><span class="hp-stat-label">Parties</span></div>
+                        <div class="hp-stat-divider"></div>
+                        <div class="hp-stat"><span class="hp-stat-num">60+</span><span class="hp-stat-label">Candidates</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════ ABOUT ═══════ -->
+            <section class="hp-section" id="hp-about">
+                <div class="hp-section-inner">
+                    <div class="hp-section-label">ABOUT THE PROJECT</div>
+                    <h2 class="hp-section-title">What is Decision 2028?</h2>
+                    <div class="hp-about-grid">
+                        <div class="hp-about-text">
+                            <p>Decision 2028 is a county-level presidential campaign simulator built from the ground up with real demographic, voter registration, and electoral data. It is not a prediction tool — it is a strategic sandbox that lets you experience the mechanics of a modern American presidential race at a granularity that no other browser-based simulator offers.</p>
+                            <p>Every county in the United States has its own demographic composition, partisan lean, and media market assignment. Your campaign decisions — from rally locations to TV ad buys to endorsement meetings — ripple through the electorate in ways that mirror real campaign dynamics. Turnout models are population-weighted. Margin shifts follow demographic logic. Third-party spoiler effects are modeled. Maine and Nebraska split their electoral votes by congressional district.</p>
+                            <p>This is an ongoing, open-source project. The simulation engine is under active development, with new mechanics, deeper AI opponent logic, and expanded scenarios being added on a regular basis. If you're interested in the intersection of political science, data visualization, and game design, you're in the right place.</p>
+                        </div>
+                        <div class="hp-about-sidebar">
+                            <div class="hp-sidebar-card">
+                                <div class="hp-sidebar-icon"><i class="fa-solid fa-database"></i></div>
+                                <h4>Data-Driven</h4>
+                                <p>Built on real county-level voter registration rolls, historical election returns, and Census demographic breakdowns.</p>
+                            </div>
+                            <div class="hp-sidebar-card">
+                                <div class="hp-sidebar-icon"><i class="fa-solid fa-code-branch"></i></div>
+                                <h4>Open Source</h4>
+                                <p>The full codebase is available for review, contribution, and forking. No black boxes.</p>
+                            </div>
+                            <div class="hp-sidebar-card">
+                                <div class="hp-sidebar-icon"><i class="fa-solid fa-flask"></i></div>
+                                <h4>Experimental</h4>
+                                <p>This is a work in progress. Expect rough edges, frequent updates, and ambitious new mechanics.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════ FEATURES ═══════ -->
+            <section class="hp-section hp-section-alt" id="hp-features">
+                <div class="hp-section-inner">
+                    <div class="hp-section-label">CORE MECHANICS</div>
+                    <h2 class="hp-section-title">How the Simulation Works</h2>
+                    <div class="hp-features-grid">
+                        <div class="hp-feature">
+                            <div class="hp-feature-icon"><i class="fa-solid fa-bullhorn"></i></div>
+                            <h4>Rally System</h4>
+                            <p>Hold rallies in individual counties. Turnout boosts spill into neighboring counties with distance-based decay. Consecutive rallies in the same location face diminishing returns.</p>
+                        </div>
+                        <div class="hp-feature">
+                            <div class="hp-feature-icon"><i class="fa-solid fa-tv"></i></div>
+                            <h4>TV Advertising</h4>
+                            <p>Purchase biographical, attack, or issue ads that broadcast across entire media markets. Each ad type produces distinct strategic effects on margin and turnout.</p>
+                        </div>
+                        <div class="hp-feature">
+                            <div class="hp-feature-icon"><i class="fa-solid fa-handshake"></i></div>
+                            <h4>Endorsements &amp; Surrogates</h4>
+                            <p>Court national and state-level endorsers. Endorsed surrogates can be deployed on the trail, amplifying your rally impact in the states where they carry influence.</p>
+                        </div>
+                        <div class="hp-feature">
+                            <div class="hp-feature-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                            <h4>Demographic Coalitions</h4>
+                            <p>Every county has a unique demographic fingerprint. Your candidate's appeal to specific groups — white working class, Black voters, suburban women, evangelicals — shapes the race at the county level.</p>
+                        </div>
+                        <div class="hp-feature">
+                            <div class="hp-feature-icon"><i class="fa-solid fa-landmark"></i></div>
+                            <h4>Interest Groups &amp; PACs</h4>
+                            <p>Navigate relationships with organized labor, the NRA, environmental groups, and more. Their support — or opposition — shifts the landscape in targeted regions.</p>
+                        </div>
+                        <div class="hp-feature">
+                            <div class="hp-feature-icon"><i class="fa-solid fa-bolt"></i></div>
+                            <h4>Live Election Night</h4>
+                            <p>Watch results roll in county by county on election night. The sidebar tracks electoral vote allocations in real time as states are called.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════ ROADMAP ═══════ -->
+            <section class="hp-section" id="hp-roadmap">
+                <div class="hp-section-inner">
+                    <div class="hp-section-label">DEVELOPMENT</div>
+                    <h2 class="hp-section-title">Roadmap</h2>
+                    <p class="hp-roadmap-intro">Decision 2028 is under active development. Below is a non-exhaustive look at planned and in-progress work. Timelines are approximate and subject to change.</p>
+                    <div class="hp-timeline">
+                        <div class="hp-timeline-item">
+                            <div class="hp-timeline-marker hp-marker-done"></div>
+                            <div class="hp-timeline-body">
+                                <div class="hp-timeline-phase">PHASE 1 — FOUNDATION</div>
+                                <h4>Core Engine &amp; Campaign Loop</h4>
+                                <p>County-level simulation, party/candidate selection, rally mechanics, basic opponent AI, fundraising, and the election night sequence.</p>
+                                <span class="hp-timeline-tag hp-tag-done">SHIPPED</span>
+                            </div>
+                        </div>
+                        <div class="hp-timeline-item">
+                            <div class="hp-timeline-marker hp-marker-done"></div>
+                            <div class="hp-timeline-body">
+                                <div class="hp-timeline-phase">PHASE 2 — DEPTH</div>
+                                <h4>Media Markets, Endorsements, TV Ads</h4>
+                                <p>Full media market mapping, the endorser/surrogate system, TV ad targeting (biographical, attack, issue), and the digital ad planner.</p>
+                                <span class="hp-timeline-tag hp-tag-done">SHIPPED</span>
+                            </div>
+                        </div>
+                        <div class="hp-timeline-item">
+                            <div class="hp-timeline-marker hp-marker-active"></div>
+                            <div class="hp-timeline-body">
+                                <div class="hp-timeline-phase">PHASE 3 — REALISM</div>
+                                <h4>Dynamic Debates &amp; Opponent Intelligence</h4>
+                                <p>Interactive debate sequences with real strategic consequences. Smarter AI opponents that react to your campaign strategy and target competitive states.</p>
+                                <span class="hp-timeline-tag hp-tag-active">IN PROGRESS</span>
+                            </div>
+                        </div>
+                        <div class="hp-timeline-item">
+                            <div class="hp-timeline-marker"></div>
+                            <div class="hp-timeline-body">
+                                <div class="hp-timeline-phase">PHASE 4 — EXPANSION</div>
+                                <h4>Down-Ballot &amp; Custom Scenarios</h4>
+                                <p>Senate and House race integration. Historical scenario mode (replay 2000, 2016, 2020). Custom candidate creation. Multiplayer support.</p>
+                                <span class="hp-timeline-tag hp-tag-planned">PLANNED</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════ CHANGELOG ═══════ -->
+            <section class="hp-section hp-section-alt" id="hp-changelog">
+                <div class="hp-section-inner">
+                    <div class="hp-section-label">CHANGELOG</div>
+                    <h2 class="hp-section-title">Recent Updates</h2>
+                    <div class="hp-changelog">
+                        <div class="hp-changelog-entry">
+                            <div class="hp-changelog-date">July 2026</div>
+                            <div class="hp-changelog-body">
+                                <h4>TV Ads &amp; Media Market Targeting</h4>
+                                <ul>
+                                    <li>New TV Ads mode: toggle into ad-buying view from the county sidebar to see full media market coverage on hover.</li>
+                                    <li>Three ad types — Biographical, Attack, and Issue — each with distinct mechanical effects on margin and turnout.</li>
+                                    <li>Hover highlighting now shows all counties sharing a media market when in TV Ads mode.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="hp-changelog-entry">
+                            <div class="hp-changelog-date">July 2026</div>
+                            <div class="hp-changelog-body">
+                                <h4>Split Electoral Districts</h4>
+                                <ul>
+                                    <li>Accurate congressional district mapping for Maine (ME-1, ME-2) and Nebraska (NE-1, NE-2, NE-3).</li>
+                                    <li>Split counties (Kennebec ME, Sarpy NE, Polk NE) now simulate with distinct ideological baselines per district segment.</li>
+                                    <li>District filter buttons available in both campaign mode and election night.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="hp-changelog-entry">
+                            <div class="hp-changelog-date">July 2026</div>
+                            <div class="hp-changelog-body">
+                                <h4>Endorser &amp; Surrogate System</h4>
+                                <ul>
+                                    <li>National and state-level endorser database with over 200 entries across all 50 states.</li>
+                                    <li>Endorsed individuals grant surrogate rally credits that stack with your own rally impact.</li>
+                                    <li>Organizations provide passive boosts without rally mechanics.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="hp-changelog-entry">
+                            <div class="hp-changelog-date">June 2026</div>
+                            <div class="hp-changelog-body">
+                                <h4>Live Election Night</h4>
+                                <ul>
+                                    <li>Real-time vote counting animation with county-by-county results.</li>
+                                    <li>Sidebar electoral vote tracker updates live as states are called.</li>
+                                    <li>Post-election analysis mode with historical comparison overlays.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════ FOOTER ═══════ -->
+            <footer class="hp-footer">
+                <div class="hp-footer-inner">
+                    <div class="hp-footer-brand">DECISION <span>2028</span></div>
+                    <p class="hp-footer-copy">A county-level presidential campaign simulator. Not affiliated with any political party, campaign, or government entity. Built for education and entertainment.</p>
+                    <div class="hp-footer-links">
+                        <a href="#hp-about">About</a>
+                        <a href="#hp-features">Features</a>
+                        <a href="#hp-roadmap">Roadmap</a>
+                        <a href="#hp-changelog">Updates</a>
+                    </div>
+                    <p class="hp-footer-legal">&copy; 2026 Decision 2028 Project. All rights reserved.</p>
+                </div>
+            </footer>
+
         </div>
+        <script>
+        (function() {
+            var scrollArea = document.querySelector('.hp-scroll-area');
+            if (!scrollArea) return;
+            document.querySelectorAll('.hp-nav a[href^="#"], .hp-footer-links a[href^="#"]').forEach(function(a) {
+                a.addEventListener('click', function(e) {
+                    var target = document.getElementById(a.getAttribute('href').substring(1));
+                    if (target) {
+                        e.preventDefault();
+                        scrollArea.scrollTo({ top: target.offsetTop - 56, behavior: 'smooth' });
+                    }
+                });
+            });
+        })();
+        </script>
     </section>
 
     <section id="party-screen" class="screen">
@@ -123,51 +359,54 @@
 
     <section id="game-screen" class="screen">
         <header class="hud-header">
-            <div class="hud-left">
-                <div class="candidate-badge">
+            <div class="hud-row">
+                <div class="hud-brand">DECISION <span>2028</span></div>
+                <div class="hud-badge">
                     <img id="hud-img" src="" alt="">
-                    <div class="hud-text-col">
+                    <div class="hud-badge-text">
                         <span class="cand-name" id="hud-cand-name">CANDIDATE</span>
                         <span class="cand-party" id="hud-party-name">NOMINEE</span>
                     </div>
                 </div>
-            </div>
-            <div class="hud-center">
-                <div class="ev-display">
-                    <span class="dem-score" id="score-dem">0</span>
-                    <span class="divider">270 TO WIN</span>
-                    <span class="rep-score" id="score-rep">0</span>
+                <div class="hud-ev-block">
+                    <span class="hud-ev-score hud-ev-dem" id="score-dem">0</span>
+                    <div class="hud-ev-center-col">
+                        <div class="hud-ev-label">270 TO WIN</div>
+                        <div class="hud-ev-bar-track"><div class="hud-ev-bar-fill" id="ev-bar"></div></div>
+                    </div>
+                    <span class="hud-ev-score hud-ev-rep" id="score-rep">0</span>
                 </div>
-                <div class="progress-bar-bg"><div class="progress-bar-fill" id="ev-bar"></div></div>
-            </div>
-            <div class="hud-right">
-                <button class="interest-groups-btn" onclick="app.openInterestGroups()"><i class="fa-solid fa-users"></i> INTEREST GROUPS</button>
-                <button class="undo-btn" onclick="app.undoLastAction()">⟲ UNDO</button>
-                <div class="stat-group">
-                    <label>ENERGY</label>
-                    <div class="energy-container" id="hud-energy"></div>
+                <div class="hud-stats-row">
+                    <div class="hud-stat-item">
+                        <span class="hud-stat-label">ENERGY</span>
+                        <div class="energy-container" id="hud-energy"></div>
+                    </div>
+                    <div class="hud-stat-item">
+                        <span class="hud-stat-label">FUNDS</span>
+                        <span class="hud-stat-value hud-funds" id="hud-funds">$0.0M</span>
+                    </div>
+                    <div class="hud-stat-item">
+                        <span class="hud-stat-label">FAVOR</span>
+                        <span class="hud-stat-value" id="hud-favorability">50%</span>
+                    </div>
+                    <div class="hud-stat-item">
+                        <span class="hud-stat-label">DATE</span>
+                        <span class="hud-stat-value" id="hud-date">JUL 4</span>
+                    </div>
+                    <div class="hud-stat-item">
+                        <span class="hud-stat-label">MTM</span>
+                        <span class="hud-stat-value momentum" id="hud-momentum" title="Campaign momentum">0.00</span>
+                    </div>
+                    <div class="hud-stat-item">
+                        <span class="hud-stat-label">APPR</span>
+                        <span class="hud-stat-value approval" id="hud-approval" title="National approval rating">50%</span>
+                    </div>
                 </div>
-                <div class="stat-group">
-                    <label>FUNDS</label>
-                    <span class="money" id="hud-funds">$0.0M</span>
+                <div class="hud-actions">
+                    <button class="hud-small-btn" onclick="app.openInterestGroups()" title="Interest Groups"><i class="fa-solid fa-users"></i></button>
+                    <button class="hud-small-btn" onclick="app.undoLastAction()" title="Undo">⟲</button>
+                    <button class="next-turn-btn" onclick="app.nextWeek()">NEXT WEEK →</button>
                 </div>
-                <div class="stat-group">
-                    <label>FAVORABILITY</label>
-                    <span class="favorability" id="hud-favorability">50%</span>
-                </div>
-                <div class="stat-group">
-                    <label>DATE</label>
-                    <span class="date-display" id="hud-date">JUL 4</span>
-                </div>
-                <div class="stat-group">
-                    <label>MOMENTUM</label>
-                    <span class="momentum" id="hud-momentum" title="Campaign momentum: -1.0 to +1.0">0.00</span>
-                </div>
-                <div class="stat-group">
-                    <label>APPROVAL</label>
-                    <span class="approval" id="hud-approval" title="National approval rating">50%</span>
-                </div>
-                <button class="next-turn-btn" onclick="app.nextWeek()">NEXT WEEK &rarr;</button>
             </div>
         </header>
 
@@ -215,14 +454,14 @@
                         <h4>CAMPAIGN STRATEGY</h4>
                         <div class="action-grid">
                             <button class="act-btn" onclick="app.handleAction('fundraise')"><span><i class="fa-solid fa-sack-dollar"></i></span><span>FUNDRAISE</span></button>
-                            <button class="act-btn" onclick="app.handleAction('rally')"><span><i class="fa-solid fa-bullhorn"></i></span><span>RALLY</span></button>
+                            <!-- State-level rally removed as per requirements -->
                             <button class="act-btn" onclick="app.handleAction('field')"><span><i class="fa-solid fa-people-group"></i></span><span>FIELD OPS</span></button>
                             <button class="act-btn" onclick="app.handleAction('digital')"><span><i class="fa-solid fa-laptop"></i></span><span>DIGITAL</span></button>
                             <button class="act-btn" onclick="app.openStateBio()"><span><i class="fa-solid fa-book-open"></i></span><span>INTEL</span></button>
                             <button class="act-btn" onclick="app.openCountyView()"><span><i class="fa-solid fa-map"></i></span><span>BREAKDOWN</span></button>
                             <button class="act-btn" onclick="app.openIssuesPanel()"><span><i class="fa-solid fa-chart-line"></i></span><span>ISSUES</span></button>
                             <button class="act-btn" onclick="app.handleAction('speech')"><span><i class="fa-solid fa-microphone"></i></span><span>SPEECH</span></button>
-                            <button class="act-btn v2-btn" onclick="app.handleAction('surrogate')"><span><i class="fa-solid fa-user-group"></i></span><span>SURROGATE</span></button>
+                            <button class="act-btn" onclick="app.openEndorsersModal()"><span><i class="fa-solid fa-handshake"></i></span><span>ENDORSERS</span></button>
                             <button class="act-btn v2-btn" onclick="app.handleAction('debate_prep')"><span><i class="fa-solid fa-book"></i></span><span>DEBATE PREP</span></button>
                             <button class="act-btn v2-btn" onclick="app.handleAction('oppo_research')"><span><i class="fa-solid fa-magnifying-glass"></i></span><span>OPPO RESEARCH</span></button>
                             <button class="act-btn v2-btn" onclick="Campaign.handleGrassrootsFundraise()"><span><i class="fa-solid fa-hand-holding-dollar"></i></span><span>GRASSROOTS</span></button>
@@ -290,10 +529,7 @@
     <section id="election-screen" class="screen">
         <header class="election-header">
             <div class="election-header-left">
-                <div class="network-bug">
-                    <span class="bug-text">DECISION</span>
-                    <span class="bug-year">2028</span>
-                </div>
+                <div class="network-bug">DECISION <span class="bug-year">2028</span></div>
                 <div class="election-banner">ELECTION NIGHT IN AMERICA</div>
             </div>
             <div class="election-header-center">
@@ -309,7 +545,7 @@
                     <button class="time-btn" id="btn-2x" onclick="app.election.setSpeed(2)">2×</button>
                     <button class="time-btn" id="btn-5x" onclick="app.election.setSpeed(5)">5×</button>
                     <button class="time-btn" id="btn-10x" onclick="app.election.setSpeed(10)">10×</button>
-                    <button class="time-btn" id="btn-skip" onclick="app.election.skipToEnd()">⏭️ SKIP</button>
+                    <button class="time-btn" id="btn-skip" onclick="app.election.skipToEnd()">⏭️</button>
                 </div>
             </div>
             <div class="election-header-right">
@@ -341,10 +577,10 @@
                         <span class="ev-count" id="elec-dem-ev">0</span>
                     </div>
                 </div>
-                <div class="ev-progress-wrapper" style="height: 100%; margin-top: 35px;">
-                    <div class="ev-progress-bar" style="height: 40px; margin-bottom: 0;">
+                <div class="ev-progress-wrapper">
+                    <div class="ev-progress-bar">
                         <div class="ev-fill ev-fill-dem" id="elec-bar-dem"></div>
-                        <div class="ev-marker" style="height: 40px; line-height: 40px;">270</div>
+                        <div class="ev-marker">270</div>
                         <div class="ev-fill ev-fill-rep" id="elec-bar-rep"></div>
                         <div class="ev-fill ev-fill-third" id="elec-bar-third" style="display: none;"></div>
                     </div>
@@ -372,6 +608,7 @@
                         <div id="election-county-header">
                             <button class="county-back-btn" onclick="Election.closeCountyView()">← BACK TO NATIONAL MAP</button>
                             <span id="election-cv-title">COUNTY RESULTS</span>
+                            <div id="elec-cv-districts" class="hidden" style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;"></div>
                         </div>
                         <div id="election-county-map-container"></div>
                     </div>
@@ -615,6 +852,7 @@
                 <button class="queue-ad-btn" onclick="app.executeCustomDigital()">LAUNCH CAMPAIGN</button>
             </div>
         </div>
+    </div>
         <!-- RALLY REPORT MODAL -->
         <div id="rally-modal" class="modal hidden" style="z-index: 2100;">
             <div class="modal-content" style="max-width: 500px; text-align: center;">
@@ -628,10 +866,12 @@
         </div>
         
         <!-- ENDORSERS MODAL -->
-        <div id="endorsers-modal" class="modal hidden" style="z-index: 2000;">
-            <div class="modal-content" style="max-width: 600px;">
-                <button class="modal-close-btn" onclick="document.getElementById('endorsers-modal').classList.add('hidden')">x</button>
-                <h2 style="color: #fff; border-bottom: 2px solid #555; padding-bottom: 10px; margin-bottom: 20px;">KEY ENDORSERS</h2>
+        <div id="endorsers-modal" class="hidden">
+            <div class="modal-box speech-modal-box" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2 id="endorsers-modal-title">KEY ENDORSERS</h2>
+                    <button class="modal-close-btn" onclick="document.getElementById('endorsers-modal').classList.add('hidden')">×</button>
+                </div>
                 <div id="endorsers-list" style="max-height: 400px; overflow-y: auto;">
                     <!-- Endorsers populated here -->
                 </div>
