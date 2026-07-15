@@ -250,25 +250,27 @@ const SPLIT_ELECTORAL_RULES = {
         statewideEV: 2,
         defaultDistrict: 'NE-3',
         countyDistrictMap: {
-            '31055': 'NE-2', // Douglas
-            '31025': 'NE-2', // Cass
-            '31053': 'NE-2', // Dodge
-            '31155': 'NE-2', // Saunders
-            '31177': 'NE-2', // Washington
+            '31023': 'NE-1', // Butler
+            '31025': 'NE-1', // Cass
+            '31037': 'NE-1', // Colfax
+            '31039': 'NE-1', // Cuming
+            '31053': 'NE-1', // Dodge
             '31109': 'NE-1', // Lancaster
-            '31001': 'NE-1', // Adams
-            '31019': 'NE-1', // Buffalo
-            '31079': 'NE-1', // Hall
-            '31181': 'NE-1'  // Webster
+            '31119': 'NE-1', // Madison
+            '31141': 'NE-1', // Platte
+            '31159': 'NE-1', // Seward
+            '31167': 'NE-1', // Stanton
+            '31055': 'NE-2', // Douglas
+            '31155': 'NE-2'  // Saunders
         },
         splitCounties: {
-            '31173': [ // Thurston
-                { district: 'NE-3', share: 0.963, baseline: { D: 47.59, R: 52.41 } },
-                { district: 'NE-2', share: 0.037, baseline: { D: 27.73, R: 72.27 } }
-            ],
             '31153': [ // Sarpy
                 { district: 'NE-2', share: 0.389, baseline: { D: 44.26, R: 55.74 } },
                 { district: 'NE-1', share: 0.611, baseline: { D: 40.45, R: 55.74 } }
+            ],
+            '31143': [ // Polk
+                { district: 'NE-1', share: 0.49455715, baseline: { D: 19.2, R: 79.0 } },
+                { district: 'NE-3', share: 0.50544285, baseline: { D: 16.8, R: 81.5 } }
             ]
         }
     },

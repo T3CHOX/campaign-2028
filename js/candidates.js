@@ -246,9 +246,9 @@ const CANDIDATES = [
         img: "images/beshear.jpg",
         stamina: 8,
         desc: "Beshear is the moderate Democrat who can still speak to red-state voters without sounding like he is begging for permission. That matters because Democrats need some evidence they can win back voters outside the coasts, not just maximize margins in metro areas. He has a real story in Kentucky, but his national ceiling depends on whether voters believe his style can travel beyond one unusually favorable personal brand.",
-        buff: "Red-State Crossover",
+        buff: "Working Class Hero",
         debuff: "National Ceiling",
-        groupBoosts: { rural_whites: 7, union: 6, moderate_dems: 8 },
+        groupBoosts: { rural_whites: 7, union: 6, moderate_dems: 8, bluecollar: 8, noncollege: 7, white: 4 },
         groupDebuffs: { progressive_left: -4, youth: -3 },
         regionalSpillover: ["OH", "WV"],
         regionalSpilloverBoost: 1.1,
@@ -713,7 +713,7 @@ const CANDIDATES = [
     // --- REPUBLICANS ---
     {
         id: "bovino", name: "Greg Bovino", party: "R",
-        factionId: "compassionate_conservative", homeState: "CA", position: "Fmr. Commander-at-Large of the Border Patrol",
+        factionId: "america_first_conservative", homeState: "CA", position: "Fmr. Commander-at-Large of the Border Patrol",
         homeStateBoost: 1.1, funds: 70, img: "images/bovino.jpg", stamina: 8, charisma: 1.2, debateSkill: 5, scandalResistance: 0.8,
         desc: "The hyper-polarizing face of the 2025/2026 mass deportation crackdowns. He maximizes the MAGA and working-class base but triggers historic, catastrophic opposition turnout.",
         buff: "Deportation Architect", debuff: "Electoral Toxicity",

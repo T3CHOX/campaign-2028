@@ -830,7 +830,8 @@ var Counties = {
             support.PSL = county.v.PSL || 0;
             support.I = county.v.I || 0;
         } else if (INTEREST_GROUPS[groupId] && INTEREST_GROUPS[groupId].support) {
-            var baseSupport = INTEREST_GROUPS[groupId].support;
+            var liveGroup = (gameData.liveGroups && gameData.liveGroups[groupId]) ? gameData.liveGroups[groupId] : INTEREST_GROUPS[groupId];
+            var baseSupport = liveGroup.support;
             support.D = baseSupport.D || 0;
             support.R = baseSupport.R || 0;
             support.G = baseSupport.G || 0;
@@ -1023,7 +1024,7 @@ var Counties = {
         return Math.max(0.1, bonus);
     },
     
-    applyRallySpillover: function(targetCountyID) {
+    applyRallySpillover: function(targetCountyID, multiplier) {
         var targetFips = this.normalizeFips(targetCountyID);
         var targetCounty = this.countyData[targetFips];
         if (!targetCounty) return null;
@@ -1036,9 +1037,9 @@ var Counties = {
         var targetCentroid = this.getCountyCentroid(targetFips);
         if (!targetCentroid) return null;
         
-        var baseBoost = (typeof PERSUASION_CONSTANTS !== 'undefined' && typeof PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST === 'number')
+        var baseBoost = ((typeof PERSUASION_CONSTANTS !== 'undefined' && typeof PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST === 'number')
             ? PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST
-            : 0.05;
+            : 0.05) * (multiplier || 1.0);
         var candidates = [];
         var totalRawTurnout = 0;
         
@@ -1671,7 +1672,7 @@ var Counties = {
                                 (function(f, p) {
                                     p.onclick = function() { Counties.selectCounty(f); };
                                     p.onmouseenter = function(e) {
-                                        if (typeof MEDIA_MARKETS !== 'undefined') {
+                                        if (window.isTvAdsMode && typeof MEDIA_MARKETS !== 'undefined') {
                                             var county = Counties.countyData[f];
                                             if (county && county.mediaMarket && MEDIA_MARKETS[county.mediaMarket]) {
                                                 var market = MEDIA_MARKETS[county.mediaMarket];
@@ -1689,6 +1690,10 @@ var Counties = {
                                                 p.style.stroke = '#ffd700';
                                                 p.style.strokeWidth = '0.8px';
                                             }
+                                        } else {
+                                            p.style.filter = 'brightness(1.3)';
+                                            p.style.stroke = '#ffd700';
+                                            p.style.strokeWidth = '0.8px';
                                         }
                                     };
                                     p.onmousemove = function(e) { Counties.showCountyTooltip(e, f); };
@@ -1696,7 +1701,7 @@ var Counties = {
                                         var tooltip = document.getElementById('map-tooltip');
                                         if (tooltip) tooltip.style.display = 'none';
                                         
-                                        if (typeof MEDIA_MARKETS !== 'undefined') {
+                                        if (window.isTvAdsMode && typeof MEDIA_MARKETS !== 'undefined') {
                                             var county = Counties.countyData[f];
                                             if (county && county.mediaMarket && MEDIA_MARKETS[county.mediaMarket]) {
                                                 var market = MEDIA_MARKETS[county.mediaMarket];
@@ -1714,6 +1719,10 @@ var Counties = {
                                                 p.style.stroke = '#ffffff';
                                                 p.style.strokeWidth = '0.3px';
                                             }
+                                        } else {
+                                            p.style.filter = '';
+                                            p.style.stroke = '#ffffff';
+                                            p.style.strokeWidth = '0.3px';
                                         }
                                     };
                                 })(fips, path);
@@ -2034,9 +2043,67 @@ var Counties = {
         // Add county-specific action buttons
         var actionGrid = document.querySelector('.action-grid');
         if (actionGrid) {
-            actionGrid.innerHTML = 
+            actionGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
+            var html = 
                 '<button class="act-btn" onclick="app.closeCountyView()"><span><i class="fa-solid fa-map"></i></span><span>BACK TO MAP</span></button>' +
-                '<button class="act-btn" onclick="app.countyRally()"><span><i class="fa-solid fa-bullhorn"></i></span><span>LOCAL RALLY</span></button>';
+                '<button class="act-btn" id="btn-rally-county" onclick="app.countyRally()"><span><i class="fa-solid fa-bullhorn"></i></span><span>LOCAL RALLY</span></button>' +
+                '<button class="act-btn" id="btn-tv-ads" onclick="app.toggleTvAdsMode()"><span><i class="fas fa-tv"></i></span><span>TV ADS</span></button>';
+            
+            // Surrogate Container (default visible)
+            html += '<div id="surrogate-container" style="display: block; grid-column: 1 / -1;">';
+            // Inject available surrogates
+            if (typeof Endorsers !== 'undefined') {
+                var availableSurrogates = [];
+                var allEndorsers = Endorsers.db.national.concat(Endorsers.db.states[county.s] || []);
+                for (var i = 0; i < allEndorsers.length; i++) {
+                    var e = allEndorsers[i];
+                    if (e.type === 'individual' && Endorsers.rallyCredits[e.id] > 0) {
+                        availableSurrogates.push(e);
+                    }
+                }
+                
+                if (availableSurrogates.length > 0) {
+                    html += '<div style="grid-column: 1 / -1; margin-top: 10px; background: rgba(0,0,0,0.3); border: 1px solid #555; padding: 10px; border-radius: 4px;">';
+                    html += '<h4 style="margin: 0 0 10px 0; color: #ffaa00; font-size: 0.85rem;"><i class="fa-solid fa-user-group"></i> AVAILABLE SURROGATES</h4>';
+                    for (var s = 0; s < availableSurrogates.length; s++) {
+                        var e = availableSurrogates[s];
+                        html += '<label style="display: block; font-size: 0.8rem; color: #ddd; margin-bottom: 5px; cursor: pointer;">';
+                        html += '<input type="radio" name="surrogate_select" value="' + e.id + '" style="margin-right: 8px;"> ' + e.name + ' (' + Endorsers.rallyCredits[e.id] + ' credits)';
+                        html += '</label>';
+                    }
+                    html += '<label style="display: block; font-size: 0.8rem; color: #888; cursor: pointer;">';
+                    html += '<input type="radio" name="surrogate_select" value="" checked style="margin-right: 8px;"> No Surrogate';
+                    html += '</label>';
+                    html += '<div style="font-size: 0.75rem; color: #aaa; margin-top: 5px;">Using a surrogate grants a turnout multiplier but costs 1 credit.</div>';
+                    html += '</div>';
+                }
+            }
+            html += '</div>';
+
+            // TV Ads Container (default hidden)
+            html += '<div id="tv-ads-container" style="display: none; grid-column: 1 / -1; margin-top: 10px; background: rgba(0,0,0,0.3); border: 1px solid #555; padding: 10px; border-radius: 4px;">';
+            html += '<h4 style="margin: 0 0 10px 0; color: #5bc0de; font-size: 0.85rem;"><i class="fas fa-tv"></i> RUN TV ADS: <br><span id="tv-ads-market" style="color: #fff; font-size: 0.75rem;"></span></h4>';
+            html += '<div style="font-size: 0.75rem; color: #aaa; margin-bottom: 10px;">Select an ad type to run in this media market (Cost: 1 Energy)</div>';
+            html += '<button class="act-btn" style="width: 100%; margin-bottom: 5px; font-size: 0.75rem; padding: 5px; justify-content: center;" onclick="app.runTvAd(\'bio\')">Biographical Ad</button>';
+            html += '<button class="act-btn" style="width: 100%; margin-bottom: 5px; font-size: 0.75rem; padding: 5px; justify-content: center;" onclick="app.runTvAd(\'attack\')">Attack Ad</button>';
+            
+            html += '<div style="display: flex; gap: 5px; margin-bottom: 5px; margin-top: 10px;">';
+            html += '<select id="tv-ad-issue" style="flex: 1; background: #333; color: #fff; border: 1px solid #555; font-size: 0.75rem; padding: 3px;" onchange="app.updateTvAdIssueScores()">';
+            html += '<option value="">Select an Issue...</option>';
+            if (typeof ISSUES !== 'undefined') {
+                for (var j = 0; j < ISSUES.length; j++) {
+                    html += '<option value="' + ISSUES[j].id + '">' + ISSUES[j].name + '</option>';
+                }
+            }
+            html += '</select>';
+            html += '<button class="act-btn" style="font-size: 0.75rem; padding: 5px 10px; justify-content: center;" onclick="app.runTvAd(\'issue\')">Issue Ad</button>';
+            html += '</div>';
+            html += '<div id="tv-ad-issue-scores" style="font-size: 0.7rem; color: #ffaa00; text-align: center;"></div>';
+            html += '</div>';
+            actionGrid.innerHTML = html;
+            if (typeof app !== 'undefined' && app.renderTvAdsMode) {
+                app.renderTvAdsMode();
+            }
         }
         var adTile = document.querySelector('.ad-campaign-tile');
         if (adTile) {
@@ -2133,7 +2200,36 @@ var Counties = {
         }
         
         var county = this.countyData[normalizedFips];
-        var spilloverResult = this.applyRallySpillover(normalizedFips);
+        
+        // --- COOLDOWN LOGIC ---
+        if (!gameData.rallyHistory) gameData.rallyHistory = {};
+        if (!gameData.rallyHistory[normalizedFips]) gameData.rallyHistory[normalizedFips] = [];
+        
+        var currentTurn = gameData.turn || 0;
+        gameData.rallyHistory[normalizedFips] = gameData.rallyHistory[normalizedFips].filter(function(t) { return currentTurn - t <= 2; });
+        
+        var recentRallies = gameData.rallyHistory[normalizedFips].length;
+        var cooldownMultiplier = 1.0;
+        if (recentRallies === 1) cooldownMultiplier = 0.70;
+        if (recentRallies >= 2) cooldownMultiplier = 0.40;
+        
+        gameData.rallyHistory[normalizedFips].push(currentTurn);
+        
+        // --- SURROGATE BOOST LOGIC ---
+        var surrogateBoost = 1.0;
+        var surrogateUsedName = null;
+        if (typeof Endorsers !== 'undefined' && Endorsers.getSurrogateBoost) {
+            var selectedSurrogateRadio = document.querySelector('input[name="surrogate_select"]:checked');
+            if (selectedSurrogateRadio && selectedSurrogateRadio.value) {
+                var surrogateId = selectedSurrogateRadio.value;
+                surrogateBoost = Endorsers.getSurrogateBoost(surrogateId);
+                surrogateUsedName = Endorsers.getEndorserName(surrogateId);
+                Endorsers.consumeSurrogateRally(surrogateId);
+            }
+        }
+        
+        var finalMultiplier = cooldownMultiplier * surrogateBoost;
+        var spilloverResult = this.applyRallySpillover(normalizedFips, finalMultiplier);
         if (!spilloverResult) {
             Utils.showToast("Rally spillover unavailable: missing centroid data.");
             return;
@@ -2147,17 +2243,20 @@ var Counties = {
         var countyName = county.n || 'County';
         var impactText = spilloverResult.countyCount + ' ' + countyWord + ' impacted';
         var turnoutText = 'est. turnout +' + turnoutDisplay;
+        
         var message = 'Regional rally in ' + countyName + ': ' + impactText + ', ' + turnoutText + '.';
+        if (surrogateUsedName) {
+            message = 'Surrogate Rally with ' + surrogateUsedName + ' in ' + countyName + '! ' + impactText + ', ' + turnoutText + '.';
+        } else if (cooldownMultiplier < 1.0) {
+            message += ' (Diminishing returns from recent rallies)';
+        }
+        
         Utils.addLog(message);
         Campaign.updateHUD();
         Campaign.colorMap();
         this.colorCountyMap();
         
-        if (typeof app !== 'undefined' && app.openRallyReportModal) {
-            app.openRallyReportModal(message);
-        } else {
-            Utils.showToast(message);
-        }
+        // Removed popup, logged above
     },
     
     // Update state-level margin from county data
@@ -2387,10 +2486,26 @@ var Counties = {
         // Consume energy
         gameData.energy -= 1;
         
-        // Get candidate's position on this issue
-        var candidatePos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[issueId]) || 0;
-
         var stateCode = this.getStateCodeFromFips(normalizedFips.substring(0, 2));
+        
+        // --- V2 ISSUE UPGRADES ---
+        // 1. Boost Credibility
+        if (gameData.candidate.issueCredibility) {
+            gameData.candidate.issueCredibility[issueId] = Math.min(1.0, (gameData.candidate.issueCredibility[issueId] || 0.5) + 0.05);
+        }
+        
+        // 2. Boost Salience (Attention Economy)
+        if (gameData.issueSalience && gameData.issueSalience[stateCode]) {
+            gameData.issueSalience[stateCode][issueId] = Math.min(10, (gameData.issueSalience[stateCode][issueId] || 5) + 1.0);
+        }
+        
+        // 3. Evaluate alignment, bimodal math, and dealbreakers
+        var alignmentBonus = this.evaluateIssueEvent(normalizedFips, issueId, gameData.candidate, 1.0);
+        
+        // 4. Apply shift to the local county voters
+        var pParty = gameData.candidate.party;
+        this.applyVoteShareShift(county.v, pParty, alignmentBonus);
+        
         if (typeof updateMessagingConsistency === 'function') {
             updateMessagingConsistency(issueId, 1);
         }
@@ -2398,71 +2513,14 @@ var Counties = {
             recordPlayerPressure(stateCode, 'SPEECH', 1);
         }
         
-        // Small voter count increase in this county (2-5%)
-        var voterBoost = 0.02 + Math.random() * 0.03;
-        
+        // Base turnout boost
         if (!county.turnout) county.turnout = { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 0.7 };
+        var voterBoost = 0.02 + Math.random() * 0.03;
         
         if (gameData.selectedParty === 'D' || gameData.selectedParty === 'R') {
             county.turnout.player = Math.min(1.3, (county.turnout.player || 1.0) + voterBoost);
         } else {
             county.turnout.thirdParty = Math.min(1.3, (county.turnout.thirdParty || 0.7) + (voterBoost * 0.5));
-        }
-        
-        // Now affect interest groups based on issue alignment
-        if (typeof INTEREST_GROUPS === 'undefined') {
-            // Interest groups not defined, skip this part
-            Utils.addLog(message);
-            return;
-        }
-        
-        for (var groupId in INTEREST_GROUPS) {
-            var group = INTEREST_GROUPS[groupId];
-            
-            // Check if this issue is a priority for this group
-            var isPriority = group.priorities && group.priorities.includes(issueId);
-            
-            if (isPriority) {
-                // Calculate alignment based on position overlap
-                var groupPreferredPos = group.issue_positions ? (group.issue_positions[issueId] || 0) : 0;
-                var positionDiff = Math.abs(candidatePos - groupPreferredPos);
-                
-                var supportChange = 0;
-                
-                if (positionDiff === 0) {
-                    // Perfect overlap
-                    supportChange = 0.5;
-                } else if (positionDiff < 5) {
-                    // Partial overlap - linear decay
-                    supportChange = 0.5 * (1 - positionDiff / 5);
-                } else if (positionDiff >= 5) {
-                    // Nullified or negative
-                    supportChange = -0.5 * ((positionDiff - 5) / 10);
-                    supportChange = Math.max(supportChange, -0.5);
-                }
-                
-                // Apply the change to candidate's support in this group
-                if (gameData.interestGroupSupport && gameData.interestGroupSupport[groupId]) {
-                    var candId = gameData.candidate.id;
-                    var currentSupport = gameData.interestGroupSupport[groupId][candId] || 0;
-                    var newSupport = currentSupport + supportChange;
-                    
-                    // Ensure valid range
-                    newSupport = Math.max(0, Math.min(100, newSupport));
-                    
-                    // Store change for display
-                    if (!gameData.interestGroupChanges[groupId]) {
-                        gameData.interestGroupChanges[groupId] = {};
-                    }
-                    gameData.interestGroupChanges[groupId][candId] = (gameData.interestGroupChanges[groupId][candId] || 0) + supportChange;
-                    
-                    // Apply change
-                    gameData.interestGroupSupport[groupId][candId] = newSupport;
-                    
-                    // Propagate this change to ALL counties based on group population percentage
-                    this.propagateInterestGroupChange(groupId, candId, supportChange);
-                }
-            }
         }
         
         // Update display
@@ -2472,6 +2530,13 @@ var Counties = {
         this.colorCountyMap();
         
         var message = 'Campaign speech on ' + issueId + ' in ' + (county.n || 'County') + '!';
+        
+        if (alignmentBonus < 0) {
+            message += ' (It backfired due to polarized voters or a dealbreaker!)';
+        } else if (alignmentBonus > 0.8) {
+            message += ' (Highly effective! Voters strongly aligned.)';
+        }
+
         Utils.addLog(message);
         Utils.showToast(message);
     },
@@ -2523,5 +2588,89 @@ var Counties = {
                 }
             }
         }
+    },
+    
+    // --- V2 ISSUE SYSTEM UPGRADES ---
+    
+    // Calculate a localized issue position based on county partisan lean
+    getCountyIssuePosition: function(fips, issueId) {
+        var county = this.countyData[fips];
+        if (!county || !county.v) return 0;
+        
+        var stateCode = this.getStateCodeFromFips(fips.substring(0, 2));
+        var statePos = (typeof STATE_ISSUE_POSITIONS !== 'undefined' && STATE_ISSUE_POSITIONS[stateCode] && STATE_ISSUE_POSITIONS[stateCode][issueId]) || 0;
+        
+        // Use v.R - v.D as a proxy for localized conservatism/progressivism
+        var rShare = county.v.R || 0;
+        var dShare = county.v.D || 0;
+        var totalRaw = rShare + dShare;
+        
+        if (totalRaw < 1) return statePos;
+        
+        var margin = (rShare - dShare) / totalRaw; // -1.0 (pure D) to +1.0 (pure R)
+        
+        // Some issues are highly correlated with partisan lean (social/cultural)
+        var shiftFactor = 3.0; // Max shift from state average
+        
+        var localShift = margin * shiftFactor;
+        
+        var countyPos = statePos + localShift;
+        return Math.max(-10, Math.min(10, countyPos));
+    },
+    
+    // Evaluate an issue event (speech, ad) using credibility, bimodal polarization, and dealbreakers
+    evaluateIssueEvent: function(fips, issueId, candidate, basePower) {
+        var county = this.countyData[fips];
+        if (!county) return 0;
+        
+        // 1. Calculate Credibility multiplier
+        var cred = (candidate.issueCredibility && candidate.issueCredibility[issueId]) || 0.5;
+        var effectivePower = basePower * cred;
+        
+        // 2. Determine Alignment using Polarization profile
+        var candPos = (candidate.issuePositions && candidate.issuePositions[issueId]) || 0;
+        var countyPos = this.getCountyIssuePosition(fips, issueId);
+        
+        var polLevel = (typeof ISSUE_POLARIZATION !== 'undefined' && ISSUE_POLARIZATION[issueId]) || 'medium';
+        var alignmentBonus = 0;
+        
+        var distance = Math.abs(candPos - countyPos);
+        
+        if (polLevel === 'high') {
+            // Bimodal: You must be very close to the peak to get a benefit, moderation falls flat.
+            if (distance <= 2) alignmentBonus = effectivePower * 1.5;
+            else if (distance <= 4) alignmentBonus = effectivePower * 0.5;
+            else alignmentBonus = -effectivePower * 0.5; // Alienates voters
+        } else if (polLevel === 'low') {
+            // Flat distribution: Gradual drop-off, moderation works fine
+            alignmentBonus = effectivePower * (1 - (distance / 10));
+        } else {
+            // Medium
+            alignmentBonus = effectivePower * (1 - (distance / 7));
+        }
+        
+        // 3. Dealbreaker check
+        if (typeof DEALBREAKER_THRESHOLDS !== 'undefined') {
+            // Check state demographics to estimate county demographics
+            var stateCode = this.getStateCodeFromFips(fips.substring(0, 2));
+            var demographics = (typeof STATE_DEMOGRAPHICS !== 'undefined' && STATE_DEMOGRAPHICS[stateCode]) || {};
+            
+            for (var group in DEALBREAKER_THRESHOLDS) {
+                var groupPct = demographics[group] || 0;
+                if (groupPct > 15) { // If it's a significant demographic in this state
+                    var thresholds = DEALBREAKER_THRESHOLDS[group][issueId];
+                    if (thresholds) {
+                        if ((thresholds.min !== undefined && candPos < thresholds.min) ||
+                            (thresholds.max !== undefined && candPos > thresholds.max)) {
+                            // Dealbreaker violated!
+                            alignmentBonus = -basePower * 2.0; // Massive penalty
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return alignmentBonus;
     }
 };

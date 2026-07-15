@@ -10,14 +10,18 @@ const INTEREST_GROUPS = {
         category: 'Racial/Ethnic',
         baseline: 2, // Slight R lean
         priorities: ['economy', 'taxation', 'immigration'],
-        support: { D: 42, R: 55, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 42, R: 55, I: 3, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     black: {
         name: 'African American',
         category: 'Racial/Ethnic',
         baseline: -7, // Strong D lean
         priorities: ['criminal', 'healthcare', 'economy'],
-        support: { D: 81, R: 17, I: 2, G: 0, L: 0, PSL: 0 }
+        support: { D: 81, R: 17, I: 2, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.2,
+        thirdPartyPath: 'I'
     },
     hispanic: {
         name: 'Hispanic/Latino',
@@ -25,6 +29,8 @@ const INTEREST_GROUPS = {
         baseline: -3,
         priorities: ['immigration', 'economy', 'healthcare'],
         support: { D: 53, R: 45, I: 2, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I',
         ageSkew: null
     },
     asian: {
@@ -33,6 +39,8 @@ const INTEREST_GROUPS = {
         baseline: -2,
         priorities: ['economy', 'healthcare', 'immigration'],
         support: { D: 59, R: 38, I: 2, G: 0, L: 0, PSL: 1 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I',
         ageSkew: null
     },
     native: {
@@ -40,7 +48,9 @@ const INTEREST_GROUPS = {
         category: 'Racial/Ethnic',
         baseline: -4, // Moderate D lean
         priorities: ['healthcare', 'environment', 'economy'],
-        support: { D: 57, R: 40, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 57, R: 40, I: 3, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     
     // Religious
@@ -50,6 +60,8 @@ const INTEREST_GROUPS = {
         baseline: 6,
         priorities: ['abortion', 'lgbtq', 'religious_freedom'],
         support: { D: 17, R: 81, I: 2, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.2,
+        thirdPartyPath: 'L',
         ageSkew: 'old'
     },
     catholic: {
@@ -57,28 +69,36 @@ const INTEREST_GROUPS = {
         category: 'Religious',
         baseline: 1, // Slight R lean
         priorities: ['abortion', 'immigration', 'healthcare'],
-        support: { D: 45, R: 53, I: 2, G: 0, L: 0, PSL: 0 }
+        support: { D: 45, R: 53, I: 2, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     jewish: {
         name: 'Jewish',
         category: 'Religious',
         baseline: -3, // Moderate D lean
         priorities: ['israel', 'criminal', 'healthcare'],
-        support: { D: 68, R: 29, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 68, R: 29, I: 3, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     muslim: {
         name: 'Muslim',
         category: 'Religious',
         baseline: -5, // Strong D lean
         priorities: ['foreign', 'immigration', 'civil_rights'],
-        support: { D: 58, R: 32, I: 10, G: 0, L: 0, PSL: 0 }
+        support: { D: 58, R: 32, I: 10, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.2,
+        thirdPartyPath: 'G'
     },
     secular: {
         name: 'Secular/None',
         category: 'Religious',
         baseline: -4, // Moderate D lean
         priorities: ['climate', 'healthcare', 'lgbtq'],
-        support: { D: 67, R: 29, I: 4, G: 0, L: 0, PSL: 0 }
+        support: { D: 67, R: 29, I: 4, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'G'
     },
     
     // Occupational
@@ -87,21 +107,27 @@ const INTEREST_GROUPS = {
         category: 'Occupational',
         baseline: 1, // Slight R lean
         priorities: ['economy', 'trade', 'labor'],
-        support: { D: 39, R: 58, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 39, R: 58, I: 3, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     whitecollar: {
         name: 'White Collar Professionals',
         category: 'Occupational',
         baseline: -1, // Slight D lean
         priorities: ['economy', 'taxation', 'healthcare'],
-        support: { D: 52, R: 45, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 52, R: 45, I: 3, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     smallbusiness: {
         name: 'Small Business Owners',
         category: 'Occupational',
         baseline: 3, // Moderate R lean
         priorities: ['taxation', 'economy', 'govspend'],
-        support: { D: 37, R: 60, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 37, R: 60, I: 3, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     union: {
         name: 'Union Workers',
@@ -109,6 +135,8 @@ const INTEREST_GROUPS = {
         baseline: -4,
         priorities: ['labor', 'economy', 'healthcare'],
         support: { D: 51, R: 48, I: 1, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.2,
+        thirdPartyPath: 'I',
         ageSkew: null
     },
     tech: {
@@ -116,21 +144,27 @@ const INTEREST_GROUPS = {
         category: 'Occupational',
         baseline: -2, // Slight D lean
         priorities: ['economy', 'immigration', 'climate'],
-        support: { D: 62, R: 35, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 62, R: 35, I: 3, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     farmers: {
         name: 'Farmers',
         category: 'Occupational',
         baseline: 4, // Moderate R lean
         priorities: ['trade', 'economy', 'govspend'],
-        support: { D: 24, R: 73, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 24, R: 73, I: 3, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     military: {
         name: 'Military/Veterans',
         category: 'Occupational',
         baseline: 3, // Moderate R lean
         priorities: ['military', 'foreign', 'economy'],
-        support: { D: 36, R: 61, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 36, R: 61, I: 3, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     
     // Demographic
@@ -140,6 +174,8 @@ const INTEREST_GROUPS = {
         baseline: -2,
         priorities: ['economy', 'climate', 'healthcare'],
         support: { D: 57, R: 40, I: 2, G: 0, L: 0, PSL: 1 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I',
         ageSkew: 'young'
     },
     noncollege: {
@@ -147,14 +183,18 @@ const INTEREST_GROUPS = {
         category: 'Demographic',
         baseline: 2, // Slight R lean
         priorities: ['economy', 'jobs', 'immigration'],
-        support: { D: 41, R: 56, I: 3, G: 0, L: 0, PSL: 0 }
+        support: { D: 41, R: 56, I: 3, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     suburban: {
         name: 'Suburban Voters',
         category: 'Demographic',
         baseline: 0, // Neutral
         priorities: ['economy', 'healthcare', 'education'],
-        support: { D: 49, R: 49, I: 2, G: 0, L: 0, PSL: 0 }
+        support: { D: 49, R: 49, I: 2, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     urban: {
         name: 'Urban',
@@ -162,6 +202,8 @@ const INTEREST_GROUPS = {
         baseline: -5,
         priorities: ['climate', 'healthcare', 'criminal'],
         support: { D: 63, R: 33, I: 4, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I',
         ageSkew: 'young'
     },
     rural: {
@@ -170,21 +212,45 @@ const INTEREST_GROUPS = {
         baseline: 5,
         priorities: ['economy', 'guns', 'trade'],
         support: { D: 28, R: 70, I: 2, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I',
         ageSkew: 'old'
     },
     youth: {
-        name: 'Youth (18-29)',
-        category: 'Demographic',
-        baseline: -4, // Moderate D lean
-        priorities: ['climate', 'economy', 'healthcare'],
-        support: { D: 57, R: 38, I: 5, G: 0, L: 0, PSL: 0 }
+        name: 'Youth (18-24)',
+        category: 'Age',
+        baseline: -5, // Strong D lean
+        priorities: ['climate', 'abortion', 'economy'], 
+        support: { D: 60, R: 35, I: 3, G: 2, L: 0, PSL: 0 },
+        elasticity: 0.2,
+        thirdPartyPath: 'G'
+    },
+    age25_44: {
+        name: 'Adults (25-44)',
+        category: 'Age',
+        baseline: -2,
+        priorities: ['economy', 'healthcare', 'taxation'],
+        support: { D: 52, R: 44, I: 2, G: 1, L: 1, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
+    },
+    age45_64: {
+        name: 'Middle Age (45-64)',
+        category: 'Age',
+        baseline: 2,
+        priorities: ['taxation', 'economy', 'immigration'],
+        support: { D: 45, R: 52, I: 2, G: 0, L: 1, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     seniors: {
         name: 'Seniors (65+)',
-        category: 'Demographic',
-        baseline: 2, // Slight R lean
-        priorities: ['healthcare', 'social_security', 'economy'],
-        support: { D: 47, R: 51, I: 2, G: 0, L: 0, PSL: 0 }
+        category: 'Age',
+        baseline: 4, // Moderate R lean
+        priorities: ['healthcare', 'taxation', 'criminal'],
+        support: { D: 44, R: 54, I: 2, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     
     // Political Orientation
@@ -193,21 +259,27 @@ const INTEREST_GROUPS = {
         category: 'Political',
         baseline: -8, // Very Strong D lean
         priorities: ['climate', 'healthcare', 'inequality'],
-        support: { D: 86, R: 4, I: 10, G: 0, L: 0, PSL: 0 }
+        support: { D: 86, R: 4, I: 10, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.2,
+        thirdPartyPath: 'G'
     },
     libertarians: {
         name: 'Libertarians',
         category: 'Political',
         baseline: 5, // Moderate R lean
         priorities: ['freedom', 'taxation', 'govspend'],
-        support: { D: 8, R: 70, I: 22, G: 0, L: 0, PSL: 0 }
+        support: { D: 8, R: 70, I: 22, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I'
     },
     maga: {
         name: 'MAGA',
         category: 'Political',
         baseline: 9, // Extreme R lean
         priorities: ['immigration', 'trade', 'nationalism'],
-        support: { D: 0, R: 99, I: 1, G: 0, L: 0, PSL: 0 }
+        support: { D: 0, R: 99, I: 1, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.2,
+        thirdPartyPath: 'I'
     },
     centrists: {
         name: 'Centrists',
@@ -215,6 +287,8 @@ const INTEREST_GROUPS = {
         baseline: 0,
         priorities: ['economy', 'bipartisanship', 'pragmatism'],
         support: { D: 49, R: 48, I: 2, G: 0, L: 0, PSL: 1 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I',
         ageSkew: null
     },
     
@@ -224,7 +298,9 @@ const INTEREST_GROUPS = {
         category: 'Gender/Orientation',
         baseline: -6, // Strong D lean
         priorities: ['lgbtq', 'healthcare', 'civil_rights'],
-        support: { D: 78, R: 18, I: 4, G: 0, L: 0, PSL: 0 }
+        support: { D: 78, R: 18, I: 4, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.2,
+        thirdPartyPath: 'I'
     },
     
     women: {
@@ -233,6 +309,8 @@ const INTEREST_GROUPS = {
         baseline: -2,
         priorities: ['healthcare', 'abortion', 'economy'],
         support: { D: 53, R: 44, I: 3, G: 0, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I',
         ageSkew: null
     },
 
@@ -243,6 +321,8 @@ const INTEREST_GROUPS = {
         baseline: -4,
         priorities: ['climate', 'economy', 'healthcare'],
         support: { D: 60, R: 34, I: 3, G: 3, L: 0, PSL: 0 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I',
         ageSkew: 'young'
     },
     suburban_women: {
@@ -251,6 +331,8 @@ const INTEREST_GROUPS = {
         baseline: -3,
         priorities: ['healthcare', 'abortion', 'economy'],
         support: { D: 59, R: 38, I: 2, G: 0, L: 0, PSL: 1 },
+        elasticity: 0.8,
+        thirdPartyPath: 'I',
         ageSkew: null
     }
 };
@@ -636,3 +718,4 @@ var DEFAULT_DEMOGRAPHICS = {
     college: 35, suburban: 40, urban: 30, rural: 30, youth: 20, seniors: 20,
     lgbtq_community: 4, women: 51
 };
+

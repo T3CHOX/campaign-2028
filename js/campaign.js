@@ -24,7 +24,6 @@ var Campaign = {
     getStateActionGridHTML: function() {
         return '' +
             '<button class="act-btn" onclick="app.handleAction(\'fundraise\')"><span><i class="fa-solid fa-sack-dollar"></i></span><span>FUNDRAISE</span></button>' +
-            '<button class="act-btn" onclick="app.handleAction(\'rally\')"><span><i class="fa-solid fa-bullhorn"></i></span><span>RALLY</span></button>' +
             '<button class="act-btn" onclick="app.handleAction(\'field\')"><span><i class="fa-solid fa-people-group"></i></span><span>FIELD OPS</span></button>' +
             '<button class="act-btn" onclick="app.handleAction(\'digital\')"><span><i class="fa-solid fa-laptop"></i></span><span>DIGITAL</span></button>' +
             '<button class="act-btn" onclick="app.openStateBio()"><span><i class="fa-solid fa-book-open"></i></span><span>INTEL</span></button>' +
@@ -32,7 +31,6 @@ var Campaign = {
             '<button class="act-btn" onclick="app.openIssuesPanel()"><span><i class="fa-solid fa-chart-line"></i></span><span>ISSUES</span></button>' +
             '<button class="act-btn" onclick="app.openEndorsersModal()"><span><i class="fa-solid fa-handshake"></i></span><span>ENDORSERS</span></button>' +
             '<button class="act-btn" onclick="app.handleAction(\'speech\')"><span><i class="fa-solid fa-microphone"></i></span><span>SPEECH</span></button>' +
-            '<button class="act-btn v2-btn" onclick="app.handleAction(\'surrogate\')"><span><i class="fa-solid fa-user-group"></i></span><span>SURROGATE</span></button>' +
             '<button class="act-btn v2-btn" onclick="app.handleAction(\'debate_prep\')"><span><i class="fa-solid fa-book"></i></span><span>DEBATE PREP</span></button>' +
             '<button class="act-btn v2-btn" onclick="app.handleAction(\'oppo_research\')"><span><i class="fa-solid fa-magnifying-glass"></i></span><span>OPPO RESEARCH</span></button>' +
             '<button class="act-btn v2-btn" onclick="Campaign.handleGrassrootsFundraise()"><span><i class="fa-solid fa-hand-holding-dollar"></i></span><span>GRASSROOTS</span></button>';
@@ -40,7 +38,10 @@ var Campaign = {
 
     restoreStateActionGrid: function() {
         var actionGrid = document.querySelector('.action-grid');
-        if (actionGrid) actionGrid.innerHTML = this.getStateActionGridHTML();
+        if (actionGrid) {
+            actionGrid.style.gridTemplateColumns = '';
+            actionGrid.innerHTML = this.getStateActionGridHTML();
+        }
         var adTile = document.querySelector('.ad-campaign-tile');
         if (adTile) adTile.classList.remove('hidden');
     },
@@ -1074,6 +1075,13 @@ var Campaign = {
     },
 
     nextWeek: function() {
+        if (gameData.currentDate >= gameData.electionDay) {
+            Utils.addLog("Election Day has arrived!");
+            Screens.goTo('election-screen');
+            Election.start();
+            return;
+        }
+
         this.saveState();
         
         // Save current poll values so next-turn delta can be shown
@@ -1110,6 +1118,27 @@ var Campaign = {
         gameData.turnActionCounts = {};
         gameData.visitedStatesThisTurn = [];
         gameData.grassrootsUsedThisWeek = 0;
+        
+        // --- V2 ISSUE UPGRADES: Salience Decay ---
+        if (gameData.issueSalience && typeof ISSUE_SALIENCE !== 'undefined') {
+            for (var stateKey in gameData.issueSalience) {
+                var defaultSalience = ISSUE_SALIENCE[stateKey] || ISSUE_SALIENCE['default'] || {};
+                for (var issueId in gameData.issueSalience[stateKey]) {
+                    var current = gameData.issueSalience[stateKey][issueId];
+                    var base = defaultSalience[issueId] || (ISSUE_SALIENCE['default'] ? ISSUE_SALIENCE['default'][issueId] : 5) || 5;
+                    
+                    if (current > base) {
+                        // Decay by 10% of the difference, or minimum 0.2
+                        var decay = Math.max(0.2, (current - base) * 0.1);
+                        gameData.issueSalience[stateKey][issueId] = Math.max(base, current - decay);
+                    } else if (current < base) {
+                        // Slowly rise back to baseline
+                        var growth = Math.max(0.1, (base - current) * 0.05);
+                        gameData.issueSalience[stateKey][issueId] = Math.min(base, current + growth);
+                    }
+                }
+            }
+        }
         
         // Process undecided voters
         this.processUndecidedVoters();
@@ -1201,11 +1230,29 @@ var Campaign = {
             return;
         }
         
+        // Restrict undo to current turn
+        gameData.historyStack = [];
+        
         this.updateHUD();
         
         // Update queued ads display to show the queue is cleared
         if (typeof app !== 'undefined' && app.updateQueuedAdsDisplay) {
             app.updateQueuedAdsDisplay();
+        }
+        
+        // REFRESH MAPS AND VIEWS
+        this.colorMap();
+        if (gameData.selectedState) {
+            this.clickState(gameData.selectedState);
+            var cvw = document.getElementById('county-view-wrapper');
+            if (cvw && !cvw.classList.contains('hidden') && typeof Counties !== 'undefined') {
+                if (Counties.colorCountyMap) Counties.colorCountyMap();
+                if (gameData.selectedCounty && Counties.selectCounty) {
+                    Counties.selectCounty(gameData.selectedCounty);
+                }
+            }
+        } else {
+            this.clickNational();
         }
         
         Utils.addLog("Week advanced - " + gameData.currentDate.toLocaleDateString());

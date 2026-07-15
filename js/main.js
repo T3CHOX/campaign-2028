@@ -65,12 +65,36 @@ function startGame() {
     }
     
     // Initialize interest group support for all candidates
+    gameData.liveGroups = JSON.parse(JSON.stringify(INTEREST_GROUPS));
     initializeInterestGroupSupport();
+    
+    // --- V2 ISSUE SYSTEM INIT ---
+    // Init Dynamic Salience
+    if (typeof ISSUE_SALIENCE !== 'undefined') {
+        gameData.issueSalience = JSON.parse(JSON.stringify(ISSUE_SALIENCE));
+    }
+    
+    // Init Candidate Issue Credibility
+    if (typeof BASE_ISSUE_CREDIBILITY !== 'undefined') {
+        if (!gameData.candidate.issueCredibility) {
+            var p = gameData.selectedParty;
+            var baseCred = (p === 'D' || p === 'R') ? BASE_ISSUE_CREDIBILITY[p] : BASE_ISSUE_CREDIBILITY['D'];
+            gameData.candidate.issueCredibility = JSON.parse(JSON.stringify(baseCred));
+        }
+        
+        // Init opponent credibility
+        if (gameData.demTicket.pres && !gameData.demTicket.pres.issueCredibility) {
+            gameData.demTicket.pres.issueCredibility = JSON.parse(JSON.stringify(BASE_ISSUE_CREDIBILITY['D']));
+        }
+        if (gameData.repTicket.pres && !gameData.repTicket.pres.issueCredibility) {
+            gameData.repTicket.pres.issueCredibility = JSON.parse(JSON.stringify(BASE_ISSUE_CREDIBILITY['R']));
+        }
+    }
     
     // Initialize new subsystems
     if (typeof GroundOps !== 'undefined') GroundOps.initGroundOps();
     if (typeof DigitalAds !== 'undefined') DigitalAds.initDigitalAds();
-    if (typeof EndorserSystem !== 'undefined') EndorserSystem.init();
+    if (typeof Endorsers !== 'undefined') Endorsers.init();
     
     // Initialize per-group turnout tracking
     initInterestGroupTurnout();
@@ -186,6 +210,42 @@ function applyCandidateBuffs() {
             var midwestStates = ['MI', 'WI', 'MN', 'OH', 'IL', 'IN', 'IA', 'MO'];
             for (var mi = 0; mi < midwestStates.length; mi++) {
                 _applyStateBoostToCounties(midwestStates[mi], voteKey, 3);
+            }
+        }
+
+        if (pres && pres.buff === 'Working Class Hero') {
+            for (var fips in Counties.countyData) {
+                var county = Counties.countyData[fips];
+                if (!county || !county.ig || !county.v) continue;
+                
+                var blueCollar = county.ig['bluecollar'] || 0;
+                var nonCollege = county.ig['noncollege'] || 0;
+                var white = county.ig['white'] || 0;
+                var rural = county.ig['rural'] || 0;
+                
+                // Working class white concentration metric (0 to 1)
+                var wcWhitePct = (white / 100) * ((blueCollar + nonCollege + rural) / 300);
+                
+                // If it's a heavily working-class white area
+                if (wcWhitePct > 0.20) {
+                    // Drastically shift the margin in-between (siphon from opponent to this candidate)
+                    var shiftPoints = Math.round(wcWhitePct * 18); // Max ~12-15 point shift 
+                    var oppKey = (voteKey === 'D') ? 'R' : 'D';
+                    
+                    var actualShift = Math.min((county.v[oppKey] || 0) - 1, shiftPoints);
+                    if (actualShift > 0) {
+                        county.v[oppKey] -= actualShift;
+                        county.v[voteKey] = Math.min(98, (county.v[voteKey] || 0) + actualShift);
+                    }
+                    
+                    // Surge turnout for this specific candidate's base
+                    if (county.turnout) {
+                        var turnoutSurge = wcWhitePct * 0.45; // Up to ~25% turnout multiplier surge
+                        var role = (gameData.candidate && gameData.candidate.party === voteKey) ? 'player' : (voteKey === 'D' ? 'demOpponent' : 'repOpponent');
+                        var maxTurnout = Counties.MAX_TURNOUT_MULTIPLIER || 1.3;
+                        county.turnout[role] = Math.min(maxTurnout, (county.turnout[role] || 1) + turnoutSurge);
+                    }
+                }
             }
         }
 
@@ -396,8 +456,8 @@ function _mapGroupToIgKey(groupId) {
         'tech':           null,
         'farmers':        null,
         'military':       null,
-        'seniors':        null,
-        'youth':          null,
+        'seniors':        'seniors',
+        'youth':          'youth',
         'women':          null,
         'lgbtq_community':null,
         'smallbusiness':  null,
@@ -452,6 +512,9 @@ function _mapGroupToIgKey(groupId) {
 }
 
 function _getCountyIgValue(county, key) {
+    if (county && county.ig && county.ig[key] !== undefined && county.ig[key] !== null) {
+        return Math.max(0, Math.min(100, county.ig[key])) / 100;
+    }
     if (key === 'youth') {
         var tierYouth = county && county.t ? county.t : 'Suburban/Mixed';
         if (tierYouth === 'Highly Urban') return 0.28;
@@ -933,14 +996,69 @@ function initCampaignGroupMomentum() {
     }
 }
 
+function shiftGroupSupport(groupId, candidateVoteKey, amount) {
+    if (!gameData.liveGroups || !gameData.liveGroups[groupId]) return;
+    var group = gameData.liveGroups[groupId];
+    var support = group.support;
+    if (support[candidateVoteKey] === undefined) return;
+    
+    var elasticity = group.elasticity !== undefined ? group.elasticity : 0.5;
+    var tpPath = group.thirdPartyPath || 'I';
+    
+    if (amount > 0) {
+        var availableToSteal = 100 - support[candidateVoteKey];
+        if (availableToSteal <= 0) return;
+        var actualGain = Math.min(amount, availableToSteal);
+        var proportionToSteal = actualGain / availableToSteal;
+        
+        for (var k in support) {
+            if (k !== candidateVoteKey) {
+                var stolen = support[k] * proportionToSteal;
+                support[k] -= stolen;
+                support[candidateVoteKey] += stolen;
+            }
+        }
+    } else {
+        var bleed = Math.abs(amount);
+        if (support[candidateVoteKey] < bleed) bleed = support[candidateVoteKey];
+        if (bleed <= 0) return;
+        
+        support[candidateVoteKey] -= bleed;
+        
+        var rivalParty = candidateVoteKey === 'D' ? 'R' : (candidateVoteKey === 'R' ? 'D' : 'I');
+        var toRival = bleed * elasticity;
+        var toThirdParty = bleed * (1 - elasticity);
+        
+        if (support[rivalParty] !== undefined && rivalParty !== 'I') {
+            support[rivalParty] += toRival;
+        } else {
+            toThirdParty += toRival;
+        }
+        
+        if (support[tpPath] !== undefined) {
+            support[tpPath] += toThirdParty;
+        } else {
+            support['I'] = (support['I'] || 0) + toThirdParty;
+        }
+    }
+    
+    // Normalize just in case
+    var total = 0;
+    for (var k in support) total += support[k];
+    if (total > 0 && Math.abs(total - 100) > 0.1) {
+        for (var k in support) support[k] = (support[k] / total) * 100;
+    }
+}
+
 function addCampaignGroupMomentum(groupId, candidateId, delta) {
     if (!groupId || !candidateId || !isFinite(delta) || delta === 0) return;
-    if (!gameData.campaignGroupMomentum) initCampaignGroupMomentum();
-    if (!gameData.campaignGroupMomentum[groupId]) {
-        gameData.campaignGroupMomentum[groupId] = {};
-    }
-    var current = gameData.campaignGroupMomentum[groupId][candidateId] || 0;
-    gameData.campaignGroupMomentum[groupId][candidateId] = Math.max(-12, Math.min(12, current + delta));
+    // Map candidateId to voteKey
+    var voteKey = 'I';
+    if (gameData.candidate && gameData.candidate.id === candidateId) voteKey = gameData.selectedParty;
+    else if (gameData.demTicket.pres && gameData.demTicket.pres.id === candidateId) voteKey = 'D';
+    else if (gameData.repTicket.pres && gameData.repTicket.pres.id === candidateId) voteKey = 'R';
+    
+    shiftGroupSupport(groupId, voteKey, delta);
 }
 
 function applyCampaignGroupSwing(groupId, delta) {
@@ -949,8 +1067,9 @@ function applyCampaignGroupSwing(groupId, delta) {
 }
 
 function _getStaticGroupSupportForParty(groupId, partyKey, activeCandidates) {
-    if (!INTEREST_GROUPS[groupId] || !INTEREST_GROUPS[groupId].support) return null;
-    var support = INTEREST_GROUPS[groupId].support;
+    var group = (gameData && gameData.liveGroups && gameData.liveGroups[groupId]) ? gameData.liveGroups[groupId] : INTEREST_GROUPS[groupId];
+    if (!group || !group.support) return null;
+    var support = group.support;
     if (partyKey === 'D' || partyKey === 'R') {
         return support[partyKey] !== undefined ? support[partyKey] : null;
     }
@@ -1287,10 +1406,7 @@ function recomputeInterestGroupSupport() {
             gameData.interestGroupBaseSupport[groupId][cand4.id] = baseSupport;
             var issueDelta = (issueModifiersByCandidate[cand4.id] && issueModifiersByCandidate[cand4.id][groupId]) || 0;
             var candidateDelta = _getCandidateGroupModifier(candidateGroupModifiersByCandidate[cand4.id], groupId);
-            var campaignDelta = (gameData.campaignGroupMomentum &&
-                gameData.campaignGroupMomentum[groupId] &&
-                gameData.campaignGroupMomentum[groupId][cand4.id]) || 0;
-            var adjusted = Math.max(0, baseSupport + issueDelta + candidateDelta + campaignDelta);
+            var adjusted = Math.max(0, baseSupport + issueDelta + candidateDelta);
             updatedSupport[cand4.id] = adjusted;
             supportTotal += adjusted;
         }
@@ -1671,34 +1787,66 @@ Object.assign(app, {
     openEndorsersModal: function() {
         var modal = document.getElementById('endorsers-modal');
         var list = document.getElementById('endorsers-list');
-        if (!modal || !list || typeof EndorserSystem === 'undefined') return;
+        if (!modal || !list || typeof Endorsers === 'undefined') return;
         
         var html = '';
-        var pCandId = gameData.playerCandidate || "harris";
-        for (var i = 0; i < EndorserSystem.endorsers.length; i++) {
-            var e = EndorserSystem.endorsers[i];
-            var endorsedYou = (e.currentEndorsement === pCandId);
-            var isEndorsed = e.currentEndorsement !== null;
-            
-            html += '<div style="background: rgba(0,0,0,0.3); border: 1px solid #444; padding: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">';
-            html += '<div><strong style="color: ' + (endorsedYou ? '#198754' : '#ccc') + ';">' + e.name + '</strong><br><small>' + e.type + ' - ' + e.state + '</small></div>';
-            
-            if (endorsedYou) {
-                html += '<div><span style="color: #198754; font-weight: bold;">ENDORSED</span></div>';
-            } else {
-                html += '<div><button onclick="app.lobbyEndorser(\'' + e.id + '\')" style="padding: 5px 10px; background: #0077d9; border: none; color: white; cursor: pointer;">LOBBY (1 Energy)</button></div>';
+        var isNational = !gameData.selectedState;
+        
+        var headerText = isNational ? "NATIONAL ENDORSERS" : "STATE ENDORSERS (" + gameData.selectedState + ")";
+        var titleEl = document.getElementById('endorsers-modal-title');
+        if (titleEl) titleEl.innerText = headerText;
+        
+        var endorsersToShow = [];
+        if (isNational) {
+            endorsersToShow = Endorsers.db.national;
+        } else if (Endorsers.db.states[gameData.selectedState]) {
+            endorsersToShow = Endorsers.db.states[gameData.selectedState];
+        }
+        
+        if (endorsersToShow.length === 0) {
+            html = '<p style="color:#aaa;">No notable endorsers available for this scope.</p>';
+        } else {
+            for (var i = 0; i < endorsersToShow.length; i++) {
+                var e = endorsersToShow[i];
+                var rel = Endorsers.relationships[e.id] || 0;
+                var isEndorsed = (rel >= e.threshold);
+                
+                var barColor = rel < 0 ? '#dc3545' : '#198754';
+                var barWidth = Math.abs(rel);
+                var leftOffset = rel < 0 ? (50 - (barWidth/2)) : 50;
+                var widthPct = barWidth / 2;
+                
+                html += '<div style="background: rgba(255,255,255,0.05); border: 1px solid #444; padding: 15px; margin-bottom: 10px; border-radius: 4px;">';
+                html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">';
+                html += '<div><strong style="font-size:1.1rem; color:#fff;">' + e.name + '</strong> <span style="font-size: 0.8em; color: #888; margin-left:8px;">(' + e.type.toUpperCase() + ')</span></div>';
+                
+                if (isEndorsed) {
+                    html += '<div><span style="color: #198754; font-weight: bold; border: 1px solid #198754; padding: 3px 6px; border-radius: 3px;">ENDORSED</span></div>';
+                } else {
+                    html += '<div><button onclick="app.lobbyEndorser(\'' + e.id + '\')" class="act-btn" style="padding: 6px 12px; font-size: 0.8rem; margin:0;"><i class="fa-solid fa-handshake"></i> MEET (5 <i class="fa-solid fa-bolt"></i>)</button></div>';
+                }
+                html += '</div>';
+                
+                html += '<div style="font-size: 0.85rem; color: #ccc; margin-bottom:4px;">Relationship: <strong style="color:' + barColor + ';">' + rel + '</strong> <span style="color:#666;">(Needs ' + e.threshold + ' for endorsement)</span></div>';
+                html += '<div style="width: 100%; height: 12px; background: #222; border-radius: 6px; margin-top: 4px; overflow: hidden; position: relative; border: 1px solid #333;">';
+                html += '<div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: #666; z-index:2;"></div>'; // Zero marker
+                html += '<div style="position: absolute; left: ' + leftOffset + '%; width: ' + widthPct + '%; height: 100%; background: ' + barColor + '; z-index:1;"></div>';
+                html += '</div>';
+                
+                if (isEndorsed && e.type === 'individual') {
+                    html += '<div style="font-size: 0.85rem; color: #aaa; margin-top: 8px;"><i class="fa-solid fa-bullhorn"></i> Surrogate Rallies Available: <strong style="color:#ffaa00;">' + (Endorsers.rallyCredits[e.id] || 0) + '</strong></div>';
+                }
+                
+                html += '</div>';
             }
-            html += '</div>';
         }
         
         list.innerHTML = html;
         modal.classList.remove('hidden');
     },
     lobbyEndorser: function(endorserId) {
-        if (typeof EndorserSystem !== 'undefined') {
-            if (EndorserSystem.lobbyEndorser(endorserId)) {
-                this.openEndorsersModal();
-            }
+        if (typeof Endorsers !== 'undefined') {
+            Endorsers.meetEndorser(endorserId);
         }
     },
     openRallyReportModal: function(message) {
@@ -2478,11 +2626,193 @@ Object.assign(app, {
     },
     
     countyRally: function() {
+        if (window.isTvAdsMode) {
+            app.toggleTvAdsMode(); // Exits TV ads mode without rallying
+            return;
+        }
         if (!gameData.selectedCounty) {
             Utils.showToast("Select a county first!");
             return;
         }
         Counties.rallyInCounty(gameData.selectedCounty);
+    },
+    
+    toggleTvAdsMode: function() {
+        window.isTvAdsMode = !window.isTvAdsMode;
+        app.renderTvAdsMode();
+    },
+
+    renderTvAdsMode: function() {
+        var btn = document.getElementById('btn-tv-ads');
+        var surrogateContainer = document.getElementById('surrogate-container');
+        var tvAdsContainer = document.getElementById('tv-ads-container');
+        var tvAdsMarket = document.getElementById('tv-ads-market');
+        
+        if (window.isTvAdsMode) {
+            if (btn) {
+                btn.style.boxShadow = '0 0 10px 2px #5bc0de';
+                btn.style.backgroundColor = '#2c3e50';
+            }
+            if (surrogateContainer) surrogateContainer.style.display = 'none';
+            if (tvAdsContainer) tvAdsContainer.style.display = 'block';
+            
+            // Set market name
+            if (gameData.selectedCounty && typeof MEDIA_MARKETS !== 'undefined') {
+                var county = Counties.countyData[gameData.selectedCounty];
+                if (county && county.mediaMarket && MEDIA_MARKETS[county.mediaMarket]) {
+                    tvAdsMarket.innerText = MEDIA_MARKETS[county.mediaMarket].name || county.mediaMarket;
+                } else {
+                    tvAdsMarket.innerText = "No Market Assigned";
+                }
+            }
+        } else {
+            if (btn) {
+                btn.style.boxShadow = '';
+                btn.style.backgroundColor = '';
+            }
+            if (surrogateContainer) surrogateContainer.style.display = 'block';
+            if (tvAdsContainer) tvAdsContainer.style.display = 'none';
+        }
+    },
+
+    updateTvAdIssueScores: function() {
+        var select = document.getElementById('tv-ad-issue');
+        var scoreDiv = document.getElementById('tv-ad-issue-scores');
+        if (!select || !scoreDiv || !gameData.selectedCounty) return;
+        
+        var issueId = select.value;
+        if (!issueId) {
+            scoreDiv.innerText = '';
+            return;
+        }
+        
+        var candScore = 0;
+        var oppScore = 0;
+        
+        var pParty = gameData.candidate.party;
+        var oParty = (pParty === 'D') ? 'R' : 'D';
+        var oppObj = (oParty === 'D') ? gameData.demTicket.pres : gameData.repTicket.pres;
+        
+        if (gameData.candidate.issueScores && gameData.candidate.issueScores[issueId] !== undefined) {
+            candScore = gameData.candidate.issueScores[issueId];
+        }
+        if (oppObj && oppObj.issueScores && oppObj.issueScores[issueId] !== undefined) {
+            oppScore = oppObj.issueScores[issueId];
+        }
+        
+        scoreDiv.innerHTML = 'You: <span style="color: #fff">' + candScore + '</span> | Opponent: <span style="color: #fff">' + oppScore + '</span>';
+    },
+
+    runTvAd: function(type) {
+        if (!gameData.selectedCounty || !window.isTvAdsMode) return;
+        var county = Counties.countyData[gameData.selectedCounty];
+        if (!county || !county.mediaMarket || typeof MEDIA_MARKETS === 'undefined' || !MEDIA_MARKETS[county.mediaMarket]) {
+            Utils.showToast("No media market data available for this county.");
+            return;
+        }
+        
+        if (gameData.energy < 1) {
+            Utils.showToast("Not enough energy (1 required)!");
+            return;
+        }
+        
+        var market = MEDIA_MARKETS[county.mediaMarket];
+        var pParty = gameData.candidate.party;
+        var oParty = (pParty === 'D') ? 'R' : 'D';
+        
+        if (type === 'bio') {
+            gameData.energy -= 1;
+            // Uniform boost to candidate and base turnout
+            for (var i = 0; i < market.counties.length; i++) {
+                var rawFips = String(market.counties[i]);
+                var fips = Counties.normalizeFips(rawFips);
+                var cData = Counties.countyData[fips];
+                if (cData) {
+                    Counties.applyVoteShareShift(cData.v, pParty, 0.4);
+                    cData.turnout = cData.turnout || { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 1.0 };
+                    cData.turnout.player = Math.min(1.3, cData.turnout.player + 0.015);
+                }
+            }
+            Campaign.logEvent("Ran Biographical Ad in " + (market.name || county.mediaMarket) + " market. Favorability slightly increased.");
+            Utils.showToast("Biographical ad launched!");
+        } else if (type === 'attack') {
+            gameData.energy -= 1;
+            // Uniform penalty to opponent turnout and boost to candidate margin
+            for (var i = 0; i < market.counties.length; i++) {
+                var rawFips = String(market.counties[i]);
+                var fips = Counties.normalizeFips(rawFips);
+                var cData = Counties.countyData[fips];
+                if (cData) {
+                    Counties.applyVoteShareShift(cData.v, pParty, 0.6);
+                    var oppKey = pParty === 'D' ? 'repOpponent' : 'demOpponent';
+                    cData.turnout = cData.turnout || { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 1.0 };
+                    cData.turnout[oppKey] = Math.max(0.5, cData.turnout[oppKey] - 0.02);
+                }
+            }
+            Campaign.logEvent("Ran Attack Ad in " + (market.name || county.mediaMarket) + " market. Opponent favorability damaged.");
+            Utils.showToast("Attack ad launched!");
+        } else if (type === 'issue') {
+            var select = document.getElementById('tv-ad-issue');
+            var issueId = select ? select.value : '';
+            if (!issueId) {
+                Utils.showToast("Select an issue first!");
+                return;
+            }
+            
+            gameData.energy -= 1;
+            
+            // --- V2 ISSUE UPGRADES ---
+            var stateCode = null;
+            if (typeof Counties !== 'undefined' && Counties.getStateCodeFromFips) {
+                stateCode = Counties.getStateCodeFromFips(gameData.selectedCounty.substring(0, 2));
+            }
+            
+            // 1. Boost Credibility
+            if (gameData.candidate.issueCredibility) {
+                gameData.candidate.issueCredibility[issueId] = Math.min(1.0, (gameData.candidate.issueCredibility[issueId] || 0.5) + 0.05);
+            }
+            
+            // 2. Boost Salience (Attention Economy)
+            if (stateCode && gameData.issueSalience && gameData.issueSalience[stateCode]) {
+                gameData.issueSalience[stateCode][issueId] = Math.min(10, (gameData.issueSalience[stateCode][issueId] || 5) + 1.0);
+            }
+            
+            var totalBonus = 0;
+            
+            // Apply boost based on issue selection
+            for (var i = 0; i < market.counties.length; i++) {
+                var rawFips = String(market.counties[i]);
+                var fips = Counties.normalizeFips(rawFips);
+                var cData = Counties.countyData[fips];
+                if (cData) {
+                    // 3. Evaluate alignment, bimodal math, and dealbreakers
+                    var alignmentBonus = 0.5; // fallback
+                    if (typeof Counties.evaluateIssueEvent === 'function') {
+                        alignmentBonus = Counties.evaluateIssueEvent(fips, issueId, gameData.candidate, 0.8);
+                    }
+                    totalBonus += alignmentBonus;
+                    
+                    // 4. Apply shift to the local county voters
+                    Counties.applyVoteShareShift(cData.v, pParty, alignmentBonus);
+                    
+                    cData.turnout = cData.turnout || { player: 1.0, demOpponent: 1.0, repOpponent: 1.0, thirdParty: 1.0 };
+                    cData.turnout.player = Math.min(1.3, cData.turnout.player + 0.01);
+                }
+            }
+            
+            var issueName = select.options[select.selectedIndex].text;
+            
+            if (totalBonus < 0) {
+                Campaign.logEvent("Ran Issue Ad (" + issueName + ") in " + (market.name || county.mediaMarket) + " market. It severely backfired due to a dealbreaker!");
+            } else if (totalBonus > (market.counties.length * 0.6)) {
+                Campaign.logEvent("Ran Issue Ad (" + issueName + ") in " + (market.name || county.mediaMarket) + " market. Base highly excited!");
+            } else {
+                Campaign.logEvent("Ran Issue Ad (" + issueName + ") in " + (market.name || county.mediaMarket) + " market.");
+            }
+            Utils.showToast("Issue ad launched!");
+        }
+        
+        if (typeof Campaign !== 'undefined' && Campaign.updateHUD) Campaign.updateHUD();
     },
     
     countySpeech: function() {

@@ -256,3 +256,68 @@ const ISSUE_COALITION_CONFLICTS = [
 ];
 
 // Candidate issue positions are defined in candidates.js (CANDIDATE_POSITIONS)
+
+// --- NEW V2 ISSUES CONSTANTS ---
+
+// Dealbreaker thresholds by demographic group
+const DEALBREAKER_THRESHOLDS = {
+    'evangelical': {
+        'abortion': { min: -1 }, // If you are -2 or lower (pro-choice), dealbreaker
+        'guns': { min: -2 }
+    },
+    'union': {
+        'labor': { max: 2 }, // If you are 3 or higher (anti-union), dealbreaker
+        'minwage': { max: 3 }
+    },
+    'progressives': {
+        'climate': { max: 1 },
+        'healthcare': { max: 2 }
+    },
+    'black': {
+        'criminal': { max: 2 }
+    },
+    'hispanic': {
+        'immigration': { max: 4 }
+    }
+};
+
+// Polarization profile for each issue. 
+// "high" means highly clustered bases. "low" means a flat distribution where moderation works best.
+const ISSUE_POLARIZATION = {
+    'abortion': 'high',
+    'guns': 'high',
+    'immigration': 'high',
+    'climate': 'high',
+    'healthcare': 'medium',
+    'economy': 'low',
+    'taxation': 'medium',
+    'trade': 'low',
+    'minwage': 'low',
+    'labor': 'medium',
+    'lgbtq': 'high',
+    'criminal': 'medium',
+    'drugpricing': 'low',
+    'energy': 'medium',
+    'foreign': 'low',
+    'military': 'low',
+    'israel': 'medium',
+    'govspend': 'low',
+    'electionreform': 'low',
+    'scotus': 'medium'
+};
+
+// Base credibility assigned when a candidate of this party is initialized.
+const BASE_ISSUE_CREDIBILITY = {
+    'D': {
+        'healthcare': 0.8, 'climate': 0.8, 'abortion': 0.8, 'labor': 0.8, 'lgbtq': 0.8, 'minwage': 0.8,
+        'economy': 0.5, 'taxation': 0.5, 'trade': 0.5, 'guns': 0.5, 'immigration': 0.5, 'criminal': 0.6,
+        'drugpricing': 0.7, 'energy': 0.6, 'foreign': 0.5, 'military': 0.4, 'israel': 0.5, 'govspend': 0.4,
+        'electionreform': 0.7, 'scotus': 0.6
+    },
+    'R': {
+        'economy': 0.8, 'taxation': 0.8, 'immigration': 0.8, 'guns': 0.8, 'military': 0.8, 'govspend': 0.8,
+        'healthcare': 0.5, 'climate': 0.4, 'abortion': 0.8, 'labor': 0.4, 'lgbtq': 0.4, 'minwage': 0.4,
+        'trade': 0.6, 'criminal': 0.7, 'drugpricing': 0.5, 'energy': 0.8, 'foreign': 0.7, 'israel': 0.8,
+        'electionreform': 0.4, 'scotus': 0.8
+    }
+};

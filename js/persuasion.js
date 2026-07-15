@@ -500,6 +500,40 @@ var Persuasion = {
             totalDelta += groupDelta;
         }
         
+        // --- ADDED METRIC MULTIPLIERS (Issue Saliency & Turnout Spikes) ---
+        if (countyIg) {
+            // 1. Tough on Crime (Crime Percentile)
+            if (issueId === 'criminal') {
+                var crimeMod = (countyIg.crime_pctile || 0.5) * 0.8 + 0.6; // 0.6x to 1.4x
+                totalDelta *= crimeMod;
+            }
+            
+            // 2. Economic Anxiety (Income + Job Growth)
+            // Bottom 30% income + bottom 30% job growth = massive populist elastic bonus
+            if (countyIg.income_pctile < 0.3 && countyIg.job_growth_pctile < 0.3) {
+                var isIncumbent = (gameData.candidate && gameData.candidate.party === 'R'); // If R is incumbent
+                var isPopulist = (gameData.candidate && (gameData.candidate.factionId === 'maga' || gameData.candidate.factionId === 'progressive'));
+                if (isPopulist) {
+                    totalDelta *= 1.35; // Bonus for populists in left-behind areas
+                } else if (isIncumbent) {
+                    totalDelta *= 0.80; // Penalty for incumbents
+                }
+            }
+            
+            // 3. Manufacturing / Tariffs
+            if (issueId === 'trade') {
+                var mfgMod = (countyIg.manufacturing_pctile || 0.5) * 1.0 + 0.5; // Up to 1.5x
+                totalDelta *= mfgMod;
+            }
+            
+            // 4. Healthcare / Uninsured
+            if (issueId === 'healthcare') {
+                var hlthMod = (countyIg.uninsured_pctile || 0.5) * 0.8 + 0.6;
+                totalDelta *= hlthMod;
+            }
+        }
+        // ------------------------------------------------------------------
+        
         // Apply saturation
         totalDelta *= saturation;
 
