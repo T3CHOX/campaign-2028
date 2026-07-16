@@ -45,6 +45,16 @@ var Counties = {
         // Convert to string and pad to 5 digits with leading zeros
         return String(fips).padStart(5, '0');
     },
+
+    formatCountyDisplayName: function(name) {
+        if (!name || typeof name !== 'string') return name;
+        var trimmed = name.trim();
+        if (/^City of /i.test(trimmed)) return trimmed;
+        if (/ city$/i.test(trimmed)) {
+            return 'City of ' + trimmed.replace(/ city$/i, '');
+        }
+        return trimmed;
+    },
     
     // Normalize vote shares to ensure they sum to 100%
     // This ensures that vote percentages always total to 100% regardless of party composition
@@ -541,6 +551,7 @@ var Counties = {
                         // Initialize each county with undecided voters and proper baseline
                         for (var fips in Counties.countyData) {
                             var c = Counties.countyData[fips];
+                            c.n = Counties.formatCountyDisplayName(c.n);
 
                             // Store original values for reference
                             // Map county JSON's 'O' key to 'I' (Independent), 'F' to 'PSL' (Party for Socialism and Liberation)
@@ -2333,10 +2344,7 @@ var Counties = {
         var tooltip = document.getElementById('map-tooltip');
         if (!tooltip) return;
         
-        var totals = this.calculateCountyVoteTotals(county, { reportingFactor: 1, decidedMultiplier: 1, errorFactor: 1 });
-        var demVotes = totals.D || 0;
-        var repVotes = totals.R || 0;
-        var total = demVotes + repVotes;
+        var pollByParty = (typeof Utils !== 'undefined' && Utils.getCountyPollingByParty) ? Utils.getCountyPollingByParty(county) : null;
         var mode = (typeof Campaign !== 'undefined' && Campaign.mapMode) ? Campaign.mapMode : 'margin';
         var detailLine = '';
         var subLine = '';
@@ -2344,12 +2352,22 @@ var Counties = {
         
         if (mode === 'margin') {
             var marginText = 'N/A';
-            if (total > 0) {
-                var demPct = (demVotes / total) * 100;
-                var repPct = (repVotes / total) * 100;
+            if (pollByParty) {
+                var demPct = pollByParty.D || 0;
+                var repPct = pollByParty.R || 0;
                 var margin = demPct - repPct;
                 marginText = (margin > 0 ? 'D+' : 'R+') + Math.abs(margin).toFixed(1);
                 color = margin > 0 ? '#00AEF3' : '#E81B23';
+            } else {
+                var totals = this.calculateCountyVoteTotals(county, { reportingFactor: 1, decidedMultiplier: 1, errorFactor: 1 });
+                var demVotes = totals.D || 0;
+                var repVotes = totals.R || 0;
+                var total = demVotes + repVotes;
+                if (total > 0) {
+                    var fallbackMargin = ((demVotes - repVotes) / total) * 100;
+                    marginText = (fallbackMargin > 0 ? 'D+' : 'R+') + Math.abs(fallbackMargin).toFixed(1);
+                    color = fallbackMargin > 0 ? '#00AEF3' : '#E81B23';
+                }
             }
             detailLine = '<span class="tooltip-leader" style="color: ' + color + '">' + marginText + '</span>';
         } else if (mode === 'ev') {
@@ -2386,7 +2404,8 @@ var Counties = {
         }
         
         // Only add suffix if the name doesn't already contain it
-        if (!countyName.includes(suffix) && !countyName.includes('County') && 
+        var isIndependentCity = countyName.indexOf('City of ') === 0;
+        if (!isIndependentCity && !countyName.includes(suffix) && !countyName.includes('County') && 
             !countyName.includes('Borough') && !countyName.includes('Parish')) {
             countyName = countyName + ' ' + suffix;
         }
