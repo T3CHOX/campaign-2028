@@ -367,18 +367,6 @@ var Election = {
                 }
 
                 if (canCall) {
-                    // v2: Provisional ballot mechanic for very close states
-                    if (callCheck.margin !== undefined && Math.abs(callCheck.margin) < 0.005 && pctReported >= 99) {
-                        var provisionalShift = (Math.random() - 0.5) * 0.006; // ±0.3%
-                        // This could flip the call in razor-thin margins
-                        if (callCheck.margin + provisionalShift < 0 && callCheck.calledFor !== 'D') {
-                            callCheck.calledFor = 'D';
-                        } else if (callCheck.margin + provisionalShift > 0 && callCheck.calledFor !== 'R') {
-                            callCheck.calledFor = 'R';
-                        }
-                        this.addFeedItem('⚠️ ' + s.name + ': Provisional ballots counted — margin shifts');
-                    }
-
                     s.called = true;
                     s.calledFor = callCheck.calledFor;
                     this.awardEV(s, callCheck.allocation);
@@ -781,20 +769,36 @@ var Election = {
         }
     },
 
+    getVoteLeaderData: function (votes) {
+        var sourceVotes = votes || {};
+        var parties = ['D', 'R'];
+        if (gameData.thirdPartiesEnabled) {
+            parties.push('G', 'L', 'PSL', 'I');
+        }
+        var ordered = [];
+        var totalVotes = 0;
+        for (var i = 0; i < parties.length; i++) {
+            var party = parties[i];
+            var count = sourceVotes[party] || 0;
+            ordered.push({ party: party, count: count });
+            totalVotes += count;
+        }
+        ordered.sort(function (a, b) { return b.count - a.count; });
+        var leader = ordered[0] || { party: 'D', count: 0 };
+        var runnerUp = ordered[1] || { party: 'R', count: 0 };
+        var marginPct = totalVotes > 0 ? ((leader.count - runnerUp.count) / totalVotes) * 100 : 0;
+        return {
+            leader: leader.party,
+            runnerUp: runnerUp.party,
+            marginPct: marginPct,
+            totalVotes: totalVotes
+        };
+    },
+
     // Determine which party won a state based on reported votes (plurality)
     getStateWinner: function (state) {
-        var votes = [
-            { party: 'D', count: state.reportedVotes.D || 0 },
-            { party: 'R', count: state.reportedVotes.R || 0 }
-        ];
-        if (gameData.thirdPartiesEnabled) {
-            votes.push({ party: 'G', count: state.reportedVotes.G || 0 });
-            votes.push({ party: 'L', count: state.reportedVotes.L || 0 });
-            votes.push({ party: 'PSL', count: state.reportedVotes.PSL || 0 });
-            votes.push({ party: 'I', count: state.reportedVotes.I || 0 });
-        }
-        votes.sort(function (a, b) { return b.count - a.count; });
-        return votes[0].party;
+        var leaderData = this.getVoteLeaderData(state ? state.reportedVotes : null);
+        return leaderData.leader;
     },
 
     // Award electoral votes to the winning party or split-state allocation
@@ -2015,18 +2019,15 @@ var Election = {
             return;
         }
 
-        var total = (s.reportedVotes.D || 0) + (s.reportedVotes.R || 0) +
-            (s.reportedVotes.G || 0) + (s.reportedVotes.L || 0);
-        var pctMargin = total > 0 ? ((s.reportedVotes.D - s.reportedVotes.R) / total) * 100 : 0;
+        var stateLeaderData = this.getVoteLeaderData(s.reportedVotes);
 
         var leaderText;
         if (s.reportedPct === 0) {
             leaderText = 'POLLS STILL OPEN';
         } else if (s.called) {
-            leaderText = '✓ ' + this.getPartyLabel(s.calledFor) + ' +' + Math.abs(pctMargin).toFixed(1) + '%';
+            leaderText = '✓ ' + this.getPartyLabel(s.calledFor) + ' +' + Math.abs(stateLeaderData.marginPct).toFixed(1) + '%';
         } else {
-            var leader = pctMargin > 0 ? 'D' : (pctMargin < 0 ? 'R' : 'TIE');
-            leaderText = leader + ' leading +' + Math.abs(pctMargin).toFixed(1) + '%';
+            leaderText = this.getPartyLabel(stateLeaderData.leader) + ' leading +' + Math.abs(stateLeaderData.marginPct).toFixed(1) + '%';
         }
 
         tooltip.innerHTML = '<strong>' + s.name + '</strong><br>' + leaderText + '<br><span style="color:#888">' + Math.floor(s.reportedPct) + '% reporting</span>';
@@ -2056,14 +2057,12 @@ var Election = {
             return;
         }
 
-        var rVotes = county.reportedVotes || {};
-        var total = (rVotes.D || 0) + (rVotes.R || 0) + (rVotes.G || 0) + (rVotes.L || 0) + (rVotes.PSL || 0) + (rVotes.I || 0);
-        var pctMargin = total > 0 ? ((rVotes.D - rVotes.R) / total) * 100 : 0;
+        var countyLeaderData = this.getVoteLeaderData(county.reportedVotes || {});
 
         var leaderText;
         if (this.mapMode === 'projected') {
             if (county.called) {
-                leaderText = '✓ ' + this.getPartyLabel(county.calledFor) + ' +' + Math.abs(pctMargin).toFixed(1) + '%';
+                leaderText = '✓ ' + this.getPartyLabel(county.calledFor) + ' +' + Math.abs(countyLeaderData.marginPct).toFixed(1) + '%';
             } else if (!county.reportedPct || county.reportedPct === 0) {
                 leaderText = 'Reporting soon…';
             } else if (county.reportedPct >= 100) {
@@ -2074,8 +2073,7 @@ var Election = {
         } else if (!county.reportedPct || county.reportedPct === 0) {
             leaderText = 'Reporting soon…';
         } else {
-            var leader = pctMargin > 0 ? 'D' : (pctMargin < 0 ? 'R' : 'TIE');
-            leaderText = leader + ' +' + Math.abs(pctMargin).toFixed(1) + '%';
+            leaderText = this.getPartyLabel(countyLeaderData.leader) + ' +' + Math.abs(countyLeaderData.marginPct).toFixed(1) + '%';
         }
 
         tooltip.innerHTML = '<strong>' + (county.n || 'County') + '</strong><br>' + leaderText + '<br><span style="color:#888">' + Math.floor(county.reportedPct || 0) + '% reporting</span>';
