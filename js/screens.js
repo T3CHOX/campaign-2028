@@ -242,8 +242,18 @@ var Screens = {
         }
 
         var logoName = this._getPartyLogoFile(c.party);
+        var logoHTML = '';
+        if (faction) {
+            logoHTML = '<div class="faction-logo-wrapper">' +
+                       '<div class="candidate-tile-party-logo" style="background-color: ' + faction.color + '; -webkit-mask-image: url(\'' + faction.emblem + '\'); mask-image: url(\'' + faction.emblem + '\'); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; mask-position: center;"></div>' +
+                       '<div class="faction-tooltip-panel"><strong>' + faction.name + '</strong><p style="margin: 4px 0 0 0;">' + faction.description + '</p></div>' +
+                       '</div>';
+        } else {
+            logoHTML = '<img class="candidate-tile-party-logo" src="images/' + logoName + '" onerror="this.style.display=\'none\'" alt="' + c.party + ' logo">';
+        }
+        
         return '<div class="candidate-tile' + (selected ? ' selected' : '') + '" data-id="' + c.id + '" data-type="pres" data-faction="' + (c.factionId || '') + '" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + c.party + '\', \'pres\')">' +
-            '<img class="candidate-tile-party-logo" src="images/' + logoName + '" onerror="this.style.display=\'none\'" alt="' + c.party + ' logo">' +
+            logoHTML +
             '<img class="candidate-tile-img" src="' + c.img + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + c.name + '">' +
             '<div class="candidate-tile-body">' +
                 '<div class="candidate-tile-meta">' +
@@ -314,8 +324,18 @@ var Screens = {
         }
 
         var logoName = this._getPartyLogoFile(v.party);
+        var logoHTML = '';
+        if (faction) {
+            logoHTML = '<div class="faction-logo-wrapper">' +
+                       '<div class="candidate-tile-party-logo" style="background-color: ' + faction.color + '; -webkit-mask-image: url(\'' + faction.emblem + '\'); mask-image: url(\'' + faction.emblem + '\'); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; mask-position: center;"></div>' +
+                       '<div class="faction-tooltip-panel"><strong>' + faction.name + '</strong><p style="margin: 4px 0 0 0;">' + faction.description + '</p></div>' +
+                       '</div>';
+        } else {
+            logoHTML = '<img class="candidate-tile-party-logo" src="images/' + logoName + '" onerror="this.style.display=\'none\'" alt="' + v.party + ' logo">';
+        }
+
         return '<div class="candidate-tile" data-id="' + v.id + '" data-type="vp" data-faction="' + (v.factionId || '') + '" style="--tile-party-color:' + color + ';" onclick="Screens.selectTile(this, \'' + v.party + '\', \'vp\')">' +
-            '<img class="candidate-tile-party-logo" src="images/' + logoName + '" onerror="this.style.display=\'none\'" alt="' + v.party + ' logo">' +
+            logoHTML +
             '<img class="candidate-tile-img" src="' + (v.img || 'images/scenario.jpg') + '" onerror="this.src=\'images/scenario.jpg\'" alt="' + v.name + '">' +
             '<div class="candidate-tile-body">' +
                 '<div class="candidate-tile-meta">' +

@@ -2057,7 +2057,7 @@ var Counties = {
             actionGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
             var html = 
                 '<button class="act-btn" onclick="app.closeCountyView()"><span><i class="fa-solid fa-map"></i></span><span>BACK TO MAP</span></button>' +
-                '<button class="act-btn" id="btn-rally-county" onclick="app.countyRally()"><span><i class="fa-solid fa-bullhorn"></i></span><span>LOCAL RALLY</span></button>' +
+                '<button class="act-btn" id="btn-rally-county" onclick="app.countyRally()"><span><img src="images/public-speaker.svg" style="width: 1.5em; height: 1.5em;"></span><span>LOCAL RALLY</span></button>' +
                 '<button class="act-btn" id="btn-tv-ads" onclick="app.toggleTvAdsMode()"><span><i class="fas fa-tv"></i></span><span>TV ADS</span></button>';
             
             // Surrogate Container (default visible)

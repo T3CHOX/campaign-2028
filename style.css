@@ -3380,7 +3380,7 @@ body {
     background: #1e1e1e;
     border: 2px solid transparent;
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible; /* Changed to visible for tooltips */
     cursor: pointer;
     transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
     position: relative;
@@ -3390,7 +3390,30 @@ body {
     min-height: var(--candidate-tile-min-height);
 }
 
+.faction-logo-wrapper {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    width: 34px;
+    height: 34px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .candidate-tile-party-logo {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    cursor: help;
+}
+
+img.candidate-tile-party-logo {
     position: absolute;
     top: 8px;
     right: 8px;
@@ -3400,8 +3423,41 @@ body {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 50%;
     box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-    object-fit: contain;
     z-index: 3;
+    cursor: default;
+}
+
+.faction-tooltip-panel {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    width: 220px;
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid #444;
+    padding: 12px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    z-index: 100;
+}
+
+.faction-tooltip-panel strong {
+    display: block;
+    color: #fff;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 4px;
+}
+
+.faction-logo-wrapper:hover .faction-tooltip-panel {
+    display: block;
 }
 
 .candidate-tile:hover {
@@ -3423,6 +3479,7 @@ body {
     object-position: center top;
     display: block;
     flex-shrink: 0;
+    border-radius: 10px 10px 0 0;
 }
 
 .candidate-tile-body {

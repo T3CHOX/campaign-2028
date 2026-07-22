@@ -1834,7 +1834,7 @@ Object.assign(app, {
                 html += '</div>';
                 
                 if (isEndorsed && e.type === 'individual') {
-                    html += '<div style="font-size: 0.85rem; color: #aaa; margin-top: 8px;"><i class="fa-solid fa-bullhorn"></i> Surrogate Rallies Available: <strong style="color:#ffaa00;">' + (Endorsers.rallyCredits[e.id] || 0) + '</strong></div>';
+                    html += '<div style="font-size: 0.85rem; color: #aaa; margin-top: 8px;"><img src="images/public-speaker.svg" style="width: 1.25em; height: 1.25em; vertical-align: middle;"> Surrogate Rallies Available: <strong style="color:#ffaa00;">' + (Endorsers.rallyCredits[e.id] || 0) + '</strong></div>';
                 }
                 
                 html += '</div>';
