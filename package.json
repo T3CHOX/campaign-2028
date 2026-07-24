@@ -1,0 +1,16 @@
+{
+  "name": "decision-2028",
+  "version": "1.0.0",
+  "description": "Decision 2028 Campaign Simulator",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "build": "node -c server.js",
+    "lint": "node -c server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

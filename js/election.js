@@ -1416,9 +1416,14 @@ var Election = {
             } else {
                 // leader mode
                 if (s.reportedPct > 0) {
-                    var total = s.reportedVotes.D + s.reportedVotes.R + (s.reportedVotes.G || 0) + (s.reportedVotes.L || 0);
-                    var pctMargin = total > 0 ? ((s.reportedVotes.D - s.reportedVotes.R) / total) * 100 : 0;
-                    path.style.fill = Utils.getMarginColor(pctMargin);
+                    var rV = Object.assign({}, s.reportedVotes || { D: 0, R: 0 });
+                    var total = 0;
+                    for (var key in rV) total += rV[key];
+                    var sortedParties = Object.keys(rV).sort(function(a, b) { return rV[b] - rV[a]; });
+                    var p1 = sortedParties[0] || 'D';
+                    var p2 = sortedParties[1];
+                    var pctMargin = total > 0 ? ((rV[p1] - (rV[p2] || 0)) / total) * 100 : 0;
+                    path.style.fill = Utils.getMarginColor(pctMargin, p1);
                 } else {
                     path.style.fill = '#333333';
                 }
@@ -1466,10 +1471,11 @@ var Election = {
                         if (typeof Utils !== 'undefined' && Utils.getMarginColor) {
                             var totalDistVotes = 0;
                             for (var p in dres.votes) totalDistVotes += dres.votes[p];
-                            var demVotes = dres.votes['D'] || 0;
-                            var repVotes = dres.votes['R'] || 0;
-                            var marginPct = totalDistVotes > 0 ? ((demVotes - repVotes) / totalDistVotes) * 100 : 0;
-                            marginColor = Utils.getMarginColor(marginPct);
+                            var sortedParties = Object.keys(dres.votes).sort(function(a, b) { return dres.votes[b] - dres.votes[a]; });
+                            var p1 = sortedParties[0] || 'D';
+                            var p2 = sortedParties[1];
+                            var marginPct = totalDistVotes > 0 ? ((dres.votes[p1] - (dres.votes[p2] || 0)) / totalDistVotes) * 100 : 0;
+                            marginColor = Utils.getMarginColor(marginPct, p1);
                         }
 
                         html += '<div class="district-box" style="background-color: ' + marginColor + '; cursor: pointer; border: 1px solid #555; padding: 4px 8px; font-size: 0.8rem; border-radius: 3px;" onclick="Election.clickElectionCountyDistrict(\'' + code + '\', \'' + distName + '\')">' + distName + '</div>';
@@ -2697,10 +2703,16 @@ var Election = {
             return;
         }
 
-        var total = demVotes + repVotes;
+        var cVotes = Object.assign({}, county.reportedVotes);
+        var total = 0;
+        for (var k in cVotes) total += cVotes[k];
+        
         if (total > 0) {
-            var margin = ((demVotes - repVotes) / total) * 100;
-            path.style.fill = Utils.getMarginColor(margin);
+            var sortedParties = Object.keys(cVotes).sort(function(a, b) { return cVotes[b] - cVotes[a]; });
+            var p1 = sortedParties[0] || 'D';
+            var p2 = sortedParties[1];
+            var margin = ((cVotes[p1] - (cVotes[p2] || 0)) / total) * 100;
+            path.style.fill = Utils.getMarginColor(margin, p1);
         } else {
             path.style.fill = '#2a2a2a';
         }
@@ -2788,7 +2800,7 @@ var Election = {
 
         var html = '<div class="elec-state-header">';
         html += '<h2>' + (county.n || 'County') + '</h2>';
-        html += '<span class="elec-ev-badge">POP ' + (county.p || 0).toLocaleString() + '</span>';
+        html += '<span class="elec-ev-badge">' + Utils.POPULATION_ICON + ' ' + (county.p || 0).toLocaleString() + '</span>';
         html += '</div>';
         if (parentStateName) {
             html += '<div class="elec-county-parent">' + parentStateName.toUpperCase() + (county.t ? ' • ' + Utils.getDisplayTier(county.t) : '') + '</div>';

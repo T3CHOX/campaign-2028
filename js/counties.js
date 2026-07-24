@@ -516,13 +516,69 @@ var Counties = {
         }
     },
     
+    // --- V2 BUG FIX: Map NEW FIPS to OLD SVG FIPS ---
+    applyFipsCrosswalk: function(data) {
+        var ctMap = {
+            '09001': '09190', '09003': '09110', '09005': '09160', '09007': '09130',
+            '09009': '09170', '09011': '09180', '09013': '09110', '09015': '09150'
+        };
+        for (var oldFips in ctMap) {
+            var newFips = ctMap[oldFips];
+            if (data[newFips]) {
+                data[oldFips] = JSON.parse(JSON.stringify(data[newFips]));
+                var oldNames = {
+                    '09001': 'Fairfield', '09003': 'Hartford', '09005': 'Litchfield', '09007': 'Middlesex',
+                    '09009': 'New Haven', '09011': 'New London', '09013': 'Tolland', '09015': 'Windham'
+                };
+                data[oldFips].n = oldNames[oldFips];
+            }
+        }
+        for (var i = 110; i <= 190; i += 10) { delete data['09' + i]; }
+
+        var akDistricts = [];
+        for (var fips in data) {
+            if (fips.startsWith('02') && parseInt(fips) >= 2001 && parseInt(fips) <= 2040) {
+                akDistricts.push(data[fips]);
+            }
+        }
+        
+        if (akDistricts.length > 0) {
+            var totalPop = 0;
+            var sumV = { D: 0, R: 0, G: 0, L: 0, O: 0, F: 0 };
+            akDistricts.forEach(function(d) {
+                totalPop += d.p;
+                sumV.D += (d.v.D || 0) * d.p; sumV.R += (d.v.R || 0) * d.p; sumV.G += (d.v.G || 0) * d.p;
+                sumV.L += (d.v.L || 0) * d.p; sumV.O += (d.v.O || 0) * d.p; sumV.F += (d.v.F || 0) * d.p;
+            });
+            var avgV = {
+                D: sumV.D / totalPop, R: sumV.R / totalPop, G: sumV.G / totalPop,
+                L: sumV.L / totalPop, O: sumV.O / totalPop, F: sumV.F / totalPop
+            };
+            
+            var svgAkFips = ['02185', '02188', '02198', '02130', '02275', '02195', '02220', '02100', '02110', '02230', '02105', '02282', '02016', '02013', '02150', '02060', '02070', '02164', '02122', '02020', '02063', '02066', '02170', '02240', '02090', '02068', '02050', '02158', '02180', '02290'];
+            var popPerArea = Math.round(totalPop / svgAkFips.length);
+            
+            svgAkFips.forEach(function(f) {
+                data[f] = { n: 'Alaska Area', s: 'AK', p: popPerArea, v: Object.assign({}, avgV) };
+            });
+            
+            for (var key in data) {
+                if (key.startsWith('02') && parseInt(key) >= 2001 && parseInt(key) <= 2040) {
+                    if (!svgAkFips.includes(key)) delete data[key];
+                }
+            }
+        }
+        return data;
+    },
+    
     // Load county data from JSON
     loadCountyData: function(callback) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', 'counties/county_data.json', true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
-                Counties.countyData = JSON.parse(xhr.responseText);
+                var rawData = JSON.parse(xhr.responseText);
+                Counties.countyData = Counties.applyFipsCrosswalk(rawData);
 
                 Counties.loadCountyVoteBaselineData(function() {
                     // Load voter roll data (active/inactive counts)
@@ -552,6 +608,17 @@ var Counties = {
                         for (var fips in Counties.countyData) {
                             var c = Counties.countyData[fips];
                             c.n = Counties.formatCountyDisplayName(c.n);
+                            
+                            // Initialize economy data if available
+                            if (typeof RAW_COUNTY_ECONOMY !== 'undefined') {
+                                var stateCode = Counties.getStateCodeFromFips(fips.substring(0,2)) || '';
+                                var economyKey = (c.n + "_" + stateCode).toUpperCase();
+                                if (RAW_COUNTY_ECONOMY[economyKey]) {
+                                    c.economy = RAW_COUNTY_ECONOMY[economyKey];
+                                } else {
+                                    c.economy = { agri_index: 0, mfg_index: 0 };
+                                }
+                            }
 
                             // Store original values for reference
                             // Map county JSON's 'O' key to 'I' (Independent), 'F' to 'PSL' (Party for Socialism and Liberation)
@@ -1681,7 +1748,10 @@ var Counties = {
                                 path.style.strokeWidth = '0.3';
                                 
                                 (function(f, p) {
-                                    p.onclick = function() { Counties.selectCounty(f); };
+                                    p.onclick = function(e) {
+                                        if (e && e.stopPropagation) e.stopPropagation();
+                                        Counties.selectCounty(f);
+                                    };
                                     p.onmouseenter = function(e) {
                                         if (window.isTvAdsMode && typeof MEDIA_MARKETS !== 'undefined') {
                                             var county = Counties.countyData[f];
@@ -1754,18 +1824,32 @@ var Counties = {
                     }
                     
                     var self = this;
-                    svg.onclick = function(e) {
-                        if (e.target.tagName === 'svg') {
-                            if (typeof Campaign !== 'undefined' && Campaign.clickState) {
-                                Campaign.clickState(self.currentState);
-                                if (Campaign.restoreStateActionGrid) {
-                                    Campaign.restoreStateActionGrid();
+                    var handleBackgroundClick = function(e) {
+                        var target = e ? e.target : null;
+                        if (target && target.tagName && target.tagName.toLowerCase() === 'path') {
+                            var pathId = target.id;
+                            if (pathId && pathId.length >= 3 && pathId.charAt(0) === 'c') {
+                                var countyStateFips = pathId.substring(1, 3);
+                                if (countyStateFips === stateFips) {
+                                    return; // Clicked on a county
                                 }
-                                gameData.inCountyView = false;
+                            }
+                        }
+
+                        var targetState = self.currentState || stateCode || (typeof gameData !== 'undefined' ? gameData.selectedState : null);
+                        if (targetState && typeof Campaign !== 'undefined' && Campaign.clickState) {
+                            Campaign.clickState(targetState);
+                            if (Campaign.restoreStateActionGrid) {
+                                Campaign.restoreStateActionGrid();
+                            }
+                            if (typeof gameData !== 'undefined') {
                                 gameData.selectedCounty = null;
                             }
                         }
                     };
+
+                    svg.onclick = handleBackgroundClick;
+                    wrapper.onclick = handleBackgroundClick;
 
                     wrapper.innerHTML = '';
                     wrapper.appendChild(svg);
@@ -1867,19 +1951,18 @@ var Counties = {
                 
                 if (path && county.v) {
                     var totals = this.calculateCountyVoteTotals(county, { reportingFactor: 1, decidedMultiplier: 1, errorFactor: 1 });
-                    var demVotes = totals.D || 0;
-                    var repVotes = totals.R || 0;
-                    var total = demVotes + repVotes;
+                    var cVotes = { D: totals.D||0, R: totals.R||0, G: totals.G||0, L: totals.L||0, I: totals.I||0, PSL: totals.PSL||0 };
+                    var total = cVotes.D + cVotes.R + cVotes.G + cVotes.L + cVotes.I + cVotes.PSL;
                     
                     if (total > 0) {
-                        var demPct = (demVotes / total) * 100;
-                        var repPct = (repVotes / total) * 100;
-                        var margin = demPct - repPct;
+                        var sorted = Object.keys(cVotes).sort(function(a, b) { return cVotes[b] - cVotes[a]; });
+                        var p1 = sorted[0], p2 = sorted[1];
+                        var margin = ((cVotes[p1] - cVotes[p2]) / total) * 100;
                         
                         if (typeof Campaign !== 'undefined' && Campaign.mapMode && Campaign.mapMode !== 'margin') {
                             path.style.fill = Counties.getCountyMapModeColor(county);
                         } else if (typeof Utils !== 'undefined' && Utils.getMarginColor) {
-                            path.style.fill = Utils.getMarginColor(margin);
+                            path.style.fill = Utils.getMarginColor(margin, p1);
                         } else {
                             // Fallback coloring
                             if (Math.abs(margin) < 2) {
@@ -1965,7 +2048,7 @@ var Counties = {
         // Show population instead of EV
         var populationDiv = document.getElementById('sp-ev');
         if (populationDiv) {
-            populationDiv.innerText = 'Pop: ' + (county.p || 0).toLocaleString();
+            populationDiv.innerHTML = Utils.POPULATION_ICON + ' ' + (county.p || 0).toLocaleString();
         }
 
         var spDistricts = document.getElementById('sp-districts');
@@ -2006,10 +2089,11 @@ var Counties = {
                                 if (typeof Utils !== 'undefined' && Utils.getMarginColor) {
                                     var totalDistVotes = 0;
                                     for (var p in dres.votes) totalDistVotes += dres.votes[p];
-                                    var demVotes = dres.votes['D'] || 0;
-                                    var repVotes = dres.votes['R'] || 0;
-                                    var marginPct = totalDistVotes > 0 ? ((demVotes - repVotes) / totalDistVotes) * 100 : 0;
-                                    marginColor = Utils.getMarginColor(marginPct);
+                                    var sortedParties = Object.keys(dres.votes).sort(function(a, b) { return dres.votes[b] - dres.votes[a]; });
+                                    var p1 = sortedParties[0] || 'D';
+                                    var p2 = sortedParties[1];
+                                    var marginPct = totalDistVotes > 0 ? ((dres.votes[p1] - (dres.votes[p2] || 0)) / totalDistVotes) * 100 : 0;
+                                    marginColor = Utils.getMarginColor(marginPct, p1);
                                 }
                                 break;
                             }
@@ -2277,9 +2361,7 @@ var Counties = {
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
         if (!stateFips) return;
         
-        var totalDemVotes = 0;
-        var totalRepVotes = 0;
-        var totalThirdPartyVotes = 0;
+        var partyVotes = { D: 0, R: 0, G: 0, L: 0, I: 0, PSL: 0 };
         
         // Sum ALL votes from every county in this state
         for (var fips in this.countyData) {
@@ -2304,28 +2386,45 @@ var Counties = {
                         errorFactor: 1
                     });
 
-                    totalDemVotes += totals.D || 0;
-                    totalRepVotes += totals.R || 0;
-                    totalThirdPartyVotes += (totals.G || 0) + (totals.L || 0) + (totals.I || 0) + (totals.PSL || 0);
+                    partyVotes.D += totals.D || 0;
+                    partyVotes.R += totals.R || 0;
+                    partyVotes.G += totals.G || 0;
+                    partyVotes.L += totals.L || 0;
+                    partyVotes.I += totals.I || 0;
+                    partyVotes.PSL += totals.PSL || 0;
                 }
             }
         }
         
         // Calculate new margin derived directly from this sum
         // This is the "source of truth" for the map
-        var totalVotes = totalDemVotes + totalRepVotes + totalThirdPartyVotes;
+        var totalVotes = partyVotes.D + partyVotes.R + partyVotes.G + partyVotes.L + partyVotes.I + partyVotes.PSL;
         if (totalVotes > 0) {
-            var demPct = (totalDemVotes / totalVotes) * 100;
-            var repPct = (totalRepVotes / totalVotes) * 100;
-            var thirdPct = (totalThirdPartyVotes / totalVotes) * 100;
+            // Find 1st and 2nd place
+            var sortedParties = Object.keys(partyVotes).sort(function(a, b) {
+                return partyVotes[b] - partyVotes[a];
+            });
+            var firstPlace = sortedParties[0];
+            var secondPlace = sortedParties[1];
             
-            // State margin formula: (Total Dem - Total Rep) / Total Major Party Votes
-            var majorPartyVotes = totalDemVotes + totalRepVotes;
-            var newMargin = majorPartyVotes > 0 ? ((totalDemVotes - totalRepVotes) / majorPartyVotes) * 100 : 0;
+            // True margin out of TOTAL votes
+            var newMargin = ((partyVotes[firstPlace] - partyVotes[secondPlace]) / totalVotes) * 100;
+            
+            // Maintain backwards compatibility for D/R polarity if third party isn't leading
+            if (firstPlace === 'R') {
+                newMargin = -newMargin;
+            } else if (firstPlace === 'D') {
+                newMargin = Math.abs(newMargin);
+            }
+            
+            var demPct = (partyVotes.D / totalVotes) * 100;
+            var repPct = (partyVotes.R / totalVotes) * 100;
+            var thirdPct = ((partyVotes.G + partyVotes.L + partyVotes.I + partyVotes.PSL) / totalVotes) * 100;
             
             // Update state data
             if (gameData.states[stateCode]) {
                 gameData.states[stateCode].margin = newMargin;
+                gameData.states[stateCode].marginParty = firstPlace;
                 gameData.states[stateCode].demPct = demPct;
                 gameData.states[stateCode].repPct = repPct;
                 gameData.states[stateCode].thirdPct = thirdPct;
@@ -2353,20 +2452,23 @@ var Counties = {
         if (mode === 'margin') {
             var marginText = 'N/A';
             if (pollByParty) {
-                var demPct = pollByParty.D || 0;
-                var repPct = pollByParty.R || 0;
-                var margin = demPct - repPct;
-                marginText = (margin > 0 ? 'D+' : 'R+') + Math.abs(margin).toFixed(1);
-                color = margin > 0 ? '#00AEF3' : '#E81B23';
+                var pVotes = { D: pollByParty.D||0, R: pollByParty.R||0, G: pollByParty.G||0, L: pollByParty.L||0, I: pollByParty.I||0, PSL: pollByParty.PSL||0 };
+                var sorted = Object.keys(pVotes).sort(function(a, b) { return pVotes[b] - pVotes[a]; });
+                var p1 = sorted[0], p2 = sorted[1];
+                var margin = pVotes[p1] - pVotes[p2];
+                marginText = p1 + '+' + margin.toFixed(1);
+                color = (typeof Utils !== 'undefined' && Utils.getPartyColor) ? Utils.getPartyColor(p1) : (p1 === 'D' ? '#00AEF3' : '#E81B23');
             } else {
                 var totals = this.calculateCountyVoteTotals(county, { reportingFactor: 1, decidedMultiplier: 1, errorFactor: 1 });
-                var demVotes = totals.D || 0;
-                var repVotes = totals.R || 0;
-                var total = demVotes + repVotes;
+                var tD = totals.D||0, tR = totals.R||0, tG = totals.G||0, tL = totals.L||0, tI = totals.I||0, tPSL = totals.PSL||0;
+                var total = tD + tR + tG + tL + tI + tPSL;
                 if (total > 0) {
-                    var fallbackMargin = ((demVotes - repVotes) / total) * 100;
-                    marginText = (fallbackMargin > 0 ? 'D+' : 'R+') + Math.abs(fallbackMargin).toFixed(1);
-                    color = fallbackMargin > 0 ? '#00AEF3' : '#E81B23';
+                    var cVotes = { D: tD, R: tR, G: tG, L: tL, I: tI, PSL: tPSL };
+                    var sorted = Object.keys(cVotes).sort(function(a, b) { return cVotes[b] - cVotes[a]; });
+                    var p1 = sorted[0], p2 = sorted[1];
+                    var fallbackMargin = ((cVotes[p1] - cVotes[p2]) / total) * 100;
+                    marginText = p1 + '+' + fallbackMargin.toFixed(1);
+                    color = (typeof Utils !== 'undefined' && Utils.getPartyColor) ? Utils.getPartyColor(p1) : (p1 === 'D' ? '#00AEF3' : '#E81B23');
                 }
             }
             detailLine = '<span class="tooltip-leader" style="color: ' + color + '">' + marginText + '</span>';

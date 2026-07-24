@@ -29,11 +29,12 @@ var Campaign = {
             '<button class="act-btn" onclick="app.openStateBio()"><span><i class="fa-solid fa-book-open"></i></span><span>INTEL</span></button>' +
             '<button class="act-btn" onclick="app.openCountyView()"><span><i class="fa-solid fa-map"></i></span><span>BREAKDOWN</span></button>' +
             '<button class="act-btn" onclick="app.openIssuesPanel()"><span><i class="fa-solid fa-chart-line"></i></span><span>ISSUES</span></button>' +
+            '<button class="act-btn" onclick="app.openPolicyModal()"><span><i class="fa-solid fa-bullseye"></i></span><span>PLATFORM</span></button>' +
             '<button class="act-btn" onclick="app.openEndorsersModal()"><span><i class="fa-solid fa-handshake"></i></span><span>ENDORSERS</span></button>' +
             '<button class="act-btn" onclick="app.handleAction(\'speech\')"><span><i class="fa-solid fa-microphone"></i></span><span>SPEECH</span></button>' +
-            '<button class="act-btn v2-btn" onclick="app.handleAction(\'debate_prep\')"><span><i class="fa-solid fa-book"></i></span><span>DEBATE PREP</span></button>' +
-            '<button class="act-btn v2-btn" onclick="app.handleAction(\'oppo_research\')"><span><i class="fa-solid fa-magnifying-glass"></i></span><span>OPPO RESEARCH</span></button>' +
-            '<button class="act-btn v2-btn" onclick="Campaign.handleGrassrootsFundraise()"><span><i class="fa-solid fa-hand-holding-dollar"></i></span><span>GRASSROOTS</span></button>';
+            '<button class="act-btn" onclick="app.handleAction(\'debate_prep\')"><span><i class="fa-solid fa-book"></i></span><span>DEBATE PREP</span></button>' +
+            '<button class="act-btn" onclick="app.handleAction(\'oppo_research\')"><span><i class="fa-solid fa-magnifying-glass"></i></span><span>OPPO RESEARCH</span></button>' +
+            '<button class="act-btn" onclick="Campaign.handleGrassrootsFundraise()"><span><i class="fa-solid fa-hand-holding-dollar"></i></span><span>GRASSROOTS</span></button>';
     },
 
     restoreStateActionGrid: function() {
@@ -241,10 +242,11 @@ var Campaign = {
                         if (typeof Utils !== 'undefined' && Utils.getMarginColor) {
                             var totalDistVotes = 0;
                             for (var p in dres.votes) totalDistVotes += dres.votes[p];
-                            var demVotes = dres.votes['D'] || 0;
-                            var repVotes = dres.votes['R'] || 0;
-                            var marginPct = totalDistVotes > 0 ? ((demVotes - repVotes) / totalDistVotes) * 100 : 0;
-                            marginColor = Utils.getMarginColor(marginPct);
+                            var sortedParties = Object.keys(dres.votes).sort(function(a, b) { return dres.votes[b] - dres.votes[a]; });
+                            var p1 = sortedParties[0] || 'D';
+                            var p2 = sortedParties[1];
+                            var marginPct = totalDistVotes > 0 ? ((dres.votes[p1] - (dres.votes[p2] || 0)) / totalDistVotes) * 100 : 0;
+                            marginColor = Utils.getMarginColor(marginPct, p1);
                         }
                         dhtml += '<div class="district-box" style="background-color: ' + marginColor + ';" onclick="Campaign.clickDistrict(\'' + code + '\', \'' + dres.district + '\')">' + dres.district + '</div>';
                     }
@@ -516,11 +518,14 @@ var Campaign = {
         html += '<div class="tooltip-detail"><strong>CPM:</strong> ' + costText + '</div>';
         
         if (county.v) {
-            var dPct = county.v.D || 0;
-            var rPct = county.v.R || 0;
-            var margin = dPct - rPct;
-            var leadText = margin > 0 ? 'D +' + margin.toFixed(1) : (margin < 0 ? 'R +' + Math.abs(margin).toFixed(1) : 'Even');
-            html += '<div class="tooltip-sub"><strong>Dominating:</strong> ' + leadText + '</div>';
+            var cVotes = { D: county.v.D||0, R: county.v.R||0, G: county.v.G||0, L: county.v.L||0, I: county.v.I||0, PSL: county.v.PSL||0 };
+            var sorted = Object.keys(cVotes).sort(function(a, b) { return cVotes[b] - cVotes[a]; });
+            var p1 = sorted[0], p2 = sorted[1];
+            var margin = cVotes[p1] - cVotes[p2];
+            
+            var leadText = margin > 0 ? p1 + '+' + margin.toFixed(1) : 'Even';
+            var color = (typeof Utils !== 'undefined' && Utils.getPartyColor) ? Utils.getPartyColor(p1) : (p1 === 'D' ? '#00AEF3' : '#E81B23');
+            html += '<div class="tooltip-sub"><strong>Dominating:</strong> <span style="color: ' + color + '">' + leadText + '</span></div>';
         }
         
         tooltip.innerHTML = html;
@@ -550,14 +555,14 @@ var Campaign = {
 
     getStateMapColor: function(code, state) {
         var mode = this.mapMode || 'margin';
-        if (mode === 'margin') return Utils.getMarginColor(state.margin);
+        if (mode === 'margin') return Utils.getMarginColor(state.margin, state.marginParty);
         if (mode === 'ev') return this.getGoldScaleColor((state.ev || 0) / 54);
         if (mode === 'population') return this.getGoldScaleColor(this.getStatePopulationIndex(code));
         if (mode === 'turnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'all'));
         if (mode === 'playerTurnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'player'));
         if (mode === 'opponentTurnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'opponent'));
         if (mode === 'favorability') return this.getFavorabilityColor(this.getFavorability());
-        return Utils.getMarginColor(state.margin);
+        return Utils.getMarginColor(state.margin, state.marginParty);
     },
 
     getGoldScaleColor: function(index) {
@@ -753,14 +758,49 @@ var Campaign = {
     },
 
     updateHUD: function() {
-        document.getElementById('hud-img').src = gameData.candidate.img;
-        document.getElementById('hud-cand-name').innerText = gameData.candidate.name;
-        document.getElementById('hud-party-name').innerText = PARTIES[gameData.selectedParty].name.toUpperCase();
+        var hudImg = document.getElementById('hud-img');
+        if (hudImg) hudImg.src = gameData.candidate.img;
+        var hudCandName = document.getElementById('hud-cand-name');
+        if (hudCandName) hudCandName.innerText = gameData.candidate.name;
+        var hudPartyName = document.getElementById('hud-party-name');
+        if (hudPartyName) hudPartyName.innerText = PARTIES[gameData.selectedParty].name.toUpperCase();
         document.getElementById('hud-funds').innerText = '$' + gameData.funds.toFixed(1) + 'M';
         document.getElementById('hud-date').innerText = Utils.formatDate(gameData.currentDate);
         var fav = document.getElementById('hud-favorability') || document.getElementById('hud-credibility');
         if (fav) {
             fav.innerText = Math.round(this.getFavorability() * 100) + '%';
+        }
+
+        // Update Democratic & Republican ticket images/names on the EV bar
+        var demPres = gameData.selectedParty === 'D' ? gameData.candidate : (gameData.demTicket ? gameData.demTicket.pres : null);
+        var demVP = gameData.selectedParty === 'D' ? gameData.vp : (gameData.demTicket ? gameData.demTicket.vp : null);
+        var repPres = gameData.selectedParty === 'R' ? gameData.candidate : (gameData.repTicket ? gameData.repTicket.pres : null);
+        var repVP = gameData.selectedParty === 'R' ? gameData.vp : (gameData.repTicket ? gameData.repTicket.vp : null);
+
+        if (demPres) {
+            var demPresImg = document.getElementById('hud-dem-pres-img');
+            if (demPresImg) demPresImg.src = demPres.img || 'images/scenario.jpg';
+            var demPresName = document.getElementById('hud-dem-pres-name');
+            if (demPresName) demPresName.innerText = demPres.name;
+        }
+        if (demVP) {
+            var demVpImg = document.getElementById('hud-dem-vp-img');
+            if (demVpImg) demVpImg.src = demVP.img || 'images/scenario.jpg';
+            var demVpName = document.getElementById('hud-dem-vp-name');
+            if (demVpName) demVpName.innerText = demVP.name;
+        }
+
+        if (repPres) {
+            var repPresImg = document.getElementById('hud-rep-pres-img');
+            if (repPresImg) repPresImg.src = repPres.img || 'images/scenario.jpg';
+            var repPresName = document.getElementById('hud-rep-pres-name');
+            if (repPresName) repPresName.innerText = repPres.name;
+        }
+        if (repVP) {
+            var repVpImg = document.getElementById('hud-rep-vp-img');
+            if (repVpImg) repVpImg.src = repVP.img || 'images/scenario.jpg';
+            var repVpName = document.getElementById('hud-rep-vp-name');
+            if (repVpName) repVpName.innerText = repVP.name;
         }
 
         // v2: Momentum display
@@ -827,18 +867,27 @@ var Campaign = {
     },
 
     handleAction: function(action) {
-        if (! gameData.selectedState) {
-            return Utils.showToast("Select a state first!");
-        }
-        
-        var s = gameData.states[gameData.selectedState];
-        
         if (action === 'fundraise') {
             if (typeof app !== 'undefined' && app.openFundraiseModal) {
                 app.openFundraiseModal();
             }
             return;
-        } else if (action === 'rally') {
+        } else if (action === 'oppo_research') {
+            if (typeof app !== 'undefined' && app.openOppoResearchModal) {
+                app.openOppoResearchModal();
+            } else if (typeof OppoResearchUI !== 'undefined') {
+                OppoResearchUI.openModal();
+            }
+            return;
+        }
+
+        if (!gameData.selectedState) {
+            return Utils.showToast("Select a state first!");
+        }
+        
+        var s = gameData.states[gameData.selectedState];
+        
+        if (action === 'rally') {
             // Queue rally action
             if (gameData.energy < PERSUASION_CONSTANTS.RALLY_ENERGY_COST) {
                 return Utils.showToast("Need " + PERSUASION_CONSTANTS.RALLY_ENERGY_COST + " energy for rally!");
@@ -930,26 +979,10 @@ var Campaign = {
                 this.updateHUD();
             }
         } else if (action === 'oppo_research') {
-            // v2: Opposition research — targets leading opponent
-            if (gameData.energy < 2) {
-                return Utils.showToast("Need 2 energy for oppo research!");
-            }
-            if (gameData.funds < 3) {
-                return Utils.showToast("Need $3M for oppo research!");
-            }
-
-            var oppoTarget = gameData.selectedParty === 'D' ? 'R' : 'D';
-            var oppoAction = {
-                type: 'OPPO_RESEARCH',
-                state: gameData.selectedState,
-                targetParty: oppoTarget,
-                cost: { funds: 3, energy: 2 }
-            };
-
-            if (typeof Persuasion !== 'undefined' && Persuasion.queueAction(oppoAction)) {
-                Utils.showToast("Oppo research queued vs " + PARTIES[oppoTarget].shortName);
-                Utils.addLog("Queued oppo research vs " + PARTIES[oppoTarget].shortName);
-                this.updateHUD();
+            if (typeof app !== 'undefined' && app.openOppoResearchModal) {
+                app.openOppoResearchModal();
+            } else if (typeof OppoResearchUI !== 'undefined') {
+                OppoResearchUI.openModal();
             }
         }
     },
@@ -1138,6 +1171,12 @@ var Campaign = {
                     }
                 }
             }
+        }
+        
+        // --- V2 Policy System Decay ---
+        if (typeof PolicyManager !== 'undefined') {
+            PolicyManager.processWeeklyPolicyDecay();
+            PolicyManager.processAIPolicies();
         }
         
         // Process undecided voters

@@ -233,13 +233,6 @@ var Screens = {
         effectsHTML += '</div>';
 
         var faction = typeof FACTIONS !== 'undefined' && c.factionId ? FACTIONS[c.factionId] : null;
-        var factionHTML = '';
-        if (faction) {
-            factionHTML = '<div class="candidate-faction-badge" style="display: flex; align-items: center; gap: 4px; font-size: 0.85em; margin-bottom: 6px; color: ' + faction.color + ';" title="' + faction.description + '">' +
-                '<img src="' + faction.emblem + '" style="width:16px;height:16px;" alt="' + faction.name + '">' +
-                '<strong>' + faction.name + '</strong>' +
-                '</div>';
-        }
 
         var logoName = this._getPartyLogoFile(c.party);
         var logoHTML = '';
@@ -262,7 +255,6 @@ var Screens = {
                         '<div class="candidate-tile-state" style="margin-bottom: 0; white-space: nowrap; margin-left: 4px;">🏠 ' + (c.homeState || '') + '</div>' +
                     '</div>' +
                     '<div class="candidate-tile-position">' + (c.position || '') + '</div>' +
-                    factionHTML +
                     '<div class="candidate-tile-stats">' +
                         '<div class="tile-stat-row"><span class="tile-stat-label">Funds:</span><span class="tile-stat-val">$' + (c.funds || 0) + 'M</span></div>' +
                         '<div class="tile-stat-row"><span class="tile-stat-label">Stamina:</span><div class="stamina-pips">' + staminaPips + '</div></div>' +
@@ -301,27 +293,24 @@ var Screens = {
             var isPositive = (effect.support || 0) >= 0 && (effect.turnout || 0) >= 0;
             effectsHTML += formatEffect(isPositive, groupName + ' (' + effectParts.join(', ') + ')', GROUP_ICONS[effectKey] || '👥');
         }
-        effectsHTML += '</div>';
 
         var faction = typeof FACTIONS !== 'undefined' && v.factionId ? FACTIONS[v.factionId] : null;
-        var factionHTML = '';
         if (faction) {
             var presId = Screens._getSelectedPresForParty(v.party);
             var presCand = null;
             if (presId) {
                 presCand = CANDIDATES.find(function(c) { return c.id === presId; });
             }
-            var synergyStr = "";
             if (presCand && presCand.factionId) {
                 var syn = typeof getVPSynergyModifier === 'function' ? getVPSynergyModifier(presCand.factionId, v.factionId) : 0;
-                if (syn > 0) synergyStr = ' <span style="color:#4CAF50; font-weight:bold;">(Synergy: +' + Math.round(syn*100) + '%)</span>';
-                else if (syn < 0) synergyStr = ' <span style="color:#DC3545; font-weight:bold;">(Friction: ' + Math.round(syn*100) + '%)</span>';
+                if (syn > 0) {
+                    effectsHTML += formatEffect(true, 'Faction Synergy (+' + Math.round(syn * 100) + '%)', '🤝');
+                } else if (syn < 0) {
+                    effectsHTML += formatEffect(false, 'Faction Friction (' + Math.round(syn * 100) + '%)', '⚠️');
+                }
             }
-            factionHTML = '<div class="candidate-faction-badge" style="display: flex; align-items: center; gap: 4px; font-size: 0.85em; margin-bottom: 6px; color: ' + faction.color + ';" title="' + faction.description + '">' +
-                '<img src="' + faction.emblem + '" style="width:16px;height:16px;" alt="' + faction.name + '">' +
-                '<strong>' + faction.name + synergyStr + '</strong>' +
-                '</div>';
         }
+        effectsHTML += '</div>';
 
         var logoName = this._getPartyLogoFile(v.party);
         var logoHTML = '';
@@ -344,7 +333,6 @@ var Screens = {
                         '<div class="candidate-tile-state" style="margin-bottom: 0; white-space: nowrap; margin-left: 4px;">🏠 ' + (v.state || v.homeState || '') + '</div>' +
                     '</div>' +
                     '<div class="candidate-tile-position">' + (v.position || '') + '</div>' +
-                    factionHTML +
                     effectsHTML +
                 '</div>' +
                 '<div class="candidate-tile-desc-wrapper">' +

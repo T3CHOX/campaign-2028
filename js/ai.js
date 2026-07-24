@@ -135,7 +135,7 @@ var OpponentAI = {
                 personality.swingWeight = 0.75;
             }
         }
-
+        
         // v2: AI Debate Strategy — prep before scheduled debates
         if (typeof DEBATE_SCHEDULE !== 'undefined') {
             for (var di = 0; di < DEBATE_SCHEDULE.length; di++) {

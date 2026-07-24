@@ -269,6 +269,18 @@ function applyCandidateBuffs() {
                 }
             }
         }
+
+        // 8. Policy Platform Effects (V2 dynamic policies)
+        if (typeof PolicyManager !== 'undefined') {
+            var roleMap = { 'D': 'demOpponent', 'R': 'repOpponent' };
+            roleMap[gameData.selectedParty] = 'player';
+            var role = roleMap[voteKey] || 'thirdParty';
+            
+            var policyMods = PolicyManager.getPolicyGroupEffects(role);
+            if (policyMods && policyMods.groupEffects && Object.keys(policyMods.groupEffects).length > 0) {
+                _applyGroupModsToCounties(policyMods.groupEffects, voteKey, 1.0);
+            }
+        }
     }
 
     // Normalize all county vote shares to prevent incoherent totals
@@ -1823,7 +1835,7 @@ Object.assign(app, {
                 if (isEndorsed) {
                     html += '<div><span style="color: #198754; font-weight: bold; border: 1px solid #198754; padding: 3px 6px; border-radius: 3px;">ENDORSED</span></div>';
                 } else {
-                    html += '<div><button onclick="app.lobbyEndorser(\'' + e.id + '\')" class="act-btn" style="padding: 6px 12px; font-size: 0.8rem; margin:0;"><i class="fa-solid fa-handshake"></i> MEET (5 <i class="fa-solid fa-bolt"></i>)</button></div>';
+                    html += '<div><button onclick="app.lobbyEndorser(\'' + e.id + '\')" class="act-btn" style="padding: 6px 12px; font-size: 0.8rem; margin:0;"><i class="fa-solid fa-handshake"></i> MEET (1 <i class="fa-solid fa-bolt"></i>)</button></div>';
                 }
                 html += '</div>';
                 
@@ -1856,6 +1868,118 @@ Object.assign(app, {
             content.innerHTML = message;
             modal.classList.remove('hidden');
         }
+    },
+    openPolicyModal: function() {
+        var modal = document.getElementById('policy-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        this.renderPolicyModal();
+    },
+    closePolicyModal: function() {
+        var modal = document.getElementById('policy-modal');
+        if (modal) modal.classList.add('hidden');
+    },
+    renderPolicyModal: function() {
+        var activeGrid = document.getElementById('active-policies-grid');
+        var availableGrid = document.getElementById('available-policies-grid');
+        if (!activeGrid || !availableGrid) return;
+        
+        activeGrid.innerHTML = '';
+        availableGrid.innerHTML = '';
+        
+        var partyKey = gameData.selectedParty;
+        var activePol = PolicyManager.activePolicies['player'] || [];
+        
+        if (activePol.length === 0) {
+            activeGrid.innerHTML = '<div style="color:#aaa; font-style:italic;">No policies adopted yet.</div>';
+        } else {
+            activePol.forEach(function(pState) {
+                var pDef = POLICIES.find(x => x.id === pState.id);
+                if (!pDef) return;
+                
+                var card = document.createElement('div');
+                card.className = 'policy-card';
+                card.style.background = 'rgba(255,255,255,0.05)';
+                card.style.border = '1px solid #ffaa00';
+                card.style.borderRadius = '8px';
+                card.style.padding = '15px';
+                
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <span style="font-size: 1.5rem; color: #ffaa00;"><i class="${pDef.icon}"></i></span>
+                        <h4 style="margin: 0; font-size: 1.1rem;">${pDef.name}</h4>
+                    </div>
+                    <p style="font-size: 0.85rem; color: #ddd; margin-bottom: 15px;">${pDef.desc}</p>
+                    <div style="font-size: 0.75rem; color: #aaa; margin-bottom: 5px; display: flex; justify-content: space-between;">
+                        <span>IMPORTANCE (SALIENCE):</span>
+                        <span>${pState.importance}%</span>
+                    </div>
+
+                    <div style="width: 100%; background: #222; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+                        <div style="width: ${pState.importance}%; background: #ffaa00; height: 100%;"></div>
+                    </div>
+                    <button class="queue-ad-btn" style="width: 100%; padding: 8px; font-size: 0.8rem; opacity: ${(gameData.funds >= 0.5 && gameData.energy >= 1) ? 1 : 0.5};" onclick="app.campaignOnPolicy('${pDef.id}')" ${!(gameData.funds >= 0.5 && gameData.energy >= 1) ? 'disabled' : ''}>
+                        CAMPAIGN ($0.5M | 1 Energy)
+                    </button>
+                `;
+                activeGrid.appendChild(card);
+            });
+        }
+        
+        var availPol = PolicyManager.getAvailablePolicies(partyKey);
+        
+        if (availPol.length === 0) {
+            availableGrid.innerHTML = '<div style="color:#aaa; font-style:italic;">No additional policies available for your faction.</div>';
+        } else {
+            availPol.forEach(function(pDef) {
+                var card = document.createElement('div');
+                card.className = 'policy-card';
+                card.style.background = 'rgba(255,255,255,0.03)';
+                card.style.border = '1px solid rgba(255,255,255,0.1)';
+                card.style.borderRadius = '8px';
+                card.style.padding = '15px';
+                card.style.display = 'flex';
+                card.style.flexDirection = 'column';
+                card.style.justifyContent = 'space-between';
+                
+                var canAfford = gameData.funds >= pDef.cost.funds && gameData.energy >= pDef.cost.energy;
+                
+                card.innerHTML = `
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <span style="font-size: 1.5rem; color: #00AEF3;"><i class="${pDef.icon}"></i></span>
+                            <h4 style="margin: 0; font-size: 1.1rem;">${pDef.name}</h4>
+                        </div>
+                        <p style="font-size: 0.85rem; color: #ddd; margin-bottom: 15px;">${pDef.desc}</p>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 10px;">
+                            <strong>Cost:</strong> $${pDef.cost.funds.toFixed(1)}M | ${pDef.cost.energy} Energy
+                        </div>
+                        <button class="queue-ad-btn" style="width: 100%; opacity: ${canAfford ? 1 : 0.5};" onclick="app.adoptPolicy('${pDef.id}')" ${!canAfford ? 'disabled' : ''}>ADOPT POLICY</button>
+                    </div>
+                `;
+                availableGrid.appendChild(card);
+            });
+        }
+    },
+    adoptPolicy: function(id) {
+        if (PolicyManager.adoptPolicy(gameData.selectedParty, id)) {
+            this.renderPolicyModal();
+        }
+    },
+    campaignOnPolicy: function(id) {
+        if (gameData.funds < 0.5 || gameData.energy < 1) {
+            Utils.showToast("Not enough Funds or Energy to campaign on policy.");
+            return;
+        }
+        
+        gameData.funds -= 0.5;
+        gameData.energy -= 1;
+        PolicyManager.campaignOnPolicy('player', id);
+        this.renderPolicyModal();
+        Campaign.updateHUD();
+        Utils.showToast("Campaigned on policy! Importance increased.");
     },
     openIssuesPanel: function() {
         if (!gameData.selectedState) {
@@ -2191,6 +2315,36 @@ Object.assign(app, {
     closeDigitalModal: function() {
         var modal = document.getElementById('digital-planner-modal');
         if (modal) modal.classList.add('hidden');
+    },
+
+    openOppoResearchModal: function() {
+        if (typeof OppoResearchUI !== 'undefined') {
+            OppoResearchUI.openModal();
+        }
+    },
+
+    closeOppoModal: function() {
+        if (typeof OppoResearchUI !== 'undefined') {
+            OppoResearchUI.closeModal();
+        }
+    },
+
+    resetOppoAllocations: function() {
+        if (typeof OppoResearchUI !== 'undefined') {
+            OppoResearchUI.resetAllocations();
+        }
+    },
+
+    saveOppoAllocations: function() {
+        if (typeof OppoResearchUI !== 'undefined') {
+            OppoResearchUI.saveAllocations();
+        }
+    },
+
+    executeInstantOppoDeepDive: function() {
+        if (typeof OppoResearchUI !== 'undefined') {
+            OppoResearchUI.executeInstantDeepDive();
+        }
     },
     
     handleSpeechWithIntensity: function(issueId) {

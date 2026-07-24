@@ -489,8 +489,8 @@ var Endorsers = {
     },
     
     meetEndorser: function(id) {
-        if (gameData.energy < 5) {
-            Utils.showToast("Need 5 Energy to meet with an endorser!");
+        if (gameData.energy < 1) {
+            Utils.showToast("Need 1 Energy to meet with an endorser!");
             return;
         }
         
@@ -508,7 +508,7 @@ var Endorsers = {
         
         if (!endorser) return;
         
-        gameData.energy -= 5;
+        gameData.energy -= 1;
         
         // Base gain is +5, modified by current relation (harder to push from -50 to 0 than 0 to 50)
         var current = this.relationships[id];

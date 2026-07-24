@@ -878,36 +878,58 @@ body {
 }
 
 .action-grid {
-    display:  grid;
-    grid-template-columns:  1fr 1fr;
-    gap:  10px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px;
     margin-bottom: 25px;
 }
 
 .act-btn {
-    padding: 18px 10px;
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    height: 100%;
+    padding: 8px 4px;
     border: 1px solid #444444;
     background: #2a2a2a;
-    color:  white;
+    color: white;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    text-align: center;
+    gap: 5px;
     transition: 0.2s;
     border-radius: 6px;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: bold;
+    box-sizing: border-box;
 }
 
 .act-btn:hover {
-    background:  #333333;
+    background: #333333;
     border-color: #00AEF3;
     transform: translateY(-2px);
 }
 
 .act-btn span:first-child {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.act-btn span:first-child img {
+    width: 1.3em;
+    height: 1.3em;
+    object-fit: contain;
+}
+
+.act-btn span:last-child {
+    font-size: 0.65rem;
+    line-height: 1.15;
+    letter-spacing: 0.2px;
+    word-break: break-word;
 }
 
 /* Ad Campaign Tile Styles */
@@ -1100,7 +1122,7 @@ body {
     pointer-events: none;
 }
 
-#bio-modal, #national-modal, #speech-modal, #ground-ops-modal, #digital-planner-modal, #fundraise-modal, #pac-modal, #interest-groups-modal, #ads-modal, #rally-modal, #endorsers-modal {
+#bio-modal, #national-modal, #speech-modal, #ground-ops-modal, #digital-planner-modal, #fundraise-modal, #pac-modal, #interest-groups-modal, #ads-modal, #rally-modal, #endorsers-modal, #oppo-modal, #policy-modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -1114,20 +1136,40 @@ body {
 }
 
 .modal-box {
-    background:  #222222;
+    position: relative;
+    background: #222222;
     border: 1px solid #555555;
-    padding: 30px;
+    padding: 25px;
     max-width: 500px;
     width: 90%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     border-radius: 8px;
     box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+    box-sizing: border-box;
+}
+
+.modal-box > *:not(.modal-header) {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    margin-bottom: 15px;
 }
 
 .modal-box h2 {
-    margin:  0 0 20px 0;
+    margin: 0;
     font-family: 'Merriweather', serif;
     border-bottom: 1px solid #444444;
-    padding-bottom: 15px;
+    padding-bottom: 10px;
 }
 
 .bio-stat {
@@ -1417,8 +1459,14 @@ body {
     flex-direction: column;
 }
 
-.ev-dem . ev-info {
+.ev-dem .ev-info {
+    text-align: left;
+    align-items: flex-start;
+}
+
+.ev-rep .ev-info {
     text-align: right;
+    align-items: flex-end;
 }
 
 .ev-name {
@@ -2328,6 +2376,9 @@ body {
 .speech-modal-box {
     max-width: 600px;
     width: 90%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .speech-issue-btn {
@@ -2391,6 +2442,58 @@ body {
     font-size: 1.3rem;
     font-weight: 700;
     color: #ffd700;
+}
+
+/* Oppo Research Modal Styles */
+.oppo-cat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.oppo-cat-card.active-card {
+    background: rgba(255, 170, 0, 0.04);
+    border-color: rgba(255, 170, 0, 0.35);
+}
+
+.oppo-level-btn-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.oppo-level-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ccc;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.oppo-level-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: #888;
+    color: #fff;
+}
+
+.oppo-level-btn.selected {
+    background: #ffaa00;
+    border-color: #ffaa00;
+    color: #111;
+    box-shadow: 0 0 10px rgba(255, 170, 0, 0.3);
 }
 
 .credibility-subtitle {
@@ -4791,13 +4894,7 @@ body {
 
 /* Expand action grid to 3 columns when many buttons */
 .action-grid {
-    grid-template-columns: 1fr 1fr 1fr !important;
-}
-
-@media (max-width: 1200px) {
-    .action-grid {
-        grid-template-columns: 1fr 1fr !important;
-    }
+    grid-template-columns: repeat(3, 1fr) !important;
 }
 
 /* v2 HUD Stat Styles */
@@ -5420,10 +5517,12 @@ body {
 .hud-row {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 16px;
     padding: 8px 20px;
     max-width: 100%;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .hud-brand {
@@ -5433,52 +5532,110 @@ body {
     color: #fff;
     white-space: nowrap;
     letter-spacing: -0.5px;
-    flex-shrink: 0;
+    flex: 1 1 0%;
+    min-width: 120px;
 }
 
 .hud-brand span { color: #E81B23; }
-
-.hud-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255,255,255,0.04);
-    padding: 4px 12px 4px 4px;
-    border-radius: 24px;
-    border: 1px solid #333;
-    flex-shrink: 0;
-}
-
-.hud-badge img {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #fff;
-}
-
-.hud-badge-text {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.2;
-}
-
-.hud-badge-text .cand-name {
-    font-size: 0.78rem;
-    font-weight: 800;
-}
-
-.hud-badge-text .cand-party {
-    font-size: 0.6rem;
-    color: #777;
-}
 
 /* ── Campaign EV block ── */
 .hud-ev-block {
     display: flex;
     align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex: 0 0 auto;
+}
+
+.hud-ticket-side {
+    display: flex;
+    align-items: center;
     gap: 10px;
     flex-shrink: 0;
+}
+
+.hud-ticket-imgs {
+    position: relative;
+    width: 42px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.hud-ticket-img-pres {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    position: absolute;
+    top: 2px;
+    z-index: 1;
+}
+
+.hud-ticket-dem .hud-ticket-img-pres {
+    left: 0;
+    border: 2px solid #00AEF3;
+}
+
+.hud-ticket-rep .hud-ticket-img-pres {
+    right: 0;
+    border: 2px solid #E81B23;
+}
+
+.hud-ticket-img-vp {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    position: absolute;
+    bottom: 0;
+    z-index: 2;
+    border: 1.5px solid #1a1a1a;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.hud-ticket-dem .hud-ticket-img-vp {
+    right: 0;
+    border: 2px solid #00AEF3;
+}
+
+.hud-ticket-rep .hud-ticket-img-vp {
+    left: 0;
+    border: 2px solid #E81B23;
+}
+
+.hud-ticket-names {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    justify-content: center;
+}
+
+.hud-ticket-names.text-right {
+    text-align: right;
+}
+
+.hud-ticket-pres-name {
+    font-family: 'Newsreader', serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+.hud-ticket-vp-name {
+    font-family: 'Newsreader', serif;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: #bbbbbb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
 }
 
 .hud-ev-score {
@@ -5526,8 +5683,9 @@ body {
 .hud-stats-row {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 14px;
-    margin-left: auto;
+    flex: 1 1 0%;
 }
 
 .hud-stat-item {

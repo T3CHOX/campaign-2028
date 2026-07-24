@@ -1,0 +1,6 @@
+{
+  "name": "Decision 2028 Campaign Simulator",
+  "description": "County-level US presidential campaign simulator with demographic modeling, media market ad buying, debates, and election night results.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

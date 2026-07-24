@@ -3,6 +3,14 @@
    ============================================ */
 
 var Utils = {
+    POPULATION_ICON: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="height: 1.2em; width: 1.2em; vertical-align: middle; margin-right: 4px; margin-bottom: 2px;"><g><path d="M164.594 21.625c-.537.012-1.068.028-1.563.094-29.656 3.852-52.56 35.847-52.56 74.75 0 21.55 7.307 41.193 18.686 54.905-61.678 11.594-66.563 115.158-66.562 188.063h43.218l11.094 152.437h63.063L168.905 340.03h21.47l11.343 152.158h108.686l10.03-152.157h21.627l-9.907 151.845h63.063l10.53-152.438h40.28c0-73.107 1.407-178.78-65.967-189.218 10.89-13.646 18.093-32.734 18.093-53.75 0-41.496-26.52-74.75-59-74.75-2.03 0-4.43-.263-6.406 0-9.4 1.22-17.562 5.455-25.125 11.686 16.388 13.303 27.468 36.433 27.47 63.063 0 21.016-7.236 40.104-18.126 53.75 67.373 10.438 66 116.11 66 189.218h-21.94c.008-73.086 1.29-178.215-65.905-188.625 10.89-13.647 17.906-32.61 17.906-53.625 0-41.497-26.457-75-58.936-75-2.03 0-4.117-.262-6.094 0-29.657 3.85-52.813 36.095-52.813 75 0 21.547 7.373 40.788 18.75 54.5-61.514 11.563-66.318 114.874-66.343 187.75H126.25c-.002-72.905 4.322-176.47 66-188.063-11.38-13.712-18.687-33.356-18.688-54.906 0-26.575 11.138-49.632 27.438-63.064-9.148-7.425-19.896-11.687-31.53-11.687-1.525 0-3.267-.132-4.876-.095z" fill="currentColor"></path></g></svg>',
+
+    getLastName: function (fullName) {
+        if (!fullName) return '';
+        var parts = fullName.trim().split(' ');
+        return parts[parts.length - 1];
+    },
+
     showToast: function (msg) {
         var toast = document.getElementById('toast');
         if (toast) {
@@ -36,32 +44,83 @@ var Utils = {
         }
     },
 
-    getMarginColor: function (margin) {
-        if (margin > 35) return "#00152e";
-        if (margin > 25) return "#00264d";
-        if (margin > 18) return "#003d7a";
-        if (margin > 12) return "#0055a6";
-        if (margin > 8) return "#0077d9";
-        if (margin > 5) return "#1395e8";
-        if (margin > 3) return "#33a9f5";
-        if (margin > 2) return "#66bff7";
-        if (margin > 1) return "#91d7fb";
-        if (margin > 0.5) return "#b7e8ff";
-        if (margin > 0.25) return "#d4f2ff";
-        if (margin > 0.1) return "#edfaff";
-        if (margin > -0.1) return "#f7f2e7";
-        if (margin > -0.25) return "#fff0ec";
-        if (margin > -0.5) return "#ffd8d2";
-        if (margin > -1) return "#ffb7ad";
-        if (margin > -2) return "#ff8b7d";
-        if (margin > -3) return "#ff6258";
-        if (margin > -5) return "#f04444";
-        if (margin > -8) return "#d9272e";
-        if (margin > -12) return "#b9151d";
-        if (margin > -18) return "#940c14";
-        if (margin > -25) return "#73070e";
-        if (margin > -35) return "#520409";
-        return "#310105";
+    getPartyColor: function(party) {
+        var colors = {
+            'D': '#00AEF3',
+            'R': '#E81B23',
+            'G': '#28a745',
+            'L': '#ffc107',
+            'I': '#6f42c1',
+            'PSL': '#dc3545'
+        };
+        return colors[party] || '#888888';
+    },
+
+    getMarginColor: function (margin, party) {
+        // Backwards compatibility for old calls without party specified
+        if (!party) {
+            party = margin > 0 ? 'D' : 'R';
+            margin = Math.abs(margin);
+        } else {
+            margin = Math.abs(margin);
+        }
+
+        // Base candidate colors
+        var baseColors = {
+            'D': [0, 174, 243],    // #00AEF3
+            'R': [232, 27, 35],    // #E81B23
+            'G': [40, 167, 69],    // #28a745
+            'L': [255, 193, 7],    // #ffc107
+            'I': [111, 66, 193],   // #6f42c1
+            'PSL': [220, 53, 69]   // #dc3545
+        };
+
+        // Darkened versions for 50%+ margins
+        var darkColors = {
+            'D': [0, 52, 73],
+            'R': [70, 8, 10],
+            'G': [12, 50, 20],
+            'L': [76, 58, 2],
+            'I': [33, 20, 58],
+            'PSL': [66, 16, 20]
+        };
+
+        // Very light tinted versions for 0.1% margins
+        var tintColors = {
+            'D': [225, 245, 255],
+            'R': [255, 225, 225],
+            'G': [225, 255, 230],
+            'L': [255, 250, 220],
+            'I': [240, 230, 255],
+            'PSL': [255, 225, 230]
+        };
+
+        var cBase = baseColors[party] || baseColors['I'];
+        var cDark = darkColors[party] || darkColors['I'];
+        var cTint = tintColors[party] || tintColors['I'];
+
+        // If it's a perfect tie, return pure white
+        if (margin === 0) return '#ffffff';
+
+        var r, g, b;
+        
+        if (margin <= 15) {
+            // Interpolate from tint (0.1%) to base candidate color (15%)
+            // We use a slight curve (square root) to make lower margins visually pop
+            var pct = Math.sqrt(margin / 15);
+            r = Math.round(cTint[0] + (cBase[0] - cTint[0]) * pct);
+            g = Math.round(cTint[1] + (cBase[1] - cTint[1]) * pct);
+            b = Math.round(cTint[2] + (cBase[2] - cTint[2]) * pct);
+        } else {
+            // Interpolate from base candidate color (15%) to dark color (50%)
+            var m = Math.min(margin, 50);
+            var pct = (m - 15) / 35;
+            r = Math.round(cBase[0] + (cDark[0] - cBase[0]) * pct);
+            g = Math.round(cBase[1] + (cDark[1] - cBase[1]) * pct);
+            b = Math.round(cBase[2] + (cDark[2] - cBase[2]) * pct);
+        }
+
+        return 'rgb(' + r + ',' + g + ',' + b + ')';
     },
 
     formatDate: function (date) {
