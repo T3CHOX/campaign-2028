@@ -157,7 +157,7 @@ var Debates = {
         // Issue position score — 3 random issues
         var issues = this._pickDebateIssues(3);
         var positionScore = 0;
-        var candidatePositions = CANDIDATE_POSITIONS[candidate.id] || {};
+        var candidatePositions = (IssueModel.candidate(candidate.id) || candidate).issuePositions || {};
         for (var i = 0; i < issues.length; i++) {
             var pos = candidatePositions[issues[i].id] || 0;
             positionScore += Math.abs(pos) * 0.3; // Strength of position matters

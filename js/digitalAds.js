@@ -206,7 +206,13 @@ var DigitalAds = {
             var reach = (impressions / pData.frequency);
             var reachPct = Math.min(1.0, reach / statePop);
             
-            var pVal = reachPct * 0.02 * typeData.persuasion * satFactor;
+            var factionCell = (typeof Persuasion !== 'undefined' && Persuasion.getOrCreateFactionCell)
+                ? Persuasion.getOrCreateFactionCell(config.segment) : { awareness: 0.5 };
+            var peripheralCue = (config.creative === 'bio') ? 0.8 : ((config.creative === 'attack') ? 0.4 : 0.2);
+            var rawPersuasion = reachPct * 0.02 * typeData.persuasion * satFactor;
+            var pVal = (typeof computeAdEffect === 'function')
+                ? computeAdEffect(factionCell, rawPersuasion, reachPct * 0.015 * peripheralCue * satFactor)
+                : rawPersuasion;
             var tVal = reachPct * 0.01 * typeData.turnout * satFactor;
 
             if (backfire) {

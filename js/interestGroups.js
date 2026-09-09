@@ -257,6 +257,7 @@ const INTEREST_GROUPS = {
     progressives: {
         name: 'Progressives',
         category: 'Political',
+        internalOnly: true,
         baseline: -8, // Very Strong D lean
         priorities: ['climate', 'healthcare', 'inequality'],
         support: { D: 86, R: 4, I: 10, G: 0, L: 0, PSL: 0 },
@@ -266,6 +267,7 @@ const INTEREST_GROUPS = {
     libertarians: {
         name: 'Libertarians',
         category: 'Political',
+        internalOnly: true,
         baseline: 5, // Moderate R lean
         priorities: ['freedom', 'taxation', 'govspend'],
         support: { D: 8, R: 70, I: 22, G: 0, L: 0, PSL: 0 },
@@ -275,6 +277,7 @@ const INTEREST_GROUPS = {
     maga: {
         name: 'MAGA',
         category: 'Political',
+        internalOnly: true,
         baseline: 9, // Extreme R lean
         priorities: ['immigration', 'trade', 'nationalism'],
         support: { D: 0, R: 99, I: 1, G: 0, L: 0, PSL: 0 },
@@ -284,6 +287,7 @@ const INTEREST_GROUPS = {
     centrists: {
         name: 'Centrists',
         category: 'Political',
+        internalOnly: true,
         baseline: 0,
         priorities: ['economy', 'bipartisanship', 'pragmatism'],
         support: { D: 49, R: 48, I: 2, G: 0, L: 0, PSL: 1 },
@@ -318,6 +322,7 @@ const INTEREST_GROUPS = {
     genz: {
         name: 'Gen Z',
         category: 'Demographic',
+        internalOnly: true,
         baseline: -4,
         priorities: ['climate', 'economy', 'healthcare'],
         support: { D: 60, R: 34, I: 3, G: 3, L: 0, PSL: 0 },
@@ -337,13 +342,28 @@ const INTEREST_GROUPS = {
     }
 };
 
-// Baseline turnout rates (share of voting-eligible citizens who vote)
+// Presidential turnout baselines. Race/ethnicity and age values use the UF
+// Election Lab's reweighted 2024 CPS Voting and Registration Supplement. The
+// 2024 presidential cycle is the recent, ordinary-cycle anchor for 2028; the
+// unusually high 2020 pandemic-election rates are retained in the source CSV
+// but are not treated as the default. Education categories are crosswalked to
+// this simulator's BA-or-higher split (the source publishes broader bands).
+var PRESIDENTIAL_TURNOUT_CONTEXT = {
+    electionType: 'presidential',
+    benchmarkYear: 2024,
+    source: 'UF Election Lab CPS Demographic Turnout Rates v2.1',
+    sourceFile: 'data/CPS_Demographic_Turnout_Rates_v2.1.csv'
+};
+
 var BASE_TURNOUT_RATES = {
-    white: 0.71,
-    black: 0.62,
-    hispanic: 0.54,
-    asian: 0.59,
-    native: 0.52,
+    white: 0.7095,
+    black: 0.5980,
+    hispanic: 0.4725,
+    asian: 0.5609,
+    native: 0.5609,
+    pacific: 0.5609,
+    multiracial: 0.5609,
+    other_race: 0.5609,
     evangelical: 0.80,
     catholic: 0.66,
     jewish: 0.76,
@@ -356,13 +376,16 @@ var BASE_TURNOUT_RATES = {
     tech: 0.73,
     farmers: 0.75,
     military: 0.70,
-    college: 0.80,
-    noncollege: 0.56,
+    college: 0.7900,
+    noncollege: 0.5200,
     suburban: 0.69,
     urban: 0.61,
     rural: 0.66,
-    youth: 0.50,
-    seniors: 0.74,
+    youth: 0.4851,
+    age25_44: 0.5999,
+    age45_64: 0.7140,
+    seniors: 0.7561,
+    genz: 0.4851,
     progressives: 0.78,
     libertarians: 0.67,
     maga: 0.82,
@@ -718,4 +741,3 @@ var DEFAULT_DEMOGRAPHICS = {
     college: 35, suburban: 40, urban: 30, rural: 30, youth: 20, seniors: 20,
     lgbtq_community: 4, women: 51
 };
-

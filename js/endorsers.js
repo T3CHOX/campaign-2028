@@ -112,7 +112,7 @@ var EndorserSystem = {
     },
 
     processRetractConditions: function() {
-        if (!gameData || !gameData.issuePositions) return;
+        if (!gameData || !gameData.candidate) return;
 
         for (let i = 0; i < this.endorsers.length; i++) {
             let e = this.endorsers[i];
@@ -121,7 +121,8 @@ var EndorserSystem = {
             // Retraction logic based on issue thresholds
             if (e.retractCondition) {
                 let candId = e.currentEndorsement;
-                let candPos = gameData.issuePositions[candId] && gameData.issuePositions[candId][e.retractCondition.issue];
+                let stance = IssueModel.getPosition(candId, e.retractCondition.issue);
+                let candPos = stance && stance.value;
                 
                 if (candPos !== undefined) {
                     let threshold = e.retractCondition.threshold;
@@ -197,8 +198,59 @@ var EndorserSystem = {
             Utils.showToast("Lobbying Failed.");
             return false;
         }
+    },
+
+    // v1 Spec Ticket 10: Two-Step Flow / Endorser Diffusion Network
+    diffuseFromEndorsers: function(factionCell, relevantEndorsers) {
+        if (!factionCell || !relevantEndorsers || relevantEndorsers.length === 0) return;
+        var phi = (typeof DIFFUSION_CONFIG !== 'undefined' && DIFFUSION_CONFIG.PHI_DIFFUSION_RATE !== undefined)
+            ? DIFFUSION_CONFIG.PHI_DIFFUSION_RATE : 0.10;
+
+        for (var i = 0; i < relevantEndorsers.length; i++) {
+            var endorser = relevantEndorsers[i];
+            var endorserFaction = endorser.factionId || (endorser.party === 'D' ? 'mainstream_liberal' : (endorser.party === 'R' ? 'compassionate_conservative' : 'unaligned_center'));
+            var trustWeight = (typeof getFactionCompatibility === 'function')
+                ? getFactionCompatibility(factionCell.factionId, endorserFaction)
+                : 1.0;
+            var endPos = (endorser.currentPosition !== undefined) ? endorser.currentPosition : 0.5;
+            var currentPos = (factionCell.expressedPosition !== undefined) ? factionCell.expressedPosition : 0.5;
+            factionCell.expressedPosition = currentPos + phi * trustWeight * (endPos - currentPos);
+        }
+        factionCell.expressedPosition = clamp(factionCell.expressedPosition, 0, 1);
+    },
+
+    processWeeklyDiffusion: function() {
+        if (!gameData || !gameData.factionCells) return;
+
+        // Update positions of leaders based on their endorsements
+        for (var i = 0; i < this.endorsers.length; i++) {
+            var e = this.endorsers[i];
+            if (e.currentPosition === undefined) e.currentPosition = 0.5;
+            if (e.currentEndorsement) {
+                var cand = (gameData.candidate && gameData.candidate.id === e.currentEndorsement) ? gameData.candidate : null;
+                if (cand) {
+                    e.currentPosition = (cand.party === 'D') ? 0.3 : (cand.party === 'R' ? 0.7 : 0.5);
+                }
+            }
+        }
+
+        // Diffuse to faction cells
+        for (var cellKey in gameData.factionCells) {
+            var cell = gameData.factionCells[cellKey];
+            var relevant = this.endorsers.filter(function(e) {
+                return e.currentEndorsement !== null && (e.targetGroupId === cellKey || e.state === 'National');
+            });
+            if (relevant.length > 0) {
+                this.diffuseFromEndorsers(cell, relevant);
+            }
+        }
     }
 };
+
+// Global export
+function diffuseFromEndorsers(factionCell, relevantEndorsers) {
+    return EndorserSystem.diffuseFromEndorsers(factionCell, relevantEndorsers);
+}
 
 // Hook into campaign weekly loop
 if (typeof Campaign !== 'undefined') {
@@ -206,6 +258,7 @@ if (typeof Campaign !== 'undefined') {
     if (_originalNextWeek) {
         Campaign.nextWeek = function() {
             EndorserSystem.processRetractConditions();
+            EndorserSystem.processWeeklyDiffusion();
             _originalNextWeek.apply(this, arguments);
         };
     }

@@ -443,7 +443,6 @@
                     <div id="county-view-header">
                         <button class="county-back-btn" onclick="app.closeCountyView()">← BACK TO US MAP</button>
                         <span id="cv-title">STATE</span>
-                        <div id="cv-districts" class="cv-districts hidden"></div>
                         <div id="cv-stats"></div>
                     </div>
                     <div id="county-map-container"></div>
@@ -621,7 +620,6 @@
                         <div id="election-county-header">
                             <button class="county-back-btn" onclick="Election.closeCountyView()">← BACK TO NATIONAL MAP</button>
                             <span id="election-cv-title">COUNTY RESULTS</span>
-                            <div id="elec-cv-districts" class="hidden" style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;"></div>
                         </div>
                         <div id="election-county-map-container"></div>
                     </div>
@@ -671,11 +669,6 @@
     <div id="map-tooltip"></div>
     <div id="toast"></div>
 
-    <button id="global-theme-toggle" class="theme-toggle-btn floating-theme-toggle" type="button" onclick="app.toggleTheme()" aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
-        <i class="fa-solid fa-moon theme-icon-moon"></i>
-        <i class="fa-solid fa-sun theme-icon-sun"></i>
-    </button>
-    
     <!-- Issues Panel Drawer -->
     <div id="issues-modal" class="hidden issues-drawer">
         <div class="modal-box issues-modal-box">
@@ -1079,12 +1072,26 @@
         </div>
     </div>
     
+    <!-- Polling History Modal -->
+    <div id="polls-history-modal" class="modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+        <div class="modal-box" style="max-width: 680px; width: 95%;">
+            <div class="modal-header">
+                <h2 id="polls-history-title">POLLING HISTORY</h2>
+                <button class="modal-close-btn" onclick="document.getElementById('polls-history-modal').classList.add('hidden')">&times;</button>
+            </div>
+            <div id="polls-history-content" style="display: flex; flex-direction: column; gap: 10px; max-height: 70vh; overflow-y: auto; padding-right: 4px;">
+                <!-- Filled dynamically by JS -->
+            </div>
+        </div>
+    </div>
+
     <!-- Load scripts in dependency order -->
 <script src="js/config.js"></script>
 <script src="js/county_economy.js"></script>
 <script src="js/factions.js"></script>
 <script src="js/candidates.js"></script>
 <script src="js/issues.js"></script>
+<script src="js/issueCatalog.js"></script>
 <script src="js/policies.js"></script>
 <script src="js/interestGroups.js"></script>
 <script src="js/states.js"></script>
@@ -1100,11 +1107,23 @@
 <script src="js/scandals.js"></script>
 <script src="js/endorsements.js"></script>
 <script src="js/endorsers.js"></script>
+<script src="js/pollstersData.js"></script>
+<script src="js/polling.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/spatial.js"></script>
+<script src="js/backtesting.js"></script>
 <script src="js/screens.js"></script>
 <script src="js/adsUI.js"></script>
 <script src="js/campaign.js"></script>
 <script src="js/election.js"></script>
 <script src="js/main.js"></script>
+<script src="js/electorate.js"></script>
+<script src="js/candidateEraEffects.js"></script>
+<script src="js/groupPolling.js"></script>
+<script src="js/adEngine.js"></script>
+<script src="js/overhaulIntegration.js"></script>
+<script src="js/campaignPriorities.js"></script>
+<link rel="stylesheet" href="overhaul.css">
+<script src="js/overhaulUI.js"></script>
 </body>
 </html>

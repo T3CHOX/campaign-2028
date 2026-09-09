@@ -65,8 +65,18 @@ var Campaign = {
             // Apply candidate/VP buffs now that county data is available
             applyCandidateBuffs();
             
+            Electorate.initialize();
+            Object.keys(gameData.states).forEach(function(s) { Counties.updateStateFromCounties(s); });
+            GroupPolling.publish(gameData.currentWeek || 0);
+            if (typeof OverhaulUI !== 'undefined') OverhaulUI.refresh();
             // Compute live interest group support from county data
             recomputeInterestGroupSupport();
+            
+            // Initialize polling system baseline
+            if (typeof Polling !== 'undefined') Polling.init(true);
+            
+            // Capture initial frozen snapshot for week-0 display
+            Campaign.captureFrozenSnapshot();
             
             // Update map colors after county data initializes state margins
             Campaign.resetPopulationCaches();
@@ -138,9 +148,13 @@ var Campaign = {
         var subLine = '';
 
         if (mode === 'margin') {
-            var marginText = Math.abs(state.margin).toFixed(1);
-            var leaning = (state.margin > 0 ? 'D+' : 'R+') + marginText;
-            detailLine = '<span class="tooltip-leader" style="color: ' + (state.margin > 0 ? '#00AEF3' : '#E81B23') + '">' + leaning + '</span>';
+            // Use frozen margin for consistent mid-turn tooltip display
+            var displayMarginVal = (gameData.frozenStateMargins && gameData.frozenStateMargins[code])
+                ? gameData.frozenStateMargins[code].margin
+                : state.margin;
+            var marginText = Math.abs(displayMarginVal).toFixed(1);
+            var leaning = (displayMarginVal > 0 ? 'D+' : 'R+') + marginText;
+            detailLine = '<span class="tooltip-leader" style="color: ' + (displayMarginVal > 0 ? '#00AEF3' : '#E81B23') + '">' + leaning + '</span>';
             subLine = '<span class="tooltip-stats">' + state.ev + ' Electoral Votes</span>';
         } else if (mode === 'ev') {
             detailLine = '<span class="tooltip-leader">' + state.ev + ' Electoral Votes</span>';
@@ -171,6 +185,57 @@ var Campaign = {
         tooltip.style.top = (e.clientY + 15) + 'px';
     },
 
+    showDistrictTooltip: function(e, stateCode, districtName) {
+        var state = gameData.states[stateCode];
+        if (!state) return;
+        var tooltip = document.getElementById('map-tooltip');
+        if (!tooltip) return;
+
+        var distFullName = districtName;
+        if (districtName.startsWith('NE-')) {
+            distFullName = 'Nebraska - ' + districtName.replace('NE-', '') + (districtName === 'NE-1' ? 'st' : (districtName === 'NE-2' ? 'nd' : 'rd')) + ' District';
+        } else if (districtName.startsWith('ME-')) {
+            distFullName = 'Maine - ' + districtName.replace('ME-', '') + (districtName === 'ME-1' ? 'st' : 'nd') + ' District';
+        }
+
+        var detailLine = '';
+        var subLine = '<span class="tooltip-stats">1 Electoral Vote</span>';
+
+        if (typeof Counties !== 'undefined' && Counties.calculateStateElectoralAllocation) {
+            var split = Counties.calculateStateElectoralAllocation(stateCode, { useReportedVotes: false });
+            if (split && split.districtResults) {
+                for (var i = 0; i < split.districtResults.length; i++) {
+                    var dr = split.districtResults[i];
+                    if (dr.district === districtName) {
+                        var totalDistVotes = 0;
+                        for (var p in dr.votes) totalDistVotes += dr.votes[p];
+                        var sortedParties = Object.keys(dr.votes).sort(function(a, b) { return dr.votes[b] - dr.votes[a]; });
+                        var p1 = sortedParties[0] || 'D';
+                        var p2 = sortedParties[1];
+                        var marginPct = totalDistVotes > 0 ? ((dr.votes[p1] - (dr.votes[p2] || 0)) / totalDistVotes) * 100 : 0;
+                        var partyColor = (PARTIES[p1] && PARTIES[p1].color) || (p1 === 'D' ? '#00AEF3' : '#E81B23');
+                        var marginText = (p1 === 'D' ? 'D+' : (p1 === 'R' ? 'R+' : p1 + '+')) + marginPct.toFixed(1);
+                        detailLine = '<span class="tooltip-leader" style="color: ' + partyColor + '">' + marginText + '</span>';
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!detailLine) {
+            detailLine = '<span class="tooltip-leader">' + districtName + '</span>';
+        }
+
+        tooltip.innerHTML =
+            '<span class="tooltip-title">' + distFullName + '</span>' +
+            '<div class="tooltip-divider"></div>' +
+            detailLine +
+            subLine;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX + 15) + 'px';
+        tooltip.style.top = (e.clientY + 15) + 'px';
+    },
+
     clickNational: function() {
         gameData.selectedState = null;
         gameData.selectedDistrict = null;
@@ -191,23 +256,23 @@ var Campaign = {
             spDistricts.classList.add('hidden');
         }
         
-        var pollByParty = Utils.getNationalPollingByParty();
+        var pollByParty = (gameData.frozenPollSnapshot && gameData.frozenPollSnapshot['USA'])
+            ? gameData.frozenPollSnapshot['USA']
+            : Utils.getNationalPollingByParty();
         var prevPollByParty = (gameData.pollCache && gameData.pollCache['USA']) || null;
         var pollVis = document.getElementById('poll-vis');
         if (pollVis) {
-            pollVis.innerHTML = Utils.buildCandidateRankedListHTML(pollByParty, prevPollByParty);
+            pollVis.innerHTML = Utils.buildCandidateRankedListHTML(pollByParty, prevPollByParty, 'USA');
         }
         
         var issuesList = document.getElementById('sp-issues-list');
         issuesList.innerHTML = '';
         
-        if (typeof Counties !== 'undefined') {
-            document.getElementById('cv-districts').classList.add('hidden');
-        }
     },
 
     clickState: function(code) {
         gameData.selectedState = code;
+        gameData.selectedDistrict = null;
         var paths = document.querySelectorAll('#us-map-svg path');
         for (var i = 0; i < paths.length; i++) {
             paths[i].classList.remove('selected');
@@ -231,13 +296,14 @@ var Campaign = {
         if ((code === 'NE' || code === 'ME') && typeof Counties !== 'undefined' && Counties.calculateStateElectoralAllocation) {
             var split = Counties.calculateStateElectoralAllocation(code, { useReportedVotes: false });
             if (split && split.isSplitState) {
-                
-                
                 if (spDistricts) {
                     spDistricts.classList.remove('hidden');
+                    var dresList = split.districtResults.slice();
+                    dresList.sort(function (a, b) { return a.district.localeCompare(b.district); });
                     var dhtml = '';
-                    for (var i = 0; i < split.districtResults.length; i++) {
-                        var dres = split.districtResults[i];
+                    for (var i = 0; i < dresList.length; i++) {
+                        var dres = dresList[i];
+                        var distName = dres.district;
                         var marginColor = '#444';
                         if (typeof Utils !== 'undefined' && Utils.getMarginColor) {
                             var totalDistVotes = 0;
@@ -248,7 +314,8 @@ var Campaign = {
                             var marginPct = totalDistVotes > 0 ? ((dres.votes[p1] - (dres.votes[p2] || 0)) / totalDistVotes) * 100 : 0;
                             marginColor = Utils.getMarginColor(marginPct, p1);
                         }
-                        dhtml += '<div class="district-box" style="background-color: ' + marginColor + ';" onclick="Campaign.clickDistrict(\'' + code + '\', \'' + dres.district + '\')">' + dres.district + '</div>';
+                        var activeClass = (gameData.selectedDistrict === distName) ? ' active' : '';
+                        dhtml += `<div class="district-box${activeClass}" data-district="${distName}" style="background-color: ${marginColor};" onclick="Campaign.clickDistrict('${code}', '${distName}')" onmousemove="Campaign.showDistrictTooltip(event, '${code}', '${distName}')" onmouseleave="document.getElementById('map-tooltip').style.display='none'">${distName}</div>`;
                     }
                     spDistricts.innerHTML = dhtml;
                 }
@@ -256,12 +323,16 @@ var Campaign = {
         }
         document.getElementById('sp-ev').innerText = evLabel;
         
-        // Build ranked candidate list for the state
-        var pollByParty = Utils.getStatePollingByParty(code);
+        // Build ranked candidate list for the state.
+        // Use frozen snapshot so mid-turn player actions don't alter the displayed poll percentages.
+        // The snapshot is refreshed at the start of each new week in nextWeek().
+        var pollByParty = (gameData.frozenPollSnapshot && gameData.frozenPollSnapshot[code])
+            ? gameData.frozenPollSnapshot[code]
+            : Utils.getStatePollingByParty(code);
         var prevPollByParty = (gameData.pollCache && gameData.pollCache[code]) || null;
         var pollVis = document.getElementById('poll-vis');
         if (pollVis) {
-            pollVis.innerHTML = Utils.buildCandidateRankedListHTML(pollByParty, prevPollByParty);
+            pollVis.innerHTML = Utils.buildCandidateRankedListHTML(pollByParty, prevPollByParty, code);
         }
         
         // Calculate and display turnout if available
@@ -301,12 +372,38 @@ var Campaign = {
 
     clickDistrict: function(stateCode, districtId) {
         if (!gameData.states[stateCode]) return;
-        document.getElementById('sp-name').innerText = districtId;
+
+        // Toggle check: if already selected, deselect and return to statewide
+        if (gameData.selectedDistrict === districtId) {
+            gameData.selectedDistrict = null;
+            var allBoxes = document.querySelectorAll('.district-box');
+            for (var b = 0; b < allBoxes.length; b++) {
+                allBoxes[b].classList.remove('active');
+            }
+            this.clickState(stateCode);
+            if (typeof Counties !== 'undefined') {
+                Counties.resetDistrictHighlighting();
+            }
+            return;
+        }
+
+        // Select new district
+        gameData.selectedDistrict = districtId;
+
+        var distFullName = districtId;
+        if (districtId.startsWith('NE-')) {
+            distFullName = 'Nebraska - ' + districtId.replace('NE-', '') + (districtId === 'NE-1' ? 'st' : (districtId === 'NE-2' ? 'nd' : 'rd')) + ' District';
+        } else if (districtId.startsWith('ME-')) {
+            distFullName = 'Maine - ' + districtId.replace('ME-', '') + (districtId === 'ME-1' ? 'st' : 'nd') + ' District';
+        }
+
+        document.getElementById('sp-name').innerText = distFullName;
         document.getElementById('sp-ev').innerText = '1 EV';
         
-        var boxes = document.querySelectorAll('#sp-districts .district-box');
+        var boxes = document.querySelectorAll('.district-box');
         for (var i = 0; i < boxes.length; i++) {
-            if (boxes[i].innerText === districtId) boxes[i].classList.add('active');
+            var bDist = boxes[i].getAttribute('data-district') || boxes[i].innerText;
+            if (bDist === districtId) boxes[i].classList.add('active');
             else boxes[i].classList.remove('active');
         }
         
@@ -331,10 +428,15 @@ var Campaign = {
                     }
                     var pollVis = document.getElementById('poll-vis');
                     if (pollVis && typeof Utils !== 'undefined' && Utils.buildCandidateRankedListHTML) {
-                        pollVis.innerHTML = Utils.buildCandidateRankedListHTML(distPoll, null);
+                        pollVis.innerHTML = Utils.buildCandidateRankedListHTML(distPoll, null, stateCode);
                     }
                 }
             }
+        }
+
+        // If looking at county map, highlight district counties
+        if (typeof Counties !== 'undefined') {
+            Counties.highlightDistrictCounties(stateCode, districtId);
         }
     },
 
@@ -343,7 +445,15 @@ var Campaign = {
             var s = gameData.states[code];
             var path = document.getElementById(code);
             if (path) {
-                path.style.fill = this.getStateMapColor(code, s);
+                // Use frozen margins for the state map so mid-turn actions don't change colors
+                var displayMargin = s.margin;
+                var displayParty = s.marginParty || (displayMargin >= 0 ? 'D' : 'R');
+                if (gameData.frozenStateMargins && gameData.frozenStateMargins[code] && this.mapMode === 'margin') {
+                    displayMargin = gameData.frozenStateMargins[code].margin;
+                    displayParty = gameData.frozenStateMargins[code].marginParty;
+                }
+                var displayState = Object.assign({}, s, { margin: displayMargin, marginParty: displayParty });
+                path.style.fill = this.getStateMapColor(code, displayState);
             }
         }
         this.updateScore();
@@ -521,7 +631,8 @@ var Campaign = {
             var cVotes = { D: county.v.D||0, R: county.v.R||0, G: county.v.G||0, L: county.v.L||0, I: county.v.I||0, PSL: county.v.PSL||0 };
             var sorted = Object.keys(cVotes).sort(function(a, b) { return cVotes[b] - cVotes[a]; });
             var p1 = sorted[0], p2 = sorted[1];
-            var margin = cVotes[p1] - cVotes[p2];
+            var decidedMultiplier = (100 - (county.undecided || 0)) / 100;
+            var margin = (cVotes[p1] - cVotes[p2]) * decidedMultiplier;
             
             var leadText = margin > 0 ? p1 + '+' + margin.toFixed(1) : 'Even';
             var color = (typeof Utils !== 'undefined' && Utils.getPartyColor) ? Utils.getPartyColor(p1) : (p1 === 'D' ? '#00AEF3' : '#E81B23');
@@ -736,6 +847,10 @@ var Campaign = {
         var repEV = 0;
         for (var code in gameData.states) {
             var s = gameData.states[code];
+            // Use frozen margins so EV tally doesn't change mid-turn
+            var frozenMargin = (gameData.frozenStateMargins && gameData.frozenStateMargins[code])
+                ? gameData.frozenStateMargins[code].margin
+                : s.margin;
             if (typeof Counties !== 'undefined' && Counties.calculateStateElectoralAllocation) {
                 var projected = Counties.calculateStateElectoralAllocation(code, { useReportedVotes: false });
                 if (projected && projected.allocation) {
@@ -744,7 +859,7 @@ var Campaign = {
                     continue;
                 }
             }
-            if (s.margin > 0) {
+            if (frozenMargin > 0) {
                 demEV += s.ev;
             } else {
                 repEV += s.ev;
@@ -758,6 +873,11 @@ var Campaign = {
     },
 
     updateHUD: function() {
+        // Recolor map using frozen snapshot (does NOT recompute live margins)
+        if (typeof this.colorMap === 'function') {
+            this.colorMap();
+        }
+
         var hudImg = document.getElementById('hud-img');
         if (hudImg) hudImg.src = gameData.candidate.img;
         var hudCandName = document.getElementById('hud-cand-name');
@@ -1050,12 +1170,17 @@ var Campaign = {
         if (! gameData.selectedState) return;
         var s = gameData.states[gameData.selectedState];
         
-        var marginText = Math.abs(s.margin).toFixed(1);
+        // Use frozen margin so the intel modal reflects week-start standings
+        var displayMargin = (gameData.frozenStateMargins && gameData.frozenStateMargins[gameData.selectedState])
+            ? gameData.frozenStateMargins[gameData.selectedState].margin
+            : s.margin;
+        
+        var marginText = Math.abs(displayMargin).toFixed(1);
         var leaning;
-        if (Math.abs(s.margin) < 2) {
+        if (Math.abs(displayMargin) < 2) {
             leaning = 'TOSS-UP';
         } else {
-            leaning = (s.margin > 0 ? 'D+' :  'R+') + marginText;
+            leaning = (displayMargin > 0 ? 'D+' : 'R+') + marginText;
         }
         
         // Format last campaign date
@@ -1107,6 +1232,49 @@ var Campaign = {
         return html;
     },
 
+    // ─── Frozen Snapshot ─────────────────────────────────────────────────────────
+    // Captures the current poll averages and state margins into a frozen snapshot.
+    // The sidebar and state map colors read from this snapshot mid-turn so that
+    // player actions don't change the displayed standings until the next week begins.
+    captureFrozenSnapshot: function() {
+        gameData.frozenPollSnapshot = {};
+        gameData.frozenStateMargins = {};
+        
+        // National
+        gameData.frozenPollSnapshot['USA'] = Utils.getNationalPollingByParty();
+        
+        // States
+        for (var code in gameData.states) {
+            var sp = Utils.getStatePollingByParty(code);
+            if (sp) gameData.frozenPollSnapshot[code] = sp;
+            
+            var s = gameData.states[code];
+            var pcts = sp || {};
+            var dPct = pcts['D'] || 0;
+            var rPct = pcts['R'] || 0;
+            var signedMargin = dPct - rPct;
+            var pMarginParty = signedMargin >= 0 ? 'D' : 'R';
+            
+            // Fallback to true margin only if no polls exist
+            if (dPct === 0 && rPct === 0) {
+                signedMargin = s.margin || 0;
+                pMarginParty = s.marginParty || (signedMargin >= 0 ? 'D' : 'R');
+            }
+            
+            gameData.frozenStateMargins[code] = {
+                margin: signedMargin,
+                marginParty: pMarginParty
+            };
+        }
+        gameData.frozenPollSnapshot.county = {};
+        if (typeof Counties !== 'undefined' && Counties.countyData) {
+            for (var fips in Counties.countyData) {
+                var countyPoll = Utils.getCountyPollingByParty(Counties.countyData[fips]);
+                if (countyPoll) gameData.frozenPollSnapshot.county[String(fips).padStart(5, '0')] = countyPoll;
+            }
+        }
+    },
+
     nextWeek: function() {
         if (gameData.currentDate >= gameData.electionDay) {
             Utils.addLog("Election Day has arrived!");
@@ -1144,6 +1312,7 @@ var Campaign = {
         if (typeof DigitalAds !== 'undefined') DigitalAds.processWeekly();
         
         gameData.currentDate.setDate(gameData.currentDate.getDate() + 7);
+        gameData.currentWeek = (gameData.currentWeek || 0) + 1;
         gameData.energy = gameData.maxEnergy;
 
         // v2: Reset turn budget tracking
@@ -1152,24 +1321,58 @@ var Campaign = {
         gameData.visitedStatesThisTurn = [];
         gameData.grassrootsUsedThisWeek = 0;
         
-        // --- V2 ISSUE UPGRADES: Salience Decay ---
+        // v1 Spec Ticket 8: Update retrospective economic approval trajectory & state fundamentals
+        updateApprovalTrajectory(gameData, gameData.activeShockEvents);
+        gameData.activeShockEvents = [];
+        
+        if (typeof updateStateFundamentals === 'function') {
+            updateStateFundamentals();
+        } else {
+            var approvalOffset = ((gameData.approvalTrajectory !== undefined ? gameData.approvalTrajectory : 0.50) - 0.50);
+            for (var stCode in gameData.states) {
+                var stObj = gameData.states[stCode];
+                if (!stObj) continue;
+                if (!stObj.fundamentals) {
+                    stObj.fundamentals = { thetaFundamentals: 0.5, tauPrior: (typeof FUNDAMENTALS_CONFIG !== 'undefined' ? FUNDAMENTALS_CONFIG.TAU_PRIOR_INITIAL : 8.0) };
+                }
+                var trueData = (typeof Utils !== 'undefined' && Utils.getTrueStatePollingByParty) ? Utils.getTrueStatePollingByParty(stCode) : null;
+                if (trueData && ((trueData.D || 0) + (trueData.R || 0)) > 0) {
+                    var totalDR = (trueData.D || 0) + (trueData.R || 0);
+                    stObj.fundamentals.thetaFundamentals = clamp((trueData.D / totalDR) + approvalOffset, 0.05, 0.95);
+                } else {
+                    var pLean = (stObj.lean !== undefined ? stObj.lean : (typeof STATES !== 'undefined' && STATES[stCode] ? STATES[stCode].lean : 0)) / 100.0;
+                    stObj.fundamentals.thetaFundamentals = clamp(0.50 + pLean + approvalOffset, 0.05, 0.95);
+                }
+            }
+        }
+
+        // --- V2 ISSUE UPGRADES + Ticket 11: Dynamic Agenda-Setting Salience Decay ---
         if (gameData.issueSalience && typeof ISSUE_SALIENCE !== 'undefined') {
             for (var stateKey in gameData.issueSalience) {
                 var defaultSalience = ISSUE_SALIENCE[stateKey] || ISSUE_SALIENCE['default'] || {};
                 for (var issueId in gameData.issueSalience[stateKey]) {
                     var current = gameData.issueSalience[stateKey][issueId];
-                    var base = defaultSalience[issueId] || (ISSUE_SALIENCE['default'] ? ISSUE_SALIENCE['default'][issueId] : 5) || 5;
+                    var origBase = defaultSalience[issueId] || (ISSUE_SALIENCE['default'] ? ISSUE_SALIENCE['default'][issueId] : 5) || 5;
+                    var base = computeSalienceBaseline(issueId, origBase, gameData.currentWeek, gameData.activeAgendaEvents);
                     
                     if (current > base) {
                         // Decay by 10% of the difference, or minimum 0.2
                         var decay = Math.max(0.2, (current - base) * 0.1);
                         gameData.issueSalience[stateKey][issueId] = Math.max(base, current - decay);
                     } else if (current < base) {
-                        // Slowly rise back to baseline
+                        // Slowly rise back to dynamic baseline
                         var growth = Math.max(0.1, (base - current) * 0.05);
                         gameData.issueSalience[stateKey][issueId] = Math.min(base, current + growth);
                     }
                 }
+            }
+            
+            // Garbage-collect decayed agenda events
+            if (gameData.activeAgendaEvents && gameData.activeAgendaEvents.length > 0) {
+                gameData.activeAgendaEvents = gameData.activeAgendaEvents.filter(function(ev) {
+                    var w = gameData.currentWeek - (ev.startWeek || 0);
+                    return ((ev.magnitude || 0.5) * Math.exp(-0.35 * w)) >= 0.01;
+                });
             }
         }
         
@@ -1224,10 +1427,7 @@ var Campaign = {
             this.updateApprovalRating();
         }
 
-        // v2: Calculate national polls
-        if (typeof this.calculateNationalPoll === 'function') {
-            this.calculateNationalPoll();
-        }
+        // Publish polls only after the AI and all weekly simulation effects.
 
         // v2: Spoiler effect — when third-party share >8%, opposing major party gets +0.5%/week in battlegrounds
         if (gameData.thirdPartiesEnabled && typeof Debates !== 'undefined' && Debates.getThirdPartyNationalPoll) {
@@ -1258,6 +1458,13 @@ var Campaign = {
         
         this.opponentTurn();
 
+        Electorate.invalidate();
+        Electorate.recompute();
+        Object.keys(gameData.states).forEach(function(s) { Counties.updateStateFromCounties(s); });
+        if (typeof Polling !== 'undefined') Polling.generateWeeklyPolls();
+        GroupPolling.publish(gameData.currentWeek);
+        if (typeof OverhaulUI !== 'undefined') OverhaulUI.refresh();
+
         if (gameData.playerPressure) {
             gameData.playerPressure = {};
         }
@@ -1272,6 +1479,9 @@ var Campaign = {
         // Restrict undo to current turn
         gameData.historyStack = [];
         
+        // Refresh frozen snapshot for the new week
+        this.captureFrozenSnapshot();
+        
         this.updateHUD();
         
         // Update queued ads display to show the queue is cleared
@@ -1283,9 +1493,12 @@ var Campaign = {
         this.colorMap();
         if (gameData.selectedState) {
             this.clickState(gameData.selectedState);
+            // Always refresh county map colors at new week start
+            if (typeof Counties !== 'undefined' && Counties.colorCountyMap) {
+                Counties.colorCountyMap();
+            }
             var cvw = document.getElementById('county-view-wrapper');
             if (cvw && !cvw.classList.contains('hidden') && typeof Counties !== 'undefined') {
-                if (Counties.colorCountyMap) Counties.colorCountyMap();
                 if (gameData.selectedCounty && Counties.selectCounty) {
                     Counties.selectCounty(gameData.selectedCounty);
                 }
@@ -1306,78 +1519,110 @@ var Campaign = {
         for (var fips in Counties.countyData) {
             var county = Counties.countyData[fips];
             
-            if (!county.undecided || county.undecided <= 0) continue;
+            // Extract state code
+            var stateFips = fips.padStart(5, '0').substring(0, 2);
+            var stateCode = null;
+            for (var code in STATES) {
+                if (STATES[code].fips === stateFips) {
+                    stateCode = code;
+                    break;
+                }
+            }
             
-            var undecidedPool = county.undecided;
+            // Calculate base enthusiasm from momentum and ground ops
+            var dEnthusiasm = 1.0;
+            var rEnthusiasm = 1.0;
+            
+            if (gameData.playerParty === 'D') dEnthusiasm += (gameData.momentum || 0) * 0.05;
+            if (gameData.playerParty === 'R') rEnthusiasm += (gameData.momentum || 0) * 0.05;
+            
+            if (stateCode && gameData.states[stateCode]) {
+                var s = gameData.states[stateCode];
+                if (s.groundOffices && s.groundOffices.D) dEnthusiasm += 0.02 * s.groundOffices.D;
+                if (s.groundOffices && s.groundOffices.R) rEnthusiasm += 0.02 * s.groundOffices.R;
+                if (s.voterFileQuality && s.voterFileQuality.D > 1) dEnthusiasm += 0.05;
+                if (s.voterFileQuality && s.voterFileQuality.R > 1) rEnthusiasm += 0.05;
+            }
+            
+            var undecidedPool = county.undecided || 0;
+            
+            // 1. Base Leakage (Disaffected Voters)
+            // If candidate enthusiasm is low and they haven't appealed to the base, decided voters leak to undecided
+            if (dEnthusiasm < 0.95 && county.v && county.v.D > 0) {
+                var leak = county.v.D * (Math.random() * 0.015); // up to 1.5% leak
+                county.v.D -= leak;
+                undecidedPool += leak;
+            }
+            if (rEnthusiasm < 0.95 && county.v && county.v.R > 0) {
+                var leak = county.v.R * (Math.random() * 0.015);
+                county.v.R -= leak;
+                undecidedPool += leak;
+            }
+            
+            if (undecidedPool <= 0) {
+                county.undecided = 0;
+                continue;
+            }
+            
+            // 2. Undecided Resolution (Voters making up their minds)
             var reductionRate;
-            
             if (isElectionDay) {
-                // On Election Day, distribute ALL remaining undecided 50/50
-                reductionRate = 1.0;
+                // On election day itself, remaining undecideds break or stay home
+                reductionRate = 0.50 + Math.random() * 0.20; 
             } else {
-                // Each week: reduce by 10-15%
-                reductionRate = 0.10 + Math.random() * 0.05;
+                // Smooth weekly decay: ~3.5% - 4.5% per week of remaining undecided pool.
+                // Starts at ~10% baseline and gradually decays to ~4% on Election Eve without sudden drops.
+                reductionRate = 0.035 + Math.random() * 0.01;
+                
+                // Extra lock-in if campaigns are highly active in this state
+                if (dEnthusiasm > 1.05 || rEnthusiasm > 1.05) reductionRate += 0.005;
             }
             
             var decidingVoters = undecidedPool * reductionRate;
             
-            if (isElectionDay) {
-                // Split 50/50 between D and R on Election Day
-                var demShare = decidingVoters * 0.5;
-                var repShare = decidingVoters * 0.5;
+            var decidedMultiplier = (100 - undecidedPool) / 100;
+            var currentTotals = Counties.calculateCountyVoteTotals(county, { 
+                reportingFactor: 1, 
+                decidedMultiplier: decidedMultiplier, 
+                errorFactor: 1 
+            });
+            
+            var totalDecided = (currentTotals.D || 0) + (currentTotals.R || 0) + (currentTotals.G || 0) + 
+                               (currentTotals.L || 0) + (currentTotals.I || 0) + (currentTotals.PSL || 0);
+            
+            if (totalDecided > 0) {
+                // Distribute proportionally, but enthusiasm modulates the breaks!
+                var dShare = ((currentTotals.D || 0) / totalDecided) * dEnthusiasm;
+                var rShare = ((currentTotals.R || 0) / totalDecided) * rEnthusiasm;
+                var tpShare = ((totalDecided - (currentTotals.D||0) - (currentTotals.R||0)) / totalDecided);
                 
-                county.v.D = (county.v.D || 0) + demShare;
-                county.v.R = (county.v.R || 0) + repShare;
+                // Normalize shares
+                var sumShares = dShare + rShare + tpShare;
+                if (sumShares > 0) {
+                    dShare /= sumShares;
+                    rShare /= sumShares;
+                    tpShare /= sumShares;
+                }
+                
+                county.v.D = (county.v.D || 0) + (decidingVoters * dShare);
+                county.v.R = (county.v.R || 0) + (decidingVoters * rShare);
+                
+                // Third parties get a proportional cut of the tpShare
+                var tpTotal = (currentTotals.G||0) + (currentTotals.L||0) + (currentTotals.I||0) + (currentTotals.PSL||0);
+                if (tpTotal > 0 && tpShare > 0) {
+                    county.v.G = (county.v.G || 0) + (decidingVoters * tpShare * ((currentTotals.G||0)/tpTotal));
+                    county.v.L = (county.v.L || 0) + (decidingVoters * tpShare * ((currentTotals.L||0)/tpTotal));
+                    county.v.I = (county.v.I || 0) + (decidingVoters * tpShare * ((currentTotals.I||0)/tpTotal));
+                    county.v.PSL = (county.v.PSL || 0) + (decidingVoters * tpShare * ((currentTotals.PSL||0)/tpTotal));
+                }
             } else {
-                // Get state code from FIPS prefix
-                var normalizedFips = Counties.normalizeFips(fips);
-                var stateFips = normalizedFips.substring(0, 2);
-                var stateCode = null;
-                
-                for (var code in STATES) {
-                    if (STATES[code].fips === stateFips) {
-                        stateCode = code;
-                        break;
-                    }
-                }
-                
-                if (stateCode && gameData.states[stateCode]) {
-                    var stateMargin = gameData.states[stateCode].margin;
-                    
-                    // Add random variance (+/- 5 percentage points)
-                    var variance = (Math.random() - 0.5) * 10;
-                    var adjustedMargin = stateMargin + variance;
-                    
-                    // Convert margin to percentage splits
-                    // Margin is D% - R%, we need to distribute based on this
-                    var demPct = 50 + (adjustedMargin / 2);
-                    var repPct = 50 - (adjustedMargin / 2);
-                    
-                    // Ensure valid percentages
-                    demPct = Math.max(0, Math.min(100, demPct));
-                    repPct = Math.max(0, Math.min(100, repPct));
-                    
-                    // If clamping changed the values, normalize to sum to 100
-                    var total = demPct + repPct;
-                    if (total !== 100) {
-                        demPct = (demPct / total) * 100;
-                        repPct = (repPct / total) * 100;
-                    }
-                    
-                    // Distribute deciding voters
-                    var demShare = decidingVoters * (demPct / 100);
-                    var repShare = decidingVoters * (repPct / 100);
-                    
-                    county.v.D = (county.v.D || 0) + demShare;
-                    county.v.R = (county.v.R || 0) + repShare;
-                }
+                county.v.D = (county.v.D || 0) + (decidingVoters * 0.5);
+                county.v.R = (county.v.R || 0) + (decidingVoters * 0.5);
             }
             
-            // Reduce undecided pool
             county.undecided = Math.max(0, undecidedPool - decidingVoters);
         }
         
-        // Update all state margins after processing undecided voters
         for (var code in gameData.states) {
             Counties.updateStateFromCounties(code);
         }
@@ -1692,3 +1937,55 @@ var Campaign = {
         this.updateHUD();
     }
 };
+
+// v1 Spec Ticket 8: Retrospective / Economic Voting Layer
+function updateApprovalTrajectory(campaign, activeShockEvents) {
+    var c = campaign || (typeof gameData !== 'undefined' ? gameData : null);
+    var e = (c && c.economy) ? c.economy : { realIncomeGrowth: 0.0, unemployment: 5.0, inflation: 2.5 };
+    var base0 = (typeof RETRO_CONFIG !== 'undefined') ? RETRO_CONFIG.BETA_0 : 0.50;
+    var bIncome = (typeof RETRO_CONFIG !== 'undefined') ? RETRO_CONFIG.BETA_INCOME : 0.015;
+    var bUnemp = (typeof RETRO_CONFIG !== 'undefined') ? RETRO_CONFIG.BETA_UNEMPLOYMENT : -0.02;
+    var bInf = (typeof RETRO_CONFIG !== 'undefined') ? RETRO_CONFIG.BETA_INFLATION : -0.015;
+    var shockK = (typeof RETRO_CONFIG !== 'undefined') ? RETRO_CONFIG.SHOCK_KAPPA : 0.03;
+    var noiseS = (typeof RETRO_CONFIG !== 'undefined') ? RETRO_CONFIG.NOISE_SIGMA : 0.01;
+
+    var approval = base0 +
+        bIncome * (e.realIncomeGrowth || 0) +
+        bUnemp * ((e.unemployment !== undefined ? e.unemployment : 5.0) - 5.0) +
+        bInf * ((e.inflation !== undefined ? e.inflation : 2.5) - 2.5) +
+        gaussianNoise(0, noiseS);
+
+    var events = activeShockEvents || (c && c.activeShockEvents) || [];
+    for (var i = 0; i < events.length; i++) {
+        var ev = events[i];
+        if (ev.valence === 'negative') {
+            approval -= shockK * (ev.salience !== undefined ? ev.salience : 1);
+        } else {
+            approval += shockK * (ev.salience !== undefined ? ev.salience : 1) * 0.5;
+        }
+    }
+
+    var finalApproval = clamp(approval, 0, 1);
+    if (c) c.approvalTrajectory = finalApproval;
+    return finalApproval;
+}
+
+// v1 Spec Ticket 11: Endogenous Agenda-Setting
+function computeSalienceBaseline(issueId, baselineDefault, currentWeek, activeAgendaEvents) {
+    var boost = 0;
+    var lambda = (typeof AGENDA_CONFIG !== 'undefined' && AGENDA_CONFIG.NEWS_DECAY_LAMBDA !== undefined)
+        ? AGENDA_CONFIG.NEWS_DECAY_LAMBDA : 0.35;
+    var curW = (currentWeek !== undefined) ? currentWeek : ((typeof gameData !== 'undefined' && gameData.currentWeek) ? gameData.currentWeek : 0);
+    var events = activeAgendaEvents || (typeof gameData !== 'undefined' && gameData.activeAgendaEvents) || [];
+
+    for (var i = 0; i < events.length; i++) {
+        var ev = events[i];
+        if (ev.issueId !== issueId) continue;
+        var weeksSince = curW - (ev.startWeek !== undefined ? ev.startWeek : 0);
+        if (weeksSince < 0) continue;
+        var scale = (baselineDefault > 1) ? 3.5 : 0.35;
+        boost += (ev.magnitude !== undefined ? ev.magnitude : 0.5) * scale * Math.exp(-lambda * weeksSince);
+    }
+    var maxVal = (baselineDefault > 1) ? 10 : 1;
+    return clamp(baselineDefault + boost, 0, maxVal);
+}

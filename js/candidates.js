@@ -77,8 +77,11 @@ const CANDIDATES = [
         desc: "Harris enters the 2028 cycle with national name ID, a large donor network, and the burden of having already lost a presidential race. Her lane is still the same: maximize turnout in blue metros, hold suburban college-educated women, and avoid a collapse with noncollege voters in the Midwest. She is a proven fundraising magnet, but the party will not treat her as inevitable if the polling shows repeated ceiling problems in the Great Lakes and Sun Belt exurbs.",
         buff: "Donor Magnet",
         debuff: "General-Election Ceiling",
-        groupBoosts: { black: 9, asian: 7, suburban_college: 7 },
-        groupDebuffs: { noncollege: -4, rural: -5 },
+        // Candidate-specific effects are intentionally modest.  The 2024
+        // ticket influenced coalition enthusiasm, but county history remains
+        // the anchor and no personal effect should overwhelm it.
+        groupBoosts: { black: 4, asian: 3, suburban_college: 3, hispanic_005: 2, hispanic_007: 2 },
+        groupDebuffs: { noncollege: -2, rural: -2 },
         regionalSpillover: ["NV", "AZ"],
         regionalSpilloverBoost: 1,
     },
@@ -305,8 +308,8 @@ const CANDIDATES = [
         desc: "Trump is the sitting political gravity well: he dominates the party, sets the tone, and still forces every other Republican to define themselves against him. By the 2028 cycle, the issue is less persuasion than maintenance—protect the margins with noncollege whites, keep rural enthusiasm high, and avoid erosion in suburban counties that have already moved against him. He has the strongest base machine in the field, but age, fatigue, and saturation mean the operation depends on turnout more than expansion.",
         buff: "Base Dominance",
         debuff: "Fatigue Ceiling",
-        groupBoosts: { noncollege: 10, evangelical: 10, rural: 10 },
-        groupDebuffs: { suburban_college: -7, youth: -6 },
+        groupBoosts: { noncollege: 5, evangelical: 5, rural: 5, hispanic_006: 3, hispanic_025: 2 },
+        groupDebuffs: { suburban_college: -3, youth: -3 },
         regionalSpillover: ["PA", "OH"],
         regionalSpilloverBoost: 1.5,
     },
@@ -324,8 +327,8 @@ const CANDIDATES = [
         desc: "Vance is the heir apparent type: younger than the rest, fluent in the grievance politics of the post-2016 GOP, and positioned to inherit Trump’s coalition if the transition is managed cleanly. His challenge is that being the logical successor is not the same as being universally liked, especially with donors and suburban voters who want the Trump coalition without the chaos. If he can keep the Rust Belt edge while not collapsing in Sun Belt suburbs, he becomes a very serious 2028 front-runner.",
         buff: "Succession Candidate",
         debuff: "Trust Deficit",
-        groupBoosts: { noncollege: 9, evangelical: 8, rural: 9 },
-        groupDebuffs: { suburban_college: -5, youth: -4 },
+        groupBoosts: { noncollege: 4, evangelical: 4, rural: 4, hispanic_006: 2, hispanic_025: 1 },
+        groupDebuffs: { suburban_college: -3, youth: -2 },
         regionalSpillover: ["PA", "MI"],
         regionalSpilloverBoost: 1.3,
     },
@@ -659,7 +662,7 @@ const CANDIDATES = [
         homeStateBoost: 2.2, funds: 65, img: "images/walz.jpg", stamina: 7, charisma: 1.3, debateSkill: 7, scandalResistance: 0.8,
         desc: "A pragmatic Midwestern governor known for translating progressive wins through folksy communication. He holds the Blue Wall but lacks national flash.",
         buff: "Midwest Dad Energy", debuff: "Progressive Liability",
-        groupEffects: { union: { support: 5, turnout: 3 }, rural: { support: 3, turnout: 1 }, suburban_moderates: { support: 4, turnout: 1 } }
+        groupEffects: { union: { support: 2, turnout: 2 }, rural: { support: 1, turnout: 1 }, suburban_moderates: { support: 2, turnout: 1 }, hispanic_004: { support: 1, turnout: 1 } }
     },
     {
         id: "crockett", name: "Jasmine Crockett", party: "D",

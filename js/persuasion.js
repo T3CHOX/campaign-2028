@@ -198,6 +198,32 @@ var Persuasion = {
             }
         }
         
+        // v1 Spec Ticket 13: Spatial Autocorrelation for County Results
+        if (typeof Spatial !== 'undefined' && typeof Counties !== 'undefined' && Counties.countyData) {
+            var countyList = [];
+            for (var fipsKey in Counties.countyData) {
+                var cObj = Counties.countyData[fipsKey];
+                if (cObj && cObj.v) {
+                    cObj.fips = cObj.fips || fipsKey.padStart(5, '0');
+                    cObj.rawSwing = (cObj.v.D || 0) - (cObj.v.R || 0);
+                    countyList.push(cObj);
+                }
+            }
+            if (countyList.length > 0) {
+                Spatial.applySpatialSmoothing(countyList);
+                for (var j = 0; j < countyList.length; j++) {
+                    var c = countyList[j];
+                    if (c.finalSwing !== undefined && c.v) {
+                        var totalDR = (c.v.D || 0) + (c.v.R || 0);
+                        if (totalDR > 0) {
+                            c.v.D = clamp((totalDR + c.finalSwing) / 2, 0, totalDR);
+                            c.v.R = clamp((totalDR - c.finalSwing) / 2, 0, totalDR);
+                        }
+                    }
+                }
+            }
+        }
+        
         // Update all state margins from county data
         for (var code in gameData.states) {
             if (typeof Counties !== 'undefined') {
@@ -447,6 +473,94 @@ var Persuasion = {
         });
     },
     
+    // v1 Spec Ticket 7: Zaller RAS Persuasion Pipeline
+    applyPersuasionAttempt: function(factionCell, message) {
+        var cell = factionCell || this.getOrCreateFactionCell('default');
+        var intensity = (message && message.intensity !== undefined) ? message.intensity : 1;
+        var awareness = (cell.awareness !== undefined) ? cell.awareness : 0.5;
+        
+        var pReceive = 1 - Math.exp(-RAS_CONFIG.RECEIVE_K * intensity * awareness);
+        if (Math.random() > pReceive) return 0; // Not received
+        
+        var messagePos = (message && message.issuePosition !== undefined) ? message.issuePosition : 0.5;
+        var cellPos = (cell.expressedPosition !== undefined) ? cell.expressedPosition : 0.5;
+        var distance = Math.abs(messagePos - cellPos);
+        var counterAttitudinalPenalty = (message && message.isCounterAttitudinal) ? distance : 0;
+        
+        var commitment = (cell.commitment !== undefined) ? cell.commitment : 0.5;
+        var pAccept = Math.pow(1 - commitment, RAS_CONFIG.ACCEPT_GAMMA) * (1 - counterAttitudinalPenalty);
+        
+        if (Math.random() > clamp(pAccept, 0, 1)) return 0; // Received but resisted
+        
+        // Accepted: update expressed position toward the message
+        var prev = cellPos;
+        cell.expressedPosition = (1 - RAS_CONFIG.SAMPLE_LAMBDA) * prev + RAS_CONFIG.SAMPLE_LAMBDA * messagePos;
+        return cell.expressedPosition - prev;
+    },
+
+    // v1 Spec Ticket 9: Affective Polarization
+    updateNegPartisanship: function(factionCell, opposingFactionId, attackAdExposureThisTick) {
+        if (!factionCell) return 0.2;
+        if (!factionCell.negPartisanship) factionCell.negPartisanship = {};
+        if (!factionCell.negPartisanshipBaseline) factionCell.negPartisanshipBaseline = {};
+
+        var current = factionCell.negPartisanship[opposingFactionId] !== undefined ? factionCell.negPartisanship[opposingFactionId] : 0.2;
+        var baseline = factionCell.negPartisanshipBaseline[opposingFactionId] !== undefined ? factionCell.negPartisanshipBaseline[opposingFactionId] : 0.2;
+
+        var grown = current + AFFECTIVE_CONFIG.ETA_GROWTH * (attackAdExposureThisTick || 0);
+        var decayed = grown - AFFECTIVE_CONFIG.DELTA_DECAY * (grown - baseline);
+
+        factionCell.negPartisanship[opposingFactionId] = clamp(decayed, 0, 1);
+        return factionCell.negPartisanship[opposingFactionId];
+    },
+
+    computeVoteUtility: function(factionCell, alignmentScore, opposingFactionId) {
+        var negPart = (factionCell && factionCell.negPartisanship && factionCell.negPartisanship[opposingFactionId] !== undefined)
+            ? factionCell.negPartisanship[opposingFactionId] : 0.2;
+        return AFFECTIVE_CONFIG.W1_ALIGNMENT * alignmentScore - AFFECTIVE_CONFIG.W2_NEG_PARTISANSHIP * negPart;
+    },
+
+    // v1 Spec Ticket 12: Elaboration Likelihood Model
+    computeAdEffect: function(factionCell, issueAlignmentEffect, peripheralCueEffect) {
+        var A = (factionCell && factionCell.awareness !== undefined) ? factionCell.awareness : 0.5;
+        var peri = (peripheralCueEffect !== undefined) ? peripheralCueEffect : 0.4;
+        return A * issueAlignmentEffect + (1 - A) * peri;
+    },
+
+    getOrCreateFactionCell: function(groupId) {
+        if (!gameData.factionCells) gameData.factionCells = {};
+        if (!gameData.factionCells[groupId]) {
+            var awareness = 0.5;
+            var commitment = 0.5;
+            var expressedPosition = 0.5;
+            
+            if (groupId === 'college' || groupId === 'whitecollar' || groupId === 'progressives' || groupId === 'activist_left') {
+                awareness = 0.75;
+            } else if (groupId === 'rural' || groupId === 'noncollege' || groupId === 'youth') {
+                awareness = 0.40;
+            }
+            
+            if (groupId === 'maga' || groupId === 'america_first_conservative' || groupId === 'activist_left' || groupId === 'evangelical') {
+                commitment = 0.85;
+                expressedPosition = (groupId.indexOf('left') !== -1 || groupId === 'progressives') ? 0.1 : 0.9;
+            } else if (groupId === 'centrists' || groupId === 'unaligned_center' || groupId === 'suburban') {
+                commitment = 0.25;
+                expressedPosition = 0.5;
+            }
+            
+            gameData.factionCells[groupId] = {
+                id: groupId,
+                factionId: groupId,
+                awareness: awareness,
+                commitment: commitment,
+                expressedPosition: expressedPosition,
+                negPartisanship: {},
+                negPartisanshipBaseline: {}
+            };
+        }
+        return gameData.factionCells[groupId];
+    },
+
     // Calculate persuasion delta for a single county based on interest group composition
     calculateCountyPersuasion: function(county, issueId, intensity, baseStrength, saturation, isLocal) {
         var candidateId = gameData.candidate ? gameData.candidate.id : null;
@@ -482,17 +596,36 @@ var Persuasion = {
             // Get issue importance for this group
             var importance = this.getGroupIssueImportance(groupId, issueId);
             
-            // Get alignment between candidate and group on this issue
+            // Get alignment between candidate and group on this issue (-1 to +1)
             var alignment = this.calculateAlignment(candidateId, groupId, issueId);
+            
+            var factionCell = this.getOrCreateFactionCell(groupId);
+            
+            // Ticket 7: Zaller RAS message persuasion attempt
+            var normPos = (alignment + 1) / 2; // scale [-1, 1] to [0, 1]
+            var isCounter = (alignment < 0);
+            this.applyPersuasionAttempt(factionCell, {
+                issuePosition: normPos,
+                intensity: intensity,
+                isCounterAttitudinal: isCounter
+            });
+            
+            // Ticket 9: Affective Polarization & Vote Utility
+            var opposingParty = (gameData.selectedParty === 'D') ? 'R' : 'D';
+            var opposingFaction = (opposingParty === 'R') ? 'america_first_conservative' : 'activist_left';
+            var utility = this.computeVoteUtility(factionCell, alignment, opposingFaction);
+            
+            // Ticket 12: ELM ad effect blending
+            var defaultPeripheralCue = (baseStrength === PERSUASION_CONSTANTS.BASE_PERSUASION_AD) ? 0.5 : 0.3;
+            var effectiveEffect = this.computeAdEffect(factionCell, utility, defaultPeripheralCue);
             
             // v2: Persuadable Fraction (only a sliver of the group is actually movable)
             var persuadableShare = (groupShare / 100) * PERSUASION_CONSTANTS.PERSUADABLE_FRACTION;
             
             // Calculate delta for this group
-            var groupDelta = persuadableShare * importance * alignment * baseStrength * intensity;
+            var groupDelta = persuadableShare * importance * effectiveEffect * baseStrength * intensity;
             
             // v2: Unpopular position trigger
-            // If the alignment is very bad (-0.5 or lower) and the player runs an attack or oppo on it
             if (alignment <= -0.5 && (baseStrength === PERSUASION_CONSTANTS.BASE_PERSUASION_AD || baseStrength === PERSUASION_CONSTANTS.BASE_PERSUASION_DIGITAL)) {
                  groupDelta *= PERSUASION_CONSTANTS.UNPOPULAR_POSITION_TRIGGER;
             }
@@ -858,3 +991,17 @@ var Persuasion = {
         }
     }
 };
+
+// Global function exports for theoretical modules
+function applyPersuasionAttempt(factionCell, message) {
+    return Persuasion.applyPersuasionAttempt(factionCell, message);
+}
+function updateNegPartisanship(factionCell, opposingFactionId, attackAdExposureThisTick) {
+    return Persuasion.updateNegPartisanship(factionCell, opposingFactionId, attackAdExposureThisTick);
+}
+function computeVoteUtility(factionCell, alignmentScore, opposingFactionId) {
+    return Persuasion.computeVoteUtility(factionCell, alignmentScore, opposingFactionId);
+}
+function computeAdEffect(factionCell, issueAlignmentEffect, peripheralCueEffect) {
+    return Persuasion.computeAdEffect(factionCell, issueAlignmentEffect, peripheralCueEffect);
+}

@@ -166,7 +166,7 @@ var News = {
                     // Candidates with high foreign policy score benefit
                     var playerPos = 0;
                     if (gameData.candidate && CANDIDATE_POSITIONS[gameData.candidate.id]) {
-                        playerPos = CANDIDATE_POSITIONS[gameData.candidate.id].foreign || 0;
+                        playerPos = IssueModel.getPosition(gameData.candidate.id, 'foreign').value;
                     }
                     if (playerPos > 3) {
                         county.v[gameData.selectedParty] = Math.min(100, (county.v[gameData.selectedParty] || 0) + shift * 0.5);
@@ -237,7 +237,7 @@ var News = {
         // Candidate with strongest foreign policy position gains
         var playerPos = 0;
         if (gameData.candidate && CANDIDATE_POSITIONS[gameData.candidate.id]) {
-            playerPos = Math.abs(CANDIDATE_POSITIONS[gameData.candidate.id].foreign || 0);
+            playerPos = Math.abs(IssueModel.getPosition(gameData.candidate.id, 'foreign').value);
         }
         var favBoost = playerPos > 5 ? 0.02 : (playerPos > 3 ? 0.01 : -0.01);
         Campaign.adjustFavorability(favBoost, 'International event response');

@@ -11,6 +11,10 @@ function initGameData() {
             lean: STATES[code].lean, // Keep for reference but don't use for margin
             code: code,
             margin: 0, // Will be calculated from counties
+            fundamentals: {
+                thetaFundamentals: clamp(0.5 + (STATES[code].lean || 0) / 100, 0, 1),
+                tauPrior: (typeof FUNDAMENTALS_CONFIG !== 'undefined' ? FUNDAMENTALS_CONFIG.TAU_PRIOR_INITIAL : 8.0)
+            },
             visited: false,
             adSpent: 0,
             rallies: 0,
@@ -55,6 +59,12 @@ function startGame() {
         return;
     }
 
+    // Start a fresh weekly campaign agenda for each campaign.
+    gameData.currentDate = new Date(2028, 6, 4);
+    gameData.currentWeek = 0;
+    gameData.campaignPriorities = {};
+    gameData.pollCache = {};
+
     // Apply third-party penalties (harder campaign)
     if (isThirdParty) {
         // PSL gets harshest penalty (extreme mode), others get standard third-party penalty
@@ -89,6 +99,13 @@ function startGame() {
         if (gameData.repTicket.pres && !gameData.repTicket.pres.issueCredibility) {
             gameData.repTicket.pres.issueCredibility = JSON.parse(JSON.stringify(BASE_ISSUE_CREDIBILITY['R']));
         }
+    }
+
+    if (typeof CampaignPriorities !== 'undefined') {
+        CampaignPriorities.ensure(gameData.candidate);
+        CampaignPriorities.chooseForParty('D');
+        CampaignPriorities.chooseForParty('R');
+        if (gameData.thirdTickets) Object.keys(gameData.thirdTickets).forEach(function (party) { CampaignPriorities.chooseForParty(party); });
     }
     
     // Initialize new subsystems
@@ -140,6 +157,27 @@ function applyCandidateBuffs() {
         return;
     }
 
+    // Reset county votes from original baseline so buffs are idempotent and never stack runaway multipliers
+    for (var f in Counties.countyData) {
+        var c = Counties.countyData[f];
+        if (c && c.originalV) {
+            c.v = {
+                D: c.originalV.D,
+                R: c.originalV.R,
+                G: c.originalV.G || 0,
+                L: c.originalV.L || 0,
+                I: c.originalV.I || 0,
+                PSL: c.originalV.PSL || 0
+            };
+            if (c.turnout) {
+                c.turnout.player = Counties.DEFAULT_MAJOR_PARTY_TURNOUT || 1.0;
+                c.turnout.demOpponent = Counties.DEFAULT_MAJOR_PARTY_TURNOUT || 1.0;
+                c.turnout.repOpponent = Counties.DEFAULT_MAJOR_PARTY_TURNOUT || 1.0;
+                c.turnout.thirdParty = Counties.DEFAULT_THIRD_PARTY_TURNOUT || 0.7;
+            }
+        }
+    }
+
     // Build list of all active tickets
     var allTickets = [];
     if (gameData.selectedParty && gameData.candidate) {
@@ -161,8 +199,8 @@ function applyCandidateBuffs() {
         }
     }
 
-    // Hard cap: combined home-state + regional advantage per ticket per state (percentage points)
-    var maxRegionalAdvantage = 4.0;
+    // Hard cap: combined home-state + regional advantage per ticket per state (max 3.0 percentage points)
+    var maxRegionalAdvantage = 3.0;
 
     for (var t = 0; t < allTickets.length; t++) {
         var ticket = allTickets[t];
@@ -173,21 +211,20 @@ function applyCandidateBuffs() {
         // Track accumulated regional boost per state for this ticket to enforce the cap
         var stateRegionalBoosts = {};
 
-        // 1. Presidential home-state advantage — treated as percentage-point shift.
-        // All presidential CANDIDATES have explicit homeStateBoost values (1.4–3.4).
-        // Default 3.0 only applies if a candidate object is missing the property.
+        // 1. Presidential home-state advantage — realistic +1.5 to +2.5 percentage points
         if (pres && pres.homeState) {
-            var presBoost = typeof pres.homeStateBoost === 'number' ? pres.homeStateBoost : 3.0;
+            var rawPresBoost = typeof pres.homeStateBoost === 'number' ? pres.homeStateBoost : 2.0;
+            var presBoost = Math.min(2.5, rawPresBoost * 0.85); // Scale to grounded bounds
             var cappedPresBoost = Math.min(presBoost, maxRegionalAdvantage);
             stateRegionalBoosts[pres.homeState] = (stateRegionalBoosts[pres.homeState] || 0) + cappedPresBoost;
             _applyStateBoostToCounties(pres.homeState, voteKey, cappedPresBoost);
         }
 
-        // 2. VP home-state advantage — percentage-point shift, capped by remaining ticket allowance.
-        // VPs typically don't define homeStateBoost; default 2.0 represents a modest home-state edge.
+        // 2. VP home-state advantage — modest +0.8 to +1.5 points
         if (vp && (vp.homeState || vp.state)) {
             var vpHome = vp.homeState || vp.state;
-            var vpBoost = typeof vp.homeStateBoost === 'number' ? vp.homeStateBoost : 2.0;
+            var rawVpBoost = typeof vp.homeStateBoost === 'number' ? vp.homeStateBoost : 1.5;
+            var vpBoost = Math.min(1.5, rawVpBoost * 0.75);
             var vpAlready = stateRegionalBoosts[vpHome] || 0;
             var vpAllowance = Math.max(0, maxRegionalAdvantage - vpAlready);
             var actualVpBoost = Math.min(vpBoost, vpAllowance);
@@ -197,19 +234,23 @@ function applyCandidateBuffs() {
             }
         }
 
-        // 3. Presidential group effects are handled dynamically in county vote calculations.
+        // 3. Presidential siphon
         if (pres && pres.siphonFromMajorParties) {
-            // Apply siphon first so downstream boosts/debuffs can still move the post-siphon coalition.
             _applyMajorPartySiphonToCounties(voteKey, pres.siphonFromMajorParties);
         }
 
-        // 4. VP group effects are handled dynamically in county vote calculations.
-
-        // 5. Special named buffs (deterministic)
+        // 4. Special named buffs (grounded & balanced)
         if (pres && pres.buff === 'Midwest Appeal') {
             var midwestStates = ['MI', 'WI', 'MN', 'OH', 'IL', 'IN', 'IA', 'MO'];
             for (var mi = 0; mi < midwestStates.length; mi++) {
-                _applyStateBoostToCounties(midwestStates[mi], voteKey, 3);
+                var mState = midwestStates[mi];
+                var mAlready = stateRegionalBoosts[mState] || 0;
+                var mAllowance = Math.max(0, maxRegionalAdvantage - mAlready);
+                var actualMBoost = Math.min(1.0, mAllowance);
+                if (actualMBoost > 0) {
+                    stateRegionalBoosts[mState] = mAlready + actualMBoost;
+                    _applyStateBoostToCounties(mState, voteKey, actualMBoost);
+                }
             }
         }
 
@@ -226,10 +267,9 @@ function applyCandidateBuffs() {
                 // Working class white concentration metric (0 to 1)
                 var wcWhitePct = (white / 100) * ((blueCollar + nonCollege + rural) / 300);
                 
-                // If it's a heavily working-class white area
+                // Balanced, realistic demographic affinity (+0.5 to +2.0 pts max)
                 if (wcWhitePct > 0.20) {
-                    // Drastically shift the margin in-between (siphon from opponent to this candidate)
-                    var shiftPoints = Math.round(wcWhitePct * 18); // Max ~12-15 point shift 
+                    var shiftPoints = Math.min(2.0, (wcWhitePct - 0.20) * 3.5);
                     var oppKey = (voteKey === 'D') ? 'R' : 'D';
                     
                     var actualShift = Math.min((county.v[oppKey] || 0) - 1, shiftPoints);
@@ -238,9 +278,8 @@ function applyCandidateBuffs() {
                         county.v[voteKey] = Math.min(98, (county.v[voteKey] || 0) + actualShift);
                     }
                     
-                    // Surge turnout for this specific candidate's base
                     if (county.turnout) {
-                        var turnoutSurge = wcWhitePct * 0.45; // Up to ~25% turnout multiplier surge
+                        var turnoutSurge = wcWhitePct * 0.05; // 2-3% realistic surge
                         var role = (gameData.candidate && gameData.candidate.party === voteKey) ? 'player' : (voteKey === 'D' ? 'demOpponent' : 'repOpponent');
                         var maxTurnout = Counties.MAX_TURNOUT_MULTIPLIER || 1.3;
                         county.turnout[role] = Math.min(maxTurnout, (county.turnout[role] || 1) + turnoutSurge);
@@ -249,15 +288,15 @@ function applyCandidateBuffs() {
             }
         }
 
-        // 6. County-specific boosts for candidates with strong local ties
+        // 5. County-specific boosts for candidates with strong local ties
         if (pres) {
             _applyCountySpecificBoosts(pres, voteKey);
         }
 
-        // 7. Regional spillover boosts — `regionalSpilloverBoost` is a percentage-point value applied
-        // to each state listed in `regionalSpillover`. Capped by the ticket's remaining state allowance.
+        // 6. Regional spillover boosts — capped realistically (+0.5 to +1.0 pts)
         if (pres && pres.regionalSpillover && pres.regionalSpillover.length) {
-            var spilloverBoost = typeof pres.regionalSpilloverBoost === 'number' ? pres.regionalSpilloverBoost : 2.0;
+            var rawSpillover = typeof pres.regionalSpilloverBoost === 'number' ? pres.regionalSpilloverBoost : 1.0;
+            var spilloverBoost = Math.min(1.0, rawSpillover * 0.7);
             for (var si = 0; si < pres.regionalSpillover.length; si++) {
                 var spillState = pres.regionalSpillover[si];
                 var spillAlready = stateRegionalBoosts[spillState] || 0;
@@ -270,7 +309,7 @@ function applyCandidateBuffs() {
             }
         }
 
-        // 8. Policy Platform Effects (V2 dynamic policies)
+        // 7. Policy Platform Effects
         if (typeof PolicyManager !== 'undefined') {
             var roleMap = { 'D': 'demOpponent', 'R': 'repOpponent' };
             roleMap[gameData.selectedParty] = 'player';
@@ -293,7 +332,35 @@ function applyCandidateBuffs() {
         }
     }
 
+    // Synchronize fundamentals prior with candidate starting standing
+    updateStateFundamentals();
+
     console.log('✓ Candidate buffs applied deterministically for all tickets; state margins recalculated');
+}
+
+// Synchronizes Bayesian fundamentals prior with actual candidate starting standing
+function updateStateFundamentals() {
+    if (!gameData || !gameData.states) return;
+    var approvalOffset = ((gameData.approvalTrajectory !== undefined ? gameData.approvalTrajectory : 0.50) - 0.50);
+    
+    for (var stCode in gameData.states) {
+        var stObj = gameData.states[stCode];
+        if (!stObj) continue;
+        if (!stObj.fundamentals) {
+            stObj.fundamentals = { thetaFundamentals: 0.5, tauPrior: (typeof FUNDAMENTALS_CONFIG !== 'undefined' ? FUNDAMENTALS_CONFIG.TAU_PRIOR_INITIAL : 8.0) };
+        }
+        
+        // Base candidate standing from county truth (incorporating candidate home state & group synergies)
+        var trueData = (typeof Utils !== 'undefined' && Utils.getTrueStatePollingByParty) ? Utils.getTrueStatePollingByParty(stCode) : null;
+        if (trueData && ((trueData.D || 0) + (trueData.R || 0)) > 0) {
+            var totalDR = (trueData.D || 0) + (trueData.R || 0);
+            var baseShare = trueData.D / totalDR;
+            stObj.fundamentals.thetaFundamentals = clamp(baseShare + approvalOffset, 0.05, 0.95);
+        } else {
+            var pLean = (stObj.lean !== undefined ? stObj.lean : (typeof STATES !== 'undefined' && STATES[stCode] ? STATES[stCode].lean : 0)) / 100.0;
+            stObj.fundamentals.thetaFundamentals = clamp(0.50 + pLean + approvalOffset, 0.05, 0.95);
+        }
+    }
 }
 
 // Apply a flat vote-share boost to a single county identified by its 5-digit FIPS code
@@ -371,9 +438,35 @@ function _getCandidateGroupEffects(candidate) {
 function _getCandidateGroupEffectValue(candidate, groupId, effectKey) {
     var effects = _getCandidateGroupEffects(candidate);
     var effect = effects[groupId];
-    if (!effect) return 0;
-    var value = Number(effect[effectKey]);
-    return isFinite(value) ? value : 0;
+    if (effect) {
+        var direct = Number(effect[effectKey]);
+        return isFinite(direct) ? direct : 0;
+    }
+
+    // Origin groups are children of the broader Census categories.  A
+    // candidate who has a modeled parent-category effect should carry a
+    // bounded share of it into each child; a child-specific entry wins above.
+    // This keeps Cuban, Puerto Rican, Asian-origin, and Pacific groups from
+    // silently receiving zero effect while avoiding double counting the parent.
+    var group = typeof INTEREST_GROUPS !== 'undefined' ? INTEREST_GROUPS[groupId] : null;
+    var parentId = group && group.parentId;
+    if (parentId && effects[parentId]) {
+        var inherited = Number(effects[parentId][effectKey]);
+        if (isFinite(inherited)) return inherited * 0.55;
+    }
+
+    // Legacy tags (latino, cuban, veterans, etc.) are resolved through the
+    // same alias table used by the campaign and county layers.
+    for (var rawKey in effects) {
+        if (!effects.hasOwnProperty(rawKey)) continue;
+        var normalized = _normalizeGroupTag(rawKey);
+        normalized = GROUP_TAG_ALIASES[normalized] || normalized;
+        var targets = CANDIDATE_GROUP_MOD_ALIASES[normalized] || [normalized];
+        if (targets.indexOf(groupId) === -1 && !(parentId && targets.indexOf(parentId) !== -1)) continue;
+        var legacy = Number(effects[rawKey][effectKey]);
+        if (isFinite(legacy)) return legacy * (parentId ? 0.55 : 1);
+    }
+    return 0;
 }
 
 // County-level targeted boosts for candidates with specific local ties
@@ -895,6 +988,8 @@ function _buildCandidateByIdMap() {
             }
         }
     }
+    // The live player object takes precedence over a copied ticket record.
+    if (gameData.candidate) map[gameData.candidate.id] = gameData.candidate;
     return map;
 }
 
@@ -1141,7 +1236,14 @@ function updateGroupTurnoutFromIssue(issueId, partyCode, intensity) {
         var aligned = (groupBaseline * partySign > 0) ? 1 : (groupBaseline * partySign < 0 ? -1 : 0);
 
         // Sustained favorable campaigning increases turnout; opposing decreases it
-        var delta = aligned * importance * BUFF_CONSTANTS.GROUP_TURNOUT_RATE * (intensity || 1);
+        var priorityBoost = (typeof CampaignPriorities !== 'undefined')
+            ? CampaignPriorities.multiplier(partyCode, issueId) : 1;
+        var targetCandidate = (typeof getCandidateForParty === 'function') ? getCandidateForParty(partyCode) : null;
+        var factionBoost = 1;
+        if (targetCandidate && targetCandidate.factionId && typeof getFactionCompatibility === 'function') {
+            factionBoost = Math.max(0.4, Math.min(1.3, getFactionCompatibility(targetCandidate.factionId, groupId)));
+        }
+        var delta = aligned * importance * BUFF_CONSTANTS.GROUP_TURNOUT_RATE * (intensity || 1) * priorityBoost * factionBoost;
         var nextIssueTurnout = (gameData.issueTurnout[groupId] || 1.0) + delta;
         gameData.issueTurnout[groupId] = Math.max(BUFF_CONSTANTS.MIN_GROUP_TURNOUT,
             Math.min(BUFF_CONSTANTS.MAX_GROUP_TURNOUT, nextIssueTurnout));
@@ -1622,7 +1724,7 @@ function applyPacCommitment(pacId) {
     }
     var currentPos = (gameData.candidate.issuePositions && gameData.candidate.issuePositions[pac.priority_issue]) || 0;
     if (Math.abs(currentPos - pac.desired_position) > 2) {
-        gameData.candidate.issuePositions[pac.priority_issue] = pac.desired_position;
+        IssueModel.setPosition(gameData.candidate.id, pac.priority_issue, IssueModel.positions[IssueModel.index(pac.desired_position)].id);
     }
 
     addMediaVulnerability(pac);
@@ -1634,21 +1736,9 @@ Object.assign(app, {
     goToScreen: function(id) { Screens.goTo(id); },
     selParty: function(code) { Screens.selectParty(code); },
     setCampaignMapMode: function(mode) { if (typeof Campaign !== 'undefined') Campaign.setMapMode(mode); },
-    toggleTheme: function() {
-        var root = document.documentElement;
-        var current = root.getAttribute('data-theme') || 'dark';
-        var next = current === 'light' ? 'dark' : 'light';
-        root.setAttribute('data-theme', next);
-        try { localStorage.setItem('d2028-theme', next); } catch (e) {}
-    },
     initTheme: function() {
-        var saved = null;
-        try { saved = localStorage.getItem('d2028-theme'); } catch (e) {}
-        if (saved === 'light' || saved === 'dark') {
-            document.documentElement.setAttribute('data-theme', saved);
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
+        document.documentElement.setAttribute('data-theme', 'dark');
+        try { localStorage.removeItem('d2028-theme'); } catch (e) {}
     },
     setThirdParties: function(enabled) {
         gameData.thirdPartiesEnabled = enabled;
@@ -1705,7 +1795,7 @@ Object.assign(app, {
             optionsHtml += '<div class="fundraise-name">' + pac.name + '</div>';
             optionsHtml += '<div class="fundraise-category">' + (pac.category || 'Donor') + '</div>';
             optionsHtml += '</div>';
-            optionsHtml += '<div class="fundraise-detail"><strong>Demand:</strong> ' + issueName + ' @ ' + pac.desired_position + '</div>';
+            optionsHtml += '<div class="fundraise-detail"><strong>Demand:</strong> ' + issueName + ': ' + IssueModel.positions[IssueModel.index(pac.desired_position)].label + '</div>';
             optionsHtml += '<div class="fundraise-detail"><strong>Contribution:</strong> $' + pac.contribution + 'M</div>';
             optionsHtml += '<div class="fundraise-detail fundraise-vulnerability">Media risk: ' + (pac.vulnerability ? pac.vulnerability.label : 'Exposure') + '</div>';
             optionsHtml += '<button class="fundraise-accept-btn" onclick="app.acceptFundraiseOption(\'' + pacId + '\')">ACCEPT</button>';
@@ -1835,7 +1925,7 @@ Object.assign(app, {
                 if (isEndorsed) {
                     html += '<div><span style="color: #198754; font-weight: bold; border: 1px solid #198754; padding: 3px 6px; border-radius: 3px;">ENDORSED</span></div>';
                 } else {
-                    html += '<div><button onclick="app.lobbyEndorser(\'' + e.id + '\')" class="act-btn" style="padding: 6px 12px; font-size: 0.8rem; margin:0;"><i class="fa-solid fa-handshake"></i> MEET (1 <i class="fa-solid fa-bolt"></i>)</button></div>';
+                    html += '<div><button onclick="Campaign.lobbyEndorser(\'' + e.id + '\')" class="act-btn" style="padding: 6px 12px; font-size: 0.8rem; margin:0;"><i class="fa-solid fa-handshake"></i> MEET (1 <i class="fa-solid fa-bolt"></i>)</button></div>';
                 }
                 html += '</div>';
                 
@@ -2076,11 +2166,30 @@ Object.assign(app, {
             issuesHtml += '<ul>' + warnings.map(function(text) { return '<li>' + text + '</li>'; }).join('') + '</ul>';
             issuesHtml += '</div>';
         }
+
+        // Player-selected agenda: keep the five priority issues visible and
+        // move them to the top of their section. Campaign priorities are
+        // stored per candidate so the opponent AI can use the same model.
+        var campaignPriorities = (typeof CampaignPriorities !== 'undefined' && gameData.candidate)
+            ? CampaignPriorities.forCandidate(gameData.candidate) : [];
+        issuesHtml += '<div class="issue-priority-summary"><h3><i class="fa-solid fa-star"></i> CAMPAIGN PRIORITIES</h3>';
+        if (campaignPriorities.length) {
+            issuesHtml += '<ul class="issue-priority-list">' + campaignPriorities.map(function (id) {
+                return '<li>' + id + '</li>';
+            }).join('') + '</ul>';
+        } else {
+            issuesHtml += '<div class="issue-priority-limit">Star up to five issues. Priorities make related campaign actions more effective and shape coalition turnout.</div>';
+        }
+        issuesHtml += '<div class="issue-priority-limit">' + campaignPriorities.length + '/5 selected</div></div>';
         
         for (var c = 0; c < categories.length; c++) {
             var category = categories[c];
             var categoryIssues = CORE_ISSUES.filter(function(issue) {
                 return issue.category === category;
+            }).sort(function (a, b) {
+                var aPriority = campaignPriorities.indexOf(a.id) !== -1;
+                var bPriority = campaignPriorities.indexOf(b.id) !== -1;
+                return (bPriority ? 1 : 0) - (aPriority ? 1 : 0);
             });
             
             if (categoryIssues.length > 0) {
@@ -2091,7 +2200,8 @@ Object.assign(app, {
                     var isLocked = gameData.lockedIssues && gameData.lockedIssues[issue.id];
                     
                     issuesHtml += '<div class="issue-item">';
-                    issuesHtml += '<h3>' + issue.name;
+                    var isPriority = campaignPriorities.indexOf(issue.id) !== -1;
+                    issuesHtml += '<h3>' + issue.name + '<button class="issue-priority-btn' + (isPriority ? ' is-priority' : '') + '" onclick="app.toggleCampaignPriority(\'' + issue.id + '\')" aria-label="' + (isPriority ? 'Remove ' : 'Add ') + issue.name + ' as a campaign priority" aria-pressed="' + (isPriority ? 'true' : 'false') + '">' + (isPriority ? '★ PRIORITY' : '☆ PRIORITIZE') + '</button>';
                     if (isLocked) {
                         issuesHtml += ' <span class="pac-locked-badge">LOCKED</span>';
                     }
@@ -2314,6 +2424,17 @@ Object.assign(app, {
 
     closeDigitalModal: function() {
         var modal = document.getElementById('digital-planner-modal');
+        if (modal) modal.classList.add('hidden');
+    },
+
+    openPollsModal: function(target) {
+        if (typeof Polling !== 'undefined') {
+            Polling.openPollsModal(target || (gameData && gameData.selectedState ? gameData.selectedState : 'USA'));
+        }
+    },
+
+    closePollsModal: function() {
+        var modal = document.getElementById('polls-history-modal');
         if (modal) modal.classList.add('hidden');
     },
 
@@ -2564,11 +2685,23 @@ Object.assign(app, {
         
         select.innerHTML = '<option value="">Select Issue...</option>';
         
-        for (var i = 0; i < CORE_ISSUES.length; i++) {
-            var issue = CORE_ISSUES[i];
+        var issues = CORE_ISSUES.slice();
+        if (typeof CampaignPriorities !== 'undefined' && gameData.candidate) {
+            var priorities = CampaignPriorities.forCandidate(gameData.candidate);
+            issues.sort(function (a, b) {
+                var aPriority = priorities.indexOf(a.id);
+                var bPriority = priorities.indexOf(b.id);
+                if (aPriority === -1 && bPriority === -1) return 0;
+                if (aPriority === -1) return 1;
+                if (bPriority === -1) return -1;
+                return aPriority - bPriority;
+            });
+        }
+        for (var i = 0; i < issues.length; i++) {
+            var issue = issues[i];
             var option = document.createElement('option');
             option.value = issue.id;
-            option.textContent = issue.name;
+            option.textContent = (typeof CampaignPriorities !== 'undefined' && gameData.candidate && CampaignPriorities.has(gameData.candidate, issue.id) ? '★ ' : '') + issue.name;
             select.appendChild(option);
         }
     },
@@ -2638,7 +2771,7 @@ Object.assign(app, {
         
         html += '<div class="pac-detail-item">';
         html += '<strong>Key Issue: ' + issueName + '</strong>';
-        html += '<p>Your current position: ' + candidatePos + ' | Required position: ' + pac.desired_position + '</p>';
+        html += '<p>Your current position: ' + IssueModel.getPosition(gameData.candidate.id, pac.priority_issue).label + ' | Required position: ' + IssueModel.positions[IssueModel.index(pac.desired_position)].label + '</p>';
         html += '</div>';
         
         html += '<div class="pac-warning">';
@@ -2669,7 +2802,7 @@ Object.assign(app, {
         var positionDiff = Math.abs(candidatePos - pac.desired_position);
         if (positionDiff > 2) {
             // Move position closer to PAC requirement
-            gameData.candidate.issuePositions[pac.priority_issue] = pac.desired_position;
+            IssueModel.setPosition(gameData.candidate.id, pac.priority_issue, IssueModel.positions[IssueModel.index(pac.desired_position)].id);
         }
 
         addMediaVulnerability(pac);

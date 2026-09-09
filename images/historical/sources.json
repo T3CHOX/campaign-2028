@@ -1,0 +1,57 @@
+{
+  "gore": {
+    "candidate": "Al Gore",
+    "page": "https://en.wikipedia.org/wiki/Al_Gore",
+    "sourceImage": "downloaded in prior batch"
+  },
+  "bush": {
+    "candidate": "George W. Bush",
+    "page": "https://en.wikipedia.org/wiki/George_W._Bush",
+    "sourceImage": "downloaded in prior batch"
+  },
+  "nader": {
+    "candidate": "Ralph Nader",
+    "page": "https://en.wikipedia.org/wiki/Ralph_Nader",
+    "sourceImage": "downloaded in prior batch"
+  },
+  "kerry": {
+    "candidate": "John Kerry",
+    "page": "https://en.wikipedia.org/wiki/John_Kerry",
+    "sourceImage": "downloaded in prior batch"
+  },
+  "obama": {
+    "candidate": "Barack Obama",
+    "page": "https://en.wikipedia.org/wiki/Barack_Obama",
+    "sourceImage": "downloaded in prior batch"
+  },
+  "mccain": {
+    "candidate": "John McCain",
+    "page": "https://en.wikipedia.org/wiki/John_McCain",
+    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/John_McCain_official_portrait_2009_%283x4_cropped%29.jpg/960px-John_McCain_official_portrait_2009_%283x4_cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+  },
+  "romney": {
+    "candidate": "Mitt Romney",
+    "page": "https://en.wikipedia.org/wiki/Mitt_Romney",
+    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Mitt_Romney_official_US_Senate_portrait.jpg/960px-Mitt_Romney_official_US_Senate_portrait.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+  },
+  "clinton": {
+    "candidate": "Hillary Clinton",
+    "page": "https://en.wikipedia.org/wiki/Hillary_Clinton",
+    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Former_United_States_Secretary_of_State_Hillary_Rodham_Clinton_at_the_U.S._Department_of_State_on_September_26%2C_2023_in_Washington%2C_D.C._14_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  "biden": {
+    "candidate": "Joe Biden",
+    "page": "https://en.wikipedia.org/wiki/Joe_Biden",
+    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Joe_Biden_presidential_portrait.jpg/960px-Joe_Biden_presidential_portrait.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+  },
+  "jorgensen": {
+    "candidate": "Jo Jorgensen",
+    "page": "https://en.wikipedia.org/wiki/Jo_Jorgensen",
+    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Jo_Jorgensen_portrait_3.jpg/960px-Jo_Jorgensen_portrait_3.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+  },
+  "oliver": {
+    "candidate": "Chase Oliver",
+    "page": "https://en.wikipedia.org/wiki/Chase_Oliver",
+    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Chase_Oliver_by_Gage_Skidmore_2.jpg/960px-Chase_Oliver_by_Gage_Skidmore_2.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+  }
+}

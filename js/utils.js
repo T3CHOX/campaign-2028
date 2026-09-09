@@ -1,9 +1,42 @@
-/* ============================================
-   DECISION 2028 - UTILITY FUNCTIONS
-   ============================================ */
+function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+function gaussianNoise(mean, sigma) {
+    var u1 = Math.random();
+    while (u1 === 0) u1 = Math.random();
+    var u2 = Math.random();
+    var z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    return (mean || 0) + (sigma !== undefined ? sigma : 1) * z;
+}
+
+// Ballot access is a state-level election rule.  County calculations should
+// always resolve the county's two-letter state code before applying it so a
+// county FIPS, display label, or stale map selection cannot make every
+// third-party candidate ineligible.
+function isPartyOnBallotForState(partyCode, stateCode) {
+    if (partyCode === 'D' || partyCode === 'R') return true;
+    var state = String(stateCode || '').trim().toUpperCase();
+    if (!state || state === 'USA') return true;
+    if (typeof gameData === 'undefined' || !gameData.thirdPartiesEnabled) return false;
+    if (typeof gameData.thirdTickets !== 'undefined' && gameData.thirdTickets && !gameData.thirdTickets[partyCode]) return false;
+    var access = typeof THIRD_PARTY_BALLOT_ACCESS !== 'undefined' ? THIRD_PARTY_BALLOT_ACCESS[partyCode] : null;
+    // An unlisted party is treated as available when its ticket is active;
+    // the configured lists are restrictions, not a county-level whitelist.
+    return !Array.isArray(access) || access.indexOf(state) !== -1;
+}
 
 var Utils = {
-    POPULATION_ICON: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="height: 1.2em; width: 1.2em; vertical-align: middle; margin-right: 4px; margin-bottom: 2px;"><g><path d="M164.594 21.625c-.537.012-1.068.028-1.563.094-29.656 3.852-52.56 35.847-52.56 74.75 0 21.55 7.307 41.193 18.686 54.905-61.678 11.594-66.563 115.158-66.562 188.063h43.218l11.094 152.437h63.063L168.905 340.03h21.47l11.343 152.158h108.686l10.03-152.157h21.627l-9.907 151.845h63.063l10.53-152.438h40.28c0-73.107 1.407-178.78-65.967-189.218 10.89-13.646 18.093-32.734 18.093-53.75 0-41.496-26.52-74.75-59-74.75-2.03 0-4.43-.263-6.406 0-9.4 1.22-17.562 5.455-25.125 11.686 16.388 13.303 27.468 36.433 27.47 63.063 0 21.016-7.236 40.104-18.126 53.75 67.373 10.438 66 116.11 66 189.218h-21.94c.008-73.086 1.29-178.215-65.905-188.625 10.89-13.647 17.906-32.61 17.906-53.625 0-41.497-26.457-75-58.936-75-2.03 0-4.117-.262-6.094 0-29.657 3.85-52.813 36.095-52.813 75 0 21.547 7.373 40.788 18.75 54.5-61.514 11.563-66.318 114.874-66.343 187.75H126.25c-.002-72.905 4.322-176.47 66-188.063-11.38-13.712-18.687-33.356-18.688-54.906 0-26.575 11.138-49.632 27.438-63.064-9.148-7.425-19.896-11.687-31.53-11.687-1.525 0-3.267-.132-4.876-.095z" fill="currentColor"></path></g></svg>',
+    POPULATION_ICON: '<i class="fa-solid fa-user-group"></i>',
+
+    clamp: function (x, lo, hi) {
+        return Math.max(lo, Math.min(hi, x));
+    },
+
+    gaussianNoise: function (mean, sigma) {
+        var u1 = Math.random();
+        while (u1 === 0) u1 = Math.random();
+        var u2 = Math.random();
+        var z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        return mean + sigma * z;
+    },
 
     getLastName: function (fullName) {
         if (!fullName) return '';
@@ -183,13 +216,27 @@ var Utils = {
     },
 
     getNationalPollingByParty: function() {
+        if (typeof gameData !== 'undefined' && gameData.pollingAverages && gameData.pollingAverages['USA']) {
+            return gameData.pollingAverages['USA'];
+        }
+        return this.getTrueNationalPollingByParty();
+    },
+
+    getStatePollingByParty: function(stateCode) {
+        if (typeof gameData !== 'undefined' && gameData.pollingAverages && gameData.pollingAverages[stateCode]) {
+            return gameData.pollingAverages[stateCode];
+        }
+        return this.getTrueStatePollingByParty(stateCode);
+    },
+
+    getTrueNationalPollingByParty: function() {
         var nTotals = { D: 0, R: 0, G: 0, L: 0, I: 0, PSL: 0 };
         var nUndecided = 0;
         var nPop = 0;
         
         for (var stateCode in gameData.states) {
             var s = gameData.states[stateCode];
-            var pcts = this.getStatePollingByParty(stateCode);
+            var pcts = this.getTrueStatePollingByParty(stateCode);
             if (!pcts) continue;
             
             var weight = s.population || 1000000;
@@ -216,7 +263,7 @@ var Utils = {
         };
     },
 
-    getStatePollingByParty: function (stateCode) {
+    getTrueStatePollingByParty: function (stateCode) {
         if (typeof Counties === 'undefined' || !Counties.countyData) return null;
         if (typeof STATES === 'undefined' || !STATES[stateCode]) return null;
         var stateFips = STATES[stateCode].fips;
@@ -317,7 +364,7 @@ var Utils = {
             var pct = (pcts && pcts[entry.party]) || 0;
             var prev = (prevPcts && prevPcts[entry.party]);
             var delta = (prev !== undefined) ? pct - prev : 0;
-            result.push({ party: entry.party, cand: entry.cand, pct: pct, delta: delta });
+            result.push({ party: entry.party, cand: entry.cand, pct: pct, delta: delta, hasPrevious: prev !== undefined });
         }
         
         result.sort(function (a, b) { return b.pct - a.pct; });
@@ -331,8 +378,89 @@ var Utils = {
         return (cand ? cand.name : '—') + ' (' + partyCode + (homeState ? '-' + homeState : '') + ')';
     },
 
+    isPartyOnBallot: function (partyCode, stateCode) {
+        return isPartyOnBallotForState(partyCode, stateCode);
+    },
+
+    getCandidateLastName: function (partyCode) {
+        if (typeof gameData === 'undefined') return partyCode;
+        var cand = null;
+        if (gameData.selectedParty === partyCode && gameData.candidate) {
+            cand = gameData.candidate;
+        } else if (partyCode === 'D' && gameData.demTicket && gameData.demTicket.pres) {
+            cand = gameData.demTicket.pres;
+        } else if (partyCode === 'R' && gameData.repTicket && gameData.repTicket.pres) {
+            cand = gameData.repTicket.pres;
+        } else if (gameData.thirdTickets && gameData.thirdTickets[partyCode] && gameData.thirdTickets[partyCode].pres) {
+            cand = gameData.thirdTickets[partyCode].pres;
+        }
+        if (!cand || !cand.name) {
+            return (typeof PARTIES !== 'undefined' && PARTIES[partyCode]) ? PARTIES[partyCode].shortName : partyCode;
+        }
+        var parts = cand.name.trim().split(/\s+/);
+        return parts[parts.length - 1];
+    },
+
+    getEstimatedNationalTurnout: function () {
+        if (typeof Counties === 'undefined' || !Counties.countyData) return 160000000;
+        var total = 0;
+        for (var fips in Counties.countyData) {
+            var county = Counties.countyData[fips];
+            if (!county) continue;
+            var registered = Number(county.regVoters);
+            if (!(registered > 0)) registered = Number(county.p) || 0;
+            var rate = typeof Counties.getCountyTurnoutRate === 'function'
+                ? Counties.getCountyTurnoutRate(county)
+                : Number(county.turnoutBase) || 0.66;
+            total += registered * Math.max(0, Math.min(1, Number(rate) || 0));
+        }
+        return total > 0 ? total : 160000000;
+    },
+
+    getNationalPopularVoteEstimate: function (party) {
+        var polls = typeof this.getNationalPollingByParty === 'function' ? this.getNationalPollingByParty() : {};
+        var pollPct = Number(polls && polls[party]);
+        if (!(pollPct >= 0)) pollPct = 0;
+        return Math.round(this.getEstimatedNationalTurnout() * pollPct / 100);
+    },
+
+    getJurisdictionTurnout: function (targetId) {
+        if (typeof Counties === 'undefined' || !Counties.countyData) return 0;
+        var target = String(targetId || 'USA').toUpperCase();
+        var stateFips = (typeof STATES !== 'undefined' && STATES[target] && STATES[target].fips) ? String(STATES[target].fips).padStart(2, '0') : null;
+        var countyFips = /^\d{1,5}$/.test(target) ? target.padStart(5, '0') : null;
+        var total = 0;
+        for (var fips in Counties.countyData) {
+            var padded = String(fips).padStart(5, '0');
+            if (stateFips && padded.substring(0, 2) !== stateFips) continue;
+            if (countyFips && padded !== countyFips) continue;
+            var county = Counties.countyData[fips];
+            if (!county) continue;
+            var registered = Number(county.regVoters);
+            if (!(registered > 0)) registered = Number(county.p) || 0;
+            var rate = typeof Counties.getCountyTurnoutRate === 'function'
+                ? Counties.getCountyTurnoutRate(county)
+                : Number(county.turnoutBase) || 0.66;
+            total += registered * Math.max(0, Math.min(1, Number(rate) || 0));
+        }
+        return total;
+    },
+
+    getJurisdictionPopularVoteEstimate: function (party, targetId, pollPct) {
+        var target = targetId || 'USA';
+        var pct = Number(pollPct);
+        if (!(pct >= 0)) {
+            var polls = target === 'USA' ? this.getNationalPollingByParty() : this.getStatePollingByParty(target);
+            pct = Number(polls && polls[party]);
+        }
+        if (!(pct >= 0)) pct = 0;
+        var turnout = this.getJurisdictionTurnout(target);
+        if (!(turnout > 0) && String(target).toUpperCase() === 'USA') turnout = this.getEstimatedNationalTurnout();
+        return Math.round(Math.max(0, turnout) * pct / 100);
+    },
+
     // Build ranked candidate list HTML for simulator state/county views
-    buildCandidateRankedListHTML: function (pcts, prevPcts) {
+    buildCandidateRankedListHTML: function (pcts, prevPcts, targetId) {
         if (!pcts) {
             return '<div class="cpl-empty">No polling data available.</div>';
         }
@@ -344,36 +472,58 @@ var Utils = {
         var html = '<div class="cpl-list">';
         for (var i = 0; i < candidates.length; i++) {
             var item = candidates[i];
+            var onBallot = this.isPartyOnBallot(item.party, targetId);
+            var isOffBallot = !onBallot || (item.pct === 0 && this.isThirdParty(item.party));
+
             var partyColor = (PARTIES[item.party] && PARTIES[item.party].color) || '#888';
+            var displayColor = isOffBallot ? '#777777' : partyColor;
             var formattedName = this._formatCandName(item.cand, item.party);
             var imgSrc = (item.cand && item.cand.img) ? item.cand.img : 'images/scenario.jpg';
-            var deltaStr = (item.delta >= 0 ? '+' : '') + item.delta.toFixed(1);
-            var deltaClass = item.delta > 0.05 ? 'cpl-delta-pos' : (item.delta < -0.05 ? 'cpl-delta-neg' : 'cpl-delta-neu');
+            var deltaStr = item.hasPrevious ? ((item.delta >= 0 ? '+' : '') + item.delta.toFixed(1)) : '—';
+            var deltaClass = !item.hasPrevious ? 'cpl-delta-neu' : (item.delta > 0.05 ? 'cpl-delta-pos' : (item.delta < -0.05 ? 'cpl-delta-neg' : 'cpl-delta-neu'));
 
-            html += '<div class="cpl-row">';
-            html += '<img class="cpl-avatar" src="' + imgSrc + '" onerror="this.src=\'images/scenario.jpg\'" alt="" style="border-color:' + partyColor + ';">';
+            var avatarStyle = isOffBallot ? 'border-color:#555; filter: grayscale(100%); opacity: 0.45;' : 'border-color:' + partyColor + ';';
+            var nameStyle = isOffBallot ? 'color: #888; font-weight: normal;' : '';
+            var pctStyle = isOffBallot ? 'color: #777; opacity: 0.6;' : 'color:' + partyColor + ';';
+
+            var popEstimate = this.getJurisdictionPopularVoteEstimate(item.party, targetId, item.pct);
+            html += '<div class="cpl-row cpl-popvote-row" tabindex="0" aria-label="' + formattedName + ', estimated popular vote in this jurisdiction ' + popEstimate.toLocaleString() + '">';
+            html += '<img class="cpl-avatar" src="' + imgSrc + '" onerror="this.src=\'images/scenario.jpg\'" alt="" style="' + avatarStyle + '">';
             html += '<div class="cpl-info">';
-            html += '<div class="cpl-name">' + formattedName + '</div>';
-            html += '<div class="cpl-bar-wrap"><div class="cpl-bar" style="width:' + Math.max(0.5, item.pct).toFixed(1) + '%;background:' + partyColor + ';"></div></div>';
+            html += '<div class="cpl-name" style="' + nameStyle + '">' + formattedName + '</div>';
+            if (isOffBallot) {
+                html += '<div style="font-size: 0.62rem; color: #666; font-style: italic;">No Ballot Access</div>';
+            } else {
+                html += '<div class="cpl-bar-wrap"><div class="cpl-bar" style="width:' + Math.max(0.5, item.pct).toFixed(1) + '%;background:' + partyColor + ';"></div></div>';
+            }
             html += '</div>';
             html += '<div class="cpl-pct-group">';
-            html += '<span class="cpl-pct" style="color:' + partyColor + ';">' + item.pct.toFixed(1) + '%</span>';
-            html += '<span class="' + deltaClass + '">' + deltaStr + '</span>';
+            html += '<span class="cpl-pct cpl-percent-value" style="' + pctStyle + '">' + item.pct.toFixed(1) + '%</span>';
+            html += '<span class="cpl-pct cpl-popvote-value" title="Estimated popular vote in this jurisdiction" style="' + pctStyle + '">' + popEstimate.toLocaleString() + '</span>';
+            if (!isOffBallot) {
+                html += '<span class="' + deltaClass + '">' + deltaStr + '</span>';
+            }
             html += '</div>';
             html += '</div>';
         }
         html += '</div>';
         
-        if (pcts && pcts['Undecided'] !== undefined) {
-            var uPct = pcts['Undecided'];
-            html += '<div class="cpl-undecided-row" style="text-align: right; margin-top: 8px; padding-right: 12px; font-size: 0.88rem; font-weight: bold; color: var(--ink-muted);">Undecided: ' + uPct.toFixed(1) + '%</div>';
+        var uPct = (pcts && pcts['Undecided'] !== undefined) ? pcts['Undecided'] : 0;
+        var tid = targetId || (typeof gameData !== 'undefined' && gameData.selectedState ? gameData.selectedState : 'USA');
+        
+        html += '<div class="cpl-undecided-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.85rem; font-weight: 700; color: var(--ink-muted);">';
+        if (typeof Polling !== 'undefined') {
+            html += '<button onclick="Polling.openPollsModal(\'' + tid + '\')" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; cursor: pointer; border-radius: 4px; padding: 3px 8px; font-size: 0.8em; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s;" title="View Polling History" onmouseover="this.style.background=\'rgba(255,255,255,0.22)\';" onmouseout="this.style.background=\'rgba(255,255,255,0.08)\';"><i class="fa-solid fa-square-poll-vertical"></i> Polls</button>';
+        } else {
+            html += '<div></div>';
         }
+        html += '<span style="padding-right: 4px;">Undecided: ' + uPct.toFixed(1) + '%</span></div>';
         
         return html;
     },
 
     // Build ranked candidate list HTML for election-night state/county detail panels
-    buildElectionRankedListHTML: function (reportedVotes, reportedPct, ev, projStatus) {
+    buildElectionRankedListHTML: function (reportedVotes, reportedPct, ev, projStatus, targetId, shiftYear) {
         var votes = reportedVotes || { D: 0, R: 0, G: 0, L: 0, I: 0, PSL: 0 };
         var totalVotes = (votes.D || 0) + (votes.R || 0) + (votes.G || 0) +
             (votes.L || 0) + (votes.I || 0) + (votes.PSL || 0);
@@ -405,6 +555,22 @@ var Utils = {
             var formattedName = this._formatCandName(item.cand, item.party);
             var imgSrc = (item.cand && item.cand.img) ? item.cand.img : 'images/scenario.jpg';
             var pct = totalVotes > 0 ? (item.votes / totalVotes) * 100 : 0;
+            
+            var tickerHtml = '';
+            if (targetId && shiftYear && typeof Election !== 'undefined' && Election.analysisMode) {
+                var histPct = Election.getHistoricalVotePct(shiftYear, targetId, item.party);
+                if (histPct !== null) {
+                    var shift = pct - histPct;
+                    var tickerColor = shift > 0 ? '#198754' : '#E81B23';
+                    var tickerArrow = shift > 0 ? '▲' : '▼';
+                    if (Math.abs(shift) < 0.05) {
+                        tickerColor = '#888';
+                        tickerArrow = '▶';
+                    }
+                    // Inline ticker styled same as week-to-week delta
+                    tickerHtml = '<span style="font-size: 0.78em; color: ' + tickerColor + '; font-weight: bold; margin-left: 4px;">' + tickerArrow + Math.abs(shift).toFixed(1) + '</span>';
+                }
+            }
 
             html += '<div class="elec-cpl-row">';
             html += '<img class="elec-cpl-avatar" src="' + imgSrc + '" onerror="this.src=\'images/scenario.jpg\'" alt="" style="border-color:' + partyColor + ';">';
@@ -413,12 +579,13 @@ var Utils = {
             html += '<div class="elec-cpl-bar-wrap"><div class="elec-cpl-bar" style="width:' + Math.max(0.5, pct).toFixed(1) + '%;background:' + partyColor + ';"></div></div>';
             html += '</div>';
             html += '<div class="elec-cpl-right">';
-            html += '<span class="elec-cpl-pct" style="color:' + partyColor + ';">' + pct.toFixed(1) + '%</span>';
+            html += '<span class="elec-cpl-pct" style="color:' + partyColor + ';">' + tickerHtml + (tickerHtml ? ' ' : '') + pct.toFixed(1) + '%' + '</span>';
             html += '<span class="elec-cpl-votes">' + item.votes.toLocaleString() + '</span>';
             html += '</div>';
             html += '</div>';
         }
         html += '</div>';
+        html += '<div class="elec-total-votes">' + totalVotes.toLocaleString() + ' votes</div>';
 
         // Projection status banner
         if (projStatus) {

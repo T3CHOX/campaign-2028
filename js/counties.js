@@ -16,7 +16,8 @@ var Counties = {
     DEFAULT_BASE_TURNOUT_RATE: 0.66,
     MAX_TURNOUT_MULTIPLIER: 1.3,
     COUNTY_BASELINE_SOURCE_FILES: [
-        // Prioritize the actual file existing in the codebase
+        // Unified source supplied for both realistic vote pools and analysis.
+        'counties/countypres_2000-2024.csv',
         'counties/countypres_2012-2024.csv',
         'counties/2012-2024results.csv',
         'counties/2012_2024results.csv',
@@ -298,6 +299,8 @@ var Counties = {
         
         var candidateCol = colMap.candidate;
         var modeCol = colMap.mode;
+        var stateCol = colMap.state_po;
+        var countyNameCol = colMap.county_name;
 
         for (var i = headerIndex + 1; i < lines.length; i++) {
             var line = (lines[i] || '').trim();
@@ -306,7 +309,14 @@ var Counties = {
             var year = parseInt(parts[yearCol], 10);
             if (!wantedYears[year]) continue;
 
-            var fips = this.normalizeFips(parts[fipsCol]);
+            var rowState = stateCol !== undefined ? (parts[stateCol] || '').trim().toUpperCase() : '';
+            var rowCountyName = countyNameCol !== undefined ? (parts[countyNameCol] || '').trim().toUpperCase() : '';
+            // Missouri publishes the portion of Kansas City outside the Jackson
+            // County reporting unit separately. Merge it into Jackson before
+            // constructing the 2020/2024 simulation baseline.
+            var fips = (rowState === 'MO' && rowCountyName === 'KANSAS CITY')
+                ? '29095'
+                : this.normalizeFips(parts[fipsCol]);
             if (!fips) continue;
 
             var party = (parts[partyCol] || '').trim().toUpperCase();
@@ -486,6 +496,47 @@ var Counties = {
         xhr.send();
     },
 
+    loadCalibratedTurnoutData: function(callback) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'counties/county_turnout_baselines.json', true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== 4) return;
+
+            var applied = 0;
+            if (xhr.status === 200) {
+                try {
+                    var payload = JSON.parse(xhr.responseText);
+                    var records = payload && payload.counties ? payload.counties : {};
+                    for (var fips in records) {
+                        var county = Counties.countyData[fips];
+                        var record = records[fips];
+                        if (!county || !record) continue;
+
+                        var registered = Number(record.registered);
+                        var turnout = Number(record.turnout);
+                        if (!(registered > 0) || turnout < 0 || !isFinite(registered) || !isFinite(turnout)) continue;
+
+                        county.regVoters = Math.round(registered);
+                        county.turnoutBase = Math.max(0, Math.min(1, turnout));
+                        county.turnoutBaselineMeta = {
+                            baselineVotes: Number(record.baselineVotes) || (registered * turnout),
+                            yearsUsed: Number(record.yearsUsed) || 0,
+                            source: record.source || payload.method || ''
+                        };
+                        applied++;
+                    }
+                    console.log('\u2713 Calibrated 2020/2024 turnout loaded: ' + applied + ' counties');
+                } catch (error) {
+                    console.warn('Could not parse county turnout baseline data', error);
+                }
+            } else {
+                console.warn('Could not load county_turnout_baselines.json');
+            }
+            if (callback) callback({ applied: applied });
+        };
+        xhr.send();
+    },
+
     parseTurnoutCsv: function(csvText) {
         var lines = csvText.split(/\r?\n/);
         var turnoutSum = {};
@@ -574,11 +625,15 @@ var Counties = {
     // Load county data from JSON
     loadCountyData: function(callback) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'counties/county_data.json', true);
+        Electorate.ready = false;
+        xhr.open('GET', 'counties/demographics.v2.json', true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 var rawData = JSON.parse(xhr.responseText);
-                Counties.countyData = Counties.applyFipsCrosswalk(rawData);
+                Counties.countyData = rawData.counties;
+                Electorate.installGroups(rawData.groups, rawData.counties);
+                gameData.liveGroups = JSON.parse(JSON.stringify(INTEREST_GROUPS));
+                initInterestGroupTurnout();
 
                 Counties.loadCountyVoteBaselineData(function() {
                     // Load voter roll data (active/inactive counts)
@@ -592,7 +647,7 @@ var Counties = {
                             } else {
                                 console.warn('Could not load voter roll data');
                             }
-                            Counties.loadTurnoutData(function() {
+                            Counties.loadCalibratedTurnoutData(function() {
                                 if (typeof MediaMarkets !== 'undefined') {
                                     MediaMarkets.load(finishLoadingCountyData);
                                 } else {
@@ -637,15 +692,22 @@ var Counties = {
                                 PSL: c.v.PSL || 0
                             };
 
-                            // Initialize undecided percentage (15% of population)
-                            c.undecided = (c.undecided !== undefined) ? c.undecided : 15.0;
-                            c.turnoutBase = (typeof c.turnoutBase === 'number' && isFinite(c.turnoutBase) && c.turnoutBase > 0)
+                            // Initialize undecided percentage (dynamic county-to-county around ~10%)
+                            if (c.undecided === undefined) {
+                                var tierMod = (c.t === 'urban' || c.t === 'suburban') ? 0.5 : -0.5;
+                                var randMod = (Math.random() - 0.5) * 2.0; // ±1.0% variation
+                                c.undecided = Math.max(6.0, Math.min(14.0, 10.0 + tierMod + randMod));
+                            }
+                            c.turnoutBase = (typeof c.turnoutBase === 'number' && isFinite(c.turnoutBase) && c.turnoutBase >= 0)
                                 ? Math.max(0, Math.min(1, c.turnoutBase))
                                 : Counties.DEFAULT_BASE_TURNOUT_RATE;
                             
-                            // Derive registered voters from baselineVoteTotals and turnoutBase to ensure total votes cast are correct
-                            var baseVotes = c.baselineVoteTotals ? c.baselineVoteTotals.total : (c.p * 0.4);
-                            c.regVoters = Math.round(baseVotes / c.turnoutBase);
+                            // Preserve the calibrated registration pool. The fallback keeps
+                            // older/custom county data usable if no calibration record exists.
+                            if (!(typeof c.regVoters === 'number' && isFinite(c.regVoters) && c.regVoters > 0)) {
+                                var baseVotes = c.baselineVoteTotals ? c.baselineVoteTotals.total : (c.p * 0.4);
+                                c.regVoters = Math.round(baseVotes / c.turnoutBase);
+                            }
 
                             // Cache state code to avoid repeated FIPS parsing in tooltips
                             var normalizedFips = Counties.normalizeFips(fips);
@@ -1063,12 +1125,12 @@ var Counties = {
             }
         }
 
-        if (typeof THIRD_PARTY_BALLOT_ACCESS !== 'undefined' && county.s) {
+        if (county && county.s) {
             var tpKeys = ['G', 'L', 'I', 'PSL'];
             for (var k = 0; k < tpKeys.length; k++) {
                 var tp = tpKeys[k];
-                if (THIRD_PARTY_BALLOT_ACCESS[tp] && THIRD_PARTY_BALLOT_ACCESS[tp].indexOf(county.s) === -1) {
-                    totals[tp] = 0; // Not on ballot in this state
+                if (typeof isPartyOnBallotForState === 'function' && !isPartyOnBallotForState(tp, county.s)) {
+                    totals[tp] = 0; // Ballot access is inherited from the state.
                 }
             }
         }
@@ -1268,7 +1330,13 @@ var Counties = {
             var oppCand = null;
             if (typeof getFactionCompatibility === 'function' && typeof gameData !== 'undefined' && typeof Utils !== 'undefined' && county.ig) {
                 var oppCandId = (party === 'D' && gameData.demTicket) ? gameData.demTicket.pres.id : ((party === 'R' && gameData.repTicket) ? gameData.repTicket.pres.id : null);
-                oppCand = oppCandId ? Utils.getCandidateById(oppCandId) : null;
+                if (oppCandId && typeof _buildCandidateByIdMap === 'function') {
+                    oppCand = _buildCandidateByIdMap()[oppCandId] || null;
+                }
+                if (!oppCand) {
+                    oppCand = party === 'D' && gameData.demTicket ? gameData.demTicket.pres :
+                        (party === 'R' && gameData.repTicket ? gameData.repTicket.pres : null);
+                }
                 if (oppCand && oppCand.factionId) {
                     var weightedCompat = 0;
                     var totalWeight = 0;
@@ -1456,6 +1524,20 @@ var Counties = {
             for (var i = 0; i < parties.length; i++) {
                 votes[parties[i]] = Math.max(0, county.reportedVotes[parties[i]] || 0);
             }
+            // Election-night district math must never inherit a malformed voter
+            // pool. A county cannot report more ballots than its citizen voting-
+            // age population (or population fallback), even if an imported
+            // registration field is accidentally duplicated by reporting mode.
+            var reportedTotal = parties.reduce(function(sum, party) { return sum + votes[party]; }, 0);
+            var eligibleCap = county.demographics && Number.isFinite(county.demographics.cvap)
+                ? county.demographics.cvap
+                : (Number.isFinite(county.p) ? county.p : 0);
+            if (eligibleCap > 0 && reportedTotal > eligibleCap) {
+                var capScale = eligibleCap / reportedTotal;
+                for (var capIdx = 0; capIdx < parties.length; capIdx++) {
+                    votes[parties[capIdx]] *= capScale;
+                }
+            }
             return votes;
         }
 
@@ -1571,6 +1653,101 @@ var Counties = {
         return this.normalizeVoteShareMap(segmentShares);
     },
 
+    // Fit split-county estimates to two hard constraints: each segment keeps
+    // its configured turnout share, and recombining segments exactly restores
+    // every party's county vote total. Segment demographics provide the seed.
+    allocateSplitCountyVotes: function(county, countyVotes, segments, parties) {
+        var countyTotal = 0;
+        for (var p = 0; p < parties.length; p++) countyTotal += countyVotes[parties[p]] || 0;
+        if (countyTotal <= 0 || !segments || !segments.length) return [];
+
+        var shareTotal = 0;
+        for (var s = 0; s < segments.length; s++) shareTotal += Math.max(0, Number(segments[s].share) || 0);
+        if (shareTotal <= 0) shareTotal = segments.length;
+
+        var rowTargets = [];
+        var matrix = [];
+        for (var i = 0; i < segments.length; i++) {
+            rowTargets[i] = countyTotal * (Math.max(0, Number(segments[i].share) || 0) / shareTotal);
+            var seed = this.buildSplitSegmentShares(county, countyVotes, segments[i].baseline);
+            matrix[i] = {};
+            for (var j = 0; j < parties.length; j++) {
+                var key = parties[j];
+                matrix[i][key] = rowTargets[i] * Math.max(0.000001, (seed[key] || 0) / 100);
+            }
+        }
+
+        // Iterative proportional fitting preserves the demographic differences
+        // while converging on the requested row and column totals.
+        for (var iteration = 0; iteration < 80; iteration++) {
+            for (var c = 0; c < parties.length; c++) {
+                var party = parties[c];
+                var column = 0;
+                for (var r = 0; r < matrix.length; r++) column += matrix[r][party];
+                var target = countyVotes[party] || 0;
+                var columnScale = column > 0 ? target / column : 0;
+                for (var r1 = 0; r1 < matrix.length; r1++) matrix[r1][party] *= columnScale;
+            }
+            for (var r2 = 0; r2 < matrix.length; r2++) {
+                var row = 0;
+                for (var c2 = 0; c2 < parties.length; c2++) row += matrix[r2][parties[c2]];
+                var rowScale = row > 0 ? rowTargets[r2] / row : 0;
+                for (var c3 = 0; c3 < parties.length; c3++) matrix[r2][parties[c3]] *= rowScale;
+            }
+        }
+
+        // End on the party constraint so district party totals recombine exactly.
+        for (var pc = 0; pc < parties.length; pc++) {
+            var finalParty = parties[pc];
+            var finalColumn = 0;
+            for (var fr = 0; fr < matrix.length; fr++) finalColumn += matrix[fr][finalParty];
+            var finalTarget = countyVotes[finalParty] || 0;
+            var finalScale = finalColumn > 0 ? finalTarget / finalColumn : 0;
+            for (var fr2 = 0; fr2 < matrix.length; fr2++) matrix[fr2][finalParty] *= finalScale;
+        }
+        return matrix;
+    },
+
+    // Make the districts a true partition of the statewide result. This final
+    // pass absorbs floating-point/IPF residue and protects the UI from any bad
+    // intermediate split estimate. In live results, integer largest-remainder
+    // allocation keeps every party's district sum exactly equal to the state.
+    reconcileDistrictVotes: function(districtVotes, statewideVotes, parties, useIntegers) {
+        var districts = Object.keys(districtVotes || {});
+        if (!districts.length) return districtVotes;
+
+        for (var p = 0; p < parties.length; p++) {
+            var party = parties[p];
+            var target = Math.max(0, Number(statewideVotes[party]) || 0);
+            var current = 0;
+            for (var d = 0; d < districts.length; d++) current += Math.max(0, Number(districtVotes[districts[d]][party]) || 0);
+
+            var raw = [];
+            for (var i = 0; i < districts.length; i++) {
+                var district = districts[i];
+                var share = current > 0 ? Math.max(0, Number(districtVotes[district][party]) || 0) / current : 1 / districts.length;
+                raw.push({ district: district, value: target * share });
+            }
+
+            if (!useIntegers) {
+                for (var r = 0; r < raw.length; r++) districtVotes[raw[r].district][party] = raw[r].value;
+                continue;
+            }
+
+            var targetInt = Math.round(target);
+            var assigned = 0;
+            for (var f = 0; f < raw.length; f++) {
+                raw[f].floor = Math.floor(raw[f].value);
+                raw[f].fraction = raw[f].value - raw[f].floor;
+                assigned += raw[f].floor;
+            }
+            raw.sort(function(a, b) { return b.fraction - a.fraction || a.district.localeCompare(b.district); });
+            for (var extra = 0; extra < targetInt - assigned; extra++) raw[extra % raw.length].floor += 1;
+            for (var out = 0; out < raw.length; out++) districtVotes[raw[out].district][party] = raw[out].floor;
+        }
+        return districtVotes;
+    },
+
     calculateStateElectoralAllocation: function(stateCode, options) {
         var opts = options || {};
         var useReportedVotes = !!opts.useReportedVotes;
@@ -1640,19 +1817,16 @@ var Counties = {
             }
 
             if (rule.splitCounties && rule.splitCounties[paddedFips]) {
-                var countyTotalVotes = 0;
-                for (var p2 = 0; p2 < parties.length; p2++) countyTotalVotes += countyVotes[parties[p2]] || 0;
                 var splitSegments = rule.splitCounties[paddedFips];
+                var fittedSegments = this.allocateSplitCountyVotes(county, countyVotes, splitSegments, parties);
                 for (var segIdx = 0; segIdx < splitSegments.length; segIdx++) {
                     var seg = splitSegments[segIdx];
-                    var segmentVotesTotal = countyTotalVotes * seg.share;
-                    var segmentShares = this.buildSplitSegmentShares(county, countyVotes, seg.baseline);
                     if (!districtVotes[seg.district]) {
                         districtVotes[seg.district] = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 };
                     }
                     for (var p3 = 0; p3 < parties.length; p3++) {
                         var key = parties[p3];
-                        districtVotes[seg.district][key] += segmentVotesTotal * ((segmentShares[key] || 0) / 100);
+                        districtVotes[seg.district][key] += (fittedSegments[segIdx] && fittedSegments[segIdx][key]) || 0;
                     }
                 }
                 continue;
@@ -1667,6 +1841,11 @@ var Counties = {
                 districtVotes[district][partyKey] += countyVotes[partyKey] || 0;
             }
         }
+
+        // The state totals shown elsewhere are also county-derived. Reconcile
+        // only after all whole and split counties have been assigned so no vote
+        // can be counted twice or lost between districts.
+        this.reconcileDistrictVotes(districtVotes, statewideVotes, parties, useReportedVotes);
 
         var districtResults = [];
         for (var districtName in districtVotes) {
@@ -1702,7 +1881,52 @@ var Counties = {
         document.getElementById('county-view-wrapper').classList.remove('hidden');
         document.getElementById('cv-title').innerText = stateName;
         
+        this.renderDistrictBoxes(stateCode, 'cv-districts');
+        this.renderDistrictBoxes(stateCode, 'sp-districts');
+
         this.loadCountyMap(stateCode);
+    },
+
+    renderDistrictBoxes: function(stateCode, containerId) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        var rule = (typeof SPLIT_ELECTORAL_RULES !== 'undefined') ? SPLIT_ELECTORAL_RULES[stateCode] : null;
+        if (!rule) {
+            container.innerHTML = '';
+            container.classList.add('hidden');
+            return;
+        }
+        
+        var split = this.calculateStateElectoralAllocation(stateCode, { useReportedVotes: false });
+        if (!split || !split.districtResults) {
+            container.innerHTML = '';
+            container.classList.add('hidden');
+            return;
+        }
+
+        var dresList = split.districtResults.slice();
+        dresList.sort(function (a, b) { return a.district.localeCompare(b.district); });
+
+        var dhtml = '';
+        for (var i = 0; i < dresList.length; i++) {
+            var dres = dresList[i];
+            var distName = dres.district;
+            var marginColor = '#444';
+            if (typeof Utils !== 'undefined' && Utils.getMarginColor) {
+                var totalDistVotes = 0;
+                for (var p in dres.votes) totalDistVotes += dres.votes[p];
+                var sortedParties = Object.keys(dres.votes).sort(function(a, b) { return dres.votes[b] - dres.votes[a]; });
+                var p1 = sortedParties[0] || 'D';
+                var p2 = sortedParties[1];
+                var marginPct = totalDistVotes > 0 ? ((dres.votes[p1] - (dres.votes[p2] || 0)) / totalDistVotes) * 100 : 0;
+                marginColor = Utils.getMarginColor(marginPct, p1);
+            }
+            var isActive = (typeof gameData !== 'undefined' && gameData.selectedDistrict === distName);
+            var activeClass = isActive ? ' active' : '';
+            dhtml += `<div class="district-box${activeClass}" data-district="${distName}" style="background-color: ${marginColor};" onclick="Counties.clickCountyDistrict('${stateCode}', '${distName}')" onmousemove="Campaign.showDistrictTooltip(event, '${stateCode}', '${distName}')" onmouseleave="document.getElementById('map-tooltip').style.display='none'">${distName}</div>`;
+        }
+        container.innerHTML = dhtml;
+        container.classList.remove('hidden');
     },
     
     // Load county SVG map
@@ -1860,6 +2084,9 @@ var Counties = {
                         Counties.colorCountyMap();
                         // Center and scale the state's counties
                         Counties.focusOnStateCounties(svg, stateFips);
+                        if (typeof gameData !== 'undefined' && gameData.selectedDistrict) {
+                            Counties.highlightDistrictCounties(stateCode, gameData.selectedDistrict);
+                        }
                     }
                 }
             } else if (xhr.readyState === 4) {
@@ -2064,62 +2291,18 @@ var Counties = {
         }
 
         if (county.s === 'ME' || county.s === 'NE') {
-            var rule = (typeof SPLIT_ELECTORAL_RULES !== 'undefined') ? SPLIT_ELECTORAL_RULES[county.s] : null;
-            if (rule) {
-                var paddedFips = (normalizedFips ? String(normalizedFips) : '').padStart(5, '0');
-                var dhtml = '';
-                var distsToShow = [];
-                if (rule.splitCounties && rule.splitCounties[paddedFips]) {
-                    var segments = rule.splitCounties[paddedFips];
-                    for (var sIdx = 0; sIdx < segments.length; sIdx++) {
-                        distsToShow.push(segments[sIdx].district);
-                    }
-                } else {
-                    distsToShow.push((rule.countyDistrictMap && rule.countyDistrictMap[paddedFips]) || rule.defaultDistrict);
-                }
-                
-                var split = this.calculateStateElectoralAllocation(county.s, { useReportedVotes: false });
-                for (var d = 0; d < distsToShow.length; d++) {
-                    var distName = distsToShow[d];
-                    var marginColor = '#444';
-                    if (split && split.districtResults) {
-                        for (var r = 0; r < split.districtResults.length; r++) {
-                            if (split.districtResults[r].district === distName) {
-                                var dres = split.districtResults[r];
-                                if (typeof Utils !== 'undefined' && Utils.getMarginColor) {
-                                    var totalDistVotes = 0;
-                                    for (var p in dres.votes) totalDistVotes += dres.votes[p];
-                                    var sortedParties = Object.keys(dres.votes).sort(function(a, b) { return dres.votes[b] - dres.votes[a]; });
-                                    var p1 = sortedParties[0] || 'D';
-                                    var p2 = sortedParties[1];
-                                    var marginPct = totalDistVotes > 0 ? ((dres.votes[p1] - (dres.votes[p2] || 0)) / totalDistVotes) * 100 : 0;
-                                    marginColor = Utils.getMarginColor(marginPct, p1);
-                                }
-                                break;
-                            }
-                        }
-                    }
-                    dhtml += '<div class="district-box" style="background-color: ' + marginColor + '; cursor: pointer;" onclick="Counties.clickCountyDistrict(\'' + county.s + '\', \'' + distName + '\')">' + distName + '</div>';
-                }
-                if (dhtml && spDistricts) {
-                    spDistricts.innerHTML = dhtml;
-                    spDistricts.classList.remove('hidden');
-                }
-                
-                var cvDistricts = document.getElementById('cv-districts');
-                if (cvDistricts && dhtml) {
-                    cvDistricts.innerHTML = dhtml;
-                    cvDistricts.classList.remove('hidden');
-                }
-            }
+            this.renderDistrictBoxes(county.s, 'sp-districts');
+            this.renderDistrictBoxes(county.s, 'cv-districts');
         }
         
         // Build ranked candidate list for the county
-        var pollByParty = Utils.getCountyPollingByParty(county);
+        var pollByParty = (gameData.frozenPollSnapshot && gameData.frozenPollSnapshot.county && gameData.frozenPollSnapshot.county[normalizedFips])
+            ? gameData.frozenPollSnapshot.county[normalizedFips]
+            : Utils.getCountyPollingByParty(county);
         var prevPollByParty = (gameData.pollCache && gameData.pollCache.county && gameData.pollCache.county[normalizedFips]) || null;
         var pollVis = document.getElementById('poll-vis');
         if (pollVis) {
-            pollVis.innerHTML = Utils.buildCandidateRankedListHTML(pollByParty, prevPollByParty);
+            pollVis.innerHTML = Utils.buildCandidateRankedListHTML(pollByParty, prevPollByParty, normalizedFips);
         }
         
         // Show turnout info
@@ -2179,11 +2362,13 @@ var Counties = {
             html += '<div id="tv-ads-container" style="display: none; grid-column: 1 / -1; margin-top: 10px; background: rgba(0,0,0,0.3); border: 1px solid #555; padding: 10px; border-radius: 4px;">';
             html += '<h4 style="margin: 0 0 10px 0; color: #5bc0de; font-size: 0.85rem;"><i class="fas fa-tv"></i> RUN TV ADS: <br><span id="tv-ads-market" style="color: #fff; font-size: 0.75rem;"></span></h4>';
             html += '<div style="font-size: 0.75rem; color: #aaa; margin-bottom: 10px;">Select an ad type to run in this media market (Cost: 1 Energy)</div>';
-            html += '<button class="act-btn" style="width: 100%; margin-bottom: 5px; font-size: 0.75rem; padding: 5px; justify-content: center;" onclick="app.runTvAd(\'bio\')">Biographical Ad</button>';
-            html += '<button class="act-btn" style="width: 100%; margin-bottom: 5px; font-size: 0.75rem; padding: 5px; justify-content: center;" onclick="app.runTvAd(\'attack\')">Attack Ad</button>';
+            html += '<div style="display: flex; gap: 5px; margin-bottom: 5px;">';
+            html += '<button class="act-btn" style="flex: 1; margin: 0; font-size: 0.75rem; padding: 6px; justify-content: center;" onclick="app.runTvAd(\'bio\')">Biographical</button>';
+            html += '<button class="act-btn" style="flex: 1; margin: 0; font-size: 0.75rem; padding: 6px; justify-content: center;" onclick="app.runTvAd(\'attack\')">Attack</button>';
+            html += '</div>';
             
-            html += '<div style="display: flex; gap: 5px; margin-bottom: 5px; margin-top: 10px;">';
-            html += '<select id="tv-ad-issue" style="flex: 1; background: #333; color: #fff; border: 1px solid #555; font-size: 0.75rem; padding: 3px;" onchange="app.updateTvAdIssueScores()">';
+            html += '<div style="display: flex; gap: 5px; margin-bottom: 5px;">';
+            html += '<select id="tv-ad-issue" style="flex: 2; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; font-size: 0.75rem; padding: 4px;" onchange="app.updateTvAdIssueScores()">';
             html += '<option value="">Select an Issue...</option>';
             if (typeof ISSUES !== 'undefined') {
                 for (var j = 0; j < ISSUES.length; j++) {
@@ -2191,7 +2376,7 @@ var Counties = {
                 }
             }
             html += '</select>';
-            html += '<button class="act-btn" style="font-size: 0.75rem; padding: 5px 10px; justify-content: center;" onclick="app.runTvAd(\'issue\')">Issue Ad</button>';
+            html += '<button class="act-btn" style="flex: 1; margin: 0; font-size: 0.75rem; padding: 6px; justify-content: center;" onclick="app.runTvAd(\'issue\')">Issue Ad</button>';
             html += '</div>';
             html += '<div id="tv-ad-issue-scores" style="font-size: 0.7rem; color: #ffaa00; text-align: center;"></div>';
             html += '</div>';
@@ -2207,6 +2392,12 @@ var Counties = {
     },
     
     clickCountyDistrict: function(stateCode, districtName) {
+        if (typeof Campaign !== 'undefined' && Campaign.clickDistrict) {
+            Campaign.clickDistrict(stateCode, districtName);
+        }
+    },
+
+    highlightDistrictCounties: function(stateCode, districtName) {
         var rule = (typeof SPLIT_ELECTORAL_RULES !== 'undefined') ? SPLIT_ELECTORAL_RULES[stateCode] : null;
         if (!rule) return;
         
@@ -2241,24 +2432,36 @@ var Counties = {
                 var path = paths[p];
                 var pathId = path.id;
                 
-                if (pathId && pathId.length >= 3 && pathId.charAt(0) === 'c') {
+                if (pathId && pathId.length >= 3 && pathId.charAt(0) === 'c' && path.style.display !== 'none') {
                     var f = pathId.substring(1);
                     var isMatch = countiesInDistrict.indexOf(f) !== -1;
                     
                     if (isMatch) {
                         path.style.opacity = '1.0';
-                        path.style.stroke = '#fff';
-                        path.style.strokeWidth = '0.5px';
+                        path.style.stroke = '#ffd700';
+                        path.style.strokeWidth = '0.7px';
                     } else {
-                        path.style.opacity = '0.3';
+                        path.style.opacity = '0.25';
                         path.style.stroke = 'none';
                     }
                 }
             }
         }
-        
-        if (typeof Campaign !== 'undefined' && Campaign.clickDistrict) {
-            Campaign.clickDistrict(stateCode, districtName);
+    },
+
+    resetDistrictHighlighting: function() {
+        var svg = document.getElementById('county-map-svg');
+        if (svg) {
+            var paths = svg.querySelectorAll('path');
+            for (var p = 0; p < paths.length; p++) {
+                var path = paths[p];
+                var pathId = path.id;
+                if (pathId && pathId.length >= 3 && pathId.charAt(0) === 'c' && path.style.display !== 'none') {
+                    path.style.opacity = '1.0';
+                    path.style.stroke = '#ffffff';
+                    path.style.strokeWidth = '0.3px';
+                }
+            }
         }
     },
     
@@ -2407,8 +2610,13 @@ var Counties = {
             var firstPlace = sortedParties[0];
             var secondPlace = sortedParties[1];
             
-            // True margin out of TOTAL votes
-            var newMargin = ((partyVotes[firstPlace] - partyVotes[secondPlace]) / totalVotes) * 100;
+            // Fetch the population-weighted state undecided percentage to sync math with the sidebar
+            var pcts = Utils.getStatePollingByParty(stateCode) || {};
+            var stateUndecidedPct = pcts.Undecided || 0;
+            var decidedMultiplier = (100 - stateUndecidedPct) / 100;
+            
+            // True margin out of TOTAL population (Decided + Undecided)
+            var newMargin = (((partyVotes[firstPlace] - partyVotes[secondPlace]) / totalVotes) * 100) * decidedMultiplier;
             
             // Maintain backwards compatibility for D/R polarity if third party isn't leading
             if (firstPlace === 'R') {

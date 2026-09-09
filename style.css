@@ -1122,7 +1122,7 @@ body {
     pointer-events: none;
 }
 
-#bio-modal, #national-modal, #speech-modal, #ground-ops-modal, #digital-planner-modal, #fundraise-modal, #pac-modal, #interest-groups-modal, #ads-modal, #rally-modal, #endorsers-modal, #oppo-modal, #policy-modal {
+#bio-modal, #national-modal, #speech-modal, #ground-ops-modal, #digital-planner-modal, #fundraise-modal, #pac-modal, #interest-groups-modal, #ads-modal, #rally-modal, #endorsers-modal, #oppo-modal, #policy-modal, #polls-history-modal, .modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -1590,6 +1590,7 @@ body {
     padding: 12px 15px;
     border-bottom: 1px solid #333333;
     background: #1a1a1a;
+    flex: 0 0 auto;
 }
 
 #polls-closing-panel h4,
@@ -1695,12 +1696,16 @@ body {
     border-left: 1px solid #333333;
     display: flex;
     flex-direction: column;
-    overflow:  hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 #election-state-info {
     padding:  20px;
     border-bottom: 1px solid #333333;
+    overflow: visible;
+    min-height: auto;
+    flex: 0 0 auto;
 }
 
 .elec-state-header {
@@ -1715,6 +1720,29 @@ body {
     font-family:  'Merriweather', serif;
     font-size: 1.2rem;
 }
+
+.elec-title-with-history { display:flex; align-items:center; gap:9px; min-width:0; flex-wrap:wrap; }
+.historical-comparison { margin-top:16px; padding-top:14px; border-top:1px solid var(--border-1); }
+.historical-comparison-heading { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:10px; color:var(--accent); font-size:.72rem; letter-spacing:.06em; }
+.historical-comparison-title { display:inline-flex; align-items:center; gap:4px; min-width:0; }
+.historical-boundary-info { position:relative; display:inline-flex; align-items:center; margin-left:1px; color:var(--ink-muted); cursor:help; outline:none; }
+.historical-boundary-info:hover,
+.historical-boundary-info:focus { color:var(--accent); }
+.historical-boundary-tooltip {
+    position:absolute; left:50%; bottom:calc(100% + 8px); z-index:30; width:245px; padding:9px 10px;
+    border:1px solid var(--border-1); border-radius:6px; background:var(--surface-3); color:var(--ink);
+    box-shadow:var(--shadow-soft); font-size:.68rem; font-weight:400; letter-spacing:0; line-height:1.4;
+    text-transform:none; opacity:0; visibility:hidden; pointer-events:none; transform:translate(-50%,4px);
+    transition:opacity .12s,transform .12s,visibility .12s;
+}
+.historical-boundary-info:hover .historical-boundary-tooltip,
+.historical-boundary-info:focus .historical-boundary-tooltip { opacity:1; visibility:visible; transform:translate(-50%,0); }
+.historical-candidate-list { margin-bottom:0; }
+.historical-comparison-note { color:var(--ink-muted); font-size:.7rem; line-height:1.45; }
+.historical-comparison-note strong { color:var(--ink); }
+.historical-comparison-empty { color:var(--ink-muted); font-size:.75rem; line-height:1.45; }
+.elec-total-votes { margin-top:7px; text-align:right; color:var(--ink-muted); font-size:.68rem; font-weight:700; white-space:nowrap; }
+.county-sidebar-districts { display:flex; gap:5px; flex-wrap:wrap; }
 
 .elec-ev-badge {
     background:  #333333;
@@ -4185,39 +4213,6 @@ img.candidate-tile-party-logo {
     --scroll-thumb: rgba(255, 255, 255, 0.14);
 }
 
-:root[data-theme="light"] {
-    --bg-app: #f4f6fa;
-    --bg-app-grad-1: rgba(0, 174, 243, 0.08);
-    --bg-app-grad-2: rgba(232, 27, 35, 0.06);
-    --surface-1: #ffffff;
-    --surface-2: #eef1f6;
-    --surface-3: #e3e8f0;
-    --surface-elev: #f7f9fc;
-    --surface-modal: #ffffff;
-    --border-1: #d6dbe4;
-    --border-2: #c4cad6;
-    --border-strong: #a6aebd;
-    --ink-strong: #0c0f15;
-    --ink: #1f2530;
-    --ink-muted: #4f586a;
-    --ink-faint: #7c8597;
-    --accent: #d49213;
-    --accent-strong: #b3760a;
-    --accent-soft: rgba(212, 146, 19, 0.18);
-    --dem: #006edc;
-    --rep: #c70d14;
-    --good: #1f8a44;
-    --bad: #c81717;
-    --map-stroke: #ffffff;
-    --map-stroke-hover: #1c1f26;
-    --map-stroke-selected: #1c1f26;
-    --map-bg: #e7ecf3;
-    --shadow-soft: 0 6px 18px rgba(20, 28, 50, 0.10);
-    --shadow-strong: 0 18px 40px rgba(20, 28, 50, 0.18);
-    --scroll-track: rgba(20, 28, 50, 0.06);
-    --scroll-thumb: rgba(20, 28, 50, 0.22);
-}
-
 * {
     scrollbar-width: thin;
     scrollbar-color: var(--scroll-thumb) var(--scroll-track);
@@ -4278,14 +4273,6 @@ body {
     color: var(--ink-strong);
 }
 
-:root[data-theme="light"] #intro-screen {
-    background:
-        radial-gradient(900px 700px at 15% 0%, rgba(0,110,220,0.10), transparent 60%),
-        radial-gradient(900px 700px at 85% 100%, rgba(199,13,20,0.08), transparent 60%),
-        linear-gradient(135deg, #f8fafd 0%, #e9eef5 100%);
-    color: var(--ink-strong);
-}
-
 .subtitle { color: var(--ink-muted); }
 
 .start-btn {
@@ -4324,14 +4311,6 @@ body {
 #election-county-view-wrapper {
     background:
         radial-gradient(900px 700px at 50% 30%, rgba(255,255,255,0.04), transparent 70%),
-        var(--map-bg);
-}
-
-:root[data-theme="light"] #map-container,
-:root[data-theme="light"] #county-view-wrapper,
-:root[data-theme="light"] #election-county-view-wrapper {
-    background:
-        radial-gradient(900px 700px at 50% 30%, rgba(255,255,255,0.6), transparent 70%),
         var(--map-bg);
 }
 
@@ -4378,11 +4357,6 @@ body {
     filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.35));
 }
 
-:root[data-theme="light"] #us-map-wrapper svg,
-:root[data-theme="light"] #election-map-wrapper svg {
-    filter: drop-shadow(0 8px 24px rgba(20, 28, 50, 0.12));
-}
-
 .loading-map,
 .error-map { color: var(--ink-muted); }
 
@@ -4393,11 +4367,6 @@ body {
     border-left: 1px solid var(--border-1);
     box-shadow: -6px 0 18px rgba(0, 0, 0, 0.18);
     color: var(--ink);
-}
-
-:root[data-theme="light"] #sidebar,
-:root[data-theme="light"] #election-sidebar {
-    box-shadow: -6px 0 18px rgba(20, 28, 50, 0.10);
 }
 
 #election-state-info { border-bottom: 1px solid var(--border-1); padding: 18px 20px; }
@@ -4596,7 +4565,6 @@ body {
 }
 
 #bio-modal { background: rgba(8, 11, 16, 0.72); }
-:root[data-theme="light"] #bio-modal { background: rgba(20, 28, 50, 0.45); }
 
 /* Election overlays */
 .elec-state-header h2 { color: var(--ink-strong); }
@@ -4667,45 +4635,6 @@ body {
 .analysis-controls-title { color: var(--accent); }
 .analysis-legend { color: var(--ink-muted); }
 .analysis-legend-swatch { border-color: var(--border-1); }
-
-/* Floating global theme toggle (bottom-left, out of the way of HUDs) */
-.floating-theme-toggle {
-    position: fixed;
-    bottom: 14px;
-    left: 14px;
-    z-index: 10001;
-    margin: 0;
-    width: 38px;
-    height: 38px;
-}
-
-/* Theme toggle button */
-.theme-toggle-btn {
-    background: var(--surface-2);
-    border: 1px solid var(--border-1);
-    color: var(--ink);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.95rem;
-    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
-    margin-right: 8px;
-    box-shadow: var(--shadow-soft);
-}
-.theme-toggle-btn:hover {
-    background: var(--surface-3);
-    border-color: var(--accent);
-    color: var(--accent);
-    transform: translateY(-1px);
-}
-.theme-toggle-btn .theme-icon-sun { display: none; }
-.theme-toggle-btn .theme-icon-moon { display: inline; }
-:root[data-theme="light"] .theme-toggle-btn .theme-icon-sun { display: inline; }
-:root[data-theme="light"] .theme-toggle-btn .theme-icon-moon { display: none; }
 
 /* Race calls / feed surfaces */
 #election-feed,
@@ -4828,17 +4757,20 @@ body {
 .energy-pip { background: var(--surface-3); border-color: var(--border-1); }
 .energy-pip.active { background: var(--accent); border-color: var(--ink-strong); box-shadow: 0 0 8px var(--accent); }
 
-/* Light-mode specific contrast tweaks */
-:root[data-theme="light"] .breaking-banner { box-shadow: 0 4px 12px rgba(199, 13, 20, 0.18); }
-:root[data-theme="light"] .start-btn { color: #fff; }
-:root[data-theme="light"] .ev-marker { color: #fff; }
-:root[data-theme="light"] .dem-score { color: var(--dem); text-shadow: none; }
-:root[data-theme="light"] .rep-score { color: var(--rep); text-shadow: none; }
-:root[data-theme="light"] #winner-overlay { background: rgba(245, 247, 252, 0.92); }
-:root[data-theme="light"] #winner-name,
-:root[data-theme="light"] #winner-party { color: var(--ink-strong); }
-:root[data-theme="light"] .winner-close-btn { color: var(--ink); border-color: var(--border-2); }
-:root[data-theme="light"] .winner-close-btn:hover { color: var(--ink-strong); border-color: var(--accent); }
+
+.cpl-row.cpl-popvote-row { position:relative; transition:background .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.cpl-row.cpl-popvote-row:hover, .cpl-row.cpl-popvote-row:focus-within { background:rgba(0,174,243,.14) !important; border-color:rgba(0,174,243,.65); box-shadow:0 0 0 1px rgba(0,174,243,.18); }
+.cpl-row.cpl-popvote-row .cpl-popvote-value { display:none; }
+.cpl-row.cpl-popvote-row:hover .cpl-percent-value, .cpl-row.cpl-popvote-row:focus-within .cpl-percent-value { display:none; }
+.cpl-row.cpl-popvote-row:hover .cpl-popvote-value, .cpl-row.cpl-popvote-row:focus-within .cpl-popvote-value { display:inline; }
+
+.issue-priority-btn { float:right; border:1px solid var(--border-1); border-radius:4px; background:transparent; color:var(--ink-muted); cursor:pointer; padding:2px 6px; font-size:.7rem; }
+.issue-priority-btn:hover, .issue-priority-btn.is-priority { color:var(--accent); border-color:var(--accent); background:var(--accent-soft); }
+.issue-priority-summary { margin:0 0 14px; padding:10px 12px; border:1px solid rgba(242,199,92,.35); border-radius:7px; background:rgba(242,199,92,.06); }
+.issue-priority-summary h3 { margin:0 0 5px; color:var(--accent); font-size:.78rem; letter-spacing:.06em; }
+.issue-priority-list { display:flex; flex-wrap:wrap; gap:5px; margin:0; padding:0; list-style:none; }
+.issue-priority-list li { padding:3px 7px; border-radius:999px; border:1px solid rgba(242,199,92,.4); color:var(--ink); font-size:.66rem; }
+.issue-priority-limit { color:var(--ink-muted); font-size:.65rem; }
 
 /* Winner overlay polish (both themes) */
 #winner-overlay {
@@ -4923,10 +4855,35 @@ body {
 }
 
 /* District UI */
-.sp-districts, .cv-districts { display: flex; gap: 6px; align-items: center; }
-.district-box { width: 45px; height: 30px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; cursor: pointer; color: white; transition: all 0.2s; user-select: none; }
-.district-box:hover { transform: scale(1.05); border-color: white; }
-.district-box.active { border: 2px solid white; box-shadow: 0 0 8px rgba(255,255,255,0.5); }
+.sp-districts, .cv-districts, #elec-cv-districts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.district-box {
+    min-width: 45px;
+    height: 28px;
+    padding: 2px 8px;
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+    transition: background-color 0.2s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    user-select: none;
+    box-sizing: border-box;
+}
+.district-box:hover {
+    border-color: #ffd700;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+    z-index: 2;
+}
+.district-box.active {
+    border: 2px solid #ffd700 !important;
+    outline: 2px solid #ffd700;
+    outline-offset: 1px;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.75) !important;
+}
 
 /* ============================================
    HOMEPAGE — Decision 2028
@@ -5842,5 +5799,3 @@ body {
 .party-page-selection-title {
     font-family: 'Newsreader', sans-serif; /* CHANGE YOUR FONT HERE */
 }
-
-

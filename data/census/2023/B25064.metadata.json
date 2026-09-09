@@ -1,0 +1,11 @@
+{
+  "table": "B25064",
+  "vintage": "2019-2023 ACS five-year",
+  "dataUrl": "https://www2.census.gov/programs-surveys/acs/summary_file/2023/table-based-SF/data/5YRData/acsdt5y2023-b25064.dat",
+  "metadataUrl": "https://api.census.gov/data/2023/acs/acs5/groups/B25064.json",
+  "countyCount": 3144,
+  "variables": {
+    "B25064_001E": "Estimate!!Median gross rent",
+    "B25064_001M": "Margin of Error!!Median gross rent"
+  }
+}

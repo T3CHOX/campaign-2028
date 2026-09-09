@@ -1,0 +1,11 @@
+{
+  "table": "B25077",
+  "vintage": "2019-2023 ACS five-year",
+  "dataUrl": "https://www2.census.gov/programs-surveys/acs/summary_file/2023/table-based-SF/data/5YRData/acsdt5y2023-b25077.dat",
+  "metadataUrl": "https://api.census.gov/data/2023/acs/acs5/groups/B25077.json",
+  "countyCount": 3144,
+  "variables": {
+    "B25077_001M": "Margin of Error!!Median value (dollars)",
+    "B25077_001E": "Estimate!!Median value (dollars)"
+  }
+}

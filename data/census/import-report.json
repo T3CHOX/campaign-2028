@@ -1,0 +1,24 @@
+{
+  "counties": 3143,
+  "subgroups": 71,
+  "suppliedRowsVerified": 3135,
+  "suppliedValuesVerified": 194370,
+  "suppliedSHA256": "7a043a19f474a3cbe4ed230d8e985249a322adf4678fef8c6b445f62be1c74db",
+  "connecticutCounties": 8,
+  "connecticutPopulation": 3598348,
+  "totalPopulation": 332387540,
+  "missing": [
+    {
+      "fips": "15005",
+      "field": "countyElectionBaseline",
+      "fallback": "modeled statewide prior"
+    }
+  ],
+  "limits": [
+    "ACS estimates are 2019\u20132023, not a 2028 population forecast.",
+    "Detailed-origin CVAP, registration and issue opinions are modeled, not observed.",
+    "Legacy religion, union and political group estimates have unverified provenance.",
+    "Connecticut medians omitted; count MOEs use square-sum approximation.",
+    "Alaska borough electoral priors use the historical workbook where available; district-coded 2024 rows are not borough results."
+  ]
+}

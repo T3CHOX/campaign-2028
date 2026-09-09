@@ -1,0 +1,23 @@
+{
+  "table": "B23025",
+  "vintage": "2019-2023 ACS five-year",
+  "dataUrl": "https://www2.census.gov/programs-surveys/acs/summary_file/2023/table-based-SF/data/5YRData/acsdt5y2023-b23025.dat",
+  "metadataUrl": "https://api.census.gov/data/2023/acs/acs5/groups/B23025.json",
+  "countyCount": 3144,
+  "variables": {
+    "B23025_004E": "Estimate!!Total:!!In labor force:!!Civilian labor force:!!Employed",
+    "B23025_004M": "Margin of Error!!Total:!!In labor force:!!Civilian labor force:!!Employed",
+    "B23025_005E": "Estimate!!Total:!!In labor force:!!Civilian labor force:!!Unemployed",
+    "B23025_003E": "Estimate!!Total:!!In labor force:!!Civilian labor force:",
+    "B23025_003M": "Margin of Error!!Total:!!In labor force:!!Civilian labor force:",
+    "B23025_002E": "Estimate!!Total:!!In labor force:",
+    "B23025_002M": "Margin of Error!!Total:!!In labor force:",
+    "B23025_001E": "Estimate!!Total:",
+    "B23025_001M": "Margin of Error!!Total:",
+    "B23025_007M": "Margin of Error!!Total:!!Not in labor force",
+    "B23025_006M": "Margin of Error!!Total:!!In labor force:!!Armed Forces",
+    "B23025_007E": "Estimate!!Total:!!Not in labor force",
+    "B23025_005M": "Margin of Error!!Total:!!In labor force:!!Civilian labor force:!!Unemployed",
+    "B23025_006E": "Estimate!!Total:!!In labor force:!!Armed Forces"
+  }
+}

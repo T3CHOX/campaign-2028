@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "node server.js",
     "build": "node -c server.js",
-    "lint": "node -c server.js",
+    "lint": "node scripts/check-syntax.mjs",
+    "test": "node scripts/test-overhaul.mjs",
     "start": "node server.js"
   },
   "dependencies": {

@@ -392,7 +392,7 @@ var Screens = {
                 if (CANDIDATES[j].id === id) {
                     var cand = CANDIDATES[j];
                     if (typeof CANDIDATE_POSITIONS !== 'undefined' && CANDIDATE_POSITIONS[id]) {
-                        cand = Object.assign({}, cand, { issuePositions: CANDIDATE_POSITIONS[id] });
+                        cand = Object.assign({}, cand, { issuePositions: Object.assign({}, CANDIDATE_POSITIONS[id]) });
                     }
                     this._storeTicketPres(currentParty, cand);
                     break;

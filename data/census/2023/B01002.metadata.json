@@ -1,0 +1,15 @@
+{
+  "table": "B01002",
+  "vintage": "2019-2023 ACS five-year",
+  "dataUrl": "https://www2.census.gov/programs-surveys/acs/summary_file/2023/table-based-SF/data/5YRData/acsdt5y2023-b01002.dat",
+  "metadataUrl": "https://api.census.gov/data/2023/acs/acs5/groups/B01002.json",
+  "countyCount": 3144,
+  "variables": {
+    "B01002_002M": "Margin of Error!!Median age --!!Male",
+    "B01002_002E": "Estimate!!Median age --!!Male",
+    "B01002_003M": "Margin of Error!!Median age --!!Female",
+    "B01002_003E": "Estimate!!Median age --!!Female",
+    "B01002_001M": "Margin of Error!!Median age --!!Total:",
+    "B01002_001E": "Estimate!!Median age --!!Total:"
+  }
+}

@@ -294,8 +294,8 @@ const SPLIT_ELECTORAL_RULES = {
 };
 
 var gameData = {
-    currentDate: new Date("2028-07-04"),
-    electionDay: new Date("2028-11-03"),
+    currentDate: new Date(2028, 6, 4),
+    electionDay: new Date(2028, 10, 3),
     selectedParty: null,
     candidate: null,
     vp: null,
@@ -305,6 +305,7 @@ var gameData = {
     funds: 50,
     energy: 8,
     maxEnergy: 8,
+    campaignPriorities: {},
     states: {},
     selectedState: null,
     historyStack: [],
@@ -349,7 +350,17 @@ var gameData = {
     ballotAccess: {},            // {partyCode: [accessible state codes]}
     turnStatesUsed: [],          // States targeted this turn (max 3)
     turnActionCounts: {},        // {stateCode_actionType: count} for 2-per-state cap
-    visitedStatesThisTurn: []    // States physically visited (Speech/Rally) this turn
+    visitedStatesThisTurn: [],   // States physically visited (Speech/Rally) this turn
+    // === v1 Spec Theoretical Engine State Fields ===
+    economy: {
+        realIncomeGrowth: 0.0,   // normalized to roughly [-1, 1]
+        unemployment: 5.0,       // percentage points
+        inflation: 2.5           // percentage points
+    },
+    approvalTrajectory: 0.50,    // incumbent-party candidate's synthetic approval, 0-1
+    activeShockEvents: [],       // array of { salience: number (0-1), valence: 'negative'|'positive' }
+    activeAgendaEvents: [],      // array of { issueId: string, magnitude: number (0-1), startWeek: number }
+    factionCells: {}             // per faction/demographic cell state tracking
 };
 
 // ==== CAMPAIGN PERSUASION TUNING CONSTANTS ====
@@ -368,7 +379,7 @@ var PERSUASION_CONSTANTS = {
     SPEECH_LOCAL_MULTIPLIER: 1.5,       // 1.5x effect in the specific county
     
     // Diminishing returns
-    PRESSURE_SCALAR: 0.15,              // Higher = faster diminishing returns
+    PRESSURE_SCALAR: 0.3,               // Saturation factor = 1 / (1 + pressure * SCALAR)
     
     // Interest group relationship (if implemented)
     RELATIONSHIP_SCALE: 0.05,           // How much each action affects group relationship
@@ -486,4 +497,47 @@ var BALLOT_ACCESS_COSTS = {
 var TURN_BUDGET = {
     MAX_STATES_PER_TURN: 3,
     MAX_SAME_ACTION_PER_STATE: 2
+};
+
+// === v1 Spec Theoretical Engine Config Constants ===
+
+const FUNDAMENTALS_CONFIG = {
+    TAU_PRIOR_INITIAL: 8.0,      // starting precision (weight) of the fundamentals prior
+    CAMPAIGN_LENGTH_WEEKS: 18    // total simulated campaign length (July 4 to Nov 3)
+};
+
+const RETRO_CONFIG = {
+    BETA_0: 0.50,               // baseline approval intercept (neutral conditions)
+    BETA_INCOME: 0.015,         // weight per unit of normalized real income growth
+    BETA_UNEMPLOYMENT: -0.02,   // weight per percentage point of unemployment
+    BETA_INFLATION: -0.015,     // weight per percentage point of inflation
+    SHOCK_KAPPA: 0.03,          // magnitude multiplier for negative-valence shock events
+    NOISE_SIGMA: 0.01           // small stochastic noise per tick
+};
+
+const RAS_CONFIG = {
+    RECEIVE_K: 0.6,            // exposure rate constant
+    ACCEPT_GAMMA: 2.0,         // resistance curve steepness (higher = partisans resist harder)
+    SAMPLE_LAMBDA: 0.15        // how much a single accepted message moves expressed opinion (recency weight)
+};
+
+const AFFECTIVE_CONFIG = {
+    ETA_GROWTH: 0.05,          // growth rate from attack ad exposure
+    DELTA_DECAY: 0.02,         // decay rate back toward baseline per tick
+    W1_ALIGNMENT: 0.7,         // weight of policy alignment in vote utility
+    W2_NEG_PARTISANSHIP: 0.3   // weight of negative partisanship in vote utility
+};
+
+const AGENDA_CONFIG = {
+    NEWS_DECAY_LAMBDA: 0.35    // per-week decay rate of an event's salience-boosting effect
+};
+
+const ELM_CONFIG = {};
+
+const DIFFUSION_CONFIG = {
+    PHI_DIFFUSION_RATE: 0.10   // how fast voter opinion moves toward a trusted leader's position per tick
+};
+
+const SPATIAL_CONFIG = {
+    RHO_SPATIAL_LAG: 0.15      // weight given to neighbor average vs county's own computed swing
 };
