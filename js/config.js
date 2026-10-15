@@ -295,7 +295,7 @@ const SPLIT_ELECTORAL_RULES = {
 
 var gameData = {
     currentDate: new Date(2028, 6, 4),
-    electionDay: new Date(2028, 10, 3),
+    electionDay: new Date(2028, 10, 7),
     selectedParty: null,
     candidate: null,
     vp: null,
@@ -340,7 +340,6 @@ var gameData = {
     issueFatigueMap: {},         // {stateCode: {issueId: consecutiveWeeks}}
     debatePrepBuff: false,       // True if player queued DEBATE PREP this cycle
     oppoResearchCooldown: {},    // {partyCode: true} prevents consecutive targeting
-    approvalRating: 0.5,         // Player approval rating (0.30-0.80)
     nationalPolls: [],           // Array of {D: %, R: %, ...} with variance
     activeScandals: [],          // Scandals affecting any candidate
     endorsements: [],            // Active endorsement effects
@@ -503,7 +502,7 @@ var TURN_BUDGET = {
 
 const FUNDAMENTALS_CONFIG = {
     TAU_PRIOR_INITIAL: 8.0,      // starting precision (weight) of the fundamentals prior
-    CAMPAIGN_LENGTH_WEEKS: 18    // total simulated campaign length (July 4 to Nov 3)
+    CAMPAIGN_LENGTH_WEEKS: 18    // total simulated campaign length (July 4 to Nov 7)
 };
 
 const RETRO_CONFIG = {

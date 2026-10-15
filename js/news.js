@@ -122,7 +122,7 @@ var News = {
             Utils.showToast('📰 Campaign gaffe on ' + issueName + '!');
             Utils.addLog('📰 GAFFE: ' + targetName + ' stumbles on ' + issueName + ' (Favorability ' + Math.round(favHit * 100) + '%)');
         } else {
-            // Opponent gaffe benefits player
+            Favorability.change(target.id, favHit * 200, {recognition:0.5});
             gameData.campaignMomentum = Math.min(1, gameData.campaignMomentum + 0.03);
             Utils.showToast('📰 Opponent gaffe: ' + targetName + ' on ' + issueName);
             Utils.addLog('📰 OPPONENT GAFFE: ' + targetName + ' stumbles on ' + issueName + ' — momentum boost!');
@@ -132,6 +132,7 @@ var News = {
         this.lingeringEffects.push({
             type: 'gaffe_linger',
             target: isPlayer ? 'player' : 'opponent',
+            candidateId: target && target.id,
             effect: -0.01,
             weeksRemaining: 1,
             label: issueName + ' gaffe aftermath'
@@ -179,24 +180,27 @@ var News = {
             }
         }
 
-        // Adjust all candidates' favorability
-        Campaign.adjustFavorability(
-            (crisis.direction === 'left_gain' && gameData.selectedParty === 'D') ? 0.03 :
-            (crisis.direction === 'right_gain' && gameData.selectedParty === 'R') ? 0.03 : -0.03,
-            crisis.label
-        );
+        Utils.getActiveCandidates().forEach(function(entry) {
+            var direction=crisis.direction,party=entry.party;
+            var points=direction==='left_gain'?(party==='D'||party==='G'?3:-2):
+                direction==='right_gain'?(party==='R'?3:-2):
+                direction==='incumbent_hurt'?(party==='R'?-3:1):0;
+            if(points)Favorability.change(entry.cand.id,points,{recognition:0.3});
+        });
+        Campaign.updateHUD();
     },
 
     resolveEconomicReport: function() {
         var positive = Math.random() > 0.5;
         var label = positive ? 'Positive Economic Report' : 'Negative Economic Report';
-        var playerIsIncumbent = gameData.selectedParty === 'D'; // Simplification: D as incumbent
-
         var favDelta = positive ? 0.02 : -0.02;
-        if (!playerIsIncumbent) favDelta *= -1; // Challenger benefits from bad economy
-
-        Campaign.adjustFavorability(favDelta, label);
-        Utils.addLog('📊 ' + label + ' — ' + (favDelta > 0 ? 'boost' : 'drag') + ' for campaign');
+        Utils.getActiveCandidates().forEach(function(entry) {
+            var points=(entry.party==='R'?1:-1)*favDelta*200;
+            Favorability.change(entry.cand.id,points,{recognition:0.2});
+        });
+        Campaign.updateHUD();
+        var playerDelta=(gameData.selectedParty==='R'?1:-1)*favDelta;
+        Utils.addLog('📊 ' + label + ' — ' + (playerDelta > 0 ? 'boost' : 'drag') + ' for campaign');
         Utils.showToast('📊 ' + label);
     },
 
@@ -308,6 +312,8 @@ var News = {
                 // Apply the lingering effect
                 if (effect.target === 'player' && effect.effect) {
                     Campaign.adjustFavorability(effect.effect, effect.label + ' (lingering)');
+                } else if (effect.candidateId && effect.effect) {
+                    Favorability.change(effect.candidateId,effect.effect*200,{recognition:0.2});
                 }
                 effect.weeksRemaining--;
                 if (effect.weeksRemaining > 0) {

@@ -13,7 +13,7 @@ The simulator keeps four things separate:
 
 The era layer runs inside `Electorate.response()`. It does not mutate `INTEREST_GROUPS`, `liveGroups`, `interestGroupSupport`, or the county population. Because `Electorate.countyResult()` multiplies each group rate by registered voters, turnout effects can change total expected ballots rather than merely reallocating a fixed ballot pool.
 
-The ordinary county baseline already reflects the 2016, 2020, and 2024 Republican performance encoded by the simulator. Trump is therefore the zero-delta reference. A successor does not receive a new Trump bonus: it inherits a bounded residual and loses the rest of the baseline effect. This prevents the era mechanic from stacking a second, overpowered advantage on top of Trump-era data.
+The ordinary county baseline already reflects the historical election performance encoded by the simulator. Trump/Vance and Harris/Walz are the two 2024 reference tickets: Trump and Harris receive zero delta, while a successor loses the bounded portion of that ticket-specific residual that it does not carry. The layer therefore subtracts from the historical baseline instead of adding a new bonus on top of it. The running mate is bundled into the county baseline rather than scored as a second independent demographic bonus.
 
 ## Qualitative candidate profiles
 
@@ -26,7 +26,7 @@ Profiles are scenario classes, not candidate ratings:
 
 The transfer caps and structural-persistence constant are designer-set calibration controls, not empirical candidate ratings. They encode the intended asymmetry: movement alignment preserves some residual, conventional Republicanism preserves less, and repudiation starts from the baseline-loss case before receiving its separate crossover term.
 
-The initial ID and faction mappings are explicit assumptions for the simulator’s fictional 2028 scenario. They can be overridden with `candidate.eraProfile` without changing the underlying issue positions.
+The initial ID and faction mappings are explicit assumptions for the simulator’s fictional 2028 scenario. They can be overridden with `candidate.eraProfile` without changing the underlying issue positions. The Democratic calibration uses a separate, deliberately modest table because a Harris/Walz baseline is not interchangeable with the Trump coalition residual.
 
 ## Evidence boundary
 

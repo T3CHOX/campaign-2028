@@ -123,6 +123,13 @@ var Endorsers = {
                 { id: 'nc_research_triangle', name: 'Research Triangle Business Alliance', type: 'organization', baseLean: { D: 22, R: 38, G: -12, L: 28 }, threshold: 58, ralliesGranted: 0 },
                 { id: 'nc_nc_afl', name: 'North Carolina State AFL-CIO', type: 'organization', baseLean: { D: 80, R: -52, G: 15, L: -18 }, threshold: 65, ralliesGranted: 0 }
             ],
+            'SC': [
+                { id: 'sc_clyburn', name: 'Rep. Jim Clyburn (SC-06, Democratic Leader)', type: 'individual', baseLean: { D: 96, R: -92, G: 10, L: -45 }, threshold: 68, ralliesGranted: 5 },
+                { id: 'sc_mcmaster', name: 'Gov. Henry McMaster (SC Governor)', type: 'individual', baseLean: { D: -92, R: 92, G: -45, L: 10 }, threshold: 75, ralliesGranted: 4 },
+                { id: 'sc_scott', name: 'Tim Scott (SC Senator)', type: 'individual', baseLean: { D: -85, R: 88, G: -40, L: 15 }, threshold: 75, ralliesGranted: 3 },
+                { id: 'sc_charleston_chronicle', name: 'Charleston Chronicle', type: 'organization', baseLean: { D: 85, R: -80, G: 20, L: -20 }, threshold: 62, ralliesGranted: 0 },
+                { id: 'sc_columbia_chamber', name: 'Columbia Chamber of Commerce', type: 'organization', baseLean: { D: -15, R: 68, G: -35, L: 25 }, threshold: 60, ralliesGranted: 0 }
+            ],
             'TX': [
                 { id: 'tx_abbott', name: 'Greg Abbott (TX Governor)', type: 'individual', baseLean: { D: -90, R: 90, G: -55, L: -18 }, threshold: 85, ralliesGranted: 3 },
                 { id: 'tx_orourke', name: "Beto O'Rourke", type: 'individual', baseLean: { D: 85, R: -80, G: 22, L: -18 }, threshold: 68, ralliesGranted: 4 },
@@ -378,6 +385,14 @@ var Endorsers = {
     
     // Track surrogate rally credits
     rallyCredits: {},
+    getStars: function(endorser) {
+        if (endorser.stars) return Math.max(1,Math.min(5,endorser.stars));
+        if (/^(n_obama|n_biden|n_trump|n_harris|n_swift)$/.test(endorser.id)) return 5;
+        if (endorser.type === 'individual' && endorser.id.indexOf('n_')===0) return Math.max(2,Math.min(4,Number(endorser.ralliesGranted)||2));
+        if (endorser.type === 'individual') return endorser.id.indexOf('gov_')===0 ? 3 : Math.max(2,Math.min(4,Number(endorser.ralliesGranted)||2));
+        if (/aflcio|uaw|nra|planned_parenthood|hrc|chamber|naacp|aclu|sierra|heritage/.test(endorser.id)) return 4;
+        return endorser.id.indexOf('n_')===0 ? 3 : 2;
+    },
     
     init: function() {
         this.relationships = {};
@@ -394,11 +409,8 @@ var Endorsers = {
             if (faction === 'maga' && e.id === 'n_romney') score -= 50;
             if (faction === 'progressive' && e.id === 'n_chamber') score -= 30;
             if (faction === 'moderate' && e.id === 'n_sanders') score -= 40;
-            this.relationships[e.id] = Math.max(-100, Math.min(100, score));
+            this.relationships[e.id] = Math.max(-100, Math.min(e.threshold - 2, score));
             this.rallyCredits[e.id] = 0;
-            if (this.relationships[e.id] >= e.threshold && e.type === 'individual') {
-                this.rallyCredits[e.id] = e.ralliesGranted; // Pre-endorsed
-            }
         }
         
         // Initialize State relationships
@@ -406,11 +418,8 @@ var Endorsers = {
             for (var j = 0; j < this.db.states[state].length; j++) {
                 var se = this.db.states[state][j];
                 var sScore = se.baseLean[party] || 0;
-                this.relationships[se.id] = Math.max(-100, Math.min(100, sScore));
+                this.relationships[se.id] = Math.max(-100, Math.min(se.threshold - 2, sScore));
                 this.rallyCredits[se.id] = 0;
-                if (this.relationships[se.id] >= se.threshold && se.type === 'individual') {
-                    this.rallyCredits[se.id] = se.ralliesGranted;
-                }
             }
         }
         
@@ -432,8 +441,8 @@ var Endorsers = {
                         ralliesGranted: 2
                     });
                     var gScore = govLean[party] || 0;
-                    this.relationships['gov_' + stateCode] = Math.max(-100, Math.min(100, gScore));
-                    this.rallyCredits['gov_' + stateCode] = (this.relationships['gov_' + stateCode] >= 75) ? 2 : 0;
+                    this.relationships['gov_' + stateCode] = Math.max(-100, Math.min(73, gScore));
+                    this.rallyCredits['gov_' + stateCode] = 0;
                 }
             }
         }
@@ -527,16 +536,18 @@ var Endorsers = {
         // Check if crossed threshold
         if (oldScore < endorser.threshold && this.relationships[id] >= endorser.threshold) {
             msg += " THEY HAVE OFFICIALLY ENDORSED YOU!";
-            if (endorser.type === 'individual') {
-                this.rallyCredits[id] = endorser.ralliesGranted;
-                msg += " Granted " + endorser.ralliesGranted + " Surrogate Rallies.";
-            } else {
+            if (endorser.type !== 'individual') {
                 // Organization endorsement = national/statewide bump
                 if (typeof Campaign !== 'undefined' && typeof Campaign.adjustFavorability === 'function') {
                      Campaign.adjustFavorability(0.03, 'Major Endorsement');
                 }
                 msg += " Huge organization boost!";
             }
+        } else if (oldScore >= endorser.threshold && endorser.type === 'individual') {
+            var chanceTwo = Math.max(0.05, Math.min(0.8, (this.relationships[id] - endorser.threshold + 15) / 55));
+            var granted = Math.random() < chanceTwo ? 2 : 1;
+            this.rallyCredits[id] = (this.rallyCredits[id] || 0) + granted;
+            msg += ' Added ' + granted + ' surrogate ' + (granted === 1 ? 'rally' : 'rallies') + '.';
         }
         
         Utils.addLog(msg);
@@ -549,6 +560,51 @@ var Endorsers = {
         }
     },
     
+    isActivelyRunning: function(endorser) {
+        if (!endorser || !endorser.name) return false;
+        var normName = endorser.name.toLowerCase();
+        var normId = (endorser.id || '').toLowerCase();
+        
+        // 1. Check Primary Campaign Active Roster
+        if (typeof PrimaryCampaign !== 'undefined' && PrimaryCampaign.state && PrimaryCampaign.state()) {
+            var activeActors = PrimaryCampaign.roster(null, true);
+            for (var i = 0; i < activeActors.length; i++) {
+                var act = activeActors[i];
+                if (act.status === 'active' || act.status === 'nominated') {
+                    var aName = (act.candidate && act.candidate.name || '').toLowerCase();
+                    var aId = (act.candidate && act.candidate.id || '').toLowerCase();
+                    if (aName && (normName.indexOf(aName) >= 0 || aName.indexOf(normName) >= 0 || normId.indexOf(aId) >= 0)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        // 2. Check General Election Active Tickets
+        if (typeof gameData !== 'undefined') {
+            var checkList = [];
+            if (gameData.candidate) checkList.push(gameData.candidate);
+            if (gameData.vp) checkList.push(gameData.vp);
+            if (gameData.demTicket) {
+                if (gameData.demTicket.pres) checkList.push(gameData.demTicket.pres);
+                if (gameData.demTicket.vp) checkList.push(gameData.demTicket.vp);
+            }
+            if (gameData.repTicket) {
+                if (gameData.repTicket.pres) checkList.push(gameData.repTicket.pres);
+                if (gameData.repTicket.vp) checkList.push(gameData.repTicket.vp);
+            }
+            for (var j = 0; j < checkList.length; j++) {
+                var cand = checkList[j];
+                var cName = (cand.name || '').toLowerCase();
+                var cId = (cand.id || '').toLowerCase();
+                if (cName && (normName.indexOf(cName) >= 0 || cName.indexOf(normName) >= 0 || normId.indexOf(cId) >= 0)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    },
+
     // v2: To prevent errors if old news events call these
     processActiveEndorsements: function() {},
     processEndorsementDrop: function() {},

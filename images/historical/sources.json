@@ -1,57 +1,23 @@
 {
-  "gore": {
-    "candidate": "Al Gore",
-    "page": "https://en.wikipedia.org/wiki/Al_Gore",
-    "sourceImage": "downloaded in prior batch"
-  },
-  "bush": {
-    "candidate": "George W. Bush",
-    "page": "https://en.wikipedia.org/wiki/George_W._Bush",
-    "sourceImage": "downloaded in prior batch"
-  },
-  "nader": {
-    "candidate": "Ralph Nader",
-    "page": "https://en.wikipedia.org/wiki/Ralph_Nader",
-    "sourceImage": "downloaded in prior batch"
-  },
-  "kerry": {
-    "candidate": "John Kerry",
-    "page": "https://en.wikipedia.org/wiki/John_Kerry",
-    "sourceImage": "downloaded in prior batch"
-  },
-  "obama": {
-    "candidate": "Barack Obama",
-    "page": "https://en.wikipedia.org/wiki/Barack_Obama",
-    "sourceImage": "downloaded in prior batch"
-  },
-  "mccain": {
-    "candidate": "John McCain",
-    "page": "https://en.wikipedia.org/wiki/John_McCain",
-    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/John_McCain_official_portrait_2009_%283x4_cropped%29.jpg/960px-John_McCain_official_portrait_2009_%283x4_cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
-  },
-  "romney": {
-    "candidate": "Mitt Romney",
-    "page": "https://en.wikipedia.org/wiki/Mitt_Romney",
-    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Mitt_Romney_official_US_Senate_portrait.jpg/960px-Mitt_Romney_official_US_Senate_portrait.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
-  },
-  "clinton": {
-    "candidate": "Hillary Clinton",
-    "page": "https://en.wikipedia.org/wiki/Hillary_Clinton",
-    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Former_United_States_Secretary_of_State_Hillary_Rodham_Clinton_at_the_U.S._Department_of_State_on_September_26%2C_2023_in_Washington%2C_D.C._14_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
-  },
-  "biden": {
-    "candidate": "Joe Biden",
-    "page": "https://en.wikipedia.org/wiki/Joe_Biden",
-    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Joe_Biden_presidential_portrait.jpg/960px-Joe_Biden_presidential_portrait.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
-  },
-  "jorgensen": {
-    "candidate": "Jo Jorgensen",
-    "page": "https://en.wikipedia.org/wiki/Jo_Jorgensen",
-    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Jo_Jorgensen_portrait_3.jpg/960px-Jo_Jorgensen_portrait_3.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
-  },
-  "oliver": {
-    "candidate": "Chase Oliver",
-    "page": "https://en.wikipedia.org/wiki/Chase_Oliver",
-    "sourceImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Chase_Oliver_by_Gage_Skidmore_2.jpg/960px-Chase_Oliver_by_Gage_Skidmore_2.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+  "schemaVersion": 2,
+  "runtimeNote": "All runtime portraits are locally stored 384x384 JPEG derivatives made from the Wikimedia Commons source listed for the election year. Processing is limited to RGB conversion, centered square cropping, and resizing; no generative image tool was used.",
+  "portraits": {
+    "gore00": { "candidate": "Al Gore", "electionYear": 2000, "file": "gore00.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Algoreexecmanchester.jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Algoreexecmanchester.jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page; this is a 2000 campaign-period source." },
+    "bush00": { "candidate": "George W. Bush", "electionYear": 2000, "file": "bush00.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:George_W_Bush_Portrait_(3x4_close_cropped).jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/George_W_Bush_Portrait_(3x4_close_cropped).jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page; official U.S. government portrait source." },
+    "nader00": { "candidate": "Ralph Nader", "electionYear": 2000, "file": "nader00.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Ralph_nader_portrait.jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Ralph_nader_portrait.jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page for the current attribution/share-alike terms." },
+    "bush04": { "candidate": "George W. Bush", "electionYear": 2004, "file": "bush04.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:George-W-Bush.jpeg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/George-W-Bush.jpeg?width=1200", "licenseNote": "See the Wikimedia Commons file page for the source and license tag." },
+    "kerry04": { "candidate": "John Kerry", "electionYear": 2004, "file": "kerry04.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:John_F._Kerry.jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/John_F._Kerry.jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page; official U.S. government/Congress portrait source." },
+    "obama08": { "candidate": "Barack Obama", "electionYear": 2008, "file": "obama08.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Poster-sized_portrait_of_Barack_Obama.jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Poster-sized_portrait_of_Barack_Obama.jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page for the attribution terms." },
+    "mccain08": { "candidate": "John McCain", "electionYear": 2008, "file": "mccain08.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:John_McCain_official_photo_portrait.JPG", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/John_McCain_official_photo_portrait.JPG?width=1200", "licenseNote": "See the Wikimedia Commons file page; official U.S. government/Congress portrait source." },
+    "obama12": { "candidate": "Barack Obama", "electionYear": 2012, "file": "obama12.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:President_Barack_Obama.jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/President_Barack_Obama.jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page and its source-specific reuse notes." },
+    "romney12": { "candidate": "Mitt Romney", "electionYear": 2012, "file": "romney12.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Mitt_Romney_crop.jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Mitt_Romney_crop.jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page for attribution/share-alike terms." },
+    "clinton16": { "candidate": "Hillary Clinton", "electionYear": 2016, "file": "clinton16.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Hillary_Clinton_(30453475462).jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Hillary_Clinton_(30453475462).jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page for attribution terms." },
+    "trump16": { "candidate": "Donald Trump", "electionYear": 2016, "file": "trump16.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Donald_J._Trump_portrait.jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Donald_J._Trump_portrait.jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page for attribution/share-alike terms." },
+    "biden20": { "candidate": "Joe Biden", "electionYear": 2020, "file": "biden20.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Joe_Biden_presidential_portrait.jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Joe_Biden_presidential_portrait.jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page and its source-specific reuse notes." },
+    "trump20": { "candidate": "Donald Trump", "electionYear": 2020, "file": "trump20.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Donald_Trump_official_portrait.jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Donald_Trump_official_portrait.jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page for the source and license tag." },
+    "jorgensen20": { "candidate": "Jo Jorgensen", "electionYear": 2020, "file": "jorgensen20.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Jo_Jorgensen.jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Jo_Jorgensen.jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page for attribution/share-alike terms." },
+    "harris24": { "candidate": "Kamala Harris", "electionYear": 2024, "file": "harris24.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Kamala_Harris_June_2024_(cropped).jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Kamala_Harris_June_2024_(cropped).jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page and its source-specific reuse notes." },
+    "trump24": { "candidate": "Donald Trump", "electionYear": 2024, "file": "trump24.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Donald_Trump_(53787934031)_(cropped).jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Donald_Trump_(53787934031)_(cropped).jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page for attribution/share-alike terms." },
+    "oliver24": { "candidate": "Chase Oliver", "electionYear": 2024, "file": "oliver24.jpg", "sourcePage": "https://commons.wikimedia.org/wiki/File:Chase_Oliver_by_Gage_Skidmore_2_(3x4_cropped).jpg", "sourceImage": "https://commons.wikimedia.org/wiki/Special:FilePath/Chase_Oliver_by_Gage_Skidmore_2_(3x4_cropped).jpg?width=1200", "licenseNote": "See the Wikimedia Commons file page for attribution/share-alike terms." }
   }
 }

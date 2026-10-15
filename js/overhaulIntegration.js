@@ -39,6 +39,7 @@
     function queuedIssue(action,scale){
         if(!IssueModel.getIssue(action.issueId))return;
         Electorate.expose({stateCode:action.state,countyId:action.countyId||action.countyFips,sponsorId:gameData.candidate.id,issueId:action.issueId,type:'issue',segment:action.groupId,exposure:(action.intensity||1)*scale});
+        Favorability.ad({sponsorId:gameData.candidate.id,type:'issue',countyIds:action.countyId||action.countyFips?[action.countyId||action.countyFips]:null,stateCode:action.state,segment:action.groupId,exposure:(action.intensity||1)*scale});
         PolicyManager.campaignOnIssue(gameData.selectedParty,action.issueId,5*scale);
         Utils.addLog((action.type||'Campaign')+' on '+IssueModel.getIssue(action.issueId).name+' in '+action.state+'.');
     }
@@ -50,7 +51,7 @@
     Persuasion.applyQueuedActions=function(){var self=this,methods={AD:'applyAdAction',SPEECH:'applySpeechAction',SURROGATE:'applySurrogateAction',RALLY:'applyRallyAction',FIELD:'applyFieldAction',DIGITAL:'applyDigitalAction',DEBATE_PREP:'applyDebatePrepAction',OPPO_RESEARCH:'applyOppoResearchAction'};var actions=(gameData.pendingActions||[]).slice();gameData.pendingActions=[];gameData.turnPressure={};actions.forEach(function(a){if(methods[a.type])self[methods[a.type]](a);});Electorate.invalidate();};
     Persuasion.calculateAlignment=function(candidateId,groupId,issueId){var profile=Electorate.profile(groupId,issueId),pos=IssueModel.getPosition(candidateId,issueId);return profile&&pos?profile.distribution.reduce(function(a,w,i){return a+w*IssueModel.agreement(issueId,pos.id,IssueModel.positions[i].id);},0):0;};
     Persuasion.getGroupIssueImportance=function(groupId,issueId){var p=Electorate.profile(groupId,issueId);return p?p.importance/100:0;};
-    Counties.handleCountySpeech=function(fips,issueId){var c=this.countyData[this.normalizeFips(fips)];if(!c||!IssueModel.getIssue(issueId)||gameData.energy<1)return;Campaign.saveState();gameData.energy--;document.getElementById('speech-modal').classList.add('hidden');queuedIssue({type:'Speech',state:c.s,countyId:c.fips,issueId:issueId,intensity:1},1.3);AdEngine.refresh();Counties.selectCounty(c.fips);};
+    Counties.handleCountySpeech=function(fips,issueId){var c=this.countyData[this.normalizeFips(fips)];if(!c||!IssueModel.getIssue(issueId)||gameData.energy<1)return;Campaign.saveState();gameData.energy--;document.getElementById('speech-modal').classList.add('hidden');if(!gameData.pendingActions)gameData.pendingActions=[];gameData.pendingActions.push({type:'SPEECH',state:c.s,countyId:c.fips,issueId:issueId,intensity:1,cost:{funds:0,energy:0}});Utils.addLog('Speech on '+IssueModel.getIssue(issueId).name+' queued in '+c.n+' ('+c.s+').');Campaign.updateHUD();AdEngine.refresh();Counties.selectCounty(c.fips);};
     Counties.evaluateIssueEvent=function(fips,issueId,candidate,power){var c=this.countyData[this.normalizeFips(fips)];if(!c||!c.electorateCells)return 0;return c.electorateCells.reduce(function(sum,cell){return sum+cell.weight*Persuasion.calculateAlignment(candidate.id,cell.group,issueId);},0)*(power||0);};
 
     // Platform announcements change the same canonical stance consumed by

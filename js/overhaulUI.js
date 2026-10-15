@@ -38,6 +38,7 @@
         }, {});
     }
     function positionsFor(issue) { return issue.positions || (typeof IssueModel !== 'undefined' ? IssueModel.positions : []) || []; }
+    function positionClass(position) { return ' ov-position-' + String(position.id || '').replace(/[^a-z0-9_-]/gi, ''); }
     function candidatePosition(candidate, issue) {
         return typeof IssueModel !== 'undefined' && candidate ? IssueModel.getPosition(candidate.id || candidate, issue.id) : null;
     }
@@ -141,7 +142,8 @@
             (typeof CampaignPriorities !== 'undefined' && gameData.candidate ? button('toggle-priority', priority ? '★ Campaign priority' : '☆ Make campaign priority', 'data-issue="' + esc(issue.id) + '" aria-pressed="' + priority + '"', 'ov-priority-button' + (priority ? ' is-active' : '')) : '') +
             '<fieldset class="ov-stance-picker"><legend>Your position</legend><div class="ov-stance-options">' +
             stances.map(function (stance) {
-                return button('stance-preview', esc(stance.label), 'data-issue="' + esc(issue.id) + '" data-position="' + esc(stance.id) + '" aria-pressed="' + Boolean(current && current.id === stance.id) + '"', 'ov-stance');
+                var currentClass = current && current.id === stance.id ? ' is-current' : '';
+                return button('stance-preview', esc(stance.label), 'data-issue="' + esc(issue.id) + '" data-position="' + esc(stance.id) + '" aria-pressed="' + Boolean(current && current.id === stance.id) + '"', 'ov-stance' + positionClass(stance) + currentClass);
             }).join('') + '</div></fieldset><div class="ov-stance-description" data-stance-description="' + esc(issue.id) + '">' +
             '<h4>' + esc(current ? current.label : 'Select a position to read its commitments') + '</h4><p>' + esc(current ? current.description : '') + '</p></div>' +
             '<div data-stance-confirm="' + esc(issue.id) + '"></div>' +
@@ -175,7 +177,7 @@
         if (!stance) return;
         var row = Array.from(el('ov-issue-list').querySelectorAll('.ov-issue')).find(function (node) { return node.dataset.issue === issueId; });
         if (!row) return;
-        row.querySelectorAll('.ov-stance').forEach(function (node) { node.setAttribute('aria-pressed', String(node.dataset.position === positionId)); });
+        row.querySelectorAll('.ov-stance').forEach(function (node) { node.classList.toggle('is-preview', node.dataset.position === positionId); });
         row.querySelector('[data-stance-description]').innerHTML = '<h4>' + esc(stance.label) + '</h4><p>' + esc(stance.description) + '</p>';
         var current = candidatePosition(gameData.candidate, issue);
         row.querySelector('[data-stance-confirm]').innerHTML = current && current.id === positionId ? '' :
@@ -229,19 +231,37 @@
         var baseline = baselineShare(group, candidate);
         return current === null || baseline === null ? null : current - baseline;
     }
+    function leadingOpponent(poll, target) {
+        if (!poll || !target || !poll.shares) return null;
+        return (poll.candidates || []).filter(function (candidate) {
+            return candidate.id !== target.id && (!target.party || !candidate.party || candidate.party !== target.party);
+        }).map(function (candidate) {
+            return { candidate: candidate, share: finiteNumber(poll.shares[candidate.id]) };
+        }).filter(function (item) { return item.share !== null; }).sort(function (a, b) { return b.share - a.share; })[0] || null;
+    }
+    function candidateMarginDelta(poll, group, target) {
+        if (!poll || !group || !target || !poll.shares) return null;
+        var targetPoll = (poll.candidates || []).find(function (candidate) { return candidate.id === target.id || (target.party && candidate.party === target.party); });
+        var opponent = leadingOpponent(poll, targetPoll || target);
+        if (!targetPoll || !opponent) return null;
+        var currentMargin = finiteNumber(poll.shares[targetPoll.id]);
+        var baselineTarget = baselineShare(group, targetPoll);
+        var baselineOpponent = baselineShare(group, opponent.candidate);
+        if (currentMargin === null || baselineTarget === null || baselineOpponent === null) return null;
+        return (currentMargin - opponent.share) - (baselineTarget - baselineOpponent);
+    }
     function movementSummary(poll, group, selectedCandidate) {
         if (!poll || !group) return '<span class="ov-movement-value ov-movement-neutral" aria-label="No 2024 baseline">—</span>';
         var candidates = poll.candidates || [];
         var target = selectedCandidate || gameData.candidate;
         if (target) {
-            var targetPoll = candidates.find(function (candidate) { return candidate.id === target.id || (target.party && candidate.party === target.party); });
-            var targetDelta = targetPoll ? candidateDelta(poll, group, targetPoll) : null;
-            if (targetDelta !== null) {
-                var targetClass = targetDelta > 0.05 ? 'ov-movement-positive' : (targetDelta < -0.05 ? 'ov-movement-negative' : 'ov-movement-neutral');
-                var targetLabel = (targetDelta > 0 ? '+' : '') + number(targetDelta, 1) + ' pts';
-                return '<span class="ov-movement-value ' + targetClass + '" title="' + esc((target.name || 'Your candidate')) + ' movement versus the 2024 benchmark">' + targetLabel + '</span>';
+            var targetMarginDelta = candidateMarginDelta(poll, group, target);
+            if (targetMarginDelta !== null) {
+                var targetClass = targetMarginDelta > 0.05 ? 'ov-movement-positive' : (targetMarginDelta < -0.05 ? 'ov-movement-negative' : 'ov-movement-neutral');
+                var targetLabel = (targetMarginDelta > 0 ? '+' : '') + number(targetMarginDelta, 1) + ' pts';
+                return '<span class="ov-movement-value ' + targetClass + '" title="Change in your candidate’s margin versus the 2024 reference margin; undecided voters are excluded from the poll margin">' + targetLabel + '</span>';
             }
-            return '<span class="ov-movement-value ov-movement-neutral" aria-label="No benchmark movement for the selected candidate">—</span>';
+            return '<span class="ov-movement-value ov-movement-neutral" aria-label="No benchmark margin movement for the selected candidate">—</span>';
         }
         var deltas = candidates.map(function (candidate) { return { candidate: candidate, delta: candidateDelta(poll, group, candidate) }; }).filter(function (item) { return item.delta !== null; });
         if (!deltas.length) return '<span class="ov-movement-value ov-movement-neutral" aria-label="No 2024 baseline">—</span>';
@@ -272,7 +292,7 @@
         var body = dialog('ov-groups', 'Interest groups & PACs', true);
         var groups = groupMap();
         var categories = Array.from(new Set(Object.keys(groups).map(function (id) { return groups[id].category; })));
-        body.innerHTML = '<div class="ov-group-overview"><div><span class="ov-eyebrow">NATIONAL COALITION BRIEF</span><h3>Where support is moving</h3><p>Compare each community’s current modeled poll with its available 2024 benchmark. Turnout propensity reflects the campaign’s current issue and coalition effects.</p></div><div class="ov-group-overview-key"><span>Change since 2024</span><strong>↑ / ↓ percentage points</strong></div></div>' +
+        body.innerHTML = '<div class="ov-group-overview"><div><span class="ov-eyebrow">NATIONAL COALITION BRIEF</span><h3>Where support is moving</h3><p>Compare each community’s current modeled poll with its available 2024 benchmark. Turnout propensity reflects the campaign’s current issue and coalition effects.</p></div><div class="ov-group-overview-key"><span>Margin change since 2024</span><strong>↑ / ↓ percentage points</strong></div></div>' +
             '<p class="ov-intro">Explore voter communities and their published national polling. Expand broad categories to compare the communities within them.</p>' +
             '<nav class="ov-tabs" aria-label="Interest group categories">' + [{ id: 'all', name: 'All groups' }].concat(categories.map(function (category) { return { id: category, name: category }; }), [{ id: 'pacs', name: 'PACs' }]).map(function (tab) {
                 return button('group-category', esc(tab.name), 'data-category="' + esc(tab.id) + '" aria-pressed="' + (tab.id === ui.groupCategory) + '"', 'ov-tab');
@@ -294,7 +314,7 @@
         var turnout = gameData.interestGroupTurnout && finiteNumber(gameData.interestGroupTurnout[id]);
         var turnoutText = turnout === null ? '—' : number(turnout * 100, 0) + '%';
         return '<article class="ov-group-card' + (parent ? ' ov-group-parent' : ' ov-group-child') + '" data-search="' + esc(search) + '">' +
-            '<div class="ov-group-copy"><div class="ov-group-card-heading"><div><span class="ov-eyebrow">' + esc(group.category || 'VOTER COMMUNITY') + '</span><h4>' + esc(group.name) + '</h4></div><div class="ov-group-movement"><span>Your candidate · 2024</span>' + movementSummary(poll, group) + '</div></div><p>' + esc(group.description || 'A modeled voter community; see its issue preferences and national polling below.') + '</p>' +
+            '<div class="ov-group-copy"><div class="ov-group-card-heading"><div><span class="ov-eyebrow">' + esc(group.category || 'VOTER COMMUNITY') + '</span><h4>' + esc(group.name) + '</h4></div><div class="ov-group-movement"><span>Your candidate · margin change</span>' + movementSummary(poll, group) + '</div></div><p>' + esc(group.description || 'A voter community; see its issue preferences and national polling below.') + '</p>' +
             '<div class="ov-group-meta"><span><b>Turnout propensity</b> ' + turnoutText + '</span><span><b>Priority issues</b> ' + esc((group.priorities || []).slice(0, 3).map(issueName).join(' · ') || 'Not available') + '</span></div>' +
             button('group-detail', 'Poll history & issue preferences <span aria-hidden="true">↗</span>', 'data-group="' + esc(id) + '"', 'ov-text-button') + '</div>' +
             '<div class="ov-group-poll">' + pollStamp(poll) + pollRows(poll, true, group) + '</div>' +
@@ -341,7 +361,7 @@
         var poll = latestPoll(id);
         var history = gameData.groupPolls && gameData.groupPolls[id] || [];
         return '<p class="ov-intro">' + esc(group.description) + '</p><div class="ov-detail-poll-layout"><section><h3 class="ov-section-heading">Latest national group poll</h3>' +
-            '<div class="ov-detail-movement"><span>Your candidate · change since 2024</span>' + movementSummary(poll, group) + '</div>' + pollStamp(poll) + pollRows(poll, false, group) + '</section><aside class="ov-methodology"><h3>Reading this poll</h3>' +
+            '<div class="ov-detail-movement"><span>Your candidate · margin change since 2024</span>' + movementSummary(poll, group) + '</div>' + pollStamp(poll) + pollRows(poll, false, group) + '</section><aside class="ov-methodology"><h3>Reading this poll</h3>' +
             (poll ? '<dl class="ov-facts"><div><dt>Fielded</dt><dd>Week ' + esc(poll.week) + (poll.date ? ' · ' + esc(poll.date) : '') + '</dd></div><div><dt>Confidence level</dt><dd>' + number((poll.confidenceLevel || 0.95) * 100, 0) + '%</dd></div>' +
             '<div><dt>Respondents</dt><dd>' + number(poll.sampleSize, 0) + '</dd></div><div><dt>Effective sample</dt><dd>' + number(poll.effectiveSampleSize, 0) + '</dd></div><div><dt>Margin of error</dt><dd>±' + number(poll.moe, 2) + ' percentage points</dd></div></dl>' +
             '<p>Sampling uncertainty applies to each candidate estimate. An interval for a lead can be wider than one candidate’s margin of error.</p>' +
@@ -416,19 +436,26 @@
         }).sort(function (a, b) { return a.name.localeCompare(b.name); });
     }
     function option(value, name, selected) { return '<option value="' + esc(value) + '"' + (String(value) === String(selected) ? ' selected' : '') + '>' + esc(name) + '</option>'; }
+    function adSystemReady() { return typeof AdEngine !== 'undefined' && typeof AdEngine.quote === 'function' && typeof AdEngine.buy === 'function'; }
+    function quoteAd(payload) {
+        if (!adSystemReady()) return { ok: false, error: 'The ad engine is still initializing. The composer will become available automatically.' };
+        try { return AdEngine.quote(payload); }
+        catch (error) { console.error('Ad composer quote failed.', error); return { ok: false, error: 'This ad could not be priced. Reopen the composer or choose another market.' }; }
+    }
     function openAds(options) {
         options = options || {};
         var county = selectedCounty();
         var candidates = activeCandidates().filter(function (candidate) { return !gameData.candidate || candidate.id !== gameData.candidate.id; });
         var markets = marketEntries();
         ui.adConfig = Object.assign({
-            channel: options.channel || 'tv', type: options.type === 'bio' ? 'positive' : options.type || 'issue',
+            channel: markets.length ? (options.channel || 'tv') : 'digital', type: options.type === 'bio' ? 'positive' : options.type || 'issue',
             issueId: issueList().length ? issueList()[0].id : '', targetId: candidates.length ? candidates[0].id : '',
             intensity: 1, durationWeeks: 1, budget: 2,
             marketId: county && county.mediaMarket || (markets[0] && markets[0].id) || '',
             stateCode: gameData.selectedState || county && county.s || 'PA',
             sponsorId: gameData.candidate && gameData.candidate.id, segment: ''
         }, options);
+        if (!markets.length && ui.adConfig.channel === 'tv') ui.adConfig.channel = 'digital';
         if (ui.adConfig.type === 'bio') ui.adConfig.type = 'positive';
         ui.lastAdMessage = '';
         renderAds();
@@ -437,19 +464,33 @@
     function renderAds() {
         var body = dialog('ov-ads', 'Build an advertising campaign', true);
         var config = ui.adConfig;
-        if (!config || typeof AdEngine === 'undefined') { body.innerHTML = empty('The advertising system is not available yet. Reopen after the campaign finishes loading.'); return; }
+        if (!config) { body.innerHTML = empty('The ad composer could not be configured.'); return; }
         var opponents = activeCandidates().filter(function (candidate) { return !gameData.candidate || candidate.id !== gameData.candidate.id; });
         var markets = marketEntries();
         var states = typeof STATES === 'undefined' ? {} : STATES;
         var groups = groupMap();
         var categories = Array.from(new Set(issueList().map(function (issue) { return issue.category; })));
         body.innerHTML = '<p class="ov-intro">Choose the message, audience, and time on air. Policy ads raise issue importance; attacks can persuade, mobilize, or backfire depending on the audience and the candidates’ actual positions.</p>' +
+            '<div class="ov-preset-bar" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; background:rgba(0,0,0,0.3); border:1px solid #444; border-radius:6px; padding:8px 12px; margin-bottom:12px;">' +
+                '<div style="display:flex; align-items:center; gap:8px;">' +
+                    '<span style="font-size:0.75rem; color:#5bc0de; font-weight:bold;"><i class="fas fa-bookmark"></i> Preset:</span>' +
+                    '<select id="ov-preset-loader" style="background:#222; color:#fff; border:1px solid #555; border-radius:4px; font-size:0.75rem; padding:4px;" onchange="app.loadPresetIntoAdComposer(this.value)">' +
+                        '<option value="">-- Load Saved Preset --</option>' +
+                        (typeof AdPresets !== 'undefined' ? AdPresets.getPresets().map(function(p){ return '<option value="' + p.id + '">' + p.name + '</option>'; }).join('') : '') +
+                    '</select>' +
+                '</div>' +
+                '<div style="display:flex; align-items:center; gap:6px;">' +
+                    '<input type="text" id="ov-preset-name-input" placeholder="Preset name..." style="background:#222; color:#fff; border:1px solid #555; border-radius:4px; font-size:0.75rem; padding:4px 8px; width:150px;">' +
+                    '<button type="button" class="ov-button" style="padding:4px 10px; font-size:0.75rem;" onclick="app.saveComposerAdPreset()">Save As Preset</button>' +
+                '</div>' +
+            '</div>' +
             '<div class="ov-ad-layout"><form id="ov-ad-form"><div class="ov-form-grid">' +
             '<label>Channel<select name="channel">' + option('tv', 'Television', config.channel) + option('digital', 'Digital', config.channel) + '</select></label>' +
             '<label class="ov-ad-message-field">Message<select name="type">' + option('issue', 'Policy advocacy', config.type) + option('attack', 'Attack an opponent’s policy', config.type) + option('positive', 'Candidate introduction', config.type) + option('mobilize', 'Turn out supporters', config.type) + '</select></label>' +
             '<label id="ov-market-field">Media market<select name="marketId">' + (markets.length ? markets.map(function (market) { return option(market.id, market.name, config.marketId); }).join('') : '<option value="">No markets loaded</option>') + '</select></label>' +
             '<label id="ov-state-field">State<select name="stateCode">' + Object.keys(states).sort(function (a, b) { return states[a].name.localeCompare(states[b].name); }).map(function (id) { return option(id, states[id].name, config.stateCode); }).join('') + '</select></label>' +
             '<label id="ov-target-field" class="ov-span-all">Opponent<select name="targetId">' + (opponents.length ? opponents.map(function (candidate) { return option(candidate.id, candidate.name + ' (' + candidate.party + ')', config.targetId); }).join('') : '<option value="">No opponent is available</option>') + '</select></label>' +
+            '<label id="ov-frame-field" class="ov-span-all">Political frame<select name="frame">' + option('', 'No added frame', config.frame) + option('socialism', 'Socialism / government-control contrast', config.frame) + '</select><small>Available only for an attack aimed at a configured subgroup when the opponent’s recorded platform supports the contrast.</small></label>' +
             '<label id="ov-ad-issue-field" class="ov-span-all">Issue<select name="issueId">' + categories.map(function (category) { return '<optgroup label="' + esc(category) + '">' + issueList().filter(function (issue) { return issue.category === category; }).sort(function (a, b) { var ap = typeof CampaignPriorities !== 'undefined' && gameData.candidate && CampaignPriorities.has(gameData.candidate, a.id); var bp = typeof CampaignPriorities !== 'undefined' && gameData.candidate && CampaignPriorities.has(gameData.candidate, b.id); return (bp ? 1 : 0) - (ap ? 1 : 0); }).map(function (issue) { return option(issue.id, issueOptionLabel(issue), config.issueId); }).join('') + '</optgroup>'; }).join('') + '</select></label>' +
             '<label>Intensity<select name="intensity">' + option(1, 'Standard', config.intensity) + option(2, 'High', config.intensity) + option(3, 'Saturation', config.intensity) + '</select></label>' +
             '<label>Duration<select name="durationWeeks">' + [1, 2, 3, 4].map(function (weeks) { return option(weeks, weeks + (weeks === 1 ? ' week' : ' weeks'), config.durationWeeks); }).join('') + '</select></label>' +
@@ -473,6 +514,7 @@
         if (config.channel === 'tv') { delete config.stateCode; delete config.budget; delete config.segment; }
         else delete config.marketId;
         if (config.type !== 'attack') delete config.targetId;
+        if (config.type !== 'attack' || config.channel !== 'digital') delete config.frame;
         if (config.type === 'positive' || config.type === 'mobilize') delete config.issueId;
         if (!config.segment) delete config.segment;
         return config;
@@ -487,6 +529,7 @@
         el('ov-budget-field').hidden = !isDigital;
         el('ov-segment-field').hidden = !isDigital;
         el('ov-target-field').hidden = config.type !== 'attack';
+        el('ov-frame-field').hidden = config.type !== 'attack' || !isDigital;
         el('ov-ad-issue-field').hidden = !policy;
         var issue = typeof IssueModel !== 'undefined' ? IssueModel.getIssue(config.issueId) : null;
         var target = activeCandidates().find(function (candidate) { return candidate.id === config.targetId; });
@@ -495,9 +538,10 @@
         if (sponsor) html += renderAdCandidate(sponsor, issue, 'Sponsored by', policy);
         if (config.type === 'attack') html += target ? renderAdCandidate(target, issue, 'Selected opponent', true) : notice('Select an active opponent to continue.');
         if (policy && issue) html += '<p class="ov-note">' + esc(issue.name) + ': ' + esc(issue.description) + '</p>';
+        if (config.type === 'attack' && isDigital && config.frame === 'socialism') html += '<p class="ov-note">This contrast is evaluated against the opponent’s recorded economic-system positions and only affects a selected subgroup configured for this scenario response.</p>';
         html += '<p class="ov-note">The first delivery happens on launch; remaining deliveries run weekly. Greater intensity can increase visibility, fatigue, and backlash; a purchase does not guarantee votes.</p>';
         el('ov-ad-preview').innerHTML = html;
-        var quote = AdEngine.quote(adPayload());
+        var quote = quoteAd(adPayload());
         el('ov-ad-buy').disabled = !quote || !quote.ok;
         el('ov-ad-quote').innerHTML = quote && quote.ok ? '<span>Total cost</span><strong>$' + number(quote.cost, 2) + 'M</strong><small>' + esc(config.durationWeeks) + (config.durationWeeks === 1 ? ' week' : ' weeks') + ' · 1 energy · charged on launch</small>' :
             '<p class="ov-error">' + esc(quote && quote.error || 'A price is not available for this configuration.') + '</p>';
@@ -508,7 +552,10 @@
             (position ? '<p>' + esc(position.description) + '</p>' : '') + '</article>';
     }
     function buyAd() {
-        var result = AdEngine.buy(adPayload());
+        if (!adSystemReady()) { el('ov-ad-message').textContent = 'The ad engine is still initializing. Try again in a moment.'; el('ov-ad-message').classList.add('ov-error'); return; }
+        var result;
+        try { result = AdEngine.buy(adPayload()); }
+        catch (error) { console.error('Ad purchase failed.', error); result = { ok: false, error: 'This ad could not be launched. Reopen the composer and try again.' }; }
         if (!result || !result.ok) {
             el('ov-ad-message').textContent = result && result.error || 'The campaign could not be purchased.';
             el('ov-ad-message').classList.add('ov-error');
@@ -671,6 +718,45 @@
         app.closeDigitalModal = function () { closeDialog('ov-ads'); hideLegacy('digital-planner-modal'); };
         app.runDigitalPreset = function (preset) { openAds({ channel: 'digital', type: preset === 'base' ? 'mobilize' : preset === 'attack' ? 'attack' : 'issue' }); };
         app.executeCustomDigital = function () { openAds({ channel: 'digital' }); };
+        app.loadPresetIntoAdComposer = function(presetId) {
+            if (!presetId || typeof AdPresets === 'undefined') return;
+            var presets = AdPresets.getPresets();
+            var p = presets.find(function(x) { return x.id === presetId; });
+            if (!p) return;
+            var form = el('ov-ad-form');
+            if (!form) return;
+            if (p.channel && form.channel) form.channel.value = p.channel;
+            if (p.type && form.type) form.type.value = p.type;
+            if (p.issueId && form.issueId) form.issueId.value = p.issueId;
+            if (p.intensity && form.intensity) form.intensity.value = p.intensity;
+            if (p.durationWeeks && form.durationWeeks) form.durationWeeks.value = p.durationWeeks;
+            if (p.targetId && form.targetId) form.targetId.value = p.targetId;
+            readAdForm();
+            updateAdPreview();
+        };
+        app.saveComposerAdPreset = function() {
+            var nameInput = el('ov-preset-name-input');
+            var name = nameInput ? nameInput.value : '';
+            if (!name || !name.trim()) {
+                toast("Please enter a name for the preset!");
+                return;
+            }
+            if (typeof AdPresets === 'undefined') return;
+            var config = readAdForm();
+            var res = AdPresets.savePreset(name, config);
+            if (res && res.ok) {
+                toast("Preset '" + name + "' saved!");
+                if (nameInput) nameInput.value = '';
+                var loader = el('ov-preset-loader');
+                if (loader) {
+                    var all = AdPresets.getPresets();
+                    loader.innerHTML = '<option value="">-- Load Saved Preset --</option>' + all.map(function(p) {
+                        return '<option value="' + p.id + '">' + p.name + '</option>';
+                    }).join('');
+                    loader.value = res.preset.id;
+                }
+            }
+        };
         app.openCountyProfile = openCounty;
         if (typeof Counties !== 'undefined' && Counties.selectCounty && !Counties.selectCounty.overhaulUIWrapped) {
             var selectCounty = Counties.selectCounty;
@@ -731,7 +817,8 @@
     window.OverhaulUI = { install: wire, refreshCountyButton: addCountyButton, refresh: function () {
         if (el('ov-groups') && !el('ov-groups').classList.contains('hidden')) renderGroups();
         if (el('ov-group-detail') && !el('ov-group-detail').classList.contains('hidden') && ui.groupId) el('ov-group-detail-body').innerHTML = renderGroupDetail(ui.groupId);
-        if (el('ov-ads') && !el('ov-ads').classList.contains('hidden')) { el('ov-ad-history').innerHTML = renderAdHistory(); updateAdPreview(); }
+        if (el('ov-ads') && !el('ov-ads').classList.contains('hidden')) { readAdForm(); renderAds(); }
     } };
     wire();
+    window.addEventListener('load', function () { if (el('ov-ads') && !el('ov-ads').classList.contains('hidden') && adSystemReady()) renderAds(); });
 }());

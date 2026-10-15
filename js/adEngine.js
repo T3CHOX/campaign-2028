@@ -3,7 +3,14 @@
    delivery; each following week is processed at most once. */
 var AdEngine = {
     sponsor:function(config){return IssueModel.candidate(config.sponsorId||gameData.candidate&&gameData.candidate.id);},
+    framePenalty:function(config){
+        if(!config.frame)return 0;
+        if(config.frame!=='socialism'||config.type!=='attack'||!config.segment||typeof Electorate==='undefined'||!Electorate.messageFramePenalty)return 0;
+        return Electorate.messageFramePenalty(Electorate.groupKey(config.segment),{type:'attack',frame:config.frame,targetId:config.targetId});
+    },
     quote:function(config){
+        if(typeof Electorate==='undefined'||!Electorate.ready||!Counties.countyData||!Object.keys(Counties.countyData).length)
+            return {ok:false,error:'County data is loading. The ad composer will update when the map is ready.'};
         var sponsor=this.sponsor(config),types=['attack','issue','positive','mobilize'];
         if(!sponsor||!Utils.getActiveCandidates().some(function(c){return c.cand.id===sponsor.id;}))return {ok:false,error:'Choose an active sponsoring candidate.'};
         if(types.indexOf(config.type)<0)return {ok:false,error:'Choose an ad type.'};
@@ -15,8 +22,11 @@ var AdEngine = {
             if(!target)return {ok:false,error:'Choose a different, active opponent to attack.'};
         }
         if(config.segment&&!INTEREST_GROUPS[Electorate.groupKey(config.segment)])return {ok:false,error:'Choose an available audience group.'};
+        if(config.frame&&config.frame!=='socialism')return {ok:false,error:'Choose a valid message frame.'};
+        if(config.frame==='socialism'&&!this.framePenalty(config))return {ok:false,error:'This frame requires a targeted subgroup and an opponent with at least two Far Left or Left economic-system positions.'};
         var cost;
         if(config.channel==='tv'){
+            if(!Object.keys(MEDIA_MARKETS).length)return {ok:false,error:'Media markets are loading. The ad composer will update when they are ready.'};
             var market=MEDIA_MARKETS[config.marketId];if(!market)return {ok:false,error:'Choose a media market.'};
             if(!(market.counties||[]).some(function(f){return !!Counties.countyData[Counties.normalizeFips(String(f))];}))return {ok:false,error:'This market has no mapped counties.'};
             cost=DigitalAds.getTVCost(config.marketId,intensity,duration);
@@ -27,7 +37,8 @@ var AdEngine = {
         if(!Number.isFinite(cost)||cost<=0)return {ok:false,error:'A valid market price is required.'};
         return {ok:true,cost:cost};
     },
-    buy:function(config){
+    buy:function(config, options){
+        options = options || {};
         var quote=this.quote(config);if(!quote.ok)return quote;
         var sponsor=this.sponsor(config),player=sponsor.id===gameData.candidate.id;
         var funds=player?gameData.funds:(sponsor.funds||0);
@@ -44,7 +55,9 @@ var AdEngine = {
         if(player){gameData.funds-=quote.cost;gameData.energy-=1;}else sponsor.funds=funds-quote.cost;
         gameData.ads.campaigns=gameData.ads.campaigns||[];gameData.ads.campaigns.push(ad);
         this.deliver(ad,gameData.currentWeek||0);
-        this.refresh();
+        if(!options.batch && !options.silent) {
+            this.refresh();
+        }
         Utils.addLog(sponsor.name+' bought '+ad.durationWeeks+' week(s) of '+ad.type+' ads'+(target?' targeting '+target.name:'')+(ad.issueId?' on '+IssueModel.getIssue(ad.issueId).name:'')+' ($'+quote.cost.toFixed(2)+'M).');
         return {ok:true,cost:quote.cost,id:ad.id};
     },
@@ -62,13 +75,15 @@ var AdEngine = {
         var saturation=gameData.ads.saturation[satKey]||0;
         var priorityBoost=Number(ad.priorityBoost)||1;
         var exposure=(ad.channel==='tv'?ad.intensity:Math.sqrt(ad.cost/ad.durationWeeks))*priorityBoost/(1+saturation*0.35);
+        if(typeof Favorability!=='undefined')Favorability.ad({sponsorId:ad.sponsorId,targetId:ad.targetId,type:ad.type,countyIds:fips,segment:ad.segment,exposure:exposure});
         if(ad.type==='issue'||ad.type==='attack'){
-            Electorate.expose({sponsorId:ad.sponsorId,targetId:ad.targetId,issueId:ad.issueId,type:ad.type,stance:ad.attackedStance,counties:fips,segment:ad.segment,exposure:exposure});
-            if(typeof updateGroupTurnoutFromIssue==='function') updateGroupTurnoutFromIssue(ad.issueId,ad.party,ad.intensity*priorityBoost);
+            Electorate.expose({sponsorId:ad.sponsorId,targetId:ad.targetId,issueId:ad.issueId,type:ad.type,stance:ad.attackedStance,frame:ad.frame,counties:fips,segment:ad.segment,exposure:exposure*0.4});
+            if(typeof updateGroupTurnoutFromIssue==='function'&&!(typeof PrimaryNative!=='undefined'&&PrimaryNative.active()&&ad.sponsorId!==gameData.candidate.id)) updateGroupTurnoutFromIssue(ad.issueId,ad.party,ad.intensity*priorityBoost);
         }else{
             fips.forEach(function(key){var c=Counties.countyData[key];if(!c)return;var reach=ad.segment?Electorate.share(c,ad.segment):1;
-                if(ad.type==='positive')Counties.applyVoteShareShift(c.v,ad.party,0.12*exposure*reach);
-                else {c.partyMobilization=c.partyMobilization||{};c.partyMobilization[ad.party]=Math.min(0.10,(c.partyMobilization[ad.party]||0)+0.008*exposure*reach);}
+                var key=typeof PrimaryNative!=='undefined'&&PrimaryNative.active()?ad.sponsorId:ad.party;
+                if(ad.type==='positive')Counties.applyVoteShareShift(c.v,key,0.04*exposure*reach);
+                else {c.partyMobilization=c.partyMobilization||{};c.partyMobilization[key]=Math.min(0.10,(c.partyMobilization[key]||0)+0.008*exposure*reach);}
             });Electorate.invalidate();
         }
         gameData.ads.saturation[satKey]=Math.min(12,saturation+0.4*exposure);
@@ -81,7 +96,18 @@ var AdEngine = {
         (gameData.ads.campaigns||[]).forEach(function(ad){AdEngine.deliver(ad,week);});
     },
     refresh:function(){
-        Electorate.recompute();Object.keys(gameData.states).forEach(function(s){Counties.updateStateFromCounties(s);});
-        if(typeof Campaign!=='undefined'){Campaign.updateHUD();Campaign.colorMap();}
+        Electorate.recompute();
+        if (typeof Campaign !== 'undefined') {
+            Campaign.updateHUD();
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(function() { Campaign.colorMap(); });
+            } else {
+                Campaign.colorMap();
+            }
+        }
     }
 };
+
+if (typeof window !== 'undefined') {
+    window.AdEngine = AdEngine;
+}

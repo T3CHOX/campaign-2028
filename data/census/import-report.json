@@ -17,7 +17,7 @@
   "limits": [
     "ACS estimates are 2019\u20132023, not a 2028 population forecast.",
     "Detailed-origin CVAP, registration and issue opinions are modeled, not observed.",
-    "Legacy religion, union and political group estimates have unverified provenance.",
+    "Legacy religion and faction-alignment values have unverified provenance; union is a resident-population scenario share rather than a worker-membership rate.",
     "Connecticut medians omitted; count MOEs use square-sum approximation.",
     "Alaska borough electoral priors use the historical workbook where available; district-coded 2024 rows are not borough results."
   ]

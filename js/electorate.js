@@ -5,9 +5,12 @@ var Electorate = {
     version:2, ready:false, revision:0, compiled:null, cache:new Map(), reference:{},
     tuning:{policy:0.85,attention:0.045,persuasion:0.055,maxAttention:12,attentionDecay:0.76,messageDecay:0.65},
     profiles:{}, groupGeography:{},
+    // Current faction IDs are the canonical political vocabulary. These
+    // aliases preserve existing policy and UI IDs without changing values.
+    factionAliases:{progressives:'activist_left',progressive:'activist_left',maga:'america_first_conservative',libertarians:'unaligned_center',libertarian:'unaligned_center',centrists:'pragmatic_moderate',centrist:'pragmatic_moderate'},
     clamp:function(v,a,b){return Math.max(a,Math.min(b,v));},
     normalize:function(values){var sum=values.reduce(function(a,b){return a+Math.max(0,b);},0);return values.map(function(v){return sum?Math.max(0,v)/sum:1/values.length;});},
-    invalidate:function(){this.revision++;this.compiled=null;this.cache.clear();this.overlayCache=new Map();},
+    invalidate:function(){this.revision++;this.compiled=null;this.cache.clear();this.overlayCache=new Map();this._dirty=true;},
     rootGroup:function(id){return INTEREST_GROUPS[id]&&INTEREST_GROUPS[id].parentId||id;},
     groupKey:function(id){return INTEREST_GROUPS[id]?id:({progressive:'progressives',centrist:'centrists',libertarian:'libertarians',cuban:'hispanic_006',latino:'hispanic'}[id]||id);},
     share:function(county,id){
@@ -18,6 +21,11 @@ var Electorate = {
         if(configured&&Array.isArray(configured.sourceVariables)){
             return this.clamp(configured.sourceVariables.reduce(function(total,sourceId){return total+(Number(ig[sourceId])||0);},0)/100,0,1);
         }
+        var factionId=this.factionAliases[key];
+        if(factionId&&Number.isFinite(ig[factionId]))return this.clamp(ig[factionId]/100,0,1);
+        // Read pre-cleanup payloads without changing the canonical schema.
+        var legacyKey={activist_left:'progressive',america_first_conservative:'maga',unaligned_center:'libertarian',pragmatic_moderate:'centrist'}[factionId];
+        if(legacyKey&&Number.isFinite(ig[legacyKey]))return this.clamp(ig[legacyKey]/100,0,1);
         if({progressives:1,centrists:1,libertarians:1}[key])key={progressives:'progressive',centrists:'centrist',libertarians:'libertarian'}[key];
         if(Number.isFinite(ig[key]))return this.clamp(ig[key]/100,0,1);
         if(key==='urban')return this.clamp(1-(ig.rural||0)/100,0,1)*(county.t==='Highly Urban'?0.9:0.35);
@@ -33,6 +41,7 @@ var Electorate = {
     load:function(callback){
         var self=this;
         fetch('counties/demographics.v2.json').then(function(r){if(!r.ok)throw new Error('Demographic data could not be loaded.');return r.json();}).then(function(payload){
+            self.compositionSchema=payload.compositionSchema||null;
             self.installGroups(payload.groups,payload.counties);
             callback(payload.counties);
         }).catch(function(error){console.error(error); var map=document.getElementById('us-map-wrapper');if(map)map.textContent='County data could not be loaded. Reload to retry. '+error.message;});
@@ -48,9 +57,9 @@ var Electorate = {
         var curated = [
             {id:'hispanic_004',parentId:'hispanic',name:'Mexican',sourceVariables:['hispanic_004'],baseline:-3,support:{D:58,R:38,I:4,G:0,L:0,PSL:0},priorities:['economy','immigration','healthcare']},
             {id:'hispanic_005',parentId:'hispanic',name:'Puerto Rican',sourceVariables:['hispanic_005'],baseline:-5,support:{D:64,R:30,I:6,G:0,L:0,PSL:0},priorities:['healthcare','housing','infrastructure']},
-            {id:'hispanic_006',parentId:'hispanic',name:'Cuban',sourceVariables:['hispanic_006'],baseline:5,support:{D:42,R:52,I:6,G:0,L:0,PSL:0},priorities:['economy','venezuela','citizenship']},
+            {id:'hispanic_006',parentId:'hispanic',name:'Cuban',sourceVariables:['hispanic_006'],baseline:5,support:{D:42,R:52,I:6,G:0,L:0,PSL:0},priorities:['cuba','venezuela','economy'],messageFrames:{socialism:{penalty:0.32,minLeftPositions:2}}},
             {id:'hispanic_007',parentId:'hispanic',name:'Dominican',sourceVariables:['hispanic_007'],baseline:-6,support:{D:70,R:23,I:7,G:0,L:0,PSL:0},priorities:['housing','healthcare','economy']},
-            {id:'hispanic_025',parentId:'hispanic',name:'Venezuelan',sourceVariables:['hispanic_025'],baseline:1,support:{D:44,R:49,I:7,G:0,L:0,PSL:0},priorities:['venezuela','immigration','economy']},
+            {id:'hispanic_025',parentId:'hispanic',name:'Venezuelan',sourceVariables:['hispanic_025'],baseline:1,support:{D:44,R:49,I:7,G:0,L:0,PSL:0},priorities:['venezuela','immigration','economy'],messageFrames:{socialism:{penalty:0.22,minLeftPositions:2}}},
             {id:'hispanic_central',parentId:'hispanic',name:'Central American',sourceVariables:['hispanic_009','hispanic_010','hispanic_011','hispanic_012','hispanic_013','hispanic_014','hispanic_015'],baseline:-2,support:{D:56,R:36,I:8,G:0,L:0,PSL:0},priorities:['immigration','economy','housing']},
             {id:'hispanic_south',parentId:'hispanic',name:'South American',sourceVariables:['hispanic_017','hispanic_018','hispanic_019','hispanic_020','hispanic_021','hispanic_022','hispanic_023','hispanic_024','hispanic_026'],baseline:-3,support:{D:58,R:34,I:8,G:0,L:0,PSL:0},priorities:['economy','healthcare','immigration']},
             {id:'hispanic_spanish',parentId:'hispanic',name:'Spaniards & Spanish Americans',sourceVariables:['hispanic_028','hispanic_029','hispanic_030'],baseline:-2,support:{D:55,R:35,I:10,G:0,L:0,PSL:0},priorities:['economy','education','healthcare']},
@@ -76,14 +85,20 @@ var Electorate = {
         curated.forEach(function(def){
             var parent=INTEREST_GROUPS[def.parentId];
             if(!parent)return;
-            INTEREST_GROUPS[def.id]=Object.assign({},parent,{name:def.name,parentId:def.parentId,sourceTable:'ACS origin tables',sourceVariables:def.sourceVariables,priorities:def.priorities.slice(),support:Object.assign({},parent.support,def.support),baseline:def.baseline,category:'Racial/Ethnic'});
+            INTEREST_GROUPS[def.id]=Object.assign({},parent,{name:def.name,parentId:def.parentId,sourceTable:'ACS origin tables',sourceVariables:def.sourceVariables,priorities:def.priorities.slice(),support:Object.assign({},parent.support,def.support),baseline:def.baseline,messageFrames:def.messageFrames&&Object.assign({},def.messageFrames),category:'Racial/Ethnic'});
             BASE_TURNOUT_RATES[def.id]=BASE_TURNOUT_RATES[def.parentId]||0.6;
         });
         this.configureProfiles();
         var self=this;
         Object.keys(INTEREST_GROUPS).forEach(function(id){
-            if(INTEREST_GROUPS[id].internalOnly)return;
-            var group=INTEREST_GROUPS[id],totals={},concentrations=[];
+            var group=INTEREST_GROUPS[id];
+            if(group.internalOnly){
+                group.description=(self.profiles[id]&&self.profiles[id].description||'This is an internal scenario segment used by the electorate model.')+
+                    ' It is not an observed population category or a mutually exclusive voter count, and its county values are retained only as bounded simulation inputs.';
+                group.priorities=group.priorities.map(function(issueId){return IssueModel.canonical(issueId);}).filter(function(issueId){return IssueModel.getIssue(issueId);});
+                return;
+            }
+            var totals={},concentrations=[];
             Object.values(counties).forEach(function(c){var count=c.p*self.share(c,id);totals[c.s]=(totals[c.s]||0)+count;if(count>0)concentrations.push({name:c.n+', '+c.s,count:count});});
             concentrations.sort(function(a,b){return b.count-a.count;});
             var top=Object.keys(totals).sort(function(a,b){return totals[b]-totals[a];}).filter(function(s){return totals[s]>0;}).slice(0,4);
@@ -95,6 +110,7 @@ var Electorate = {
             group.description=(specific||'This group describes '+group.name.toLowerCase()+', an overlapping segment of the simulated electorate.')+
                 (top.length?' The largest modeled resident concentrations in this dataset are in '+top.join(', ')+'. ':' ')+
                 'Members vary in age, income, religion and political outlook. The issue distribution and importance settings are scenario assumptions with internal variation; Census population estimates do not measure these opinions.';
+            if(typeof PLAYER_GROUP_DESCRIPTIONS!=='undefined'&&PLAYER_GROUP_DESCRIPTIONS[id])group.description=PLAYER_GROUP_DESCRIPTIONS[id];
             group.priorities=group.priorities.map(function(i){return IssueModel.canonical(i);}).filter(function(i){return IssueModel.getIssue(i);});
         });
         // Compatibility tags now resolve the actual origin, not all Latinos.
@@ -158,7 +174,7 @@ var Electorate = {
             maga:{trade:[2,87],foreign:[1.6,76],immigration:[2.2,94],socialsecurity:[-0.8,77]},
             native:{water:[-1.5,88],civilrights:[-1.3,80]},
             women:{abortion:[-1,86],medicare:[-0.8,74]},lgbtq_community:{lgbtq:[-2.2,96],civilrights:[-1.7,87]},
-            hispanic_006:{venezuela:[1.1,78],taxation:[0.4,64],citizenship:[-0.3,69]},
+            hispanic_006:{cuba:[0.8,87],venezuela:[1.1,78],taxation:[0.4,64],citizenship:[-0.3,69]},
             hispanic_025:{venezuela:[0.8,87],citizenship:[-1.2,78]},
             hispanic_004:{immigration:[-0.7,76],healthcare:[-0.8,78]},
             hispanic_005:{infrastructure:[-1,82],healthcare:[-1.1,84]}
@@ -183,7 +199,11 @@ var Electorate = {
     },
     prepare:function(){
         if(this.compiled)return this.compiled;
-        var candidates=Utils.getActiveCandidates().map(function(c){return Object.assign({},c.cand,{party:c.party});}),self=this;
+        this.compiled=this.compileCandidates(Utils.getActiveCandidates().map(function(c){return Object.assign({},c.cand,{party:c.party});}));
+        return this.compiled;
+    },
+    compileCandidates:function(candidates){
+        var self=this;
         var groups={};
         Object.keys(INTEREST_GROUPS).forEach(function(id){
             var issues={},scores=candidates.map(function(){return 0;}),total=0;
@@ -191,7 +211,68 @@ var Electorate = {
                 total+=profile.baselineImportance;align.forEach(function(a,i){scores[i]+=a*profile.baselineImportance;});issues[issue.id]={align:align,importance:profile.baselineImportance};});
             groups[id]={issues:issues,scores:scores.map(function(v){return v/(total||1);})};
         });
-        this.compiled={candidates:candidates,groups:groups};return this.compiled;
+        return {candidates:candidates,groups:groups};
+    },
+    rakeCountyCellBase:function(county,candidates,iterations){
+        if(!county||!county.electorateCells||!county.electorateCells.length||!candidates||!candidates.length)return;
+        var target=this.normalize(candidates.map(function(candidate){return Math.max(0,(county.v&&county.v[candidate.party])||0);}));
+        for(var iter=0;iter<(iterations||1);iter++){
+            var sums=target.map(function(){return 0;});
+            county.electorateCells.forEach(function(cell){cell.base.forEach(function(value,index){sums[index]+=cell.weight*value;});});
+            county.electorateCells.forEach(function(cell){cell.base=Electorate.normalize(cell.base.map(function(value,index){return sums[index]?value*target[index]/sums[index]:value;}));});
+        }
+    },
+    referenceCellWeight:function(county,cell){
+        var parent=this.rootGroup(cell.group);
+        var registered=Number(county.regVoters);
+        if(!(registered>0))registered=Number(county.demographics&&county.demographics.cvap)||Number(county.p)||0;
+        return Math.max(0,registered)*Math.max(0,cell.weight||0)*(BASE_TURNOUT_RATES[parent]||0.6);
+    },
+    calibrateReferenceRaceCells:function(counties,candidates){
+        var reference=typeof REFERENCE_2024_RACE_VOTE_CHOICE!=='undefined'&&REFERENCE_2024_RACE_VOTE_CHOICE;
+        var anchors=reference&&reference.twoPartyDemocraticShare;
+        if(!anchors||!candidates||!candidates.some(function(candidate){return candidate.party==='D';})||!candidates.some(function(candidate){return candidate.party==='R';}))return;
+        var self=this,countyList=Object.values(counties||{}),anchorIds=Object.keys(anchors).filter(function(id){return anchors[id]>0&&anchors[id]<1;});
+        if(!countyList.length||!anchorIds.length)return;
+
+        // Alternate national group calibration with county-level raking. This
+        // preserves every imported county party total while making the 2024
+        // reference electorate reproduce the published national D/R split for
+        // the exclusive racial/ethnic cells. The source values are anchors,
+        // not claims that local communities vote identically.
+        for(var iteration=0;iteration<20;iteration++){
+            var observed={};anchorIds.forEach(function(id){observed[id]={D:0,R:0};});
+            countyList.forEach(function(county){(county.electorateCells||[]).forEach(function(cell){
+                var parent=self.rootGroup(cell.group);
+                if(!observed[parent])return;
+                var weight=self.referenceCellWeight(county,cell);
+                cell.base.forEach(function(value,index){var party=candidates[index].party;if(party==='D'||party==='R')observed[parent][party]+=weight*Math.max(0,value||0);});
+            });});
+
+            var largestError=0;
+            anchorIds.forEach(function(id){
+                var totals=observed[id],twoParty=totals.D+totals.R;
+                if(!(twoParty>0))return;
+                var current=this.clamp(totals.D/twoParty,0.0001,0.9999),target=this.clamp(anchors[id],0.0001,0.9999);
+                largestError=Math.max(largestError,Math.abs(target-current));
+                // County re-raking partly offsets a national correction. A
+                // damped 0.9 log-odds step reaches the stable solution much
+                // faster than a full jump without producing oscillation.
+                var adjustment=this.clamp(Math.log((target/(1-target))/(current/(1-current)))*0.9,-1.5,1.5);
+                countyList.forEach(function(county){(county.electorateCells||[]).forEach(function(cell){
+                    if(self.rootGroup(cell.group)!==id)return;
+                    cell.base=self.normalize(cell.base.map(function(value,index){
+                        var party=candidates[index].party;
+                        if(party==='D')return value*Math.exp(adjustment);
+                        if(party==='R')return value*Math.exp(-adjustment);
+                        return value;
+                    }));
+                });});
+            },this);
+            countyList.forEach(function(county){self.rakeCountyCellBase(county,candidates,8);});
+            if(largestError<0.00015)break;
+        }
+        this.referenceCalibration={year:reference.year,dimensions:anchorIds.slice(),source:reference.source};
     },
     initialize:function(){
         this.ready=false;this.invalidate();this.reference={};
@@ -200,17 +281,15 @@ var Electorate = {
         gameData.groupPolls={};gameData.groupAttention={};gameData.simulationVersion=2;gameData.pollSeed=Math.floor(Math.random()*0x7fffffff);
         var prepared=this.prepare();
         Object.keys(prepared.groups).forEach(function(id){self.reference[id]=prepared.groups[id].scores.slice();});
-        Object.values(Counties.countyData).forEach(function(c){
+        var countyList=Object.values(Counties.countyData);
+        countyList.forEach(function(c){
             c.issueAttention={};c.issueMessages={};c.simulationBaseV=Object.assign({},c.v);c.electorateCells=self.makeCells(c);
             c.electorateCells.forEach(function(cell){var g=INTEREST_GROUPS[cell.group]||{};cell.base=prepared.candidates.map(function(cand,i){return Math.max(0.005,(c.v[cand.party]||0)/100)*Math.pow(Math.max(0.01,((g.support||{})[cand.party]||1)/50),0.3)*Math.exp(0.35*prepared.groups[cell.group].scores[i]);});cell.base=self.normalize(cell.base);});
             // Raking creates different subgroup preferences while preserving the
             // imported county party shares exactly at the unmodified baseline.
-            var target=self.normalize(prepared.candidates.map(function(cand){return Math.max(0,c.v[cand.party]||0);}));
-            for(var iter=0;iter<35;iter++){
-                var sums=target.map(function(){return 0;});c.electorateCells.forEach(function(cell){cell.base.forEach(function(v,i){sums[i]+=cell.weight*v;});});
-                c.electorateCells.forEach(function(cell){cell.base=self.normalize(cell.base.map(function(v,i){return sums[i]?v*target[i]/sums[i]:v;}));});
-            }
+            self.rakeCountyCellBase(c,prepared.candidates,35);
         });
+        self.calibrateReferenceRaceCells(Counties.countyData,prepared.candidates);
         this.ready=true;this.invalidate();this.recompute();
     },
     makeCells:function(county){
@@ -226,10 +305,11 @@ var Electorate = {
         });
         var weights=this.normalize(cells.map(function(c){return c.weight;}));cells.forEach(function(c,i){c.weight=weights[i];});return cells;
     },
-    response:function(county,group,base){
-        var model=this.prepare(),g=model.groups[group],reference=this.reference[group]||g.scores,self=this;
-        var overlay=INTEREST_GROUPS[group].category==='Racial/Ethnic'?this.overlay(county):null;
-        var logs=base.map(function(v,i){var party=model.candidates[i].party;return Math.log(Math.max(1e-9,v))+self.tuning.policy*((g.scores[i]-reference[i])*(overlay?0.6:1)+(overlay?0.4*overlay.delta[i]:0))+Math.log(Math.max(0.02,(county.v[party]||0)+0.1)/Math.max(0.02,(county.simulationBaseV[party]||0)+0.1));});
+    response:function(county,group,base,context){
+        if(!context&&typeof PrimaryNative!=='undefined'&&PrimaryNative.active())return PrimaryNative.voterResponse(county,group,PrimaryNative.groupBase(county,group),0.43);
+        var primary=!!(context&&context.primary),model=context&&context.model||this.prepare(),g=model.groups[group],reference=primary?model.candidates.map(function(){return 0;}):this.reference[group]||g.scores,self=this;
+        var overlay=INTEREST_GROUPS[group].category==='Racial/Ethnic'?this.overlay(county,context):null;
+        var logs=base.map(function(v,i){var party=model.candidates[i].party;return Math.log(Math.max(1e-9,v))+self.tuning.policy*((g.scores[i]-reference[i])*(overlay?0.6:1)+(overlay?0.4*overlay.delta[i]:0))+(primary?0:Math.log(Math.max(0.02,(county.v[party]||0)+0.1)/Math.max(0.02,(county.simulationBaseV[party]||0)+0.1)));});
         var turnoutDelta=0,attention=county.issueAttention||{},message=county.issueMessages||{};
         Object.keys(attention).forEach(function(issueId){
             var info=self.blendIssue(g.issues[issueId],overlay&&overlay.issues[issueId]);if(!info)return;var intensity=attention[issueId],salience=info.importance/100;
@@ -248,19 +328,22 @@ var Electorate = {
                 if(m.stance){var profile=self.profile(group,m.issueId);targetAlign=profile.distribution.reduce(function(a,w,i){return a+w*IssueModel.agreement(m.issueId,m.stance,IssueModel.positions[i].id);},0);}
                 var current=IssueModel.getPosition(model.candidates[target].id,m.issueId),accuracy=m.stance?Math.max(0,IssueModel.agreement(m.issueId,m.stance,current.id)):1;
                 logs[target]+=self.tuning.persuasion*m.exposure*reach*(info.importance/100)*(targetAlign-0.2)*accuracy;
+                var framePenalty=self.messageFramePenalty(group,m);
+                if(framePenalty)logs[target]-=self.tuning.persuasion*m.exposure*reach*framePenalty;
                 if(sponsor>=0)logs[sponsor]-=0.012*m.exposure*reach*Math.max(0,targetAlign-info.align[sponsor]);
                 if(sponsor>=0&&accuracy<0.5)logs[sponsor]-=0.02*m.exposure*reach*(1-accuracy);
             }else if(sponsor>=0){logs[sponsor]+=self.tuning.persuasion*m.exposure*reach*(info.importance/100)*(info.align[sponsor]-0.12);}
         });
         var eraRates=logs.map(function(){return 0;});
         if (typeof CandidateEraEffects !== 'undefined' && CandidateEraEffects.apply) {
-            CandidateEraEffects.apply(logs,eraRates,model.candidates,group);
+            if(primary){model.candidates.forEach(function(c,i){var values=[logs[i]],rates=[0];CandidateEraEffects.apply(values,rates,[c],group);logs[i]=values[0];eraRates[i]=rates[0];});}
+            else CandidateEraEffects.apply(logs,eraRates,model.candidates,group);
         }
         var maxlog=Math.max.apply(null,logs),preferences=this.normalize(logs.map(function(v){return Math.exp(v-maxlog);}));
         var parent=this.rootGroup(group),baseline=BASE_TURNOUT_RATES[parent]||0.6,current=gameData.interestGroupTurnout[parent];
         var ratio=current===undefined?1:this.clamp(current/baseline,0,1.6);
         if(overlay)ratio=ratio*0.6+overlay.turnoutRatio*0.4;
-        var rate=county.turnoutBase===undefined?0.65:county.turnoutBase;
+        var rate=primary?context.turnoutBase:county.turnoutBase===undefined?0.65:county.turnoutBase;
         // County turnoutBase already anchors the number of ballots to local
         // history. Apply UF demographic differences within the county, centered
         // on that county's racial/ethnic mix so the baseline does not create or
@@ -271,6 +354,13 @@ var Electorate = {
             countyBaseline+=cell.weight*(BASE_TURNOUT_RATES[cellParent]||0.6);
         });
         var structuralRatio=countyBaseline>0?self.clamp(baseline/countyBaseline,0.55,1.45):1;
+        if(primary){
+            // Primaries change eligibility and the contest turnout baseline.
+            // Policy, overlapping demographics, messages, salience and era
+            // effects above are the same voter response used by the general.
+            var primaryRates=model.candidates.map(function(candidate,i){return self.clamp((rate*structuralRatio+self.clamp(turnoutDelta,-0.12,0.12)+(county.mobilization||0))*context.turnoutMultiplier(candidate,county,group,overlay)+eraRates[i],0,1);});
+            return {preferences:preferences,rates:primaryRates};
+        }
         var state=county.s;
         var fieldBonus=0;if(typeof GroundOps!=='undefined'){fieldBonus+=(GroundOps.getPassiveOfficeBonus(state)||0)+(GroundOps.getGOTVLift(state)||0);}
         rate=rate*structuralRatio*ratio+this.clamp(turnoutDelta,-0.12,0.12)+(county.mobilization||0);
@@ -279,16 +369,29 @@ var Electorate = {
         return {preferences:preferences,rates:rates};
     },
     blendIssue:function(a,b){if(!a)return null;if(!b)return a;return {importance:a.importance*0.6+b.importance*0.4,align:a.align.map(function(v,i){return v*0.6+b.align[i]*0.4;})};},
-    overlay:function(county){
-        var key=county.fips,cached=this.overlayCache.get(key);if(cached)return cached;
-        var self=this,model=this.prepare(),members=[],families={};
+    messageFramePenalty:function(groupId,message){
+        /* A frame is a transparent scenario mechanic, not a claim that every
+           member of an origin group shares a political view. It applies only
+           to a selected subgroup and only when the target's recorded platform
+           has multiple leftmost economic-system positions. */
+        if(!message||message.type!=='attack'||message.frame!=='socialism')return 0;
+        var group=INTEREST_GROUPS[groupId]||{},frame=group.messageFrames&&group.messageFrames.socialism;
+        if(!frame)return 0;
+        var target=IssueModel.candidate(message.targetId);
+        if(!target)return 0;
+        var issues=['taxation','industrial','healthcare','housing','labor'],leftmost=issues.reduce(function(total,issueId){var position=IssueModel.getPosition(target,issueId);return total+(position&&position.index<=1?1:0);},0);
+        return leftmost>=(frame.minLeftPositions||2)?Number(frame.penalty)||0:0;
+    },
+    overlay:function(county,context){
+        var key=context&&context.primary?'primary:'+context.party+':'+(county.fips||county.s):county.fips,cached=this.overlayCache.get(key);if(cached)return cached;
+        var self=this,model=context&&context.model||this.prepare(),members=[],families={};
         // Marginal memberships are a normalized influence mixture, never extra
         // people. Age, education, religion, work and geography each get one
         // family weight; nested gen-z and suburban-women tags are excluded.
             Object.keys(INTEREST_GROUPS).forEach(function(id){var g=INTEREST_GROUPS[id];if(g.internalOnly||g.category==='Racial/Ethnic'||id==='genz'||id==='suburban_women')return;var share=self.share(county,id);if(share>0){members.push({id:id,share:share,family:g.category});families[g.category]=(families[g.category]||0)+share;}});
         var familyCount=Object.keys(families).length||1,delta=model.candidates.map(function(){return 0;}),issues={},turnoutRatio=0;
         var activeIssues=Array.from(new Set(Object.keys(county.issueAttention||{}).concat(Object.values(county.issueMessages||{}).map(function(m){return m.issueId;}))));
-        members.forEach(function(m){var weight=m.share/families[m.family]/familyCount,g=model.groups[m.id],ref=self.reference[m.id]||g.scores;g.scores.forEach(function(v,i){delta[i]+=weight*(v-ref[i]);});var baseline=BASE_TURNOUT_RATES[m.id]||0.6,current=gameData.interestGroupTurnout[m.id];turnoutRatio+=weight*(current===undefined?1:self.clamp(current/baseline,0,1.6));activeIssues.forEach(function(id){var info=g.issues[id];if(!info)return;var out=issues[id]||(issues[id]={importance:0,align:model.candidates.map(function(){return 0;})});out.importance+=weight*info.importance;info.align.forEach(function(v,i){out.align[i]+=weight*v;});});});
+        members.forEach(function(m){var weight=m.share/families[m.family]/familyCount,g=model.groups[m.id],ref=context&&context.primary?model.candidates.map(function(){return 0;}):self.reference[m.id]||g.scores;g.scores.forEach(function(v,i){delta[i]+=weight*(v-ref[i]);});var baseline=BASE_TURNOUT_RATES[m.id]||0.6,current=gameData.interestGroupTurnout[m.id];turnoutRatio+=weight*(current===undefined?1:self.clamp(current/baseline,0,1.6));activeIssues.forEach(function(id){var info=g.issues[id];if(!info)return;var out=issues[id]||(issues[id]={importance:0,align:model.candidates.map(function(){return 0;})});out.importance+=weight*info.importance;info.align.forEach(function(v,i){out.align[i]+=weight*v;});});});
         var result={delta:delta,issues:issues,turnoutRatio:members.length?turnoutRatio:1};this.overlayCache.set(key,result);return result;
     },
     segmentExposure:function(county,group,segment){
@@ -306,7 +409,7 @@ var Electorate = {
         var cvap=county.demographics&&Number.isFinite(county.demographics.cvap)?Math.max(0,county.demographics.cvap):Math.max(0,county.p||0);
         // County registration is an election-administration input and may exceed
         // the ACS modeled CVAP, so it must not be capped to the ACS estimate.
-        var registered=Math.max(0,Number.isFinite(county.regVoters)?county.regVoters:cvap);
+        var registered=(county.demographics&&county.demographics.cvap===0)?0:Math.max(0,Number.isFinite(county.regVoters)?county.regVoters:cvap);
         county.electorateCells.forEach(function(cell){
             var r=self.response(county,cell.group,cell.base),values=r.preferences.map(function(p,i){
                 var eligible=true,cand=model.candidates[i];
@@ -323,15 +426,19 @@ var Electorate = {
     },
     recompute:function(){
         if(!this.ready)return;
+        if(!this._dirty && this.groupDenominators && Object.keys(this.groupDenominators).length > 0) return;
         var model=this.prepare(),totals={},denoms={},attentionTotals={},undecidedTotals={},self=this;
+        var candidateIdToIndex={};
+        model.candidates.forEach(function(c,i){candidateIdToIndex[c.id]=i;});
+        var nonRacialGroups=Object.keys(INTEREST_GROUPS).filter(function(id){return INTEREST_GROUPS[id].category!=='Racial/Ethnic';});
         Object.keys(INTEREST_GROUPS).forEach(function(id){totals[id]=model.candidates.map(function(){return 0;});denoms[id]=0;attentionTotals[id]={};undecidedTotals[id]=0;});
-        function metadata(id,c,weight){undecidedTotals[id]+=weight*self.clamp((c.undecided||0)/100,0,0.4);Object.keys(c.issueAttention||{}).forEach(function(issue){attentionTotals[id][issue]=(attentionTotals[id][issue]||0)+weight*c.issueAttention[issue]*3;});}
+        function metadata(id,c,weight){var undecided=typeof PrimaryNative!=='undefined'&&PrimaryNative.active()?PrimaryNative.undecided(c):self.clamp((c.undecided||0)/100,0,0.4);undecidedTotals[id]+=weight*undecided;Object.keys(c.issueAttention||{}).forEach(function(issue){attentionTotals[id][issue]=(attentionTotals[id][issue]||0)+weight*c.issueAttention[issue]*3;});}
         Object.values(Counties.countyData).forEach(function(c){
             var result=self.countyResult(c);
-            result.cells.forEach(function(cell){[cell.group].concat(INTEREST_GROUPS[cell.group].parentId?[INTEREST_GROUPS[cell.group].parentId]:[]).forEach(function(id){cell.votes.forEach(function(v,i){totals[id][i]+=v;});denoms[id]+=cell.total;metadata(id,c,cell.total);});});
+            result.cells.forEach(function(cell){[cell.group].concat(INTEREST_GROUPS[cell.group].parentId?[INTEREST_GROUPS[cell.group].parentId]:[]).forEach(function(id){var counted=0;cell.votes.forEach(function(v,i){var index=cell.candidateIds?candidateIdToIndex[cell.candidateIds[i]]:i;if(index>=0&&index<totals[id].length){totals[id][index]+=v;counted+=v;}});denoms[id]+=counted;metadata(id,c,counted);});});
             // Reporting estimates for overlapping groups do not create an
             // additional electorate. Their marginal membership is modeled.
-            Object.keys(INTEREST_GROUPS).forEach(function(id){if(INTEREST_GROUPS[id].category==='Racial/Ethnic')return;var share=self.share(c,id);if(!share)return;
+            nonRacialGroups.forEach(function(id){var share=self.share(c,id);if(!share)return;
                 var base=self.normalize(model.candidates.map(function(cand){return Math.max(0.00001,(c.simulationBaseV[cand.party]||0)/100)*Math.pow(Math.max(0.01,((INTEREST_GROUPS[id].support||{})[cand.party]||1)/50),0.3);}));
                 var response=self.response(c,id,base),weight=result.total*share;
                 response.preferences.forEach(function(v,i){totals[id][i]+=weight*v;});denoms[id]+=weight;metadata(id,c,weight);
@@ -341,6 +448,7 @@ var Electorate = {
         Object.keys(totals).forEach(function(id){gameData.interestGroupSupport[id]={};model.candidates.forEach(function(c,i){gameData.interestGroupSupport[id][c.id]=denoms[id]?100*totals[id][i]/denoms[id]:0;});gameData.interestGroupBaseSupport[id]=Object.assign({},gameData.interestGroupSupport[id]);});
         this.groupDenominators=denoms;
         this.groupUndecided={};gameData.groupAttention={};Object.keys(denoms).forEach(function(id){self.groupUndecided[id]=denoms[id]?undecidedTotals[id]/denoms[id]:0;gameData.groupAttention[id]={};Object.keys(attentionTotals[id]).forEach(function(issue){gameData.groupAttention[id][issue]=denoms[id]?attentionTotals[id][issue]/denoms[id]:0;});});
+        this._dirty=false;
     },
     expose:function(config){
         var self=this,affected=[],issue=IssueModel.getIssue(config.issueId);if(!issue)return [];
@@ -358,9 +466,9 @@ var Electorate = {
             var sum=Object.values(county.issueAttention).reduce(function(a,b){return a+b;},0);
             if(sum>40)Object.keys(county.issueAttention).forEach(function(id){county.issueAttention[id]*=40/sum;});
             county.issueMessages=county.issueMessages||{};
-            var key=[sponsor.id,config.targetId||'',issue.id,config.type||'issue',config.segment||''].join(':');
+            var key=[sponsor.id,config.targetId||'',issue.id,config.type||'issue',config.segment||'',config.frame||''].join(':');
             var prev=county.issueMessages[key];
-            county.issueMessages[key]={sponsorId:sponsor.id,targetId:config.targetId,issueId:issue.id,type:config.type||'issue',segment:config.segment,stance:config.stance,exposure:Math.min(10,(prev?prev.exposure:0)+amount/(1+(prev?prev.exposure:0)*0.3))};
+            county.issueMessages[key]={sponsorId:sponsor.id,targetId:config.targetId,issueId:issue.id,type:config.type||'issue',segment:config.segment,stance:config.stance,frame:config.frame,exposure:Math.min(10,(prev?prev.exposure:0)+amount/(1+(prev?prev.exposure:0)*0.3))};
             affected.push(county.s);
         });
         this.invalidate();return Array.from(new Set(affected));

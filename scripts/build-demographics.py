@@ -136,8 +136,10 @@ def build(supplied):
             county['ig'][key] = ratio(val('B03002', fips, index, 0), pop) or 0
         row = legacy.get(fips)
         if row:
-            for key, index in {'progressive': 16, 'maga': 17, 'libertarian': 18, 'centrist': 19, 'evangelical': 20, 'protestant': 21, 'catholic': 22, 'christian': 23, 'jewish': 24, 'muslim': 25, 'other_religion': 26, 'secular': 27, 'union': 28}.items():
+            for key, index in {'activist_left': 16, 'america_first_conservative': 17, 'unaligned_center': 18, 'pragmatic_moderate': 19, 'evangelical': 20, 'protestant': 21, 'catholic': 22, 'christian': 23, 'jewish': 24, 'muslim': 25, 'other_religion': 26, 'secular': 27, 'union': 28}.items():
                 county['ig'][key] = round((row[index] or 0)*100, 5)
+        for key in ('activist_left', 'america_first_conservative', 'unaligned_center', 'pragmatic_moderate'):
+            county['ig'].setdefault(key, 0)
         adults = total('B01001', fips, list(range(7,26))+list(range(31,50)))
         # Exclude female subtotal (26) and include male 18+ cells 7..25.
         county['ig']['youth'] = ratio(total('B01001', fips, [7,8,9,10,31,32,33,34]), adults) or 0
@@ -154,7 +156,7 @@ def build(supplied):
         demo = {'vintage': '2019–2023 ACS 5-year', 'population': pop, 'cvap': cvap, 'cvapHispanic': cvap_h,
                 'cvapWhiteNonHispanic': cvap_w, 'origins': {}, 'originMoE': {},
                 'method': 'Resident origin counts are observed. Subgroup citizen voting-age shares are modeled proportionally within measured parent totals. Registration is a separate calibrated game pool.',
-                'legacyMemberships': 'Religion, political affiliation and union memberships are legacy scenario estimates with unverified source provenance; not Census measurements.',
+                'legacyMemberships': 'Religion and faction-alignment values are legacy scenario composition with unverified source provenance; union is a resident-population share from the workbook definition, not a Census or BLS membership rate.',
                 'geography': '2023 counties; Connecticut counts reconstructed from constituent towns' if fips.startswith('09') else '2023 Census county-equivalent'}
         # Hispanic leaves exclude aggregate subtotal rows 8, 16, 27.
         hleaves = [4,5,6,7]+list(range(9,16))+list(range(17,27))+list(range(28,32))
@@ -212,14 +214,53 @@ def build(supplied):
             label=meta['variables'].get(f'{table}_{i:03d}E')
             if label:
                 groups.append({'id':f'{parent}_{i:03d}','parentId':parent,'name':label.split('!!')[-1].rstrip(':'),'sourceTable':table,'sourceVariable':f'{table}_{i:03d}E'})
-    payload={'schemaVersion':2,'sourceVintage':'2019–2023 ACS five-year','groups':groups,'counties':data}
+    payload={
+        'schemaVersion': 2,
+        'sourceVintage': '2019–2023 ACS five-year',
+        'compositionSchema': {
+            'version': 1,
+            'unit': 'percent',
+            'fields': {
+                'rural': {
+                    'universe': 'resident population',
+                    'source': 'Legacy county rural-share input; retained as supplied.'
+                },
+                'race': {
+                    'universe': 'resident population',
+                    'source': 'ACS 2019–2023 five-year estimates, B03002.'
+                },
+                'religion': {
+                    'universe': 'resident population',
+                    'source': 'Legacy workbook scenario composition; provenance is not verified by the Census Bureau.'
+                },
+                'union': {
+                    'universe': 'resident population',
+                    'interpretation': 'Resident-share field, per the supplied workbook definition; not the BLS employed-worker union-membership rate.',
+                    'source': 'Legacy workbook scenario composition; provenance is not verified.'
+                },
+                'factionAlignment': {
+                    'universe': 'resident population',
+                    'measure': 'Legacy orientation-affinity values stored once under current faction IDs; not mutually exclusive population shares.',
+                    'source': 'Legacy workbook scenario composition; provenance is not verified.'
+                }
+            },
+            'legacyAliases': {
+                'progressive': 'activist_left',
+                'maga': 'america_first_conservative',
+                'libertarian': 'unaligned_center',
+                'centrist': 'pragmatic_moderate'
+            }
+        },
+        'groups': groups,
+        'counties': data
+    }
     encoded=json.dumps(payload,separators=(',',':'),ensure_ascii=False).encode('utf-8')
     (OUT/'demographics.v2.json').write_bytes(encoded)
     (OUT/'demographics.v2.json.gz').write_bytes(gzip.compress(encoded,mtime=0))
     report={'counties':len(data),'subgroups':len(groups),'suppliedRowsVerified':verified,'suppliedValuesVerified':verified_values,'suppliedSHA256':hashlib.sha256(pathlib.Path(supplied).read_bytes()).hexdigest(),
             'connecticutCounties':len([k for k in data if k.startswith('09')]),'connecticutPopulation':sum(c['p'] for k,c in data.items() if k.startswith('09')),
             'totalPopulation':sum(c['p'] for c in data.values()),'missing':missing,
-            'limits':['ACS estimates are 2019–2023, not a 2028 population forecast.','Detailed-origin CVAP, registration and issue opinions are modeled, not observed.','Legacy religion, union and political group estimates have unverified provenance.','Connecticut medians omitted; count MOEs use square-sum approximation.','Alaska borough electoral priors use the historical workbook where available; district-coded 2024 rows are not borough results.']}
+            'limits':['ACS estimates are 2019–2023, not a 2028 population forecast.','Detailed-origin CVAP, registration and issue opinions are modeled, not observed.','Legacy religion and faction-alignment values have unverified provenance; union is a resident-population scenario share rather than a worker-membership rate.','Connecticut medians omitted; count MOEs use square-sum approximation.','Alaska borough electoral priors use the historical workbook where available; district-coded 2024 rows are not borough results.']}
     (ROOT/'data/census/import-report.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
     print(json.dumps(report,indent=2))
 

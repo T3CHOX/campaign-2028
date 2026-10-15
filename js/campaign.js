@@ -4,8 +4,6 @@
 
 // Game balance constants
 var GAME_CONSTANTS = {
-    PAC_OFFER_CHANCE: 0.2,
-    PAC_OFFER_DELAY: 1000,
     FAVORABILITY_PENALTY_MULTIPLIER: 0.012
 };
 
@@ -34,7 +32,7 @@ var Campaign = {
             '<button class="act-btn" onclick="app.handleAction(\'speech\')"><span><i class="fa-solid fa-microphone"></i></span><span>SPEECH</span></button>' +
             '<button class="act-btn" onclick="app.handleAction(\'debate_prep\')"><span><i class="fa-solid fa-book"></i></span><span>DEBATE PREP</span></button>' +
             '<button class="act-btn" onclick="app.handleAction(\'oppo_research\')"><span><i class="fa-solid fa-magnifying-glass"></i></span><span>OPPO RESEARCH</span></button>' +
-            '<button class="act-btn" onclick="Campaign.handleGrassrootsFundraise()"><span><i class="fa-solid fa-hand-holding-dollar"></i></span><span>GRASSROOTS</span></button>';
+            '<button class="act-btn" onclick="app.commissionInternalPoll()"><span><i class="fa-solid fa-square-poll-vertical"></i></span><span>POLL INTEL</span></button>';
     },
 
     restoreStateActionGrid: function() {
@@ -81,6 +79,7 @@ var Campaign = {
             // Update map colors after county data initializes state margins
             Campaign.resetPopulationCaches();
             Campaign.colorMap();
+            Campaign.updateHUD();
         });
         
         var xhr = new XMLHttpRequest();
@@ -148,13 +147,14 @@ var Campaign = {
         var subLine = '';
 
         if (mode === 'margin') {
-            // Use frozen margin for consistent mid-turn tooltip display
-            var displayMarginVal = (gameData.frozenStateMargins && gameData.frozenStateMargins[code])
-                ? gameData.frozenStateMargins[code].margin
-                : state.margin;
+            var frozenEntry = gameData.frozenStateMargins && gameData.frozenStateMargins[code];
+            var displayMarginVal = frozenEntry ? frozenEntry.margin : state.margin;
+            var displayParty = frozenEntry && frozenEntry.marginParty
+                ? frozenEntry.marginParty : (state.marginParty || (displayMarginVal >= 0 ? 'D' : 'R'));
             var marginText = Math.abs(displayMarginVal).toFixed(1);
-            var leaning = (displayMarginVal > 0 ? 'D+' : 'R+') + marginText;
-            detailLine = '<span class="tooltip-leader" style="color: ' + (displayMarginVal > 0 ? '#00AEF3' : '#E81B23') + '">' + leaning + '</span>';
+            var leaning = (displayParty === 'D' ? 'D+' : (displayParty === 'R' ? 'R+' : displayParty + '+')) + marginText;
+            var partyColor = displayParty === 'D' ? '#00AEF3' : (displayParty === 'R' ? '#E81B23' : '#888');
+            detailLine = '<span class="tooltip-leader" style="color: ' + partyColor + '">' + leaning + '</span>';
             subLine = '<span class="tooltip-stats">' + state.ev + ' Electoral Votes</span>';
         } else if (mode === 'ev') {
             detailLine = '<span class="tooltip-leader">' + state.ev + ' Electoral Votes</span>';
@@ -170,9 +170,26 @@ var Campaign = {
             detailLine = '<span class="tooltip-leader">' + label + ': ' + rateLabel + '</span>';
             subLine = '<span class="tooltip-stats">Expected turnout of registered voters</span>';
         } else if (mode === 'favorability') {
-            var fav = Math.round(this.getFavorability() * 100);
-            detailLine = '<span class="tooltip-leader">Favorability: ' + fav + '%</span>';
-            subLine = '<span class="tooltip-stats">National standing</span>';
+            var candId = this.activeFavorabilityCandidateId || (gameData.candidate && gameData.candidate.id);
+            var opinion = Favorability.area(candId, code);
+            var candName = this.getCandidateName(candId);
+            detailLine = '<span class="tooltip-leader">' + candName + ' Net: ' + (opinion.net >= 0 ? '+' : '') + opinion.net.toFixed(1) + ' pts</span>';
+            subLine = '<span class="tooltip-stats">Favorable ' + opinion.favorable.toFixed(1) + '% · Unfavorable ' + opinion.unfavorable.toFixed(1) + '% · No opinion ' + opinion.noOpinion.toFixed(1) + '%</span>';
+        } else if (mode === 'support') {
+            var candId = this.activeSupportCandidateId || (gameData.candidate && gameData.candidate.id);
+            var candName = this.getCandidateName(candId);
+            var candColor = this.getCandidateColor(candId);
+            var supportPct = this.getCandidateSupportPct(candId, code, false);
+            detailLine = '<span class="tooltip-leader" style="color: ' + candColor + '">' + candName + ' Support: ' + supportPct.toFixed(1) + '%</span>';
+            subLine = '<span class="tooltip-stats">' + state.ev + ' Electoral Votes · Candidate Support</span>';
+        } else if (mode === 'grassroots') {
+            var activeParty = (typeof MichiganModel !== 'undefined') ? MichiganModel.activeGrassrootsViewCandidate : 'player';
+            if (activeParty === 'player') activeParty = (typeof gameData !== 'undefined' ? gameData.selectedParty : 'D');
+            var candName = (typeof Utils !== 'undefined' && Utils.getCandidateLastName) ? Utils.getCandidateLastName(activeParty) : activeParty;
+            var sRaised = (typeof MichiganModel !== 'undefined') ? MichiganModel.getStateGrassrootsTotal(code, activeParty) : 0;
+            var sFormatted = sRaised >= 1 ? '$' + sRaised.toFixed(2) + 'M' : '$' + Math.round(sRaised * 1000).toLocaleString() + 'K';
+            detailLine = '<span class="tooltip-leader" style="color: #4ade80">' + sFormatted + ' Total Grassroots</span>';
+            subLine = '<span class="tooltip-stats">' + candName + ' (' + activeParty + ') · State Collective</span>';
         }
 
         tooltip.innerHTML =
@@ -368,6 +385,11 @@ var Campaign = {
         if (typeof app !== 'undefined' && app.updateQueuedAdsDisplay) {
             app.updateQueuedAdsDisplay();
         }
+
+        // Update ground ops & intelligence panel
+        if (typeof app !== 'undefined' && app.updateGroundOpsPanel) {
+            app.updateGroundOpsPanel();
+        }
     },
 
     clickDistrict: function(stateCode, districtId) {
@@ -418,17 +440,19 @@ var Campaign = {
                     }
                 }
                 if (dres) {
-                    var totalVotes = 0;
-                    for (var p in dres.votes) totalVotes += dres.votes[p];
-                    var distPoll = {};
-                    if (totalVotes > 0) {
-                        for (var p in dres.votes) {
-                            distPoll[p] = (dres.votes[p] / totalVotes) * 100;
-                        }
+                    var distPoll = (typeof Utils !== 'undefined' && Utils.getDistrictPollingByParty)
+                        ? Utils.getDistrictPollingByParty(stateCode, districtId)
+                        : null;
+                    if (!distPoll) {
+                        var totalVotes = 0;
+                        for (var p in dres.votes) totalVotes += dres.votes[p];
+                        distPoll = {};
+                        if (totalVotes > 0) for (var p in dres.votes) distPoll[p] = (dres.votes[p] / totalVotes) * 100;
+                        distPoll.Undecided = 0;
                     }
                     var pollVis = document.getElementById('poll-vis');
                     if (pollVis && typeof Utils !== 'undefined' && Utils.buildCandidateRankedListHTML) {
-                        pollVis.innerHTML = Utils.buildCandidateRankedListHTML(distPoll, null, stateCode);
+                        pollVis.innerHTML = Utils.buildCandidateRankedListHTML(distPoll, null, districtId);
                     }
                 }
             }
@@ -441,20 +465,22 @@ var Campaign = {
     },
 
     colorMap: function() {
+        if (this.mapMode === 'mediaMarkets' && this.nationalCountySvg) this.colorNationalCountyMap();
         for (var code in gameData.states) {
             var s = gameData.states[code];
             var path = document.getElementById(code);
             if (path) {
-                // Use frozen margins for the state map so mid-turn actions don't change colors
-                var displayMargin = s.margin;
-                var displayParty = s.marginParty || (displayMargin >= 0 ? 'D' : 'R');
-                if (gameData.frozenStateMargins && gameData.frozenStateMargins[code] && this.mapMode === 'margin') {
-                    displayMargin = gameData.frozenStateMargins[code].margin;
-                    displayParty = gameData.frozenStateMargins[code].marginParty;
+                var displayState=s;
+                if(this.mapMode==='margin'&&gameData.frozenStateMargins&&gameData.frozenStateMargins[code]){
+                    var frozen=gameData.frozenStateMargins[code];
+                    displayState=Object.assign({},s,{margin:frozen.margin,marginParty:frozen.marginParty});
                 }
-                var displayState = Object.assign({}, s, { margin: displayMargin, marginParty: displayParty });
                 path.style.fill = this.getStateMapColor(code, displayState);
             }
+        }
+        if (gameData.inCountyView && typeof Counties !== 'undefined' && Counties.colorCountyMap) {
+            Counties.colorCountyMap();
+            Counties.updateCountyViewStats();
         }
         this.updateScore();
     },
@@ -464,6 +490,52 @@ var Campaign = {
         var select = document.getElementById('campaign-mode-select');
         if (select && select.value !== this.mapMode) {
             select.value = this.mapMode;
+        }
+
+        var isPrimary = typeof PrimaryNative !== 'undefined' && PrimaryNative.active && PrimaryNative.active();
+        var primaryPartyToggle = document.getElementById('primary-party-toggle');
+        if (primaryPartyToggle) {
+            if (isPrimary && this.mapMode === 'margin') {
+                primaryPartyToggle.classList.remove('hidden');
+                var pSelect = document.getElementById('primary-party-select');
+                if (pSelect && typeof PrimaryCampaign !== 'undefined' && PrimaryCampaign.state && PrimaryCampaign.state()) {
+                    var curFocus = (typeof PrimaryNative !== 'undefined' && PrimaryNative.getFocusedParty) ? PrimaryNative.getFocusedParty() : 'D';
+                    var pKeys = Object.keys(PrimaryCampaign.state().parties || {});
+                    var htmlOpts = pKeys.map(function(party) {
+                        var pName = (typeof PARTIES !== 'undefined' && PARTIES[party]) ? PARTIES[party].name : party;
+                        return '<option value="' + party + '"' + (party === curFocus ? ' selected' : '') + '>' + pName + ' Primary</option>';
+                    }).join('');
+                    if (pSelect.innerHTML !== htmlOpts) pSelect.innerHTML = htmlOpts;
+                }
+            } else {
+                primaryPartyToggle.classList.add('hidden');
+            }
+        }
+
+        var favToggle = document.getElementById('favorability-candidate-toggle');
+        if (favToggle) {
+            if (this.mapMode === 'favorability') {
+                favToggle.classList.remove('hidden');
+                if (typeof app !== 'undefined' && app.populateCandidateSelectors) app.populateCandidateSelectors();
+            } else {
+                favToggle.classList.add('hidden');
+            }
+        }
+
+        var supToggle = document.getElementById('support-candidate-toggle');
+        if (supToggle) {
+            if (this.mapMode === 'support') {
+                supToggle.classList.remove('hidden');
+                if (typeof app !== 'undefined' && app.populateCandidateSelectors) app.populateCandidateSelectors();
+            } else {
+                supToggle.classList.add('hidden');
+            }
+        }
+
+        var grToggle = document.getElementById('grassroots-candidate-toggle');
+        if (grToggle) {
+            if (this.mapMode === 'grassroots') grToggle.classList.remove('hidden');
+            else grToggle.classList.add('hidden');
         }
         
         var wrapper = document.getElementById('us-map-wrapper');
@@ -515,6 +587,7 @@ var Campaign = {
 
         if (typeof Counties !== 'undefined' && gameData.inCountyView && Counties.colorCountyMap) {
             Counties.colorCountyMap();
+            Counties.updateCountyViewStats();
         }
     },
 
@@ -623,6 +696,29 @@ var Campaign = {
         }
         
         var html = '<div class="tooltip-title">' + countyName + ', ' + stateName + '</div>';
+        if (this.mapMode === 'favorability') {
+            var candId = this.activeFavorabilityCandidateId || (gameData.candidate && gameData.candidate.id);
+            var opinion = Favorability.get(candId, county);
+            var candName = this.getCandidateName(candId);
+            html += '<div class="tooltip-detail"><strong>' + candName + ' Net:</strong> ' + (opinion.net >= 0 ? '+' : '') + opinion.net.toFixed(1) + ' pts</div>';
+            html += '<div class="tooltip-detail">Favorable ' + opinion.favorable.toFixed(1) + '% · Unfavorable ' + opinion.unfavorable.toFixed(1) + '% · No opinion ' + opinion.noOpinion.toFixed(1) + '%</div>';
+            tooltip.innerHTML = html;
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.pageX + 15) + 'px';
+            tooltip.style.top = (e.pageY + 15) + 'px';
+            return;
+        } else if (this.mapMode === 'support') {
+            var candId = this.activeSupportCandidateId || (gameData.candidate && gameData.candidate.id);
+            var candName = this.getCandidateName(candId);
+            var candColor = this.getCandidateColor(candId);
+            var supportPct = this.getCandidateSupportPct(candId, county.fips, true);
+            html += '<div class="tooltip-detail"><strong>' + candName + ' Support:</strong> <span style="color:' + candColor + '; font-weight:700;">' + supportPct.toFixed(1) + '%</span></div>';
+            tooltip.innerHTML = html;
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.pageX + 15) + 'px';
+            tooltip.style.top = (e.pageY + 15) + 'px';
+            return;
+        }
         html += '<div class="tooltip-detail"><strong>Media Market:</strong> ' + marketText + '</div>';
         html += '<div class="tooltip-detail"><strong>Reach:</strong> ' + reachText + '</div>';
         html += '<div class="tooltip-detail"><strong>CPM:</strong> ' + costText + '</div>';
@@ -672,7 +768,33 @@ var Campaign = {
         if (mode === 'turnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'all'));
         if (mode === 'playerTurnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'player'));
         if (mode === 'opponentTurnout') return this.getGoldScaleColor(this.getStateTurnoutIndex(code, 'opponent'));
-        if (mode === 'favorability') return this.getFavorabilityColor(this.getFavorability());
+        if (mode === 'favorability') {
+            var candId = this.activeFavorabilityCandidateId || (gameData.candidate && gameData.candidate.id);
+            var opinion = Favorability.area(candId, code);
+            return this.getFavorabilityColor(opinion.net);
+        }
+        if (mode === 'support') {
+            var candId = this.activeSupportCandidateId || (gameData.candidate && gameData.candidate.id);
+            var candColor = this.getCandidateColor(candId);
+            var supportPct = this.getCandidateSupportPct(candId, code, false);
+            return this.getSupportColor(supportPct, candColor);
+        }
+        if (mode === 'grassroots') {
+            if (typeof MichiganModel !== 'undefined') {
+                var party = MichiganModel.activeGrassrootsViewCandidate;
+                if (party === 'player') party = (typeof gameData !== 'undefined' ? gameData.selectedParty : 'D');
+                var sRaised = MichiganModel.getStateGrassrootsTotal(code, party);
+                var intensity = Math.min(1.0, Math.pow(sRaised / 2.5, 0.45));
+                if (party === 'D') {
+                    return 'rgb(' + Math.round(15 + 20 * intensity) + ',' + Math.round(30 + 130 * intensity) + ',' + Math.round(60 + 195 * intensity) + ')';
+                } else if (party === 'R') {
+                    return 'rgb(' + Math.round(50 + 205 * intensity) + ',' + Math.round(20 + 20 * intensity) + ',' + Math.round(25 + 25 * intensity) + ')';
+                } else {
+                    return 'rgb(' + Math.round(20 + 20 * intensity) + ',' + Math.round(50 + 180 * intensity) + ',' + Math.round(30 + 80 * intensity) + ')';
+                }
+            }
+            return '#2b2926';
+        }
         return Utils.getMarginColor(state.margin, state.marginParty);
     },
 
@@ -686,13 +808,94 @@ var Campaign = {
         return this.blendHexColors(colors[low], colors[high], t);
     },
 
-    getFavorabilityColor: function(value) {
-        var v = this.applyMapPolarity(value || 0.5);
-        if (v < 0.35) return '#7a0509';
-        if (v < 0.45) return '#d71920';
-        if (v < 0.55) return '#f4c15d';
-        if (v < 0.65) return '#7fbf6e';
-        return '#198754';
+    getFavorabilityColor: function(net) {
+        if (net < -18) return '#8e1725';
+        if (net < -8) return '#d04b54';
+        if (net < -2) return '#ef9b95';
+        if (net <= 2) return '#e9d7aa';
+        if (net <= 8) return '#a4d5a2';
+        if (net <= 18) return '#51ae72';
+        return '#167c50';
+    },
+
+    getSupportColor: function(supportPct, candColor) {
+        candColor = candColor || '#3b82f6';
+        var pct = Math.max(0, Number(supportPct) || 0);
+        // Polarity coloring: near white (#ffffff) at low support, scaling to rich candidate color at 45%+
+        var t = Math.min(1.0, Math.max(0.06, pct / 45));
+        return this.blendHexColors('#ffffff', candColor, t);
+    },
+
+    getCandidateSupportPct: function(candId, areaCode, isCounty) {
+        if (!candId) candId = gameData.candidate && gameData.candidate.id;
+        var cand = null, party = null;
+        if (typeof PrimaryNative !== 'undefined' && PrimaryNative.active && PrimaryNative.active()) {
+            var a = (typeof PrimaryCampaign !== 'undefined') ? PrimaryCampaign.actor(candId) : null;
+            if (a) { cand = a.candidate; party = a.party; }
+            if (isCounty) {
+                var c = Counties.countyData && Counties.countyData[Counties.normalizeFips(areaCode)];
+                if (c) {
+                    var cPoll = Utils.getCountyPollingByParty(c);
+                    return (cPoll && cPoll[candId] !== undefined) ? cPoll[candId] : 0;
+                }
+                return 0;
+            }
+            var sPoll = (typeof PrimaryNative.pollMap === 'function') ? PrimaryNative.pollMap(areaCode, party) : Utils.getStatePollingByParty(areaCode);
+            return (sPoll && sPoll[candId] !== undefined) ? sPoll[candId] : 0;
+        }
+
+        // General election mode
+        if (typeof CANDIDATES !== 'undefined') {
+            for (var i = 0; i < CANDIDATES.length; i++) {
+                if (CANDIDATES[i].id === candId) { cand = CANDIDATES[i]; party = cand.party; break; }
+            }
+        }
+        if (!cand && gameData.candidate && gameData.candidate.id === candId) {
+            cand = gameData.candidate; party = gameData.selectedParty;
+        }
+        if (!party) party = 'D';
+
+        if (isCounty) {
+            var c = Counties.countyData && Counties.countyData[Counties.normalizeFips(areaCode)];
+            if (c && c.v) {
+                var total = (c.v.D||0) + (c.v.R||0) + (c.v.G||0) + (c.v.L||0) + (c.v.I||0) + (c.v.PSL||0);
+                return total > 0 ? ((c.v[party] || 0) / total) * 100 : 0;
+            }
+            return 0;
+        }
+
+        var polls = areaCode === 'USA' ? Utils.getNationalPollingByParty() : Utils.getStatePollingByParty(areaCode);
+        return (polls && polls[party] !== undefined) ? polls[party] : 0;
+    },
+
+    getCandidateColor: function(candId) {
+        if (!candId) candId = gameData.candidate && gameData.candidate.id;
+        if (typeof PrimaryNative !== 'undefined' && PrimaryNative.active && PrimaryNative.active()) {
+            var a = (typeof PrimaryCampaign !== 'undefined') ? PrimaryCampaign.actor(candId) : null;
+            if (a && a.color) return a.color;
+        }
+        var cand = null;
+        if (typeof CANDIDATES !== 'undefined') {
+            for (var i = 0; i < CANDIDATES.length; i++) {
+                if (CANDIDATES[i].id === candId) { cand = CANDIDATES[i]; break; }
+            }
+        }
+        var party = cand ? cand.party : (gameData.candidate && gameData.candidate.id === candId ? gameData.selectedParty : 'D');
+        return (typeof Utils !== 'undefined' && Utils.getPartyColor) ? Utils.getPartyColor(party) : (party === 'D' ? '#00AEF3' : '#E81B23');
+    },
+
+    getCandidateName: function(candId) {
+        if (!candId) candId = gameData.candidate && gameData.candidate.id;
+        if (typeof PrimaryNative !== 'undefined' && PrimaryNative.active && PrimaryNative.active()) {
+            var a = (typeof PrimaryCampaign !== 'undefined') ? PrimaryCampaign.actor(candId) : null;
+            if (a && a.candidate) return a.candidate.name;
+        }
+        if (typeof CANDIDATES !== 'undefined') {
+            for (var i = 0; i < CANDIDATES.length; i++) {
+                if (CANDIDATES[i].id === candId) return CANDIDATES[i].name;
+            }
+        }
+        return (gameData.candidate && gameData.candidate.id === candId) ? gameData.candidate.name : (candId || 'Candidate');
     },
 
     resetPopulationCaches: function() {
@@ -843,26 +1046,20 @@ var Campaign = {
     },
 
     updateScore: function() {
-        var demEV = 0;
-        var repEV = 0;
-        for (var code in gameData.states) {
-            var s = gameData.states[code];
-            // Use frozen margins so EV tally doesn't change mid-turn
-            var frozenMargin = (gameData.frozenStateMargins && gameData.frozenStateMargins[code])
-                ? gameData.frozenStateMargins[code].margin
-                : s.margin;
-            if (typeof Counties !== 'undefined' && Counties.calculateStateElectoralAllocation) {
-                var projected = Counties.calculateStateElectoralAllocation(code, { useReportedVotes: false });
-                if (projected && projected.allocation) {
-                    demEV += projected.allocation.D || 0;
-                    repEV += projected.allocation.R || 0;
-                    continue;
-                }
-            }
-            if (frozenMargin > 0) {
-                demEV += s.ev;
-            } else {
-                repEV += s.ev;
+        // The campaign EV display is a week-start polling projection. It must
+        // remain unchanged while actions and county-level persuasion modify the
+        // live vote model; the next weekly snapshot is the only refresh point.
+        var demEV = gameData.frozenPollingEV ? (gameData.frozenPollingEV.D || 0) : 0;
+        var repEV = gameData.frozenPollingEV ? (gameData.frozenPollingEV.R || 0) : 0;
+        if (!gameData.frozenPollingEV) {
+            for (var code in gameData.states) {
+                var s = gameData.states[code];
+                var frozenEntry = gameData.frozenStateMargins && gameData.frozenStateMargins[code];
+                var frozenParty = frozenEntry && frozenEntry.marginParty
+                    ? frozenEntry.marginParty
+                    : ((frozenEntry ? frozenEntry.margin : s.margin) >= 0 ? 'D' : 'R');
+                if (frozenParty === 'D') demEV += s.ev;
+                else if (frozenParty === 'R') repEV += s.ev;
             }
         }
         document.getElementById('score-dem').innerText = demEV;
@@ -888,7 +1085,13 @@ var Campaign = {
         document.getElementById('hud-date').innerText = Utils.formatDate(gameData.currentDate);
         var fav = document.getElementById('hud-favorability') || document.getElementById('hud-credibility');
         if (fav) {
-            fav.innerText = Math.round(this.getFavorability() * 100) + '%';
+            var opinion = Favorability.area(gameData.candidate.id);
+            fav.innerText = (opinion.net >= 0 ? '+' : '') + opinion.net.toFixed(1);
+            fav.classList.toggle('net-positive', opinion.net > 0.1);
+            fav.classList.toggle('net-negative', opinion.net < -0.1);
+            fav.style.textShadow = Math.abs(opinion.net)>0.1 ? '0 0 '+(5+Math.min(30,Math.abs(opinion.net))*0.5).toFixed(1)+'px '+(opinion.net>0?'#26d85c':'#ff3b4b') : '';
+            var lastFavorability = gameData.lastFavorabilityChange;
+            fav.title = 'National opinion: ' + opinion.favorable.toFixed(1) + '% favorable, ' + opinion.unfavorable.toFixed(1) + '% unfavorable, ' + opinion.noOpinion.toFixed(1) + '% no opinion.' + (lastFavorability ? ' Last change: ' + lastFavorability.reason : '');
         }
 
         // Update Democratic & Republican ticket images/names on the EV bar
@@ -931,24 +1134,18 @@ var Campaign = {
             momEl.style.color = mom > 0.1 ? '#4ade80' : (mom < -0.1 ? '#f87171' : '#ccc');
         }
 
-        // v2: Approval display
-        var approvalEl = document.getElementById('hud-approval');
-        if (approvalEl) {
-            approvalEl.innerText = Math.round((gameData.approvalRating || 0.5) * 100) + '%';
-        }
         
-        // v2: National Poll display
+        // v2: National Poll display. Use the same frozen weekly average shown
+        // in the polling modal rather than the retired ad-hoc nationalPolls
+        // array, so the HUD and chart have one source of truth.
         var natPollEl = document.getElementById('hud-national-poll');
-        if (natPollEl && gameData.nationalPolls && gameData.nationalPolls.length > 0) {
-            var avgPoll = {};
-            for (var pIdx = 0; pIdx < gameData.nationalPolls.length; pIdx++) {
-                for (var pKey in gameData.nationalPolls[pIdx]) {
-                    avgPoll[pKey] = (avgPoll[pKey] || 0) + gameData.nationalPolls[pIdx][pKey];
-                }
-            }
-            var playerShare = (avgPoll[gameData.selectedParty] || 0) / gameData.nationalPolls.length;
+        var currentNationalPoll = gameData.frozenPollSnapshot && gameData.frozenPollSnapshot.USA
+            ? gameData.frozenPollSnapshot.USA
+            : ((typeof Utils !== 'undefined' && Utils.getNationalPollingByParty) ? Utils.getNationalPollingByParty() : null);
+        if (natPollEl && currentNationalPoll) {
+            var playerShare = currentNationalPoll[gameData.selectedParty] || 0;
             var oppParty = gameData.selectedParty === 'D' ? 'R' : 'D';
-            var oppShare = (avgPoll[oppParty] || 0) / gameData.nationalPolls.length;
+            var oppShare = currentNationalPoll[oppParty] || 0;
             
             var diff = (playerShare - oppShare) * 100;
             var text = 'Tie';
@@ -973,13 +1170,20 @@ var Campaign = {
                 ? Math.max(0, Math.min(1, (gameData.credibility - 0.7) / 0.45))
                 : FAVORABILITY_CONSTANTS.BASE;
         }
-        return Math.max(FAVORABILITY_CONSTANTS.MIN, Math.min(FAVORABILITY_CONSTANTS.MAX, gameData.favorability));
+        var net=Favorability.area(gameData.candidate && gameData.candidate.id).net;
+        return Math.max(0.45,Math.min(0.55,0.5+net*0.0025));
     },
 
     adjustFavorability: function(delta, reason) {
-        gameData.favorability = Math.max(FAVORABILITY_CONSTANTS.MIN,
-            Math.min(FAVORABILITY_CONSTANTS.MAX, this.getFavorability() + delta));
+        var before = this.getFavorability();
+        Favorability.change(gameData.candidate && gameData.candidate.id, Number(delta) * 200, {recognition:Math.abs(Number(delta))*25});
+        gameData.favorability = this.getFavorability();
         gameData.credibility = 0.7 + (gameData.favorability * 0.45);
+        gameData.lastFavorabilityChange = {
+            delta: gameData.favorability - before,
+            reason: reason || 'Campaign event',
+            week: gameData.currentWeek
+        };
         if (reason && typeof Utils !== 'undefined') {
             Utils.addLog('Favorability ' + (delta >= 0 ? '+' : '') + Math.round(delta * 100) + ': ' + reason);
         }
@@ -1197,7 +1401,7 @@ var Campaign = {
         document.getElementById('bio-title').innerText = s.name + ' - Intelligence Report';
         document.getElementById('bio-content').innerHTML = 
             '<div class="bio-stat"><strong>Electoral Votes:</strong> ' + s.ev + '</div>' +
-            '<div class="bio-stat"><strong>Current Polling:</strong> <span style="color: ' + (s.margin > 0 ?  '#00AEF3' : '#E81B23') + '">' + leaning + '</span></div>' +
+            '<div class="bio-stat"><strong>Current Polling:</strong> <span style="color: ' + (displayMargin > 0 ? '#00AEF3' : '#E81B23') + '">' + leaning + '</span></div>' +
             '<div class="bio-stat"><strong>Last Campaigned:</strong> ' + lastCampaignText + '</div>' +
             '<div class="bio-stat"><strong>Ad Spending:</strong> $' + (s.adSpent || 0).toFixed(1) + 'M</div>' +
             this.getInterestGroupBreakdown(gameData.selectedState);
@@ -1239,14 +1443,16 @@ var Campaign = {
     captureFrozenSnapshot: function() {
         gameData.frozenPollSnapshot = {};
         gameData.frozenStateMargins = {};
+        gameData.frozenPollingEV = { D: 0, R: 0 };
         
         // National
-        gameData.frozenPollSnapshot['USA'] = Utils.getNationalPollingByParty();
+        var nationalPoll = Utils.getNationalPollingByParty();
+        gameData.frozenPollSnapshot['USA'] = nationalPoll ? Object.assign({}, nationalPoll) : null;
         
         // States
         for (var code in gameData.states) {
             var sp = Utils.getStatePollingByParty(code);
-            if (sp) gameData.frozenPollSnapshot[code] = sp;
+            if (sp) gameData.frozenPollSnapshot[code] = Object.assign({}, sp);
             
             var s = gameData.states[code];
             var pcts = sp || {};
@@ -1265,18 +1471,25 @@ var Campaign = {
                 margin: signedMargin,
                 marginParty: pMarginParty
             };
-        }
-        gameData.frozenPollSnapshot.county = {};
-        if (typeof Counties !== 'undefined' && Counties.countyData) {
-            for (var fips in Counties.countyData) {
-                var countyPoll = Utils.getCountyPollingByParty(Counties.countyData[fips]);
-                if (countyPoll) gameData.frozenPollSnapshot.county[String(fips).padStart(5, '0')] = countyPoll;
-            }
+
+            // Allocate the state's full EV from this week's polling average.
+            // This intentionally does not call county allocation: the campaign
+            // counter is a polling projection, while election night performs
+            // the separate county/district tabulation.
+            if (pMarginParty === 'D') gameData.frozenPollingEV.D += s.ev || 0;
+            else if (pMarginParty === 'R') gameData.frozenPollingEV.R += s.ev || 0;
         }
     },
 
     nextWeek: function() {
-        if (gameData.currentDate >= gameData.electionDay) {
+        if (!(gameData.currentDate instanceof Date)) gameData.currentDate = new Date(gameData.currentDate);
+        if (!isFinite(gameData.currentDate.getTime())) {
+            gameData.currentDate = gameData.campaignStart ? new Date(gameData.campaignStart) : new Date(2028, 6, 4);
+        }
+        if (!(gameData.electionDay instanceof Date) && gameData.electionDay) {
+            gameData.electionDay = new Date(gameData.electionDay);
+        }
+        if (gameData.electionDay && gameData.currentDate >= gameData.electionDay) {
             Utils.addLog("Election Day has arrived!");
             Screens.goTo('election-screen');
             Election.start();
@@ -1293,11 +1506,19 @@ var Campaign = {
                 var sp = Utils.getStatePollingByParty(cacheCode);
                 if (sp) gameData.pollCache[cacheCode] = sp;
             }
-            // Cache county-level polls for currently-loaded county data
+            // Cache county-level polls for active county view or selected county (optimized to prevent turn advance freeze)
             if (typeof Counties !== 'undefined' && Counties.countyData) {
-                for (var cfips in Counties.countyData) {
-                    var cp = Utils.getCountyPollingByParty(Counties.countyData[cfips]);
-                    if (cp) gameData.pollCache.county[cfips] = cp;
+                var selectedFips = gameData.selectedCounty ? Counties.normalizeFips(gameData.selectedCounty) : null;
+                if (selectedFips && Counties.countyData[selectedFips]) {
+                    var cp = Utils.getCountyPollingByParty(Counties.countyData[selectedFips]);
+                    if (cp) gameData.pollCache.county[selectedFips] = cp;
+                } else if (Counties.currentState) {
+                    for (var cfips in Counties.countyData) {
+                        if (Counties.countyData[cfips].s === Counties.currentState) {
+                            var cp = Utils.getCountyPollingByParty(Counties.countyData[cfips]);
+                            if (cp) gameData.pollCache.county[cfips] = cp;
+                        }
+                    }
                 }
             }
         }
@@ -1306,15 +1527,22 @@ var Campaign = {
         if (typeof Persuasion !== 'undefined') {
             Persuasion.applyQueuedActions();
         }
+
+        // Commit the calendar transition immediately after the old week's
+        // queued actions settle. This makes the date, week number, and energy
+        // refresh independent of any later weekly subsystem or UI work.
+        this.advanceCalendarWeek();
         
         // Process new deep systems
         if (typeof GroundOps !== 'undefined') GroundOps.processWeekly();
         if (typeof DigitalAds !== 'undefined') DigitalAds.processWeekly();
+        if (typeof MichiganModel !== 'undefined' && MichiganModel.isInitialized) {
+            MichiganModel.processWeeklyGrassroots();
+            if (typeof MichiganModel.processWeeklyVoterRegistration === 'function') {
+                MichiganModel.processWeeklyVoterRegistration();
+            }
+        }
         
-        gameData.currentDate.setDate(gameData.currentDate.getDate() + 7);
-        gameData.currentWeek = (gameData.currentWeek || 0) + 1;
-        gameData.energy = gameData.maxEnergy;
-
         // v2: Reset turn budget tracking
         gameData.turnStatesUsed = [];
         gameData.turnActionCounts = {};
@@ -1422,11 +1650,6 @@ var Campaign = {
             this.updateCampaignMomentum();
         }
 
-        // v2: Update approval rating
-        if (typeof this.updateApprovalRating === 'function') {
-            this.updateApprovalRating();
-        }
-
         // Publish polls only after the AI and all weekly simulation effects.
 
         // v2: Spoiler effect — when third-party share >8%, opposing major party gets +0.5%/week in battlegrounds
@@ -1449,13 +1672,6 @@ var Campaign = {
             Utils.addLog('🌤️ Election Day weather forecast: ' + weatherDesc);
         }
         
-        // Random chance for PAC offer
-        if (Math.random() < GAME_CONSTANTS.PAC_OFFER_CHANCE && typeof app.triggerPacOffer !== 'undefined') {
-            setTimeout(function() {
-                app.triggerPacOffer();
-            }, GAME_CONSTANTS.PAC_OFFER_DELAY);
-        }
-        
         this.opponentTurn();
 
         Electorate.invalidate();
@@ -1469,7 +1685,17 @@ var Campaign = {
             gameData.playerPressure = {};
         }
         
-        if (gameData.currentDate >= gameData.electionDay) {
+        // Refresh the frozen weekly snapshot before checking for Election Day.
+        // This guarantees the final campaign week is represented in the HUD,
+        // EV counter, sidebar, and open polling modal.
+        this.captureFrozenSnapshot();
+        this.updateHUD();
+        var pollsModal = document.getElementById('polls-history-modal');
+        if (pollsModal && !pollsModal.classList.contains('hidden') && typeof Polling !== 'undefined') {
+            Polling.openPollsModal(gameData.selectedState || 'USA');
+        }
+
+        if (gameData.electionDay && gameData.currentDate >= gameData.electionDay) {
             Utils.addLog("Election Day has arrived!");
             Screens.goTo('election-screen');
             Election.start();
@@ -1478,11 +1704,6 @@ var Campaign = {
         
         // Restrict undo to current turn
         gameData.historyStack = [];
-        
-        // Refresh frozen snapshot for the new week
-        this.captureFrozenSnapshot();
-        
-        this.updateHUD();
         
         // Update queued ads display to show the queue is cleared
         if (typeof app !== 'undefined' && app.updateQueuedAdsDisplay) {
@@ -1509,6 +1730,30 @@ var Campaign = {
         
         Utils.addLog("Week advanced - " + gameData.currentDate.toLocaleDateString());
         Utils.showToast("Week advanced!");
+        
+        if (typeof Newspaper !== 'undefined') {
+            Newspaper.show('general');
+        }
+        if (typeof OpponentAI !== 'undefined' && OpponentAI.prepareBackgroundTurn) {
+            OpponentAI.prepareBackgroundTurn();
+        }
+    },
+
+    // Advance the calendar as a single, synchronous week-boundary operation.
+    // The clamp prevents a weekly click from moving the campaign beyond
+    // Election Day while still ensuring the date changes on every valid week.
+    advanceCalendarWeek: function() {
+        var current = gameData.currentDate instanceof Date ? gameData.currentDate : new Date(gameData.currentDate);
+        if (!isFinite(current.getTime())) current = gameData.campaignStart ? new Date(gameData.campaignStart) : new Date(2028, 6, 4);
+        var next = new Date(current.getTime());
+        next.setDate(next.getDate() + 7);
+        if (gameData.electionDay instanceof Date && next > gameData.electionDay) {
+            next = new Date(gameData.electionDay.getTime());
+        }
+        gameData.currentDate = next;
+        gameData.currentWeek = (Number(gameData.currentWeek) || 0) + 1;
+        gameData.energy = gameData.maxEnergy;
+        this.updateHUD();
     },
     
     processUndecidedVoters: function() {
@@ -1787,43 +2032,6 @@ var Campaign = {
         gameData.campaignMomentum = Math.max(-1, Math.min(1, gameData.campaignMomentum));
     },
 
-    // v2: Update approval rating
-    updateApprovalRating: function() {
-        var fav = typeof this.getFavorability === 'function' ? this.getFavorability() : 0.5;
-        var approval = 0.5 + (fav - 0.5) * 0.6; // Scale favorability contribution
-
-        // Issue position modifier (simplified)
-        if (gameData.lockedIssues && CORE_ISSUES) {
-            var positionScore = 0;
-            var positionCount = 0;
-            for (var issueId in gameData.lockedIssues) {
-                positionCount++;
-            }
-            if (positionCount > 3) positionScore += 0.02; // More positions = more defined = slightly more approval
-            approval += positionScore;
-        }
-
-        // Coalition loyalty modifier
-        if (gameData.coalitionStatus) {
-            var loyaltySum = 0;
-            var loyaltyCount = 0;
-            for (var cid in gameData.coalitionStatus) {
-                loyaltySum += gameData.coalitionStatus[cid].loyalty || 1.0;
-                loyaltyCount++;
-            }
-            if (loyaltyCount > 0) {
-                var avgLoyalty = loyaltySum / loyaltyCount;
-                approval += (avgLoyalty - 0.85) * 0.3;
-            }
-        }
-
-        // Momentum influence
-        approval += gameData.campaignMomentum * 0.05;
-
-        // Clamp to [0.30, 0.80]
-        gameData.approvalRating = Math.max(0.30, Math.min(0.80, approval));
-    },
-
     // v2: Calculate national polls with variance
     calculateNationalPoll: function() {
         if (typeof Counties === 'undefined' || !Counties.countyData) return;
@@ -1915,11 +2123,6 @@ var Campaign = {
         var momentum = gameData.campaignMomentum || 0;
         var variance = 0.8 + Math.random() * 0.4; // 0.8-1.2
         var yield_ = (2.0 + momentum * 1.5) * variance;
-
-        // Apply approval rating modifier (±15%)
-        if (gameData.approvalRating) {
-            yield_ *= (0.85 + gameData.approvalRating * 0.30);
-        }
 
         // Apply endorsement fundraising bonus
         if (typeof Endorsements !== 'undefined' && Endorsements.getActiveEffectMultiplier) {

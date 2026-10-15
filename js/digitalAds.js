@@ -106,6 +106,12 @@ var DigitalAds = {
         var baseShift = 0.005; // 0.5% margin shift base
         var intensityMult = ad.intensity === 1 ? 1.0 : (ad.intensity === 2 ? 1.8 : 2.5);
         var totalShift = baseShift * intensityMult * satMult * typeData.persuasion;
+        if (typeof Favorability !== 'undefined') {
+            var sponsor = OpponentAI.getTicket(party), sponsorId = party === gameData.selectedParty ? gameData.candidate.id : sponsor && sponsor.pres && sponsor.pres.id;
+            var targetParty = party === 'D' ? 'R' : 'D';
+            var target = OpponentAI.getTicket(targetParty);
+            Favorability.ad({sponsorId:sponsorId,targetId:target && target.pres && target.pres.id,type:ad.adType,countyIds:market.counties,exposure:intensityMult*satMult});
+        }
         var totalTurnout = 0.002 * intensityMult * satMult * typeData.turnout;
         
         // Apply shift to all counties in the media market
@@ -227,6 +233,12 @@ var DigitalAds = {
         }
 
         if (gameData.states[stateCode]) {
+            if (typeof Favorability !== 'undefined') {
+                var adSponsor = party === gameData.selectedParty ? gameData.candidate : (ticket && ticket.pres);
+                var adTargetParty = party === 'D' ? 'R' : 'D';
+                var adTarget = OpponentAI.getTicket(adTargetParty);
+                Favorability.ad({sponsorId:adSponsor && adSponsor.id,targetId:adTarget && adTarget.pres && adTarget.pres.id,type:config.creative,stateCode:stateCode,segment:config.segment,exposure:Math.max(0.4,Math.min(2,config.totalBudget/2))});
+            }
             var sign = party === 'D' ? 1 : (party === 'R' ? -1 : 0);
             var isTP = party !== 'D' && party !== 'R';
             
@@ -239,7 +251,9 @@ var DigitalAds = {
 
                         // Further weight by segment presence
                         var segmentWeight = 1.0;
-                        if (county.ig && county.ig[config.segment] !== undefined) {
+                        if (typeof Electorate !== 'undefined' && typeof Electorate.share === 'function') {
+                            segmentWeight = Electorate.share(county, config.segment) * 1.5;
+                        } else if (county.ig && county.ig[config.segment] !== undefined) {
                             segmentWeight = (county.ig[config.segment] / 100) * 1.5;
                         }
 

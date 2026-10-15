@@ -113,65 +113,246 @@ var OpponentAI = {
         return this.STRATEGY_FUNDRAISE;
     },
 
-    executeTurn: function(opponentParty, stamina) {
-        var actions = [];
-        var personality = this.getPersonality(opponentParty);
-
-        // v2: Late Game Pivot — override swing weight in weeks 13-17 if trailing by >30 EVs
-        var weekNum = typeof Debates !== 'undefined' && Debates.getCurrentWeekNumber
-            ? Debates.getCurrentWeekNumber()
-            : Math.floor((gameData.currentDate - new Date('2028-07-04')) / (7 * 24 * 60 * 60 * 1000));
-        if (weekNum >= 13) {
-            var aiEV = 0;
-            var playerEV = 0;
-            for (var sc in gameData.states) {
-                var s = gameData.states[sc];
-                var aiMarginCheck = opponentParty === 'D' ? s.margin : -s.margin;
-                if (aiMarginCheck > 0) aiEV += s.ev;
-                else playerEV += s.ev;
-            }
-            if (playerEV - aiEV > 30) {
-                personality = Object.assign({}, personality);
-                personality.swingWeight = 0.75;
-            }
-        }
-        
-        // v2: AI Debate Strategy — prep before scheduled debates
-        if (typeof DEBATE_SCHEDULE !== 'undefined') {
-            for (var di = 0; di < DEBATE_SCHEDULE.length; di++) {
-                if (DEBATE_SCHEDULE[di].week === weekNum + 1) {
-                    var ticket = this.getTicket(opponentParty);
-                    var aiFunds = ticket && ticket.pres ? (ticket.pres.funds || 50) : 50;
-                    if (aiFunds > 10 && Math.random() < 0.60) {
-                        if (!ticket._aiDebatePrepped) {
-                            ticket._aiDebatePrepped = true;
-                            ticket._aiDebateSkillBuff = 1;
-                            Utils.addLog(PARTIES[opponentParty].shortName + ' is preparing for the upcoming debate.');
-                        }
+    prepareBackgroundTurn: function() {
+        if (typeof gameData === 'undefined' || !gameData.selectedParty) return;
+        setTimeout(function() {
+            try {
+                if (typeof gameData === 'undefined' || !gameData.selectedParty) return;
+                gameData.precomputedOpponentPlans = {};
+                var parties = [];
+                if (gameData.selectedParty === 'D' && gameData.repTicket && gameData.repTicket.pres) {
+                    parties.push('R');
+                } else if (gameData.selectedParty === 'R' && gameData.demTicket && gameData.demTicket.pres) {
+                    parties.push('D');
+                } else if (typeof Utils !== 'undefined' && Utils.isThirdParty(gameData.selectedParty)) {
+                    if (gameData.demTicket && gameData.demTicket.pres) parties.push('D');
+                    if (gameData.repTicket && gameData.repTicket.pres) parties.push('R');
+                }
+                parties.forEach(function(p) {
+                    var t = OpponentAI.getTicket(p);
+                    if (t && t.pres) {
+                        gameData.precomputedOpponentPlans[p] = OpponentAI.planTurnActions(p, t.pres.stamina || 8);
                     }
-                    break;
+                });
+            } catch (e) {
+                console.warn('Background opponent AI planning notice:', e);
+            }
+        }, 40);
+    },
+
+    planTurnActions: function(opponentParty, stamina) {
+        var ticket = this.getTicket(opponentParty);
+        if (!ticket || !ticket.pres) return [];
+        var actions = [];
+        var energy = Math.max(2, Math.min(6, Math.floor((stamina || 7) * 0.7)));
+        var week = gameData.currentWeek || 0;
+        if (typeof DEBATE_SCHEDULE !== 'undefined' && DEBATE_SCHEDULE.some(function(d){ return d.week === week + 1; }) && energy >= 1 && !ticket._aiDebatePrepped) {
+            energy--; actions.push({ type: 'debate_prep' });
+        }
+        var simFunds = Number(ticket.pres.funds) || 0;
+        for (var i = 0; i < 4 && energy > 0; i++) {
+            var state = this.pickStrategicState(opponentParty, i);
+            var actionType = 'fundraise';
+            var county = null;
+            if (simFunds < 3 || (simFunds < 8 && i === 0)) {
+                actionType = 'fundraise'; simFunds += 3.5; energy--;
+            } else if (energy >= 1 && i < 2 && Math.random() < 0.18) {
+                actionType = 'meet_endorser'; energy--;
+            } else if (energy >= 1 && i > 0 && Math.random() < 0.18) {
+                actionType = 'surrogate'; energy--;
+            } else if (simFunds >= 3 && (i === 0 || Math.random() < 0.5)) {
+                actionType = Math.random() < 0.5 ? 'attack_ad' : 'positive_ad'; simFunds -= 2.5; energy--;
+            } else if (simFunds >= 1 && energy >= 2) {
+                county = this.pickPriorityCounty(state, opponentParty);
+                if (county) { actionType = 'county_rally'; simFunds -= 1; energy -= 2; }
+            } else {
+                actionType = 'fundraise'; simFunds += 3; energy--;
+            }
+            actions.push({ type: actionType, state: state, county: county });
+        }
+        return actions;
+    },
+
+    executeTurn: function(opponentParty, stamina) {
+        var ticket=this.getTicket(opponentParty);
+        if (!ticket || !ticket.pres) return [];
+        var personality=this.getPersonality(opponentParty), actions=[];
+        var energy=Math.max(2,Math.min(6,Math.floor((stamina||7)*0.7)));
+        var week=gameData.currentWeek||0;
+        if (typeof DEBATE_SCHEDULE!=='undefined' && DEBATE_SCHEDULE.some(function(d){return d.week===week+1;}) && energy>=1 && !ticket._aiDebatePrepped) {
+            ticket._aiDebatePrepped=true;ticket._aiDebateSkillBuff=1;energy--;
+            actions.push({type:'debate_prep'});
+        }
+        if (Math.random()<personality.vpPressureChance) this.applyVpPressure(opponentParty);
+        
+        // Execute precomputed plan if available from background preparation
+        var precomputed = (gameData.precomputedOpponentPlans && gameData.precomputedOpponentPlans[opponentParty]) ? gameData.precomputedOpponentPlans[opponentParty] : null;
+        if (precomputed && precomputed.length > 0) {
+            delete gameData.precomputedOpponentPlans[opponentParty];
+            for (var pIdx = 0; pIdx < precomputed.length; pIdx++) {
+                var pAction = precomputed[pIdx];
+                if (pAction.type === 'debate_prep') continue;
+                var st = pAction.state;
+                if (!gameData.states[st]) continue;
+                if (pAction.type === 'county_rally' && pAction.county) {
+                    Counties.applyOpponentRallySpillover(pAction.county, opponentParty);
+                    Favorability.change(ticket.pres.id, 0.7, { countyIds: [pAction.county], recognition: 0.35 });
+                    Counties.updateStateFromCounties(st);
+                } else if (pAction.type === 'attack_ad' || pAction.type === 'positive_ad') {
+                    this.buyStrategicAd(opponentParty, st, pAction.type === 'attack_ad' ? 'attack' : 'positive', gameData.candidate && gameData.candidate.id);
+                } else if (pAction.type === 'meet_endorser') {
+                    this.meetStrategicEndorser(opponentParty);
+                } else if (pAction.type === 'surrogate') {
+                    this.useStrategicSurrogate(opponentParty, st);
+                } else {
+                    ticket.pres.funds = (Number(ticket.pres.funds) || 0) + 3.5;
+                }
+                actions.push(pAction);
+                Utils.addLog('OPPONENT UPDATE: ' + ticket.pres.name + ' ' + pAction.type.replace(/_/g, ' ') + ' in ' + gameData.states[st].name + '.');
+            }
+            return actions;
+        }
+
+        for (var i=0;i<4 && energy>0;i++) {
+            var state=this.pickStrategicState(opponentParty,i), funds=Number(ticket.pres.funds)||0;
+            var ownOpinion=Favorability.area(ticket.pres.id);
+            var opponent=gameData.candidate;
+            var enemyOpinion=opponent ? Favorability.area(opponent.id) : {net:0};
+            var action=null;
+            if (funds<3 || (funds<8 && i===0)) {
+                ticket.pres.funds=funds+3.5+(gameData.states[state].ev||0)*0.02;
+                energy--;action={type:'fundraise',state:state};
+            } else if (energy>=1 && i<2 && Math.random()<0.18 && this.meetStrategicEndorser(opponentParty)) {
+                energy--;action={type:'meet_endorser',state:state};
+            } else if (energy>=1 && i>0 && Math.random()<0.18 && this.useStrategicSurrogate(opponentParty,state)) {
+                energy--;action={type:'surrogate',state:state};
+            } else if (funds>=3 && (i===0 || Math.random()<(ownOpinion.net < -8 ? 0.7 : 0.4))) {
+                var type=enemyOpinion.net>ownOpinion.net+4 && opponent && Math.random()<0.5 ? 'attack' : 'positive';
+                if (this.buyStrategicAd(opponentParty,state,type,opponent && opponent.id)) {energy--;action={type:type+'_ad',state:state};}
+            }
+            if (!action && funds>=2 && energy>=1 && Math.random()<0.35 && this.runStrategicDigital(opponentParty,state)) {
+                energy--;action={type:'digital',state:state};
+            }
+            if (!action && funds>=2 && energy>=1 && opponent && Math.random()<0.10) {
+                ticket.pres.funds-=2;energy--;
+                if(Math.random()>Number(opponent.scandalResistance||0.3)) Favorability.change(opponent.id,-0.8,{recognition:0.3});
+                action={type:'oppo_research',state:state};
+            }
+            if (!action && funds>=0.5 && energy>=1 && Math.random()<0.4 && this.runStrategicSpeech(opponentParty,state)) {
+                ticket.pres.funds-=0.5;energy--;
+                action={type:'issue_speech',state:state};
+            }
+            if (!action && funds>=1 && energy>=2) {
+                var county=this.pickPriorityCounty(state,opponentParty);
+                if (county && Counties.applyOpponentRallySpillover(county,opponentParty)) {
+                    ticket.pres.funds-=1;energy-=2;
+                    Favorability.change(ticket.pres.id,0.7,{countyIds:[county],recognition:0.35});
+                    Counties.updateStateFromCounties(state);
+                    action={type:'county_rally',state:state,county:county};
                 }
             }
-        }
-
-        var strategy = this.determineStrategy(opponentParty, personality);
-        var numActions = Math.max(1, Math.min(3, Math.floor(stamina * 0.35)));
-
-        if (Math.random() < personality.vpPressureChance) {
-            this.applyVpPressure(opponentParty);
-        }
-
-        var focusState = this.pickReactiveState(opponentParty) || this.pickStateByStrategy(strategy, opponentParty);
-        var overcommitState = Math.random() < personality.mistakeChance ? this.pickHopelessState(opponentParty) : null;
-
-        for (var i = 0; i < numActions; i++) {
-            var targetState = overcommitState || (i === 0 ? focusState : this.pickStateByStrategy(strategy, opponentParty));
-            var action = this.chooseAction(strategy, opponentParty, personality, targetState);
+            if (!action && funds>=1.8 && energy>=1 && gameData.groundOps) {
+                ticket.pres.funds-=1.8;energy--;
+                this.runStrategicField(opponentParty,state);
+                action={type:'ground_op',state:state};
+            }
+            if (!action) {
+                ticket.pres.funds=funds+3;energy--;
+                action={type:'fundraise',state:state};
+            }
             actions.push(action);
-            this.executeAction(action, opponentParty);
+            Utils.addLog('OPPONENT UPDATE: '+ticket.pres.name+' '+action.type.replace(/_/g,' ')+' in '+gameData.states[state].name+'.');
         }
-
         return actions;
+    },
+
+    pickStrategicState: function(party,slot) {
+        var ranked=Object.keys(gameData.states).map(function(code){
+            var state=gameData.states[code],poll=Utils.getStatePollingByParty && Utils.getStatePollingByParty(code);
+            var margin=poll && Number.isFinite(Number(poll.D)) && Number.isFinite(Number(poll.R)) ? Number(poll.D)-Number(poll.R) : state.margin;
+            var own=party==='D'?margin:-margin;
+            var pressure=(gameData.playerPressure&&gameData.playerPressure[code])||0;
+            var closeness=Math.max(0,1-Math.abs(own)/14);
+            var score=(state.ev||1)*(0.2+closeness)*(own<0?1.15:1)+pressure*3;
+            return {code:code,score:score};
+        }).sort(function(a,b){return b.score-a.score;});
+        var band=ranked.slice(0,Math.min(8,ranked.length));
+        return band[(slot+Math.floor(Math.random()*Math.min(3,band.length)))%band.length].code;
+    },
+
+    buyStrategicAd: function(party,state,type,targetId) {
+        if (typeof AdEngine==='undefined' || typeof MEDIA_MARKETS==='undefined') return false;
+        var ticket=this.getTicket(party),budget=Number(ticket.pres.funds)||0;
+        var markets=Object.keys(MEDIA_MARKETS).map(function(id){return MEDIA_MARKETS[id];}).filter(function(m){return m.states&&m.states.indexOf(state)!==-1;});
+        markets.sort(function(a,b){return (b.reach||0)-(a.reach||0);});
+        for (var i=0;i<markets.length;i++) {
+            var config={channel:'tv',marketId:markets[i].id,type:type,issueId:type==='attack'?'economy':null,targetId:targetId,sponsorId:ticket.pres.id,intensity:1,durationWeeks:1};
+            var quote=AdEngine.quote(config);
+            if (quote.ok && quote.cost<=budget*0.35 && quote.cost<=budget-2) return AdEngine.buy(config, { batch: true }).ok;
+        }
+        return false;
+    },
+
+    runStrategicDigital: function(party,state) {
+        var ticket=this.getTicket(party);
+        if (typeof DigitalAds==='undefined' || !ticket || !ticket.pres || ticket.pres.funds<2) return false;
+        return DigitalAds.executeDigitalCampaign(state,{totalBudget:2,allocations:{meta:0.5,youtube:0.5},segment:'independents',creative:'positive'},party);
+    },
+
+    runStrategicSpeech: function(party,state) {
+        var ticket=this.getTicket(party);
+        if(!ticket||!ticket.pres||typeof Electorate==='undefined'||!Electorate.expose)return false;
+        var issues=typeof CampaignPriorities!=='undefined'&&CampaignPriorities.chooseForParty ? CampaignPriorities.chooseForParty(party) : [];
+        var issue=issues && issues.length ? issues[0] : 'economy';
+        if(typeof IssueModel!=='undefined'&&!IssueModel.getIssue(issue))issue='economy';
+        Electorate.expose({stateCode:state,sponsorId:ticket.pres.id,issueId:issue,type:'issue',exposure:0.6});
+        Favorability.change(ticket.pres.id,0.55,{stateCode:state,recognition:0.25});
+        return true;
+    },
+
+    runStrategicField: function(party,state) {
+        var key=party+'_'+state;
+        gameData.aiFieldOffices=gameData.aiFieldOffices||{};
+        gameData.aiFieldOffices[key]=(gameData.aiFieldOffices[key]||0)+1;
+        Object.keys(Counties.countyData).forEach(function(fips){
+            var county=Counties.countyData[fips];
+            if(county.s!==state)return;
+            county.partyMobilization=county.partyMobilization||{};
+            county.partyMobilization[party]=Math.min(0.04,(county.partyMobilization[party]||0)+0.002);
+        });
+        Electorate.invalidate();
+    },
+
+    meetStrategicEndorser: function(party) {
+        if (typeof Endorsers==='undefined') return false;
+        gameData.aiEndorserRelations=gameData.aiEndorserRelations||{};
+        gameData.aiSurrogateCredits=gameData.aiSurrogateCredits||{};
+        var relations=gameData.aiEndorserRelations[party]||(gameData.aiEndorserRelations[party]={});
+        var credits=gameData.aiSurrogateCredits[party]||(gameData.aiSurrogateCredits[party]={});
+        var pool=Endorsers.db.national.filter(function(e){return e.type==='individual' && (e.baseLean[party]||0)>35;});
+        pool.sort(function(a,b){return (Endorsers.getStars(b)*12+(b.baseLean[party]||0))-(Endorsers.getStars(a)*12+(a.baseLean[party]||0));});
+        var chosen=pool.find(function(e){return (credits[e.id]||0)<2 && (relations[e.id]===undefined?Math.min(e.threshold-2,e.baseLean[party]||0):relations[e.id])>=e.threshold;})
+            || pool.find(function(e){return (relations[e.id]===undefined?Math.min(e.threshold-2,e.baseLean[party]||0):relations[e.id])<e.threshold;});
+        if(!chosen)return false;
+        var before=relations[chosen.id]===undefined?Math.min(chosen.threshold-2,chosen.baseLean[party]||0):relations[chosen.id];
+        relations[chosen.id]=Math.min(100,before+4+Math.floor(Math.random()*3));
+        if(before>=chosen.threshold) credits[chosen.id]=(credits[chosen.id]||0)+(Math.random()<Math.min(0.8,0.15+(before-chosen.threshold)/50)?2:1);
+        Utils.addLog('OPPONENT UPDATE: Met with '+chosen.name+(before>=chosen.threshold?' for surrogate rallies.':'.'));
+        return true;
+    },
+
+    useStrategicSurrogate: function(party,state) {
+        var credits=gameData.aiSurrogateCredits&&gameData.aiSurrogateCredits[party];
+        if(!credits)return false;
+        var id=Object.keys(credits).find(function(key){return credits[key]>0;});
+        if(!id)return false;
+        var county=this.pickPriorityCounty(state,party);
+        if(!county || !Counties.applyOpponentRallySpillover(county,party))return false;
+        credits[id]--;
+        var ticket=this.getTicket(party);
+        Favorability.change(ticket.pres.id,0.4,{countyIds:[county],recognition:0.25});
+        Counties.updateStateFromCounties(state);
+        return true;
     },
 
     chooseAction: function(strategy, party, personality, focusState) {

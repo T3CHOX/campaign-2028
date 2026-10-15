@@ -63,8 +63,18 @@ const ENDORSERS = [
         factionPreferences: { compassionate_conservative: 1.5, unaligned_center: 1.0, america_first_conservative: 0.5, religious_right: 0.8 },
         currentEndorsement: null,
         retractCondition: null
+    },
+    {
+        id: 'rep_clyburn',
+        name: 'Rep. Jim Clyburn',
+        type: 'Leader',
+        state: 'SC',
+        targetGroupId: 'black',
+        baseInfluence: 0.28, // Dominant Kingmaker in South Carolina
+        factionPreferences: { pragmatic_moderate: 1.8, mainstream_liberal: 1.3, activist_left: 0.3, outsider_leftist: 0.1 },
+        currentEndorsement: null,
+        retractCondition: null
     }
-    // Expandable list of endorsers
 ];
 
 var EndorserSystem = {

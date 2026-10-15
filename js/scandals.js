@@ -20,7 +20,8 @@ var Scandals = {
     rollOppoResearch: function(opponentParty) {
         // Check cooldown
         if (!this.canTargetOpponent(opponentParty)) {
-            Utils.showToast('Cannot target ' + PARTIES[opponentParty].shortName + ' this week (cooldown)');
+            var blockedTarget=this.getOpponentCandidate(opponentParty);
+            Utils.showToast('Cannot target ' + (blockedTarget?blockedTarget.name:PARTIES[opponentParty]?PARTIES[opponentParty].shortName:'this opponent') + ' this week (cooldown)');
             return false;
         }
 
@@ -148,11 +149,8 @@ var Scandals = {
     },
 
     applyScandalEffects: function(scandal) {
-        // Note: scandals affect opponents, not the player
-        // We don't have a direct opponent favorability system, so we convert to player benefit
-        // The scandal hurts the opponent → effectively helps the player
-        var playerBenefit = Math.abs(scandal.favPenalty) * 0.5;
-        Campaign.adjustFavorability(playerBenefit, 'Opponent scandal: ' + scandal.description);
+        var target = this.getOpponentCandidate(scandal.targetParty);
+        if (target) Favorability.change(target.id, scandal.favPenalty * 200, {recognition:1});
 
         // Apply group loyalty effects
         if (scandal.groupEffects && typeof applyCampaignGroupSwing === 'function') {

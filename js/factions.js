@@ -131,6 +131,12 @@ const FACTIONS = {
 function getFactionCompatibility(factionId, groupId) {
     if (!factionId || !FACTIONS[factionId]) return 1.0;
     const faction = FACTIONS[factionId];
+    groupId = ({
+        activist_left: 'progressives',
+        america_first_conservative: 'maga',
+        unaligned_center: 'libertarians',
+        pragmatic_moderate: 'centrists'
+    })[groupId] || groupId;
     
     // Core groups get a strong boost
     if (faction.coreGroups.indexOf(groupId) !== -1) {

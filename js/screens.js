@@ -28,11 +28,22 @@ var Screens = {
     skippedParties: [],       // Parties removed from this election by the player
 
     goTo: function(screenId) {
+        // Both election styles play on the same campaign screen. Keep old
+        // save links compatible without retaining a second gameplay shell.
+        if (screenId === 'primary-screen') screenId = 'game-screen';
         var screens = document.querySelectorAll('.screen');
         for (var i = 0; i < screens.length; i++) {
             screens[i].classList.remove('active');
         }
-        document.getElementById(screenId).classList.add('active');
+        var target = document.getElementById(screenId);
+        if (!target) return;
+        target.classList.add('active');
+        if (screenId === 'party-page-screen' || screenId === 'party-screen') {
+            window.scrollTo(0, 0);
+            target.scrollTop = 0;
+            var body = target.querySelector('.party-page-body, .party-select-container');
+            if (body) body.scrollTop = 0;
+        }
     },
 
     selectParty: function(partyCode) {
@@ -192,6 +203,10 @@ var Screens = {
             footerHTML;
 
         this.goTo('party-page-screen');
+        window.requestAnimationFrame(function () {
+            window.scrollTo(0, 0);
+            body.scrollTop = 0;
+        });
     },
 
     _getSelectedPresForParty: function(partyCode) {

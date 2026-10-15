@@ -1,4 +1,56 @@
 /* Interfaces added by overhaulUI.js; scoped to preserve the existing simulator. */
+#endorsers-modal { padding: 24px; background: rgba(3, 7, 12, .82); color: #f6f7f9; user-select: text; }
+#endorsers-modal .endorsers-modal-box { width: min(1040px, 100%); max-width: 1040px; max-height: calc(100dvh - 48px); padding: 0; background: #14191f; border: 1px solid #546372; border-radius: 3px; box-shadow: 0 24px 100px #0009; }
+#endorsers-modal .modal-header { margin: 0; padding: 20px 28px; border-top: 4px solid #f2c75c; border-bottom: 1px solid #3a4652; }
+#endorsers-modal .modal-header h2 { margin: 4px 0 0; padding: 0; border: 0; color: #fff; font-size: clamp(21px, 3vw, 29px); }
+#endorsers-modal .endorsers-eyebrow { color: #bdc7d1; font-size: 10px; font-weight: 700; letter-spacing: 1.7px; }
+#endorsers-modal .modal-close-btn { flex: 0 0 40px; width: 40px; height: 40px; margin: 0; padding: 0; background: transparent; border: 1px solid #647181; font-size: 25px; }
+#endorsers-modal .endorsers-body { padding: 24px 28px 30px; overflow-y: auto; scrollbar-color: #657589 #192029; }
+#endorsers-modal .endorsers-intro { max-width: 780px; margin: 0 0 18px; color: #d4dce4; font-size: 14px; line-height: 1.6; }
+#endorsers-modal .endorsers-scopes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+#endorsers-modal .endorsers-scope { margin: 0; padding: 9px 15px; background: #273340; border: 1px solid #647181; border-radius: 3px; font-size: 13px; }
+#endorsers-modal .endorsers-scope.active { background: #f2c75c; border-color: #f2c75c; color: #111820; }
+#endorsers-modal .endorsers-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); align-content: start; gap: 12px; overflow: visible; }
+#endorsers-modal .endorser-card { display: flex; flex-direction: column; gap: 14px; padding: 18px; min-height: 158px; background: #1b232c; border: 1px solid #3a4652; border-left: 3px solid #647181; }
+#endorsers-modal .endorser-card.is-endorsed { border-left-color: #f2c75c; }
+#endorsers-modal .endorser-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+#endorsers-modal .endorser-identity { min-width: 0; }
+#endorsers-modal .endorser-type { display: block; margin-bottom: 5px; color: #bdc7d1; font-size: 10px; font-weight: 800; letter-spacing: 1.1px; }
+#endorsers-modal .endorser-identity h3 { margin: 0; color: #fff; font-size: 16px; line-height: 1.35; }
+#endorsers-modal .endorser-status { padding: 7px 8px; background: #314234; border: 1px solid #678c6e; color: #d5f3d9; font-size: 10px; font-weight: 800; letter-spacing: .6px; white-space: nowrap; }
+#endorsers-modal .endorser-meet { margin: 0; padding: 7px 9px; flex: 0 0 auto; background: #f2c75c; border: 1px solid #f2c75c; color: #111820; font-size: 11px; }
+#endorsers-modal .endorser-meet span { display: block; font-size: 9px; letter-spacing: .6px; }
+#endorsers-modal .endorser-meter-label { display: flex; justify-content: space-between; gap: 8px; margin-top: auto; color: #d4dce4; font-size: 11px; }
+#endorsers-modal .endorser-meter { height: 7px; overflow: hidden; background: #0e141b; border: 1px solid #3a4652; }
+#endorsers-modal .endorser-meter > span { display: block; height: 100%; background: linear-gradient(90deg, #5c748b, #f2c75c); }
+#endorsers-modal .endorser-benefit { margin: 0; color: #f2c75c; font-size: 12px; }
+#endorsers-modal .endorser-stars { display: block; margin-top: 6px; color: #f2c75c; font-size: 17px; letter-spacing: 2px; }
+#hud-favorability.hud-opinion-button { border: 0; background: transparent; cursor: pointer; padding: 0; }
+#hud-favorability.net-positive { color: #8df1a5; text-shadow: 0 0 8px #26d85c, 0 0 18px #169b4f; }
+#hud-favorability.net-negative { color: #ff9ca4; text-shadow: 0 0 8px #ff3b4b, 0 0 18px #ad2334; }
+#favorability-modal { padding: 24px; background: rgba(3,7,12,.82); color: #f6f7f9; }
+#favorability-modal .favorability-modal-box { width: min(760px,100%); max-width: 760px; max-height: calc(100dvh - 48px); overflow-y: auto; background: #14191f; border: 1px solid #546372; }
+#favorability-modal .favorability-intro { padding: 0 22px; color: #bdc7d1; }
+#favorability-list { display: grid; gap: 10px; padding: 20px 22px 28px; }
+.favorability-row { padding: 14px; background: #1b232c; border: 1px solid #3a4652; }
+.favorability-row-head { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; }
+.favorability-row-head strong.positive { color: #8df1a5; }
+.favorability-row-head strong.negative { color: #ff9ca4; }
+.favorability-row-bars { display: flex; height: 9px; margin: 12px 0 8px; overflow: hidden; border-radius: 3px; }
+.favorability-row-bars span:nth-child(1) { background: #51ae72; }
+.favorability-row-bars span:nth-child(2) { background: #d04b54; }
+.favorability-row-bars span:nth-child(3) { background: #b8b6aa; }
+.favorability-row-values { color: #d4dce4; font-size: 12px; }
+#endorsers-modal .endorsers-empty { color: #bdc7d1; padding: 24px; border: 1px dashed #526172; }
+#endorsers-modal button:focus-visible { outline: 3px solid #7ecefa; outline-offset: 3px; }
+.polling-published-summary { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; padding: 15px; background: #1b232c; border: 1px solid #526172; border-left: 3px solid #f2c75c; }
+.polling-published-summary > div:first-child { display: flex; flex-direction: column; gap: 5px; }
+.polling-published-kicker { color: #bdc7d1; font-size: 10px; font-weight: 800; letter-spacing: 1px; }
+.polling-published-summary strong { color: #fff; font-size: 17px; }
+.polling-published-shares { display: flex; flex-wrap: wrap; gap: 8px; color: #e8eef4; font-size: 12px; font-weight: 700; }
+.polling-published-shares span { padding: 6px 8px; background: #293541; }
+@media (max-width: 600px) { #endorsers-modal { padding: 10px; } #endorsers-modal .endorsers-modal-box { max-height: calc(100dvh - 20px); } #endorsers-modal .modal-header, #endorsers-modal .endorsers-body { padding-left: 16px; padding-right: 16px; } }
+
 .ov-overlay {
     --ov-bg: #14191f;
     --ov-surface: #1b232c;
@@ -59,8 +111,16 @@
 .ov-stance-picker { margin: 20px 0 15px; border: 0; padding: 0; min-width: 0; }
 .ov-stance-picker legend { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--ov-muted); margin-bottom: 10px; }
 .ov-stance-options { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
-.ov-stance { padding: 10px 4px; min-height: 44px; font-size: 11px; border-color: #536474; background: #16202a; }
-.ov-stance[aria-pressed='true'] { background: #ead08b; border-color: #ffe1a0; color: #16202a; }
+.ov-stance { padding: 10px 4px; min-height: 44px; font-size: 11px; color: #f6f7f9; border-width: 1px; border-style: solid; }
+.ov-stance.ov-position-far_left { --stance-color: #173b68; background: color-mix(in srgb, var(--stance-color) 76%, #16202a); border-color: #416fa5; }
+.ov-stance.ov-position-left { --stance-color: #285d92; background: color-mix(in srgb, var(--stance-color) 70%, #16202a); border-color: #5a8ec5; }
+.ov-stance.ov-position-center_left { --stance-color: #4b6eaa; background: color-mix(in srgb, var(--stance-color) 64%, #16202a); border-color: #7897c9; }
+.ov-stance.ov-position-center { --stance-color: #76569e; background: color-mix(in srgb, var(--stance-color) 70%, #16202a); border-color: #ad8bd4; }
+.ov-stance.ov-position-center_right { --stance-color: #985d86; background: color-mix(in srgb, var(--stance-color) 64%, #16202a); border-color: #c58bb4; }
+.ov-stance.ov-position-right { --stance-color: #8f3d5d; background: color-mix(in srgb, var(--stance-color) 70%, #16202a); border-color: #c76686; }
+.ov-stance.ov-position-far_right { --stance-color: #5f1117; background: color-mix(in srgb, var(--stance-color) 80%, #16202a); border-color: #a93642; }
+.ov-stance.is-current { box-shadow: inset 0 0 0 2px #fff, 0 0 0 1px var(--stance-color); font-weight: 800; }
+.ov-stance.is-preview:not(.is-current) { box-shadow: inset 0 0 0 2px #f2c75c; }
 .ov-stance-description { border-left: 3px solid var(--ov-accent); padding: 13px 16px; background: #101820; }
 .ov-stance-description h4 { color: #f2d890; font-size: 14px; margin-bottom: 7px; }
 .ov-stance-description p { font-size: 13px; color: #d6dfe7; }

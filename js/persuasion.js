@@ -3,6 +3,19 @@
    ============================================ */
 
 var Persuasion = {
+    getStateCounties: function(stateCode) {
+        if (!Counties || !Counties.countyData) return [];
+        Counties.byState = Counties.byState || {};
+        if (!Counties.byState[stateCode]) {
+            Counties.byState[stateCode] = [];
+            for (var f in Counties.countyData) {
+                if (Counties.countyData[f].s === stateCode) {
+                    Counties.byState[stateCode].push(Counties.countyData[f]);
+                }
+            }
+        }
+        return Counties.byState[stateCode];
+    },
     
     // Calculate issue importance for a group (converts priority array to weight)
     getGroupIssueImportance: function(groupId, issueId) {
@@ -251,6 +264,7 @@ var Persuasion = {
         var stateCode = action.state;
         var issueId = action.issueId;
         var intensity = action.intensity || 1;
+        Favorability.ad({sponsorId:gameData.candidate.id,type:'issue',stateCode:stateCode,exposure:intensity});
 
         if (typeof updateMessagingConsistency === 'function') {
             updateMessagingConsistency(issueId, intensity);
@@ -269,24 +283,16 @@ var Persuasion = {
         var saturation = this.calculateSaturationFactor(gameData.turnPressure[pressureKey]);
         
         // Apply to all counties in the state
-        for (var fips in Counties.countyData) {
-            var paddedFips = fips.padStart(5, '0');
-            if (paddedFips.substring(0, 2) === stateFips) {
-                var county = Counties.countyData[fips];
-                
-                // Calculate persuasion delta for this county
-                var delta = this.calculateCountyPersuasion(
-                    county, issueId, intensity, 
-                    PERSUASION_CONSTANTS.BASE_PERSUASION_AD,
-                    saturation, false  // not localized
-                );
-                
-                // Apply margin shift
-                this.applyMarginShift(county, delta);
-                
-                // Small turnout boost
-                this.applyTurnoutBoost(county, PERSUASION_CONSTANTS.AD_TURNOUT_BOOST);
-            }
+        var stateCounties = this.getStateCounties(stateCode);
+        for (var ci = 0; ci < stateCounties.length; ci++) {
+            var county = stateCounties[ci];
+            var delta = this.calculateCountyPersuasion(
+                county, issueId, intensity, 
+                PERSUASION_CONSTANTS.BASE_PERSUASION_AD,
+                saturation, false  // not localized
+            );
+            this.applyMarginShift(county, delta);
+            this.applyTurnoutBoost(county, PERSUASION_CONSTANTS.AD_TURNOUT_BOOST);
         }
         
         // Update interest group turnout propensity for aligned groups
@@ -326,28 +332,27 @@ var Persuasion = {
         var saturation = this.calculateSaturationFactor(gameData.turnPressure[pressureKey]);
         
         // Apply to all counties in the state
-        for (var fips in Counties.countyData) {
-            var paddedFips = fips.padStart(5, '0');
-            if (paddedFips.substring(0, 2) === stateFips) {
-                var county = Counties.countyData[fips];
-                var isLocalCounty = (paddedFips === countyId);
-                
-                // Calculate persuasion delta
-                var delta = this.calculateCountyPersuasion(
-                    county, issueId, intensity,
-                    PERSUASION_CONSTANTS.BASE_PERSUASION_SPEECH,
-                    saturation, isLocalCounty
-                );
-                
-                // Apply margin shift
-                this.applyMarginShift(county, delta);
-                
-                // Turnout boost (larger in local county)
-                var turnoutBoost = isLocalCounty ? 
-                    PERSUASION_CONSTANTS.SPEECH_TURNOUT_BOOST * 2 : 
-                    PERSUASION_CONSTANTS.SPEECH_TURNOUT_BOOST;
-                this.applyTurnoutBoost(county, turnoutBoost);
-            }
+        var stateCounties = this.getStateCounties(stateCode);
+        for (var ci = 0; ci < stateCounties.length; ci++) {
+            var county = stateCounties[ci];
+            var paddedFips = String(county.fips || '').padStart(5, '0');
+            var isLocalCounty = (paddedFips === countyId);
+            
+            // Calculate persuasion delta
+            var delta = this.calculateCountyPersuasion(
+                county, issueId, intensity,
+                PERSUASION_CONSTANTS.BASE_PERSUASION_SPEECH,
+                saturation, isLocalCounty
+            );
+            
+            // Apply margin shift
+            this.applyMarginShift(county, delta);
+            
+            // Turnout boost (larger in local county)
+            var turnoutBoost = isLocalCounty ? 
+                PERSUASION_CONSTANTS.SPEECH_TURNOUT_BOOST * 2 : 
+                PERSUASION_CONSTANTS.SPEECH_TURNOUT_BOOST;
+            this.applyTurnoutBoost(county, turnoutBoost);
         }
         
         // Update interest group turnout propensity for aligned groups
@@ -363,6 +368,7 @@ var Persuasion = {
     },
     applyRallyAction: function(action) {
         var stateCode = action.state;
+        Favorability.change(gameData.candidate.id,0.5,{stateCode:stateCode,recognition:0.3});
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
         if (!stateFips || !Counties || !Counties.countyData) return;
 
@@ -382,13 +388,11 @@ var Persuasion = {
             rallyDelta *= (1.0 + MOMENTUM_CONSTANTS.EFFECT_SCALE * (gameData.campaignMomentum || 0));
         }
 
-        for (var fips in Counties.countyData) {
-            var paddedFips = fips.padStart(5, '0');
-            if (paddedFips.substring(0, 2) === stateFips) {
-                var county = Counties.countyData[fips];
-                this.applyTurnoutBoost(county, PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST);
-                this.applyMarginShift(county, rallyDelta);
-            }
+        var stateCounties = this.getStateCounties(stateCode);
+        for (var ci = 0; ci < stateCounties.length; ci++) {
+            var county = stateCounties[ci];
+            this.applyTurnoutBoost(county, PERSUASION_CONSTANTS.RALLY_TURNOUT_BOOST);
+            this.applyMarginShift(county, rallyDelta);
         }
         this.applyRallyGroupMomentum(stateCode);
         this.recordAppliedActionMetric(action, {
@@ -406,15 +410,13 @@ var Persuasion = {
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
         if (!stateFips || !Counties || !Counties.countyData) return;
 
-        for (var fips in Counties.countyData) {
-            var paddedFips = fips.padStart(5, '0');
-            if (paddedFips.substring(0, 2) === stateFips) {
-                var county = Counties.countyData[fips];
-                var groupShare = Counties.getCountyGroupShare ? Counties.getCountyGroupShare(county, groupId) : 0;
-                if (groupShare <= 0) continue;
-                var turnoutBoost = PERSUASION_CONSTANTS.FIELD_TURNOUT_BOOST * intensity * groupShare * PERSUASION_CONSTANTS.CONTACT_RATE_EFFICIENCY;
-                this.applyTurnoutBoost(county, turnoutBoost);
-            }
+        var stateCounties = this.getStateCounties(stateCode);
+        for (var ci = 0; ci < stateCounties.length; ci++) {
+            var county = stateCounties[ci];
+            var groupShare = Counties.getCountyGroupShare ? Counties.getCountyGroupShare(county, groupId) : 0;
+            if (groupShare <= 0) continue;
+            var turnoutBoost = PERSUASION_CONSTANTS.FIELD_TURNOUT_BOOST * intensity * groupShare * PERSUASION_CONSTANTS.CONTACT_RATE_EFFICIENCY;
+            this.applyTurnoutBoost(county, turnoutBoost);
         }
         this.applyTargetGroupMomentum(groupId, intensity * 0.65 * PERSUASION_CONSTANTS.CONTACT_RATE_EFFICIENCY);
         this.boostGroupTurnout(groupId, BUFF_CONSTANTS.GROUP_TURNOUT_RATE * intensity * 2.5 * PERSUASION_CONSTANTS.CONTACT_RATE_EFFICIENCY);
@@ -434,12 +436,11 @@ var Persuasion = {
         var stateFips = STATES[stateCode] ? STATES[stateCode].fips : null;
         if (!stateFips || !Counties || !Counties.countyData) return;
 
-        for (var fips in Counties.countyData) {
-            var paddedFips = fips.padStart(5, '0');
-            if (paddedFips.substring(0, 2) === stateFips) {
-                var county = Counties.countyData[fips];
-                var groupShare = Counties.getCountyGroupShare ? Counties.getCountyGroupShare(county, groupId) : 0;
-                if (groupShare <= 0) continue;
+        var stateCounties = this.getStateCounties(stateCode);
+        for (var ci = 0; ci < stateCounties.length; ci++) {
+            var county = stateCounties[ci];
+            var groupShare = Counties.getCountyGroupShare ? Counties.getCountyGroupShare(county, groupId) : 0;
+            if (groupShare <= 0) continue;
 
                 var delta = PERSUASION_CONSTANTS.BASE_PERSUASION_DIGITAL * intensity * groupShare;
 
@@ -462,7 +463,6 @@ var Persuasion = {
 
                 this.applyMarginShift(county, delta);
                 this.applyTurnoutBoost(county, PERSUASION_CONSTANTS.DIGITAL_TURNOUT_BOOST * intensity * groupShare);
-            }
         }
         this.applyTargetGroupMomentum(groupId, intensity * 0.45);
         this.boostGroupTurnout(groupId, BUFF_CONSTANTS.GROUP_TURNOUT_RATE * intensity * 1.5);
@@ -881,13 +881,11 @@ var Persuasion = {
 
     getStateGroupShare: function(stateCode, groupId) {
         if (!STATES[stateCode] || !Counties || !Counties.countyData || !Counties.getCountyGroupShare) return 0;
-        var stateFips = STATES[stateCode].fips;
+        var stateCounties = this.getStateCounties(stateCode);
         var weightedShare = 0;
         var totalPop = 0;
-        for (var fips in Counties.countyData) {
-            var paddedFips = fips.padStart(5, '0');
-            if (paddedFips.substring(0, 2) !== stateFips) continue;
-            var county = Counties.countyData[fips];
+        for (var ci = 0; ci < stateCounties.length; ci++) {
+            var county = stateCounties[ci];
             var pop = county.p || 0;
             weightedShare += pop * Counties.getCountyGroupShare(county, groupId);
             totalPop += pop;
@@ -932,6 +930,7 @@ var Persuasion = {
     // v2: SURROGATE action — 60% of AD effect, no turn pressure, only in unvisited states
     applySurrogateAction: function(action) {
         var stateCode = action.state;
+        Favorability.change(gameData.candidate.id,0.35,{stateCode:stateCode,recognition:0.2});
         var issueId = action.issueId;
         var intensity = action.intensity || 1;
 
@@ -948,19 +947,16 @@ var Persuasion = {
         if (issueId) this.trackIssueFatigue(stateCode, issueId);
 
         var surrogateScale = PERSUASION_CONSTANTS.SURROGATE_SCALE || 0.6;
-
-        for (var fips in Counties.countyData) {
-            var paddedFips = fips.padStart(5, '0');
-            if (paddedFips.substring(0, 2) === stateFips) {
-                var county = Counties.countyData[fips];
-                var delta = this.calculateCountyPersuasion(
-                    county, issueId, intensity,
-                    PERSUASION_CONSTANTS.BASE_PERSUASION_AD * surrogateScale,
-                    1.0, false // No saturation penalty, no localized
-                );
-                this.applyMarginShift(county, delta);
-                this.applyTurnoutBoost(county, (PERSUASION_CONSTANTS.SURROGATE_TURNOUT_BOOST || 0.003) * intensity);
-            }
+        var stateCounties = this.getStateCounties(stateCode);
+        for (var ci = 0; ci < stateCounties.length; ci++) {
+            var county = stateCounties[ci];
+            var delta = this.calculateCountyPersuasion(
+                county, issueId, intensity,
+                PERSUASION_CONSTANTS.BASE_PERSUASION_AD * surrogateScale,
+                1.0, false // No saturation penalty, no localized
+            );
+            this.applyMarginShift(county, delta);
+            this.applyTurnoutBoost(county, (PERSUASION_CONSTANTS.SURROGATE_TURNOUT_BOOST || 0.003) * intensity);
         }
 
         if (typeof updateGroupTurnoutFromIssue !== 'undefined' && issueId) {

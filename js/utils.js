@@ -12,9 +12,19 @@ function gaussianNoise(mean, sigma) {
 // county FIPS, display label, or stale map selection cannot make every
 // third-party candidate ineligible.
 function isPartyOnBallotForState(partyCode, stateCode) {
+    if (typeof PrimaryNative !== 'undefined' && PrimaryNative.active && PrimaryNative.active()) {
+        if (typeof PrimaryCampaign !== 'undefined' && PrimaryCampaign.actor && PrimaryCampaign.actor(partyCode)) return true;
+    }
     if (partyCode === 'D' || partyCode === 'R') return true;
     var state = String(stateCode || '').trim().toUpperCase();
     if (!state || state === 'USA') return true;
+    if (/^\d+$/.test(state)) {
+        var prefix = state.padStart(5, '0').substring(0, 2);
+        if (typeof Counties !== 'undefined' && typeof Counties.getStateCodeFromFips === 'function') {
+            var resolvedState = Counties.getStateCodeFromFips(prefix);
+            if (resolvedState) state = resolvedState.toUpperCase();
+        }
+    }
     if (typeof gameData === 'undefined' || !gameData.thirdPartiesEnabled) return false;
     if (typeof gameData.thirdTickets !== 'undefined' && gameData.thirdTickets && !gameData.thirdTickets[partyCode]) return false;
     var access = typeof THIRD_PARTY_BALLOT_ACCESS !== 'undefined' ? THIRD_PARTY_BALLOT_ACCESS[partyCode] : null;
@@ -229,6 +239,65 @@ var Utils = {
         return this.getTrueStatePollingByParty(stateCode);
     },
 
+    // District polling uses the same county-derived baseline as states, but
+    // preserves the county undecided share instead of silently dropping it.
+    // Maine and Nebraska district boundaries are scenario geography handled by
+    // SPLIT_ELECTORAL_RULES; this is a display estimate, not a separate poll.
+    getDistrictPollingByParty: function(stateCode, districtId) {
+        if (typeof Counties === 'undefined' || !Counties.countyData ||
+            typeof SPLIT_ELECTORAL_RULES === 'undefined' || !SPLIT_ELECTORAL_RULES[stateCode]) return null;
+        var rule = SPLIT_ELECTORAL_RULES[stateCode], parties = ['D', 'R', 'G', 'L', 'PSL', 'I'];
+        var decided = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0 }, undecided = 0;
+        var stateFips = STATES[stateCode] && STATES[stateCode].fips;
+        var addVotes = function(votes, share, undecidedPct) {
+            var segmentTotal = 0;
+            for (var i = 0; i < parties.length; i++) segmentTotal += Math.max(0, Number(votes[parties[i]]) || 0);
+            if (segmentTotal <= 0 || share <= 0) return;
+            for (var j = 0; j < parties.length; j++) decided[parties[j]] += Math.max(0, Number(votes[parties[j]]) || 0) * share;
+            var u = Math.max(0, Math.min(99.9, Number(undecidedPct) || 0));
+            undecided += segmentTotal * share * (u / Math.max(0.1, 100 - u));
+        };
+
+        Counties.byState = Counties.byState || {};
+        if (!Counties.byState[stateCode]) {
+            Counties.byState[stateCode] = [];
+            for (var f in Counties.countyData) {
+                if (Counties.countyData[f].s === stateCode) {
+                    Counties.byState[stateCode].push(Counties.countyData[f]);
+                }
+            }
+        }
+        var stateCounties = Counties.byState[stateCode];
+        for (var ci = 0; ci < stateCounties.length; ci++) {
+            var county = stateCounties[ci];
+            if (!county) continue;
+            var paddedFips = String(county.fips || '').padStart(5, '0');
+            var countyVotes = Counties.getCountyVotesForAllocation(county, false);
+            var countyTotal = parties.reduce(function(sum, party) { return sum + Math.max(0, countyVotes[party] || 0); }, 0);
+            if (countyTotal <= 0) continue;
+
+            if (rule.splitCounties && rule.splitCounties[paddedFips]) {
+                var segments = rule.splitCounties[paddedFips];
+                var fitted = Counties.allocateSplitCountyVotes(county, countyVotes, segments, parties) || [];
+                var shareTotal = segments.reduce(function(sum, segment) { return sum + Math.max(0, Number(segment.share) || 0); }, 0) || segments.length;
+                for (var si = 0; si < segments.length; si++) {
+                    if (segments[si].district !== districtId) continue;
+                    addVotes(fitted[si] || {}, 1, county.undecided || 0);
+                }
+            } else {
+                var district = (rule.countyDistrictMap && rule.countyDistrictMap[paddedFips]) || rule.defaultDistrict;
+                if (district === districtId) addVotes(countyVotes, 1, county.undecided || 0);
+            }
+        }
+
+        var decidedTotal = parties.reduce(function(sum, party) { return sum + decided[party]; }, 0), total = decidedTotal + undecided;
+        if (total <= 0) return null;
+        var result = { D: 0, R: 0, G: 0, L: 0, PSL: 0, I: 0, Undecided: 0 };
+        for (var p = 0; p < parties.length; p++) result[parties[p]] = (decided[parties[p]] / total) * 100;
+        result.Undecided = (undecided / total) * 100;
+        return result;
+    },
+
     getTrueNationalPollingByParty: function() {
         var nTotals = { D: 0, R: 0, G: 0, L: 0, I: 0, PSL: 0 };
         var nUndecided = 0;
@@ -273,10 +342,18 @@ var Utils = {
         var stateUndecidedTotal = 0;
         var statePopTotal = 0;
 
-        for (var fips in Counties.countyData) {
-            var paddedFips = fips.padStart(5, '0');
-            if (paddedFips.substring(0, 2) !== stateFips) continue;
-            var county = Counties.countyData[fips];
+        Counties.byState = Counties.byState || {};
+        if (!Counties.byState[stateCode]) {
+            Counties.byState[stateCode] = [];
+            for (var f in Counties.countyData) {
+                if (Counties.countyData[f].s === stateCode) {
+                    Counties.byState[stateCode].push(Counties.countyData[f]);
+                }
+            }
+        }
+        var stateCounties = Counties.byState[stateCode];
+        for (var ci = 0; ci < stateCounties.length; ci++) {
+            var county = stateCounties[ci];
             if (!county.v || !county.p) continue;
 
             var decided = (100 - (county.undecided || 0)) / 100;
@@ -312,6 +389,35 @@ var Utils = {
 
     getCountyPollingByParty: function (county) {
         if (!county || !county.v) return null;
+
+        if (typeof MichiganModel !== 'undefined' && MichiganModel.isInitialized && (typeof Election === 'undefined' || !Election.isSimulating)) {
+            var pred = MichiganModel.getCountyPrediction(county);
+            if (pred && pred.predictedShares) {
+                var pcts = {};
+                var stateCode = county.s || (county.fips ? Counties.getStateCodeFromFips(county.fips.substring(0, 2)) : 'PA');
+                var keys = ['D', 'R', 'G', 'L', 'I', 'PSL'];
+                var sumCand = 0;
+                for (var pi = 0; pi < keys.length; pi++) {
+                    var k = keys[pi];
+                    var onBallot = (typeof this.isPartyOnBallot === 'function') ? this.isPartyOnBallot(k, stateCode) : (k === 'D' || k === 'R');
+                    if (!onBallot) {
+                        pcts[k] = 0;
+                    } else {
+                        var val = pred.predictedShares[k] || 0;
+                        pcts[k] = val;
+                        sumCand += val;
+                    }
+                }
+                var uVal = (pred.undecidedPct !== undefined) ? pred.undecidedPct : (pred.predictedShares['Undecided'] !== undefined ? pred.predictedShares['Undecided'] : Math.max(0, 100.0 - sumCand));
+                pcts['Undecided'] = Math.round(uVal * 10) / 10;
+                // Mathematically guarantee totals sum to exactly 100.0%
+                var diff = Math.round((100.0 - (sumCand + pcts['Undecided'])) * 10) / 10;
+                if (Math.abs(diff) > 0.0001) {
+                    pcts['Undecided'] = Math.round((pcts['Undecided'] + diff) * 10) / 10;
+                }
+                return pcts;
+            }
+        }
 
         var decided = (100 - (county.undecided || 0)) / 100;
         var totals = Counties.calculateCountyVoteTotals(county, { reportingFactor: 1, decidedMultiplier: decided, errorFactor: 1 });
@@ -436,6 +542,12 @@ var Utils = {
             if (countyFips && padded !== countyFips) continue;
             var county = Counties.countyData[fips];
             if (!county) continue;
+            if (countyFips && typeof MichiganModel !== 'undefined' && MichiganModel.isInitialized && (typeof Election === 'undefined' || !Election.isSimulating)) {
+                var pred = MichiganModel.getCountyPrediction(county);
+                if (pred && pred.predictedBallotsCast > 0) {
+                    return pred.predictedBallotsCast;
+                }
+            }
             var registered = Number(county.regVoters);
             if (!(registered > 0)) registered = Number(county.p) || 0;
             var rate = typeof Counties.getCountyTurnoutRate === 'function'
@@ -469,7 +581,22 @@ var Utils = {
             return '<div class="cpl-empty">No candidates.</div>';
         }
 
-        var html = '<div class="cpl-list">';
+        var isCounty = /^\d{1,5}$/.test(String(targetId || ''));
+        var html = '';
+        if (isCounty && typeof MichiganModel !== 'undefined' && MichiganModel.isInitialized && (typeof Election === 'undefined' || !Election.isSimulating)) {
+            var normFips = Counties.normalizeFips(targetId);
+            var countyObj = Counties.countyData ? Counties.countyData[normFips] : null;
+            var pred = countyObj ? MichiganModel.getCountyPrediction(countyObj) : null;
+            var accLabel = pred ? (pred.accuracyLabel + (pred.maxErrorPct !== undefined ? ' · ±' + pred.maxErrorPct + '%' : '')) : 'Moderate';
+            html += '<div class="cpl-predictive-banner" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 6px; padding: 6px 10px; margin-bottom: 8px;">' +
+                '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                    '<span style="font-size: 0.72rem; font-weight: 800; color: #f59e0b; letter-spacing: 0.6px;"><i class="fa-solid fa-chart-line"></i> PREDICTIVE MODEL</span>' +
+                    '<span style="font-size: 0.68rem; color: #fbbf24; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">' + accLabel + '</span>' +
+                '</div>' +
+                '<div style="font-size: 0.68rem; color: #d1d5db; margin-top: 2px;">Model calibrated by state ground operations & polling intelligence</div>' +
+            '</div>';
+        }
+        html += '<div class="cpl-list">';
         for (var i = 0; i < candidates.length; i++) {
             var item = candidates[i];
             var onBallot = this.isPartyOnBallot(item.party, targetId);
@@ -511,13 +638,22 @@ var Utils = {
         var uPct = (pcts && pcts['Undecided'] !== undefined) ? pcts['Undecided'] : 0;
         var tid = targetId || (typeof gameData !== 'undefined' && gameData.selectedState ? gameData.selectedState : 'USA');
         
-        html += '<div class="cpl-undecided-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.85rem; font-weight: 700; color: var(--ink-muted);">';
-        if (typeof Polling !== 'undefined') {
-            html += '<button onclick="Polling.openPollsModal(\'' + tid + '\')" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; cursor: pointer; border-radius: 4px; padding: 3px 8px; font-size: 0.8em; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s;" title="View Polling History" onmouseover="this.style.background=\'rgba(255,255,255,0.22)\';" onmouseout="this.style.background=\'rgba(255,255,255,0.08)\';"><i class="fa-solid fa-square-poll-vertical"></i> Polls</button>';
-        } else {
-            html += '<div></div>';
+        if (uPct > 0.05) {
+            html += '<div class="cpl-undecided-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.85rem; font-weight: 700; color: var(--ink-muted);">';
+            var isStateTarget = typeof STATES !== 'undefined' && STATES[String(tid).toUpperCase()];
+            if (typeof Polling !== 'undefined' && isStateTarget) {
+                html += '<button onpointerdown="Polling.openPollsModal(\'' + tid + '\'); event.stopPropagation();" onclick="Polling.openPollsModal(\'' + tid + '\'); event.stopPropagation();" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; cursor: pointer; border-radius: 4px; padding: 3px 8px; font-size: 0.8em; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s;" title="View Polling History" onmouseover="this.style.background=\'rgba(255,255,255,0.22)\';" onmouseout="this.style.background=\'rgba(255,255,255,0.08)\';"><i class="fa-solid fa-square-poll-vertical"></i> Polls</button>';
+            } else if (isCounty) {
+                html += '<span style="font-size: 0.72rem; color: #9ca3af;"><i class="fa-solid fa-check-circle" style="color: #10b981;"></i> Total: 100.0%</span>';
+            } else {
+                html += '<div></div>';
+            }
+            html += '<span style="padding-right: 4px; color: #fbbf24;">Undecided: ' + uPct.toFixed(1) + '%</span></div>';
+        } else if (isCounty) {
+            html += '<div class="cpl-undecided-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.72rem; color: #9ca3af;">' +
+                '<span><i class="fa-solid fa-check-circle" style="color: #10b981;"></i> Total Projected</span>' +
+                '<span style="font-weight: 700; color: #10b981;">100.0% Decided</span></div>';
         }
-        html += '<span style="padding-right: 4px;">Undecided: ' + uPct.toFixed(1) + '%</span></div>';
         
         return html;
     },
@@ -585,7 +721,18 @@ var Utils = {
             html += '</div>';
         }
         html += '</div>';
-        html += '<div class="elec-total-votes">' + totalVotes.toLocaleString() + ' votes</div>';
+        var pollTarget = targetId || '';
+        var isPollHistoryTarget = pollTarget === 'USA' ||
+            (typeof STATES !== 'undefined' && STATES[String(pollTarget).toUpperCase()]);
+        html += '<div class="elec-total-votes-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.85rem; font-weight: 700; color: var(--ink-muted);">';
+        if (isPollHistoryTarget && typeof Polling !== 'undefined' && Polling.openPollsModal) {
+            var pollTargetCode = String(pollTarget).toUpperCase();
+            html += '<button onpointerdown="Polling.openPollsModal(\'' + pollTargetCode + '\'); event.stopPropagation();" onclick="Polling.openPollsModal(\'' + pollTargetCode + '\'); event.stopPropagation();" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; cursor: pointer; border-radius: 4px; padding: 3px 8px; font-size: 0.8em; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s;" title="View Polling History" onmouseover="this.style.background=\'rgba(255,255,255,0.22)\';" onmouseout="this.style.background=\'rgba(255,255,255,0.08)\';"><i class="fa-solid fa-square-poll-vertical"></i> Polls</button>';
+        } else {
+            html += '<div></div>';
+        }
+        html += '<div class="elec-total-votes" style="padding-right: 4px;">' + totalVotes.toLocaleString() + ' votes</div>';
+        html += '</div>';
 
         // Projection status banner
         if (projStatus) {

@@ -10,6 +10,7 @@ var CandidateEraEffects = (function () {
     'use strict';
 
     var PROFILE_BY_ID = {
+        harris: 'personalistic',
         trump: 'personalistic',
         vance: 'movement_aligned',
         desantis: 'movement_aligned',
@@ -22,6 +23,17 @@ var CandidateEraEffects = (function () {
         populist_right: 'movement_aligned',
         compassionate_conservative: 'party_standard',
         religious_right: 'party_standard'
+    };
+
+    // Democratic profiles are qualitative scenario classes, not candidate
+    // scores. Harris is the 2024 Democratic reference ticket represented by
+    // the county baseline; other Democratic factions retain only a bounded
+    // portion of that reference-era residual.
+    var DEM_PROFILE_BY_FACTION = {
+        mainstream_liberal: 'party_standard',
+        pragmatic_moderate: 'party_standard',
+        activist_left: 'movement_aligned',
+        progressive_left: 'movement_aligned'
     };
 
     // These are qualitative scenario classes. The curve inputs are not
@@ -70,6 +82,24 @@ var CandidateEraEffects = (function () {
         whitecollar: { weights: [0.52, 0.30, 0.18], preference: 0.022, repTurnout: 0.005, demTurnout: 0.015 }
     };
 
+    // Harris/Walz reference effects use a separate, modest calibration. These
+    // are designer-set scenario parameters, not estimates of a candidate's
+    // true demographic support. The county baseline remains the anchor.
+    var DEM_GROUP_EFFECTS = {
+        white: { weights: [0.55, 0.25, 0.20], preference: 0.020, repTurnout: 0.008, demTurnout: 0.012 },
+        noncollege: { weights: [0.48, 0.27, 0.25], preference: 0.018, repTurnout: 0.008, demTurnout: 0.012 },
+        rural: { weights: [0.50, 0.22, 0.28], preference: 0.014, repTurnout: 0.006, demTurnout: 0.010 },
+        evangelical: { weights: [0.52, 0.20, 0.28], preference: 0.012, repTurnout: 0.006, demTurnout: 0.008 },
+        hispanic: { weights: [0.42, 0.36, 0.22], preference: 0.022, repTurnout: 0.008, demTurnout: 0.014 },
+        black: { weights: [0.48, 0.36, 0.16], preference: 0.042, repTurnout: 0.012, demTurnout: 0.020 },
+        asian: { weights: [0.50, 0.34, 0.16], preference: 0.030, repTurnout: 0.010, demTurnout: 0.016 },
+        suburban: { weights: [0.45, 0.34, 0.21], preference: 0.028, repTurnout: 0.010, demTurnout: 0.016 },
+        college: { weights: [0.44, 0.34, 0.22], preference: 0.030, repTurnout: 0.010, demTurnout: 0.018 },
+        youth: { weights: [0.46, 0.30, 0.24], preference: 0.028, repTurnout: 0.010, demTurnout: 0.018 },
+        centrists: { weights: [0.52, 0.34, 0.14], preference: 0.024, repTurnout: 0.008, demTurnout: 0.014 },
+        whitecollar: { weights: [0.52, 0.30, 0.18], preference: 0.026, repTurnout: 0.008, demTurnout: 0.016 }
+    };
+
     // A separate, independent repudiation channel. These groups are existing
     // overlapping model groups used as proxies; no new voters are created.
     var REPUDIATION = {
@@ -81,6 +111,7 @@ var CandidateEraEffects = (function () {
     };
 
     var TRUMP_BASELINE = null;
+    var HARRIS_BASELINE = null;
     var POLICY_SIMILARITY_CACHE = {};
 
     function clamp(value, min, max) {
@@ -88,19 +119,22 @@ var CandidateEraEffects = (function () {
     }
 
     function profileFor(candidate) {
-        if (!candidate || candidate.party !== 'R') return null;
+        if (!candidate || (candidate.party !== 'R' && candidate.party !== 'D')) return null;
         if (candidate.eraProfile && BRAND_CURVE_INPUT[candidate.eraProfile] !== undefined) {
             return candidate.eraProfile;
         }
         if (PROFILE_BY_ID[candidate.id]) return PROFILE_BY_ID[candidate.id];
-        return PROFILE_BY_FACTION[candidate.factionId] || 'party_standard';
+        return candidate.party === 'D'
+            ? (DEM_PROFILE_BY_FACTION[candidate.factionId] || 'party_standard')
+            : (PROFILE_BY_FACTION[candidate.factionId] || 'party_standard');
     }
 
-    function groupConfig(groupId) {
-        if (GROUP_EFFECTS[groupId]) return GROUP_EFFECTS[groupId];
+    function groupConfig(groupId, effects) {
+        effects = effects || GROUP_EFFECTS;
+        if (effects[groupId]) return effects[groupId];
         if (typeof INTEREST_GROUPS !== 'undefined' && INTEREST_GROUPS[groupId]) {
             var parent = INTEREST_GROUPS[groupId].parentId;
-            if (parent && GROUP_EFFECTS[parent]) return GROUP_EFFECTS[parent];
+            if (parent && effects[parent]) return effects[parent];
         }
         return null;
     }
@@ -108,29 +142,32 @@ var CandidateEraEffects = (function () {
     function initializeTrumpBaseline() {
         if (TRUMP_BASELINE || typeof CANDIDATE_POSITIONS === 'undefined') return;
         TRUMP_BASELINE = Object.assign({}, CANDIDATE_POSITIONS.trump || {});
+        HARRIS_BASELINE = Object.assign({}, CANDIDATE_POSITIONS.harris || {});
     }
 
     // Returns a transfer factor in [0,1]. It is only used as a multiplier on
     // the historical residual; it is not an additional issue-position bonus.
-    function policySimilarity(candidate) {
+    function policySimilarity(candidate, referenceId) {
         initializeTrumpBaseline();
-        if (!candidate || !TRUMP_BASELINE || typeof IssueModel === 'undefined') return 0.5;
-        var cacheKey = candidate.id + '|' + JSON.stringify(candidate.issuePositions || CANDIDATE_POSITIONS[candidate.id] || {});
+        referenceId = referenceId || 'trump';
+        var reference = referenceId === 'harris' ? HARRIS_BASELINE : TRUMP_BASELINE;
+        if (!candidate || !reference || typeof IssueModel === 'undefined') return 0.5;
+        var cacheKey = referenceId + '|' + candidate.id + '|' + JSON.stringify(candidate.issuePositions || CANDIDATE_POSITIONS[candidate.id] || {});
         if (POLICY_SIMILARITY_CACHE[cacheKey] !== undefined) return POLICY_SIMILARITY_CACHE[cacheKey];
         var issues = typeof CORE_ISSUES !== 'undefined' ? CORE_ISSUES : [];
         var values = [];
         for (var i = 0; i < issues.length; i++) {
             var issue = issues[i];
-            var trumpPosition = TRUMP_BASELINE[issue.id] !== undefined
-                ? TRUMP_BASELINE[issue.id]
-                : TRUMP_BASELINE[issue.legacyId];
-            if (trumpPosition === undefined) continue;
+            var referencePosition = reference[issue.id] !== undefined
+                ? reference[issue.id]
+                : reference[issue.legacyId];
+            if (referencePosition === undefined) continue;
             var candidatePosition = candidate.issuePositions && candidate.issuePositions[issue.id];
             if (candidatePosition === undefined && typeof CANDIDATE_POSITIONS !== 'undefined') {
                 candidatePosition = (CANDIDATE_POSITIONS[candidate.id] || {})[issue.legacyId];
             }
             if (candidatePosition === undefined) continue;
-            var agreement = IssueModel.agreement(issue.id, candidatePosition, trumpPosition);
+            var agreement = IssueModel.agreement(issue.id, candidatePosition, referencePosition);
             values.push((agreement + 1) / 2);
         }
         if (!values.length) return 0.5;
@@ -144,12 +181,12 @@ var CandidateEraEffects = (function () {
         return Math.min(cap, input * input);
     }
 
-    function transfer(candidate, groupId) {
+    function transfer(candidate, groupId, effects, referenceId) {
         var profile = profileFor(candidate);
-        var config = groupConfig(groupId);
+        var config = groupConfig(groupId, effects);
         if (!profile || !config) return 0;
         if (profile === 'personalistic') return 1;
-        var policy = policySimilarity(candidate);
+        var policy = policySimilarity(candidate, referenceId);
         var personal = brandCurve(profile);
         var weights = config.weights;
         // Structural persistence is deliberately explicit. In this model it
@@ -159,10 +196,10 @@ var CandidateEraEffects = (function () {
         return clamp(Math.min(PROFILE_TRANSFER_CAP[profile] || 0, inherited), 0, 1);
     }
 
-    function effectFor(candidate, groupId) {
-        var config = groupConfig(groupId);
+    function effectFor(candidate, groupId, effects, referenceId) {
+        var config = groupConfig(groupId, effects);
         if (!config || !profileFor(candidate)) return { preference: 0, repTurnout: 0, demTurnout: 0 };
-        var factor = transfer(candidate, groupId);
+        var factor = transfer(candidate, groupId, effects, referenceId);
         var loss = 1 - factor;
         var profile = profileFor(candidate);
         return {
@@ -185,22 +222,27 @@ var CandidateEraEffects = (function () {
         return REPUDIATION[key] || { preference: 0, turnout: 0 };
     }
 
-    function apply(logs, rates, candidates, groupId) {
-        if (!Array.isArray(logs) || !Array.isArray(rates) || !Array.isArray(candidates)) return;
-        var republican = candidates.find(function (candidate) { return candidate.party === 'R'; });
-        if (!republican || !profileFor(republican)) return;
-        var effect = effectFor(republican, groupId);
-        var repudiation = repudiationFor(republican, groupId);
+    function applyParty(logs, rates, candidates, groupId, party, referenceId, effects, allowRepudiation) {
+        var candidate = candidates.find(function (entry) { return entry.party === party; });
+        if (!candidate || !profileFor(candidate)) return;
+        var effect = effectFor(candidate, groupId, effects, referenceId);
+        var repudiation = allowRepudiation ? repudiationFor(candidate, groupId) : { preference: 0, turnout: 0 };
         for (var i = 0; i < candidates.length; i++) {
-            var party = candidates[i].party;
-            if (party === 'R') {
+            var currentParty = candidates[i].party;
+            if (currentParty === party) {
                 logs[i] += effect.preference + repudiation.preference;
                 rates[i] += effect.repTurnout + repudiation.turnout;
-            } else if (party === 'D') {
+            } else if ((party === 'R' && currentParty === 'D') || (party === 'D' && currentParty === 'R')) {
                 logs[i] -= effect.preference + repudiation.preference;
                 rates[i] += effect.demTurnout;
             }
         }
+    }
+
+    function apply(logs, rates, candidates, groupId) {
+        if (!Array.isArray(logs) || !Array.isArray(rates) || !Array.isArray(candidates)) return;
+        applyParty(logs, rates, candidates, groupId, 'R', 'trump', GROUP_EFFECTS, true);
+        applyParty(logs, rates, candidates, groupId, 'D', 'harris', DEM_GROUP_EFFECTS, false);
     }
 
     return {
@@ -210,6 +252,7 @@ var CandidateEraEffects = (function () {
         groupConfig: groupConfig,
         designerConfig: {
             groupEffects: GROUP_EFFECTS,
+            democraticGroupEffects: DEM_GROUP_EFFECTS,
             repudiation: REPUDIATION,
             brandCurveInput: BRAND_CURVE_INPUT,
             brandCurveCap: BRAND_CURVE_CAP,
